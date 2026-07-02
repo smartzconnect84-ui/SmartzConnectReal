@@ -1,0 +1,168 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Sora:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-size: 90%;
+  }
+
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 270 30% 8%;
+    --card: 0 0% 100%;
+    --card-foreground: 270 30% 8%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 270 30% 8%;
+    --primary: 333 100% 65%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 270 70% 60%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 270 20% 96%;
+    --muted-foreground: 270 15% 50%;
+    --accent: 270 20% 96%;
+    --accent-foreground: 270 30% 8%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 270 20% 90%;
+    --input: 270 20% 90%;
+    --ring: 333 100% 65%;
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 270 30% 6%;
+    --foreground: 270 20% 95%;
+    --card: 270 30% 8%;
+    --card-foreground: 270 20% 95%;
+    --popover: 270 30% 8%;
+    --popover-foreground: 270 20% 95%;
+    --primary: 333 100% 65%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 270 70% 60%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 270 25% 14%;
+    --muted-foreground: 270 15% 60%;
+    --accent: 270 25% 14%;
+    --accent-foreground: 270 20% 95%;
+    --destructive: 0 62% 40%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 270 25% 18%;
+    --input: 270 25% 18%;
+    --ring: 333 100% 65%;
+  }
+
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer utilities {
+  /* ── Love gradient text ── */
+  .text-gradient-love {
+    background: linear-gradient(135deg, #FF4D8D 0%, #9B5DE5 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* ── Love gradient background ── */
+  .bg-love-gradient {
+    background: linear-gradient(135deg, #FF4D8D 0%, #9B5DE5 100%);
+  }
+
+  /* ── Soft love gradient (for badges/pills) ── */
+  .bg-love-soft {
+    background: linear-gradient(135deg, rgba(255,77,141,0.12) 0%, rgba(155,93,229,0.12) 100%);
+  }
+
+  /* ── Glass card ── */
+  .bg-glass {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .bg-glass-light {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(155, 93, 229, 0.15);
+  }
+
+  /* ── Primary button ── */
+  .btn-love {
+    background: linear-gradient(135deg, #FF4D8D 0%, #9B5DE5 100%);
+    color: white;
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.875rem;
+    transition: all 0.2s ease;
+    box-shadow: 0 8px 24px rgba(255, 77, 141, 0.3);
+  }
+  .btn-love:hover {
+    opacity: 0.92;
+    transform: scale(1.03);
+    box-shadow: 0 12px 32px rgba(255, 77, 141, 0.4);
+  }
+  .btn-love:active {
+    transform: scale(0.97);
+  }
+
+  /* ── Outline button ── */
+  .btn-love-outline {
+    background: transparent;
+    color: #FF4D8D;
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.875rem;
+    border: 1.5px solid rgba(255, 77, 141, 0.4);
+    transition: all 0.2s ease;
+  }
+  .btn-love-outline:hover {
+    background: rgba(255, 77, 141, 0.08);
+    border-color: #FF4D8D;
+  }
+
+  /* ── Scrollbar hide ── */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* ── Card hover ── */
+  .card-hover {
+    transition: all 0.3s ease;
+  }
+  .card-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px rgba(155, 93, 229, 0.12);
+  }
+
+  /* ── Glow effects ── */
+  .glow-pink {
+    box-shadow: 0 0 30px rgba(255, 77, 141, 0.25);
+  }
+  .glow-purple {
+    box-shadow: 0 0 30px rgba(155, 93, 229, 0.25);
+  }
+}

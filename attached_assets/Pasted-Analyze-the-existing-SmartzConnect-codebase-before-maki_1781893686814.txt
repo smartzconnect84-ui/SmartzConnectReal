@@ -1,0 +1,81 @@
+Analyze the existing SmartzConnect codebase before making any changes.
+
+Do NOT rebuild, replace, refactor, or modify any currently working functionality unless required for integration compatibility.
+
+Preserve all existing:
+
+* Authentication
+* Database schema
+* Marketplace features
+* Service booking features
+* Ride and delivery features
+* Existing notifications
+* Existing UI and design system
+* Existing APIs
+* Existing Supabase configuration
+
+Only implement and configure the following missing integrations:
+
+1. GETSTREAM CHAT
+
+* Use VITE_STREAM_API_KEY and STREAM_API_SECRET.
+* Create secure Stream token generation.
+* Connect authenticated users automatically.
+* Add buyer-seller messaging.
+* Add customer-provider messaging.
+* Add user-admin messaging.
+* Add unread counts, typing indicators, read receipts, presence, image uploads, and file attachments.
+* Reuse existing user profiles and authentication.
+
+2. ONESIGNAL
+
+* Use VITE_ONESIGNAL_APP_ID.
+* Register authenticated users automatically.
+* Link OneSignal users to existing SmartzConnect user IDs.
+* Create push notifications for:
+
+  * New messages
+  * Order updates
+  * Booking updates
+  * Ride updates
+  * System announcements
+* Add notification preference settings.
+
+3. CLOUDFLARE TURNSTILE
+
+* Use VITE_TURNSTILE_SITE_KEY and TURNSTILE_SECRET_KEY.
+* Protect:
+
+  * Registration
+  * Login
+  * Password reset
+  * Contact forms
+* Implement server-side token verification.
+* Do not modify existing authentication logic beyond adding verification.
+
+4. RESEND EMAILS
+
+* Use RESEND_API_KEY.
+* Create branded SmartzConnect email templates:
+
+  * Welcome email
+  * Password reset email
+  * Account verification email
+  * Newsletter email
+* Connect emails to existing user workflows.
+
+5. COOKIE CONSENT
+
+* Add a GDPR-style cookie banner.
+* Add cookie preferences management.
+* Create Privacy Policy, Cookie Policy, and Terms pages if missing.
+* Do not interfere with existing functionality.
+
+6. INTEGRATION REVIEW
+
+* Scan the codebase for incomplete or partially configured integrations.
+* Verify all environment variables are actively used.
+* Report unused variables and missing implementations.
+* Generate a summary of what was already working, what was added, and what still requires manual setup.
+
+Maintain full backward compatibility with the current SmartzConnect system.
