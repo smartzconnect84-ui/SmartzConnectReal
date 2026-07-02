@@ -6,6 +6,14 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// JWT requires base64url (NOT standard base64)
+function base64url(input: string | Uint8Array): string {
+  const b64 = typeof input === 'string'
+    ? btoa(input)
+    : btoa(String.fromCharCode(...input))
+  return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -42,14 +50,14 @@ serve(async (req) => {
       })
     }
 
-    // Generate Stream user token (HMAC-SHA256)
     const userId = user.id
     const now = Math.floor(Date.now() / 1000)
     const exp = now + 60 * 60 * 24 // 24 hours
 
-    const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }))
-    const payload = btoa(JSON.stringify({ user_id: userId, iat: now, exp }))
-    const sigInput = `${header}.${payload}`
+    // Proper base64url-encoded JWT required by GetStream
+    const encHeader  = base64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }))
+    const encPayload = base64url(JSON.stringify({ user_id: userId, iat: now, exp }))
+    const sigInput   = `${encHeader}.${encPayload}`
 
     const key = await crypto.subtle.importKey(
       'raw',
@@ -58,16 +66,18 @@ serve(async (req) => {
       false,
       ['sign']
     )
-    const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(sigInput))
-    const token = `${sigInput}.${btoa(String.fromCharCode(...new Uint8Array(sig)))}`
+    const sigBytes = new Uint8Array(
+      await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(sigInput))
+    )
+    const token = `${sigInput}.${base64url(sigBytes)}`
 
-    // Cache the token in Supabase
+    // Cache token in Supabase
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const adminClient = createClient(supabaseUrl, serviceKey)
     await adminClient.from('stream_tokens').upsert({
       user_id: userId,
       token,
-      expires_at: new Date((exp) * 1000).toISOString(),
+      expires_at: new Date(exp * 1000).toISOString(),
     })
 
     return new Response(JSON.stringify({ token, userId }), {

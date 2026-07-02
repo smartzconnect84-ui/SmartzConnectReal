@@ -34,3 +34,4 @@ dist-ssr
 # Replit-specific
 .cache
 .local/state
+supabase/.temp/
