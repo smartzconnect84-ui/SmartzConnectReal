@@ -9,7 +9,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { useLiveKitCall } from '@/contexts/LiveKitCallContext'
 import { useStream } from '@/contexts/StreamContext'
-import { streamClient, getOrCreateDirectChannel } from '@/lib/stream'
+import { getOrCreateDirectChannel } from '@/lib/stream'
 import ReportBlockModal from '@/components/ReportBlockModal'
 import type { Channel } from 'stream-chat'
 
@@ -122,15 +122,9 @@ export default function ChatPage() {
     const handleNew = (event: any) => {
       if (cancelled || !event.message) return
       const m = event.message
-      // Skip own messages already added optimistically
-      if (m.user?.id === user.id) {
-        setMessages(prev => prev.map(msg =>
-          msg.id.startsWith('temp-') && msg.text === m.text
-            ? { ...msg, id: m.id, status: 'delivered' }
-            : msg
-        ))
-        return
-      }
+      // Own messages are already in state via the optimistic update + clientId match.
+      // Just skip them here to avoid duplicates; the send() promise handles status.
+      if (m.user?.id === user.id) return
       setMessages(prev => {
         if (prev.some(msg => msg.id === m.id)) return prev
         return [...prev, mapStreamMessage(m, user.id)]

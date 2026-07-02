@@ -50,7 +50,10 @@ export async function disconnectStreamUser() {
 }
 
 export function getOrCreateDirectChannel(userId1: string, userId2: string) {
-  const channelId = [userId1, userId2].sort().join('-')
+  // Stream channel IDs are capped at 64 chars.
+  // Strip dashes from both UUIDs (32 chars each), sort for determinism, take 60 chars total.
+  const [a, b] = [userId1, userId2].sort()
+  const channelId = (a.replace(/-/g, '') + b.replace(/-/g, '')).slice(0, 60)
   return streamClient.channel('messaging', channelId, {
     members: [userId1, userId2],
   })

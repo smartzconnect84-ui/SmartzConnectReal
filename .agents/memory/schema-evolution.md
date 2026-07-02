@@ -15,15 +15,17 @@ description: SmartzConnect Supabase schema versioning — which addendum covers 
 | `schema_v5_addendum.sql` | Moderation status columns for admin modules |
 | `schema_v6_addendum.sql` | activity_feed (new), post_shares (new), LiveKit cols on video_calls/stream_tokens/call_participants, extended notification_preferences, platform_files enrichment, storage buckets |
 
-## Live DB scan (July 2026)
-- 111 tables confirmed in production Supabase (`ufmuhwepyxzaldvcbipd`)
-- **`activity_feed`** — was missing; added in v6
-- **`post_shares`** — was missing; added in v6 (reposts tracked via posts.original_post_id; explicit share join table now exists)
-- **`video_calls.jitsi_room`** — Jitsi remnant; LiveKit cols added alongside in v6 (livekit_room, livekit_token, room_type, participants, recording_url, ended_at)
-- **`stream_tokens`** — missing room_id, token_type; added in v6
-- **`notification_preferences`** — missing push_calls, push_social types; 11 new columns added in v6
+## Critical column name mismatches (fixed July 2026)
+- `posts.author_id` — NOT `user_id`. FeedPage query must use `profiles:author_id` for the join.
+- `matches.user_a` / `matches.user_b` — NOT `user1_id`/`user2_id`. MatchesPage must query with `.or('user_a.eq.X,user_b.eq.X')` and resolve the OTHER user in a second query.
+
+## Live DB state (after July 2026 wipe)
+- All demo/test data cleared: profiles=0, users=0, posts=0, matches=0, auth.users=0
+- Platform is clean for production use.
 
 ## Connection note
-Replit environment blocks outbound port 5432 to Supabase. Cannot use psql directly. Run SQL via Supabase Dashboard → SQL Editor.
+- Supabase project region: **eu-west-1** (pooler host: `aws-0-eu-west-1.pooler.supabase.com`)
+- Replit environment blocks outbound port 5432 (direct Postgres). Use Supabase Management API (`api.supabase.com/v1/projects/{ref}/database/query`) with `SUPABASE_ACCESS_TOKEN` to run SQL remotely.
+- Edge function secrets set via `POST /v1/projects/{ref}/secrets`.
 
-**Why:** Migrations are tracked by file version so agents can audit what's deployed without re-scanning the whole schema.
+**Why:** Column name mismatches are silent — queries return an error, `dbConnected` flips false, user sees "Configure Supabase" placeholder. Always verify against live schema before writing queries.
