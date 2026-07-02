@@ -1,0 +1,120 @@
+SmartzConnect Platform Redesign & Communication Stack Upgrade
+
+Completely redesign and modernize the SmartzConnect platform with a premium, responsive, scalable, and intuitive user experience while preserving all existing functionality.
+
+User Dashboard
+Redesign the logged-in user dashboard with a clean, modern UI/UX.
+Improve navigation, accessibility, responsiveness, and performance across desktop, tablet, and mobile.
+Ensure a consistent design system throughout the platform.
+Social & Community Features
+Fully activate, optimize, and integrate all social features, including:
+
+News Feed
+Posts
+Comments
+Likes
+Reactions
+Shares/Reposts
+User Profiles
+Friends/Followers
+Search
+Activity Feed
+Real-time Updates
+Notification Center
+Communication Stack Migration
+Remove Jitsi Completely
+
+Remove all Jitsi integrations, dependencies, APIs, components, and related code from the project.
+
+Implement LiveKit
+
+Replace Jitsi entirely with LiveKit as the platform's real-time communication solution for:
+
+One-to-one Video Calls
+One-to-one Audio Calls
+Group Video Conferencing
+Group Audio Conferencing
+Screen Sharing
+Participant Management
+Device Selection
+Call Controls
+Mute/Unmute
+Camera Controls
+Meeting Rooms
+Connection Quality Indicators
+End-to-End Encryption (where supported)
+Responsive Call Interface
+Use a fully customized SmartzConnect-branded interface rather than the default LiveKit UI wherever possible.
+
+Implement GetStream
+
+Use GetStream as the complete messaging platform for:
+
+One-to-one Messaging
+Group Messaging
+Channels
+Typing Indicators
+Read/Seen Status
+Delivered Status
+Online/Offline Presence
+Emoji Reactions
+Replies
+Mentions
+Rich Text Messages
+Image Sharing
+Video Sharing
+Voice Notes
+File Sharing
+Document Sharing
+Message Search
+Message Editing
+Message Deletion
+Attachments
+Media Previews
+Integrate the messaging experience seamlessly into the SmartzConnect design system.
+
+Implement OneSignal
+
+Use OneSignal as the notification service for:
+
+Push Notifications
+In-App Notifications
+Real-Time Alerts
+Message Notifications
+Call Notifications
+Social Activity Notifications
+Browser Notifications
+Mobile Notifications
+Notification Preferences
+Notification History
+File Uploads & Attachments
+Implement secure upload and attachment functionality across all applicable features, including:
+
+Chat
+Messaging
+Posts
+Comments
+Profiles
+Team Management
+Forms
+Documents
+Images
+Videos
+Audio Files
+PDFs
+Other supported file types
+Include previews, upload progress indicators, validation, and secure storage.
+
+Team Page Redesign
+Completely redesign the Team page by:
+
+Displaying all team members with professional profile photos
+Showing names, positions, departments, biographies, and optional social/contact links
+Using modern responsive cards with subtle animations and consistent branding
+General Improvements
+Improve overall UI/UX consistency
+Optimize loading speed and performance
+Ensure full mobile responsiveness
+Maintain compatibility with the existing authentication system, database, and backend
+Keep the codebase clean, modular, scalable, and well documented
+Preserve existing features while upgrading and extending functionality where necessary.
