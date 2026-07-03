@@ -9,14 +9,14 @@
     {
       "source": "/(.*)",
       "headers": [
-        { "key": "X-Frame-Options",           "value": "DENY" },
-        { "key": "X-Content-Type-Options",    "value": "nosniff" },
-        { "key": "Referrer-Policy",           "value": "strict-origin-when-cross-origin" },
-        { "key": "X-XSS-Protection",          "value": "1; mode=block" },
-        { "key": "Permissions-Policy",        "value": "camera=(self), microphone=(self), geolocation=(self), payment=()" },
+        { "key": "X-Frame-Options",        "value": "DENY" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "Referrer-Policy",        "value": "strict-origin-when-cross-origin" },
+        { "key": "X-XSS-Protection",       "value": "1; mode=block" },
+        { "key": "Permissions-Policy",     "value": "camera=(self), microphone=(self), geolocation=(self), payment=()" },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.onesignal.com https://onesignal.com https://static.cloudflareinsights.com https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stream-io-api.com wss://api.stream-io-api.com https://onesignal.com https://*.livekit.cloud wss://*.livekit.cloud https://*.turn.livekit.cloud wss://*.turn.livekit.cloud https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; worker-src blob: https://cdn.onesignal.com; media-src 'self' blob: https:; object-src 'none'; base-uri 'self'; form-action 'self';"
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.onesignal.com https://onesignal.com https://static.cloudflareinsights.com https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stream-io-api.com wss://api.stream-io-api.com https://onesignal.com https://api.onesignal.com https://*.onesignal.com https://*.livekit.cloud wss://*.livekit.cloud https://*.turn.livekit.cloud wss://*.turn.livekit.cloud https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; worker-src 'self' blob: https://cdn.onesignal.com; media-src 'self' blob: https:; object-src 'none'; base-uri 'self'; form-action 'self';"
         }
       ]
     },
@@ -29,7 +29,7 @@
     {
       "source": "/OneSignalSDKWorker.js",
       "headers": [
-        { "key": "Cache-Control",      "value": "no-cache" },
+        { "key": "Cache-Control",          "value": "no-cache" },
         { "key": "Service-Worker-Allowed", "value": "/" }
       ]
     },

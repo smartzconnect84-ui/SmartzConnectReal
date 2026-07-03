@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    // Authenticate the caller
+    // ── 1. Authenticate caller ───────────────────────────────────────────────
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
@@ -23,23 +23,15 @@ serve(async (req) => {
 
     const supabaseUrl  = Deno.env.get('SUPABASE_URL')!
     const supabaseAnon = Deno.env.get('SUPABASE_ANON_KEY')!
-    const supabase = createClient(supabaseUrl, supabaseAnon, {
+    const serviceKey   = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+
+    const userClient = createClient(supabaseUrl, supabaseAnon, {
       global: { headers: { Authorization: authHeader } },
     })
-    const { data: { user }, error: authErr } = await supabase.auth.getUser()
+    const { data: { user }, error: authErr } = await userClient.auth.getUser()
     if (authErr || !user) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
-
-    const oneSignalAppId = Deno.env.get('ONESIGNAL_APP_ID')
-    const oneSignalKey   = Deno.env.get('ONESIGNAL_REST_API_KEY')
-
-    if (!oneSignalAppId || !oneSignalKey) {
-      return new Response(JSON.stringify({ error: 'OneSignal not configured' }), {
-        status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
@@ -53,15 +45,46 @@ serve(async (req) => {
       })
     }
 
+    // ── 2. Authorise: caller must have a match with the target ───────────────
+    // Users can only push-notify someone they are matched with.
+    // Use service role so we can read matches regardless of RLS.
+    const adminClient = createClient(supabaseUrl, serviceKey)
+    const [a, b] = [user.id, userId].sort()
+    const { data: match } = await adminClient
+      .from('matches')
+      .select('id')
+      .eq('user_a', a)
+      .eq('user_b', b)
+      .maybeSingle()
+
+    // Also allow pushing one's own device (e.g. multi-device notifications)
+    const isSelf = user.id === userId
+    if (!match && !isSelf) {
+      return new Response(JSON.stringify({ error: 'Forbidden: no match with target user' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // ── 3. Send via OneSignal ────────────────────────────────────────────────
+    const oneSignalAppId = Deno.env.get('ONESIGNAL_APP_ID')
+    const oneSignalKey   = Deno.env.get('ONESIGNAL_REST_API_KEY')
+
+    if (!oneSignalAppId || !oneSignalKey) {
+      return new Response(JSON.stringify({ error: 'OneSignal not configured on server' }), {
+        status: 503,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
     const payload: Record<string, unknown> = {
       app_id:   oneSignalAppId,
       headings: { en: title },
       contents: { en: message },
-      // Target by external_id (OneSignal login(userId)) — more reliable than tag filter
-      include_aliases: { external_id: [userId] },
+      // Target by external_id set via OneSignal.login(userId)
+      include_aliases:  { external_id: [userId] },
       target_channel: 'push',
     }
-
     if (url) payload.url = url
 
     const res = await fetch('https://onesignal.com/api/v1/notifications', {

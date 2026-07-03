@@ -92,7 +92,7 @@ export default function GroupChatPage() {
       const chan = streamClient.channel('messaging', chanId, {
         name: room.name,
         members: [user.id],
-      })
+      } as any)
       channelRef.current = chan
       const state = await chan.watch()
       setMessages((state.messages || []).map((m: any) => ({

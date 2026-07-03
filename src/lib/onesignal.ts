@@ -22,7 +22,7 @@ export function initOneSignal() {
           // Allow localhost for development/staging (HTTPS still required on prod)
           allowLocalhostAsSecureOrigin: import.meta.env.DEV,
           serviceWorkerParam: { scope: '/' },
-          serviceWorkerPath: 'OneSignalSDKWorker.js',
+          serviceWorkerPath: '/OneSignalSDKWorker.js',
         })
       } catch (err) {
         console.warn('[OneSignal] init error:', err)
