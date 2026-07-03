@@ -4,25 +4,17 @@ import { motion } from 'framer-motion'
 import { Mail, ArrowLeft, Loader2, CheckCircle2, Send } from 'lucide-react'
 const logoImg = '/logo.png'
 import { useAuth } from '@/hooks/useAuth'
-import TurnstileWidget from '@/components/TurnstileWidget'
-
-const TURNSTILE_ENABLED = !!import.meta.env.VITE_TURNSTILE_SITE_KEY
 
 export default function ForgotPasswordPage() {
   const { resetPassword } = useAuth()
-  const [email, setEmail]               = useState('')
-  const [loading, setLoading]           = useState(false)
-  const [sent, setSent]                 = useState(false)
-  const [error, setError]               = useState('')
-  const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
+  const [email, setEmail]   = useState('')
+  const [loading, setLoading] = useState(false)
+  const [sent, setSent]     = useState(false)
+  const [error, setError]   = useState('')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!email.trim()) return
-    if (TURNSTILE_ENABLED && !turnstileToken) {
-      setError('Please complete the security check.')
-      return
-    }
     setError('')
     setLoading(true)
     try {
@@ -99,17 +91,9 @@ export default function ForgotPasswordPage() {
                   </div>
                 </div>
 
-                {TURNSTILE_ENABLED && (
-                  <TurnstileWidget
-                    onSuccess={setTurnstileToken}
-                    onError={() => setTurnstileToken(null)}
-                    onExpire={() => setTurnstileToken(null)}
-                  />
-                )}
-
                 <button
                   type="submit"
-                  disabled={loading || !email.trim() || (TURNSTILE_ENABLED && !turnstileToken)}
+                  disabled={loading || !email.trim()}
                   className="w-full py-3.5 rounded-xl bg-love-gradient text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-pink-500/25 hover:shadow-pink-500/40 hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                 >
                   {loading ? (
