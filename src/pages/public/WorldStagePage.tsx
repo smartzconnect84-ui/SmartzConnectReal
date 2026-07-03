@@ -161,12 +161,12 @@ export default function WorldStagePage() {
                   <div>
                     <p className="font-bold text-lg dark:text-white text-gray-900 mb-2">Competitions Coming Soon</p>
                     <p className="text-sm dark:text-gray-400 text-gray-500 max-w-sm">
-                      World Stage competitions will be live during our official launch on <strong>June 26, 2026</strong>. Stay tuned!
+                      World Stage competitions are coming soon — showcase your talent, vote for your favourites, and climb the global leaderboard.
                     </p>
                   </div>
                   <div className="flex items-center gap-2 px-4 py-2 rounded-xl dark:bg-amber-500/10 bg-amber-50 border dark:border-amber-500/20 border-amber-200">
                     <Clock className="w-4 h-4 text-amber-500" />
-                    <span className="text-xs font-semibold text-amber-600 dark:text-amber-400">Launching June 26, 2026 · Bash Pool, Marshall Road, Liberia</span>
+                    <span className="text-xs font-semibold text-amber-600 dark:text-amber-400">Coming soon — sign up to compete first</span>
                   </div>
                 </div>
               ) : (

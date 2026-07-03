@@ -26,10 +26,10 @@ export default function SmartzRidePage() {
   return (
     <div className="dark:bg-[#080510] bg-gray-50 min-h-screen">
 
-      {/* Hero with flyer */}
+      {/* Hero */}
       <section className="relative overflow-hidden">
         <div className="relative h-72 sm:h-96 lg:h-[480px]">
-          <img src="/flyer.png" alt="SmartzConnect Ride" className="w-full h-full object-cover object-center scale-80 md:scale-100 transition-transform duration-700" />
+          <img src="/hero-friends.jpg" alt="SmartzConnect Ride" className="w-full h-full object-cover object-center" />
           <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-emerald-900/40 to-black/85" />
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/25 backdrop-blur-sm border border-emerald-400/40 mb-5">
@@ -104,11 +104,11 @@ export default function SmartzRidePage() {
         </div>
       </section>
 
-      {/* Driver CTA with flyer */}
+      {/* Driver CTA */}
       <section className="py-16 sm:py-20 px-4">
         <div className="max-w-4xl mx-auto">
           <div className="rounded-3xl overflow-hidden relative shadow-2xl">
-            <img src="/flyer.png" alt="SmartzConnect" className="absolute inset-0 w-full h-full object-cover" />
+            <img src="/hero-networking.jpg" alt="SmartzConnect" className="absolute inset-0 w-full h-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-r from-black/85 to-emerald-900/75" />
             <div className="relative p-8 sm:p-10 grid sm:grid-cols-2 gap-8 items-center">
               <div>

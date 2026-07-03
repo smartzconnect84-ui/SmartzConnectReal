@@ -355,7 +355,7 @@ export default function AboutPage() {
         <div className="max-w-2xl mx-auto text-center">
           <motion.div {...fadeUp()}>
             <div className="p-7 sm:p-10 rounded-2xl sm:rounded-3xl bg-love-gradient text-white relative overflow-hidden">
-              <div className="absolute inset-0 bg-[url('/flyer.png')] opacity-5 bg-cover bg-center" />
+              <div className="absolute inset-0 opacity-10 bg-gradient-to-br from-pink-400 via-purple-500 to-indigo-600" />
               <div className="relative z-10">
                 <div className="text-4xl sm:text-5xl mb-3 sm:mb-4">🌍</div>
                 <h2 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4">

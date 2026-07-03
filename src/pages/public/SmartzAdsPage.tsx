@@ -186,11 +186,11 @@ export default function SmartzAdsPage() {
         </div>
       </section>
 
-      {/* CTA with flyer */}
+      {/* CTA */}
       <section className="py-20 px-4">
         <div className="max-w-3xl mx-auto">
           <div className="rounded-3xl overflow-hidden relative shadow-2xl">
-            <img src="/flyer.png" alt="SmartzConnect" className="absolute inset-0 w-full h-full object-cover" />
+            <img src="/hero-couple.jpg" alt="SmartzConnect" className="absolute inset-0 w-full h-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-r from-black/85 to-pink-900/75" />
             <div className="relative p-10 text-center">
               <h2 className="font-display font-black text-3xl text-white mb-4">Ready to Advertise?</h2>

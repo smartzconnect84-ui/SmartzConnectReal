@@ -58,7 +58,7 @@ export default function SmartzTVPage() {
             <span className="font-bold dark:text-white text-gray-900">Live streams will appear here once SmartzTV launches</span>
           </div>
           <p className="text-sm dark:text-gray-400 text-gray-500">
-            SmartzTV is coming to SmartzConnect on <strong>June 26, 2026</strong> during our Birthday Bash &amp; App Launch at Bash Pool, Marshall Road, Liberia.
+            SmartzTV is coming soon to SmartzConnect. Live streams, creator channels, and exclusive content — all in one place. Sign up now to be first in line.
           </p>
         </div>
       </section>
@@ -90,11 +90,11 @@ export default function SmartzTVPage() {
         </div>
       </section>
 
-      {/* CTA banner with flyer */}
+      {/* CTA banner */}
       <section className="py-16 sm:py-20 px-4">
         <div className="max-w-3xl mx-auto">
           <div className="rounded-3xl overflow-hidden relative shadow-2xl">
-            <img src="/flyer.png" alt="SmartzConnect" className="absolute inset-0 w-full h-full object-cover" />
+            <img src="/hero-scroll.jpg" alt="SmartzConnect" className="absolute inset-0 w-full h-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-r from-black/80 to-violet-900/70" />
             <div className="relative p-10 text-center">
               <div className="text-5xl mb-4">🎬</div>

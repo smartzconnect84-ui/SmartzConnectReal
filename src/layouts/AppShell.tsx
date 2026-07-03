@@ -191,10 +191,11 @@ export default function AppShell() {
               transition={{ type: 'spring', stiffness: 320, damping: 32 }}
               className="fixed left-0 top-0 bottom-0 w-72 dark:bg-[#0D0A14] bg-white z-50 md:hidden flex flex-col border-r dark:border-white/6 border-gray-100 shadow-2xl">
 
-              {/* Flyer banner header */}
-              <div className="relative h-36 flex-shrink-0 overflow-hidden">
-                <img src="/flyer.png" alt="SmartzConnect" className="w-full h-full object-cover object-top" />
-                <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-black/70" />
+              {/* Brand header */}
+              <div className="relative h-36 flex-shrink-0 overflow-hidden bg-gradient-to-br from-[#130E1E] via-[#1e0a2e] to-[#0f0a1e]">
+                <div className="absolute -top-6 -right-6 w-32 h-32 rounded-full bg-pink-500/15 blur-2xl" />
+                <div className="absolute bottom-0 left-0 w-24 h-24 rounded-full bg-purple-500/10 blur-xl" />
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/40" />
                 <button onClick={() => setDrawerOpen(false)}
                   className="absolute top-3 right-3 w-7 h-7 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center">
                   <X className="w-3.5 h-3.5 text-white" />
