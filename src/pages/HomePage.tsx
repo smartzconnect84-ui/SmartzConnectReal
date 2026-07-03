@@ -1,470 +1,577 @@
-import { useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { motion, useInView } from 'framer-motion'
+import { motion } from 'framer-motion'
 import Hero from '@/components/Hero'
 import {
-  Globe, Heart, Shield, Award, Zap, Users, Target, Eye,
-  ShoppingBag, Car, Package, Megaphone, Tv, MessageCircle,
-  CheckCircle, ArrowRight, Star, Lock, Smartphone, Wallet,
-  UserPlus, Settings, Compass, TrendingUp, Sparkles,
+  Users, Heart, Briefcase, ShoppingBag, GraduationCap, Monitor,
+  Eye, Target, CheckCircle, UserPlus, Globe, Shield, Sparkles,
+  Star, Zap, Award, TrendingUp, Handshake, ArrowRight,
 } from 'lucide-react'
 
-/* ─── animation helper ─── */
-const fadeUp = (delay = 0) => ({
-  initial: { opacity: 0, y: 28 },
+/* ── animation ── */
+const up = (delay = 0) => ({
+  initial: { opacity: 0, y: 30 },
   whileInView: { opacity: 1, y: 0 },
-  viewport: { once: true, margin: '-60px' },
-  transition: { duration: 0.55, delay },
+  viewport: { once: true, margin: '-50px' },
+  transition: { duration: 0.55, delay, ease: [0.16, 1, 0.3, 1] },
 })
 
-/* ─── data ─── */
-const services = [
+/* ── palette tokens ── */
+// Pink:   #ec4899  #f472b6
+// Purple: #9333ea  #a855f7  #7c3aed
+// Black:  #000000  #05000d  #0a0014
+// White:  #ffffff  rgba(255,255,255,…)
+
+/* ────────────────────────────────────────────────────────────────────────── */
+/*  DATA                                                                       */
+/* ────────────────────────────────────────────────────────────────────────── */
+
+const SERVICES = [
   {
-    icon: Users, emoji: '🌐', name: 'SmartzSocial',
-    color: 'from-violet-500 to-purple-600',
-    desc: 'A vibrant social feed to share moments, follow friends, join communities, and stay connected with people who matter to you — anywhere in the world.',
-  },
-  {
-    icon: Heart, emoji: '💕', name: 'SmartzDating',
+    emoji: '❤️', icon: Heart, name: 'Social Networking',
     color: 'from-pink-500 to-rose-600',
-    desc: 'AI-powered matchmaking that goes beyond swipes. Our smart compatibility engine helps you find meaningful connections across Africa and beyond.',
+    glow: 'shadow-pink-500/25',
+    desc: "Share life's moments, connect with friends and family, join communities, create memories, and stay connected through an engaging social experience.",
   },
   {
-    icon: Tv, emoji: '📺', name: 'SmartzTV',
-    color: 'from-purple-500 to-violet-600',
-    desc: 'Africa\'s live streaming and creator platform. Broadcast your world, grow your audience, receive virtual gifts, and turn your passion into income.',
-  },
-  {
-    icon: ShoppingBag, emoji: '🛒', name: 'SmartzMarket',
-    color: 'from-amber-500 to-orange-600',
-    desc: 'A trusted pan-African marketplace where individuals and businesses buy, sell, and discover authentic products — with Mobile Money payments built in.',
-  },
-  {
-    icon: Car, emoji: '🚗', name: 'SmartzRide',
-    color: 'from-emerald-500 to-teal-600',
-    desc: 'Safe, affordable ride-hailing with verified drivers and live GPS tracking. Connecting commuters and drivers across African cities.',
-  },
-  {
-    icon: Package, emoji: '📦', name: 'SmartzDelivery',
-    color: 'from-blue-500 to-cyan-600',
-    desc: 'Fast, reliable same-day delivery connecting businesses and individuals. From parcels to meals — delivered on your schedule.',
-  },
-  {
-    icon: Megaphone, emoji: '📣', name: 'SmartzAds',
+    emoji: '💕', icon: Heart, name: 'Dating & Relationships',
     color: 'from-fuchsia-500 to-pink-600',
-    desc: 'Precision-targeted advertising to reach Africa\'s most engaged digital audience. Grow your brand visibility and drive measurable business results.',
+    glow: 'shadow-fuchsia-500/25',
+    desc: 'Meet genuine people, discover meaningful relationships, and build lasting connections in a safe and respectful environment designed for authentic interactions.',
+  },
+  {
+    emoji: '💼', icon: Briefcase, name: 'Business & Professional Networking',
+    color: 'from-violet-600 to-purple-700',
+    glow: 'shadow-violet-500/25',
+    desc: 'Connect with entrepreneurs, professionals, employers, clients, and organizations to build valuable business relationships and unlock new opportunities.',
+  },
+  {
+    emoji: '🛍️', icon: ShoppingBag, name: 'Marketplace',
+    color: 'from-purple-500 to-violet-600',
+    glow: 'shadow-purple-500/25',
+    desc: 'Buy, sell, advertise, and discover products and services from trusted individuals and businesses within the SmartzConnect community.',
+  },
+  {
+    emoji: '🔍', icon: TrendingUp, name: 'Jobs & Careers',
+    color: 'from-pink-600 to-fuchsia-600',
+    glow: 'shadow-pink-600/25',
+    desc: 'Discover employment opportunities, recruit talented professionals, and advance your career through a growing professional network.',
+  },
+  {
+    emoji: '🎓', icon: GraduationCap, name: 'Learning & Development',
+    color: 'from-fuchsia-600 to-purple-600',
+    glow: 'shadow-fuchsia-600/25',
+    desc: 'Learn new skills, share knowledge, participate in educational communities, and support personal and professional growth.',
+  },
+  {
+    emoji: '💻', icon: Monitor, name: 'Technology Solutions',
+    color: 'from-purple-600 to-pink-600',
+    glow: 'shadow-purple-600/25',
+    desc: 'Deliver innovative digital solutions, software development, consulting, and technology services that help businesses and organizations succeed.',
   },
 ]
 
-const coreValues = [
-  {
-    icon: Zap, title: 'Innovation First',
-    desc: 'We pioneer technology solutions tailored for Africa\'s unique landscape — mobile-first, offline-resilient, and culturally intelligent.',
-  },
-  {
-    icon: Heart, title: 'Community at Heart',
-    desc: 'Every feature we build is designed to bring people genuinely closer — not just digitally connected, but meaningfully engaged.',
-  },
-  {
-    icon: Shield, title: 'Safety Always',
-    desc: 'Trust and safety are non-negotiable. We invest in end-to-end encryption, identity verification, and 24/7 moderation so every user feels secure.',
-  },
-  {
-    icon: Award, title: 'African Excellence',
-    desc: 'We celebrate African culture, talent, creativity, and enterprise on a global stage — because Africa\'s story deserves to be told by Africans.',
-  },
-  {
-    icon: Globe, title: 'Inclusive Growth',
-    desc: 'We build economic pathways that create real opportunity for individuals, creators, drivers, vendors, and businesses across 195+ countries.',
-  },
-  {
-    icon: Star, title: 'Relentless Quality',
-    desc: 'We hold ourselves to the highest standards in design, performance, and user experience — because our users deserve nothing less.',
-  },
+const VALUES = [
+  { icon: Handshake, title: 'Meaningful Connections', desc: 'We believe genuine human relationships have the power to change lives.' },
+  { icon: Shield,    title: 'Trust',                  desc: 'We foster a safe, respectful, and transparent environment where people can connect with confidence.' },
+  { icon: Globe,     title: 'Community',               desc: 'We celebrate diversity and create spaces where everyone belongs.' },
+  { icon: Zap,       title: 'Innovation',              desc: 'We continuously build smarter technologies that strengthen human connection.' },
+  { icon: Award,     title: 'Integrity',               desc: 'We act with honesty, accountability, and professionalism in every interaction.' },
+  { icon: Users,     title: 'Inclusion',               desc: 'We welcome people from every background, culture, and community.' },
+  { icon: Star,      title: 'Excellence',              desc: 'We strive to deliver exceptional experiences in everything we create.' },
+  { icon: TrendingUp,title: 'Growth',                  desc: 'We empower individuals, communities, and businesses to reach their full potential.' },
 ]
 
-const whyChooseUs = [
-  {
-    icon: Smartphone, title: 'One Identity, Everything Unlocked',
-    desc: 'A single SmartzConnect account gives you seamless access to all seven super-products — social, dating, streaming, marketplace, rides, delivery, and ads.',
-  },
-  {
-    icon: Wallet, title: 'Mobile Money Payments Built In',
-    desc: 'Pay and earn via MTN Mobile Money, Orange Money, and all major payment methods — no bank account required, no friction.',
-  },
-  {
-    icon: Lock, title: 'Privacy & Security by Default',
-    desc: 'End-to-end encrypted messaging, AES-256 data storage, and strict privacy controls ensure your personal information is always protected.',
-  },
-  {
-    icon: Globe, title: 'Built for Africa, Open to the World',
-    desc: 'Engineered for low-bandwidth environments across 195+ countries, with multilingual support and locally relevant features.',
-  },
-  {
-    icon: TrendingUp, title: 'Earn While You Connect',
-    desc: 'From creator gifts on SmartzTV to driver earnings on SmartzRide and vendor sales on SmartzMarket — the platform pays you back.',
-  },
-  {
-    icon: Sparkles, title: 'Free to Join, Powerful to Use',
-    desc: 'Start with zero cost and access a rich set of features. Unlock the full ecosystem with our affordable Plus or Pro plans whenever you\'re ready.',
-  },
+const WHY_LIST = [
+  'Connect with people who share your interests.',
+  'Build genuine friendships and meaningful relationships.',
+  'Stay in touch through secure messaging, voice calls, and video calls.',
+  'Join communities that inspire and support you.',
+  'Grow your business and professional network.',
+  'Buy and sell through an integrated marketplace.',
+  'Discover jobs, learning opportunities, and valuable resources.',
+  'Enjoy a secure, modern, and user-friendly digital experience designed around people.',
 ]
 
-const socialFeatures = [
-  { emoji: '📰', title: 'Social Feed', desc: 'Share posts, photos, videos, and stories with your network in a scrollable feed tailored to your interests.' },
-  { emoji: '💬', title: 'Private Messaging', desc: 'Encrypted one-on-one and group chats with voice notes, media sharing, and real-time presence.' },
-  { emoji: '🎡', title: 'Spin & Chat', desc: 'Random matching roulette — spin and instantly connect with someone new from anywhere in the world.' },
-  { emoji: '🎭', title: 'Stories & Reels', desc: 'Share 24-hour stories and short-form video content to keep your followers engaged and entertained.' },
-  { emoji: '👥', title: 'Community Groups', desc: 'Create or join interest-based groups — from professional networks to hobby clubs and local communities.' },
-  { emoji: '🌍', title: 'World Stage', desc: 'A global broadcast space where top creators, thought leaders, and brands reach audiences at scale.' },
-  { emoji: '🛍️', title: 'Business Profiles', desc: 'Dedicated storefront pages for vendors, brands, and service providers to showcase and sell their offerings.' },
-  { emoji: '🔔', title: 'Smart Notifications', desc: 'Stay informed with intelligent, real-time alerts for matches, messages, orders, rides, and platform activity.' },
+const SOCIAL_FEATURES = [
+  'Personalized News Feed', 'Friend Requests & Connections', 'Private & Group Messaging',
+  'Voice & Video Calls', 'Stories, Photos & Videos', 'Groups & Communities',
+  'Pages & Public Profiles', 'Events & Meetups', 'Live Streaming',
+  'Real-Time Notifications', 'Privacy & Safety Controls', 'Memories & Saved Content',
+]
+const RELATIONSHIP_FEATURES = [
+  'Smart Match Discovery', 'Personalized Match Suggestions', 'Verified Profiles',
+  'Relationship Preferences', 'Interest-Based Connections', 'Secure Private Conversations',
+  'Audio & Video Dating Calls', 'Icebreaker Prompts', 'Profile Compatibility Insights',
+  'Safety Reporting & Blocking Tools',
+]
+const BUSINESS_FEATURES = [
+  'Professional Profiles', 'Business Pages', 'Marketplace Listings',
+  'Service Promotion', 'Job Opportunities', 'Business Networking',
+  'Advertising Solutions', 'Customer Engagement', 'Technology Services',
 ]
 
-const steps = [
-  {
-    num: '01', icon: UserPlus, title: 'Create Your Free Account',
-    desc: 'Sign up in under two minutes with your email address. No credit card required — your SmartzConnect journey begins immediately.',
-  },
-  {
-    num: '02', icon: Settings, title: 'Set Up Your Profile',
-    desc: 'Add your photo, interests, location, and preferences. A complete profile gets you better matches, more visibility, and stronger connections.',
-  },
-  {
-    num: '03', icon: Compass, title: 'Choose Your Experience',
-    desc: 'Explore the social feed, browse the marketplace, go live on SmartzTV, request a ride, or activate your dating profile — all from one dashboard.',
-  },
-  {
-    num: '04', icon: Users, title: 'Connect & Collaborate',
-    desc: 'Message people, join communities, follow creators, partner with businesses, and grow your personal and professional network.',
-  },
-  {
-    num: '05', icon: TrendingUp, title: 'Unlock Your Full Potential',
-    desc: 'Upgrade to Plus or Pro for unlimited access, priority placement, creator monetisation, advanced analytics, and exclusive platform benefits.',
-  },
+const STEPS = [
+  { n: '01', label: 'Create your free SmartzConnect account.' },
+  { n: '02', label: 'Verify your email address or phone number.' },
+  { n: '03', label: 'Complete your profile and personalize your interests.' },
+  { n: '04', label: 'Connect with friends, meet new people, or discover meaningful relationships.' },
+  { n: '05', label: 'Join communities, share your experiences, and engage with others.' },
+  { n: '06', label: 'Explore our marketplace, career opportunities, learning resources, and business services.' },
+  { n: '07', label: 'Start building meaningful connections that enrich your personal, social, and professional life.' },
 ]
 
-/* ─── section wrapper ─── */
-function Section({ children, bg = 'dark:bg-[#0D0A14] bg-white', id }: { children: React.ReactNode; bg?: string; id?: string }) {
+/* ── shared section shell ── */
+function Sec({ id, dark, children }: { id?: string; dark?: boolean; children: React.ReactNode }) {
   return (
-    <section id={id} className={`py-14 sm:py-20 lg:py-24 ${bg} relative overflow-hidden`}>
+    <section id={id} className={`relative overflow-hidden py-16 sm:py-20 lg:py-24 ${dark ? 'bg-black' : 'bg-[#05000d]'}`}>
       {children}
     </section>
   )
 }
 
-function SectionBadge({ icon: Icon, label, color = 'text-purple-400', bg = 'bg-purple-500/10 border-purple-500/20' }: { icon: React.ElementType; label: string; color?: string; bg?: string }) {
+/* ── pill badge ── */
+function Badge({ icon: Icon, label, pink }: { icon: React.ElementType; label: string; pink?: boolean }) {
   return (
-    <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border ${bg} mb-5`}>
-      <Icon className={`w-4 h-4 ${color}`} />
-      <span className={`text-sm font-semibold ${color}`}>{label}</span>
+    <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border mb-5 ${pink ? 'bg-pink-500/10 border-pink-500/25 text-pink-400' : 'bg-purple-500/10 border-purple-500/25 text-purple-400'}`}>
+      <Icon className="w-4 h-4" />
+      <span className="text-sm font-bold tracking-wide">{label}</span>
     </div>
   )
 }
 
-/* ══════════════════════════════════════════════════════════════════════════ */
+/* ── section heading ── */
+function Heading({ children }: { children: React.ReactNode }) {
+  return (
+    <h2 className="font-display font-black text-3xl sm:text-4xl lg:text-5xl text-white leading-tight mb-4">
+      {children}
+    </h2>
+  )
+}
+
+/* ── feature pill ── */
+function Pill({ label }: { label: string }) {
+  return (
+    <li className="flex items-center gap-2.5 text-sm text-white/75">
+      <span className="w-1.5 h-1.5 rounded-full bg-pink-500 flex-shrink-0" />
+      {label}
+    </li>
+  )
+}
+
+/* ════════════════════════════════════════════════════════════════════════════ */
 export default function HomePage() {
   return (
-    <main>
+    <main className="bg-black">
       <Hero />
 
       {/* ══ 1. ABOUT US ══════════════════════════════════════════════════════ */}
-      <Section id="about" bg="dark:bg-[#0D0A14] bg-white">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-gradient-to-b from-purple-500/5 to-transparent rounded-full blur-3xl pointer-events-none" />
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-            <motion.div {...fadeUp()}>
-              <SectionBadge icon={Globe} label="About Us" color="text-purple-400" bg="bg-purple-500/10 border-purple-500/20" />
-              <h2 className="font-display font-black text-3xl sm:text-4xl lg:text-5xl dark:text-white text-gray-900 mb-5 leading-tight">
-                Built in Africa.<br />
-                <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Built for the World.</span>
-              </h2>
-              <p className="dark:text-gray-300 text-gray-700 text-base sm:text-lg leading-relaxed mb-5">
-                SmartzConnect is Africa's first all-in-one digital super-app — born in Monrovia, Liberia and designed to serve a global community. We unify seven powerful products under a single account: social networking, smart dating, live streaming, a trusted marketplace, ride-hailing, last-mile delivery, and precision advertising.
+      <Sec dark id="about">
+        {/* BG glow */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] rounded-full bg-purple-600/8 blur-3xl" />
+        </div>
+
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+          <div className="grid lg:grid-cols-2 gap-14 lg:gap-20 items-center">
+
+            {/* Text */}
+            <motion.div {...up()}>
+              <Badge icon={Globe} label="About Us" />
+              <Heading>
+                Connecting People.<br />
+                <span className="bg-gradient-to-r from-pink-400 via-fuchsia-400 to-purple-400 bg-clip-text text-transparent">
+                  Building Relationships.
+                </span>
+              </Heading>
+              <p className="text-white/60 text-base sm:text-lg leading-relaxed mb-5">
+                SmartzConnect is a modern social technology platform designed to bring people closer together through meaningful connections, authentic relationships, and shared opportunities. We believe that every great friendship, relationship, career, business, and community begins with a single connection.
               </p>
-              <p className="dark:text-gray-400 text-gray-600 text-sm sm:text-base leading-relaxed">
-                We believe that Africans and the African diaspora deserve world-class technology that speaks their language, accepts their payment methods, and reflects their culture. SmartzConnect is that platform — and it is free to join.
+              <p className="text-white/50 text-sm sm:text-base leading-relaxed">
+                Our platform empowers people to meet new friends, build lasting relationships, connect with family, discover communities, grow professionally, promote businesses, and explore opportunities — all within one secure and engaging digital ecosystem.
               </p>
             </motion.div>
-            <motion.div {...fadeUp(0.18)} className="grid grid-cols-2 gap-3 sm:gap-4">
+
+            {/* Stat grid */}
+            <motion.div {...up(0.18)} className="grid grid-cols-2 gap-3 sm:gap-4">
               {[
-                { value: '2M+',   label: 'Active Users',       color: 'text-purple-400' },
-                { value: '195+',  label: 'Countries Reached',  color: 'text-pink-400' },
-                { value: '7',     label: 'Super-Products',     color: 'text-amber-400' },
-                { value: '8K+',   label: 'Daily Connections',  color: 'text-emerald-400' },
+                { val: 'Social',   sub: 'Networking',            grd: 'from-pink-500 to-fuchsia-600' },
+                { val: 'Dating',   sub: 'Relationships',         grd: 'from-fuchsia-500 to-purple-600' },
+                { val: 'Business', sub: 'Professional Network',  grd: 'from-purple-600 to-violet-700' },
+                { val: 'Market',   sub: 'Place & Jobs',          grd: 'from-violet-600 to-pink-600' },
               ].map(s => (
-                <div key={s.label} className="p-5 sm:p-6 rounded-2xl dark:bg-[#130E1E] bg-gray-50 border dark:border-white/6 border-gray-100 text-center">
-                  <p className={`font-display font-black text-2xl sm:text-3xl ${s.color} mb-1`}>{s.value}</p>
-                  <p className="text-xs sm:text-sm dark:text-gray-400 text-gray-600">{s.label}</p>
+                <div key={s.sub}
+                  className="p-5 sm:p-6 rounded-2xl border border-white/5 text-center relative overflow-hidden"
+                  style={{ background: 'rgba(255,255,255,0.03)' }}>
+                  <div className={`absolute inset-0 opacity-10 bg-gradient-to-br ${s.grd}`} />
+                  <p className={`font-display font-black text-lg sm:text-xl bg-gradient-to-r ${s.grd} bg-clip-text text-transparent mb-1 relative`}>{s.val}</p>
+                  <p className="text-xs sm:text-sm text-white/50 relative">{s.sub}</p>
                 </div>
               ))}
             </motion.div>
           </div>
         </div>
-      </Section>
+      </Sec>
 
-      {/* ══ 2. OUR VISION ════════════════════════════════════════════════════ */}
-      <Section bg="dark:bg-[#080510] bg-gray-50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <motion.div {...fadeUp()}>
-            <SectionBadge icon={Eye} label="Our Vision" color="text-pink-400" bg="bg-pink-500/10 border-pink-500/20" />
-            <h2 className="font-display font-black text-3xl sm:text-4xl lg:text-5xl dark:text-white text-gray-900 mb-6 leading-tight">
-              Africa's Most Trusted<br />
-              <span className="bg-gradient-to-r from-pink-400 to-orange-400 bg-clip-text text-transparent">Digital Ecosystem</span>
-            </h2>
+      {/* ══ 2. VISION ════════════════════════════════════════════════════════ */}
+      <Sec id="vision">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[300px] rounded-full bg-pink-600/6 blur-3xl" />
+        </div>
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative">
+          <motion.div {...up()}>
+            <Badge icon={Eye} label="Our Vision" pink />
+            <Heading>
+              The World's Most{' '}
+              <span className="bg-gradient-to-r from-pink-400 to-fuchsia-400 bg-clip-text text-transparent">
+                Trusted Platform
+              </span>
+            </Heading>
           </motion.div>
-          <motion.div {...fadeUp(0.15)} className="relative">
-            <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-purple-500/8 to-pink-500/8 blur-xl" />
-            <div className="relative p-7 sm:p-10 rounded-3xl dark:bg-[#130E1E] bg-white border dark:border-white/8 border-gray-100 shadow-2xl shadow-purple-500/5">
-              <p className="text-base sm:text-lg lg:text-xl dark:text-gray-200 text-gray-700 leading-relaxed">
-                To become the world's most trusted African-born digital ecosystem — a place where every person, creator, entrepreneur, and community has the tools to connect deeply, grow sustainably, earn fairly, and thrive without limits. We envision a future where African technology sets the standard for the world, and SmartzConnect leads that charge.
-              </p>
+          <motion.div {...up(0.14)}>
+            <div className="relative mx-auto max-w-3xl">
+              {/* Glow behind card */}
+              <div className="absolute -inset-1 rounded-3xl bg-gradient-to-r from-pink-600/20 via-fuchsia-600/20 to-purple-600/20 blur-xl" />
+              <div className="relative rounded-3xl border border-white/8 p-8 sm:p-12"
+                style={{ background: 'rgba(255,255,255,0.04)' }}>
+                {/* Quote marks */}
+                <div className="text-6xl font-display font-black text-pink-500/20 leading-none mb-2 select-none">"</div>
+                <p className="text-base sm:text-xl text-white/80 leading-relaxed font-medium">
+                  To become the world's most trusted platform for building meaningful social connections, lasting relationships, thriving communities, and digital opportunities that positively transform lives.
+                </p>
+                <div className="mt-6 flex items-center justify-center gap-2">
+                  <div className="h-px flex-1 bg-gradient-to-r from-transparent to-pink-500/40" />
+                  <span className="text-xs text-pink-400/70 font-bold tracking-widest uppercase">Our Vision</span>
+                  <div className="h-px flex-1 bg-gradient-to-l from-transparent to-pink-500/40" />
+                </div>
+              </div>
             </div>
           </motion.div>
         </div>
-      </Section>
+      </Sec>
 
-      {/* ══ 3. OUR MISSION ═══════════════════════════════════════════════════ */}
-      <Section bg="dark:bg-[#0D0A14] bg-white">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-            <motion.div {...fadeUp(0.12)}>
-              <div className="grid grid-cols-1 gap-3">
-                {[
-                  { icon: '🤝', title: 'Connect Meaningfully',  desc: 'Enabling authentic human connections — friendships, relationships, and professional networks that last.' },
-                  { icon: '💼', title: 'Power African Business', desc: 'Providing every entrepreneur, vendor, and creator with professional-grade tools to reach customers and grow revenue.' },
-                  { icon: '🛡️', title: 'Protect Every User',     desc: 'Delivering a safe, private, and trustworthy environment where every person can engage with full confidence.' },
-                  { icon: '🌍', title: 'Bridge the Digital Divide', desc: 'Making world-class technology accessible to everyone in Africa — regardless of device, location, or bandwidth.' },
-                ].map((item, i) => (
-                  <motion.div key={item.title} {...fadeUp(i * 0.07)}
-                    className="flex items-start gap-4 p-4 sm:p-5 rounded-2xl dark:bg-[#130E1E] bg-gray-50 border dark:border-white/6 border-gray-100">
-                    <span className="text-2xl flex-shrink-0">{item.icon}</span>
-                    <div>
-                      <p className="font-bold dark:text-white text-gray-900 text-sm sm:text-base mb-1">{item.title}</p>
-                      <p className="text-xs sm:text-sm dark:text-gray-400 text-gray-600 leading-relaxed">{item.desc}</p>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
+      {/* ══ 3. MISSION ═══════════════════════════════════════════════════════ */}
+      <Sec dark id="mission">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute right-0 top-0 w-[500px] h-[500px] rounded-full bg-purple-700/8 blur-3xl" />
+        </div>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+          <div className="grid lg:grid-cols-2 gap-14 lg:gap-20 items-center">
+
+            {/* Pillars */}
+            <motion.div {...up(0.1)} className="space-y-3 order-2 lg:order-1">
+              {[
+                { icon: '🤝', title: 'Connect Beyond Borders',    desc: 'Creating a platform where people reach across geographies to form lasting bonds.' },
+                { icon: '🛡️', title: 'Safe & Inclusive Spaces',   desc: 'A respectful environment where friendships flourish and communities unite.' },
+                { icon: '💡', title: 'Innovation at the Core',     desc: 'Building smarter technologies that make meaningful human connection effortless.' },
+                { icon: '🌱', title: 'Accessible Opportunities',   desc: 'Ensuring every person can access connections, businesses, and careers that improve their life.' },
+              ].map((p, i) => (
+                <motion.div key={p.title} {...up(0.06 * i)}
+                  className="flex items-start gap-4 p-4 sm:p-5 rounded-2xl border border-white/5 hover:border-purple-500/20 transition-colors"
+                  style={{ background: 'rgba(255,255,255,0.03)' }}>
+                  <span className="text-2xl flex-shrink-0 mt-0.5">{p.icon}</span>
+                  <div>
+                    <p className="font-bold text-white text-sm sm:text-base mb-1">{p.title}</p>
+                    <p className="text-xs sm:text-sm text-white/50 leading-relaxed">{p.desc}</p>
+                  </div>
+                </motion.div>
+              ))}
             </motion.div>
-            <motion.div {...fadeUp()}>
-              <SectionBadge icon={Target} label="Our Mission" color="text-emerald-400" bg="bg-emerald-500/10 border-emerald-500/20" />
-              <h2 className="font-display font-black text-3xl sm:text-4xl lg:text-5xl dark:text-white text-gray-900 mb-5 leading-tight">
-                Empowering People
-                <span className="bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent"> & Business</span>
-              </h2>
-              <p className="dark:text-gray-300 text-gray-700 text-base sm:text-lg leading-relaxed mb-5">
-                Our mission is to empower individuals and businesses by providing a secure, inclusive, and innovative platform where meaningful relationships are built, professional networks flourish, and economic opportunity is created for everyone.
+
+            {/* Text */}
+            <motion.div {...up()} className="order-1 lg:order-2">
+              <Badge icon={Target} label="Our Mission" />
+              <Heading>
+                Connecting People{' '}
+                <span className="bg-gradient-to-r from-purple-400 to-fuchsia-400 bg-clip-text text-transparent">
+                  Beyond Borders
+                </span>
+              </Heading>
+              <p className="text-white/60 text-base sm:text-lg leading-relaxed mb-5">
+                Our mission is to connect people beyond borders by creating a safe, inclusive, and innovative platform where friendships flourish, relationships grow, communities unite, businesses thrive, and opportunities become accessible to everyone.
               </p>
-              <p className="dark:text-gray-400 text-gray-600 text-sm sm:text-base leading-relaxed">
-                Born in Liberia. Serving 195+ countries. Guided by a single belief: that technology should lift every person it touches.
+              <p className="text-white/40 text-sm sm:text-base leading-relaxed border-l-2 border-pink-500/40 pl-4 italic">
+                "We are committed to making meaningful human connection the foundation of everything we build."
               </p>
             </motion.div>
           </div>
         </div>
-      </Section>
+      </Sec>
 
-      {/* ══ 4. OUR SERVICES ══════════════════════════════════════════════════ */}
-      <Section id="services" bg="dark:bg-[#080510] bg-gray-50">
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] rounded-full bg-purple-500/5 blur-3xl pointer-events-none" />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div {...fadeUp()} className="text-center mb-12 sm:mb-16">
-            <SectionBadge icon={Sparkles} label="Our Services" color="text-amber-400" bg="bg-amber-500/10 border-amber-500/20" />
-            <h2 className="font-display font-black text-3xl sm:text-4xl lg:text-5xl dark:text-white text-gray-900 mb-4 leading-tight">
-              Seven Products.<br />
-              <span className="bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">One Powerful Platform.</span>
-            </h2>
-            <p className="dark:text-gray-400 text-gray-600 max-w-2xl mx-auto text-base sm:text-lg">
-              Every SmartzConnect service is designed to work better together — because your social life, business, and daily needs are all connected.
+      {/* ══ 4. SERVICES ══════════════════════════════════════════════════════ */}
+      <Sec id="services">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full bg-pink-700/6 blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full bg-purple-700/6 blur-3xl" />
+        </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+          <motion.div {...up()} className="text-center mb-12 sm:mb-16">
+            <Badge icon={Sparkles} label="Our Services" pink />
+            <Heading>
+              One Platform,{' '}
+              <span className="bg-gradient-to-r from-pink-400 via-fuchsia-400 to-purple-400 bg-clip-text text-transparent">
+                Many Possibilities
+              </span>
+            </Heading>
+            <p className="text-white/50 max-w-2xl mx-auto text-base sm:text-lg">
+              SmartzConnect brings together multiple services into one connected platform — built around the most important thing: people.
             </p>
           </motion.div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
-            {services.map((s, i) => {
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
+            {SERVICES.map((s, i) => {
               const Icon = s.icon
               return (
-                <motion.div key={s.name} {...fadeUp(i * 0.06)}
-                  className="group p-5 sm:p-6 rounded-2xl dark:bg-[#130E1E] bg-white border dark:border-white/6 border-gray-100 hover:border-purple-500/30 hover:shadow-xl hover:shadow-purple-500/5 transition-all duration-300">
-                  <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${s.color} flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform`}>
+                <motion.div key={s.name} {...up(i * 0.06)}
+                  className="group p-5 sm:p-6 rounded-2xl border border-white/5 hover:border-pink-500/20 hover:shadow-2xl transition-all duration-300 relative overflow-hidden"
+                  style={{ background: 'rgba(255,255,255,0.03)' }}>
+                  {/* Hover glow */}
+                  <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br ${s.color} opacity-5`} />
+                  <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${s.color} flex items-center justify-center mb-4 shadow-lg ${s.glow} group-hover:scale-110 transition-transform duration-300`}>
                     <Icon className="w-6 h-6 text-white" />
                   </div>
-                  <div className="flex items-center gap-2 mb-2">
+                  <div className="flex items-center gap-1.5 mb-2">
                     <span className="text-lg">{s.emoji}</span>
-                    <h3 className="font-display font-black text-sm sm:text-base dark:text-white text-gray-900">{s.name}</h3>
+                    <h3 className="font-display font-black text-sm sm:text-base text-white leading-tight">{s.name}</h3>
                   </div>
-                  <p className="text-xs sm:text-sm dark:text-gray-400 text-gray-600 leading-relaxed">{s.desc}</p>
+                  <p className="text-xs sm:text-sm text-white/50 leading-relaxed relative">{s.desc}</p>
                 </motion.div>
               )
             })}
           </div>
         </div>
-      </Section>
+      </Sec>
 
       {/* ══ 5. CORE VALUES ═══════════════════════════════════════════════════ */}
-      <Section bg="dark:bg-[#0D0A14] bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div {...fadeUp()} className="text-center mb-12 sm:mb-16">
-            <SectionBadge icon={Award} label="Core Values" color="text-pink-400" bg="bg-pink-500/10 border-pink-500/20" />
-            <h2 className="font-display font-black text-3xl sm:text-4xl lg:text-5xl dark:text-white text-gray-900 mb-4 leading-tight">
-              The Principles That
-              <span className="bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent"> Guide Everything</span>
-            </h2>
-            <p className="dark:text-gray-400 text-gray-600 max-w-2xl mx-auto text-base sm:text-lg">
-              Our values are not aspirations on a wall — they are the decisions we make every day in what we build and how we serve our community.
+      <Sec dark id="values">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] rounded-full bg-purple-800/8 blur-3xl" />
+        </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+          <motion.div {...up()} className="text-center mb-12 sm:mb-16">
+            <Badge icon={Award} label="Core Values" />
+            <Heading>
+              The Principles That{' '}
+              <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                Define Us
+              </span>
+            </Heading>
+            <p className="text-white/50 max-w-xl mx-auto text-base sm:text-lg">
+              Our values are not aspirations on a wall — they are the decisions we make in everything we build.
             </p>
           </motion.div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 lg:gap-6">
-            {coreValues.map((v, i) => {
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+            {VALUES.map((v, i) => {
               const Icon = v.icon
               return (
-                <motion.div key={v.title} {...fadeUp(i * 0.08)}
-                  className="p-6 sm:p-7 rounded-2xl dark:bg-[#130E1E] bg-gray-50 border dark:border-white/6 border-gray-100 hover:border-pink-500/20 hover:shadow-lg transition-all">
-                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center mb-4 border dark:border-white/8 border-purple-100">
-                    <Icon className="w-5 h-5 text-purple-400" />
+                <motion.div key={v.title} {...up(i * 0.06)}
+                  className="p-6 rounded-2xl border border-white/5 hover:border-purple-500/25 hover:shadow-lg transition-all group relative overflow-hidden"
+                  style={{ background: 'rgba(255,255,255,0.03)' }}>
+                  {/* Accent line top */}
+                  <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-pink-500/30 to-transparent" />
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-500/15 to-purple-600/15 border border-white/8 flex items-center justify-center mb-4">
+                    <Icon className="w-5 h-5 text-pink-400" />
                   </div>
-                  <h3 className="font-display font-bold text-base sm:text-lg dark:text-white text-gray-900 mb-2">{v.title}</h3>
-                  <p className="text-xs sm:text-sm dark:text-gray-400 text-gray-600 leading-relaxed">{v.desc}</p>
+                  <h3 className="font-display font-bold text-white text-sm sm:text-base mb-2">{v.title}</h3>
+                  <p className="text-xs sm:text-sm text-white/50 leading-relaxed">{v.desc}</p>
                 </motion.div>
               )
             })}
           </div>
         </div>
-      </Section>
+      </Sec>
 
       {/* ══ 6. WHY CHOOSE US ═════════════════════════════════════════════════ */}
-      <Section bg="dark:bg-[#080510] bg-gray-50">
-        <div className="absolute top-1/2 left-0 w-[400px] h-[400px] rounded-full bg-emerald-500/4 blur-3xl pointer-events-none -translate-y-1/2" />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <Sec id="why">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-pink-700/7 blur-3xl" />
+          <div className="absolute right-0 bottom-0 w-[400px] h-[400px] rounded-full bg-purple-700/6 blur-3xl" />
+        </div>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative">
           <div className="grid lg:grid-cols-2 gap-14 lg:gap-20 items-center">
-            <motion.div {...fadeUp()}>
-              <SectionBadge icon={CheckCircle} label="Why Choose Us" color="text-emerald-400" bg="bg-emerald-500/10 border-emerald-500/20" />
-              <h2 className="font-display font-black text-3xl sm:text-4xl lg:text-5xl dark:text-white text-gray-900 mb-5 leading-tight">
-                One Platform.<br />
-                <span className="bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">Endless Possibilities.</span>
-              </h2>
-              <p className="dark:text-gray-300 text-gray-700 text-base sm:text-lg leading-relaxed mb-5">
-                SmartzConnect is not just another social app. It is a complete digital ecosystem built from the ground up to solve real African challenges — with a product suite, payment infrastructure, and community depth that no competitor offers.
+
+            {/* Text */}
+            <motion.div {...up()}>
+              <Badge icon={CheckCircle} label="Why Choose Us?" pink />
+              <Heading>
+                More Than Just{' '}
+                <span className="bg-gradient-to-r from-pink-400 to-fuchsia-400 bg-clip-text text-transparent">
+                  Another Platform
+                </span>
+              </Heading>
+              <p className="text-white/60 text-base sm:text-lg leading-relaxed mb-6">
+                SmartzConnect is a place where friendships begin, relationships grow, communities flourish, businesses connect, and opportunities become reality.
+              </p>
+              <p className="text-white/50 text-sm sm:text-base leading-relaxed mb-8">
+                With one account, you unlock everything:
               </p>
               <Link to="/register"
-                className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl bg-gradient-to-r from-purple-600 to-purple-500 text-white font-bold text-sm shadow-xl shadow-purple-600/25 hover:shadow-purple-600/40 hover:scale-105 transition-all">
+                className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl font-bold text-sm text-white shadow-xl hover:opacity-90 hover:scale-105 active:scale-100 transition-all"
+                style={{ background: 'linear-gradient(135deg, #ec4899 0%, #d946ef 50%, #9333ea 100%)', boxShadow: '0 6px 30px rgba(236,72,153,0.35)' }}>
                 Get Started Free <ArrowRight className="w-4 h-4" />
               </Link>
             </motion.div>
-            <motion.div {...fadeUp(0.15)} className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-              {whyChooseUs.map((item, i) => {
-                const Icon = item.icon
-                return (
-                  <motion.div key={item.title} {...fadeUp(i * 0.06)}
-                    className="p-4 sm:p-5 rounded-2xl dark:bg-[#130E1E] bg-white border dark:border-white/6 border-gray-100 hover:border-emerald-500/20 transition-all">
-                    <div className="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center mb-3">
-                      <Icon className="w-4 h-4 text-emerald-400" />
+
+            {/* Checklist */}
+            <motion.div {...up(0.14)}>
+              <ul className="space-y-3">
+                {WHY_LIST.map((item, i) => (
+                  <motion.li key={i} {...up(0.05 * i)}
+                    className="flex items-start gap-3.5 p-4 rounded-xl border border-white/5 hover:border-pink-500/15 transition-colors"
+                    style={{ background: 'rgba(255,255,255,0.03)' }}>
+                    <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center flex-shrink-0 mt-0.5 shadow-md shadow-pink-500/20">
+                      <CheckCircle className="w-3.5 h-3.5 text-white" />
                     </div>
-                    <h3 className="font-bold dark:text-white text-gray-900 text-xs sm:text-sm mb-1.5 leading-snug">{item.title}</h3>
-                    <p className="text-xs dark:text-gray-400 text-gray-600 leading-relaxed">{item.desc}</p>
-                  </motion.div>
-                )
-              })}
+                    <span className="text-sm text-white/70 leading-relaxed">{item}</span>
+                  </motion.li>
+                ))}
+              </ul>
             </motion.div>
           </div>
         </div>
-      </Section>
+      </Sec>
 
-      {/* ══ 7. SOCIAL & BUSINESS FEATURES ════════════════════════════════════ */}
-      <Section id="features" bg="dark:bg-[#0D0A14] bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div {...fadeUp()} className="text-center mb-12 sm:mb-16">
-            <SectionBadge icon={MessageCircle} label="Social & Business Features" color="text-violet-400" bg="bg-violet-500/10 border-violet-500/20" />
-            <h2 className="font-display font-black text-3xl sm:text-4xl lg:text-5xl dark:text-white text-gray-900 mb-4 leading-tight">
-              Everything You Need<br />
-              <span className="bg-gradient-to-r from-violet-400 to-purple-400 bg-clip-text text-transparent">In One Place</span>
-            </h2>
-            <p className="dark:text-gray-400 text-gray-600 max-w-2xl mx-auto text-base sm:text-lg">
-              From personal social experiences to professional business tools — SmartzConnect has built every feature our community asked for, all under one roof.
+      {/* ══ 7. FEATURES ══════════════════════════════════════════════════════ */}
+      <Sec dark id="features">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-0 right-1/3 w-[600px] h-[300px] rounded-full bg-purple-700/7 blur-3xl" />
+        </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+          <motion.div {...up()} className="text-center mb-12 sm:mb-16">
+            <Badge icon={Sparkles} label="Social & Relationship Features" />
+            <Heading>
+              Designed to Make Connecting{' '}
+              <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                More Meaningful
+              </span>
+            </Heading>
+            <p className="text-white/50 max-w-2xl mx-auto text-base sm:text-lg">
+              SmartzConnect is designed to make connecting easier, more meaningful, and more enjoyable — across every dimension of your life.
             </p>
           </motion.div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-            {socialFeatures.map((f, i) => (
-              <motion.div key={f.title} {...fadeUp(i * 0.07)}
-                className="group p-5 sm:p-6 rounded-2xl dark:bg-[#130E1E] bg-gray-50 border dark:border-white/6 border-gray-100 hover:border-violet-500/25 hover:shadow-lg transition-all">
-                <span className="text-3xl block mb-3">{f.emoji}</span>
-                <h3 className="font-display font-bold text-sm sm:text-base dark:text-white text-gray-900 mb-2">{f.title}</h3>
-                <p className="text-xs sm:text-sm dark:text-gray-400 text-gray-600 leading-relaxed">{f.desc}</p>
+
+          <div className="grid sm:grid-cols-3 gap-5 sm:gap-6">
+            {/* Social */}
+            <motion.div {...up(0)} className="p-6 sm:p-7 rounded-2xl border border-white/5 relative overflow-hidden"
+              style={{ background: 'rgba(255,255,255,0.03)' }}>
+              <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-pink-500 to-fuchsia-500" />
+              <div className="flex items-center gap-2.5 mb-5">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-pink-500 to-fuchsia-600 flex items-center justify-center shadow-lg shadow-pink-500/25">
+                  <Users className="w-4.5 h-4.5 text-white" />
+                </div>
+                <h3 className="font-display font-black text-base text-white">Social Features</h3>
+              </div>
+              <ul className="space-y-2.5">
+                {SOCIAL_FEATURES.map(f => <Pill key={f} label={f} />)}
+              </ul>
+            </motion.div>
+
+            {/* Relationship */}
+            <motion.div {...up(0.08)} className="p-6 sm:p-7 rounded-2xl border border-white/5 relative overflow-hidden"
+              style={{ background: 'rgba(255,255,255,0.03)' }}>
+              <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-fuchsia-500 to-purple-500" />
+              <div className="flex items-center gap-2.5 mb-5">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-fuchsia-500 to-purple-600 flex items-center justify-center shadow-lg shadow-fuchsia-500/25">
+                  <Heart className="w-4.5 h-4.5 text-white" />
+                </div>
+                <h3 className="font-display font-black text-base text-white">Relationship Features</h3>
+              </div>
+              <ul className="space-y-2.5">
+                {RELATIONSHIP_FEATURES.map(f => <Pill key={f} label={f} />)}
+              </ul>
+            </motion.div>
+
+            {/* Business */}
+            <motion.div {...up(0.16)} className="p-6 sm:p-7 rounded-2xl border border-white/5 relative overflow-hidden"
+              style={{ background: 'rgba(255,255,255,0.03)' }}>
+              <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-purple-500 to-pink-500" />
+              <div className="flex items-center gap-2.5 mb-5">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center shadow-lg shadow-purple-500/25">
+                  <Briefcase className="w-4.5 h-4.5 text-white" />
+                </div>
+                <h3 className="font-display font-black text-base text-white">Business Features</h3>
+              </div>
+              <ul className="space-y-2.5">
+                {BUSINESS_FEATURES.map(f => <Pill key={f} label={f} />)}
+              </ul>
+            </motion.div>
+          </div>
+        </div>
+      </Sec>
+
+      {/* ══ 8. HOW TO JOIN ═══════════════════════════════════════════════════ */}
+      <Sec id="join">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[700px] h-[350px] rounded-full bg-pink-700/7 blur-3xl" />
+        </div>
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+          <motion.div {...up()} className="text-center mb-12 sm:mb-16">
+            <Badge icon={UserPlus} label="How to Join" pink />
+            <Heading>
+              Start in{' '}
+              <span className="bg-gradient-to-r from-pink-400 via-fuchsia-400 to-purple-400 bg-clip-text text-transparent">
+                7 Simple Steps
+              </span>
+            </Heading>
+            <p className="text-white/50 max-w-xl mx-auto text-base sm:text-lg">
+              Becoming part of the SmartzConnect community is quick and easy.
+            </p>
+          </motion.div>
+
+          {/* Steps */}
+          <div className="space-y-3 mb-14 sm:mb-16 relative">
+            {/* Connector line */}
+            <div className="absolute left-[27px] top-12 bottom-12 w-px bg-gradient-to-b from-pink-500/40 via-fuchsia-500/40 to-purple-500/40 hidden sm:block" />
+
+            {STEPS.map((s, i) => (
+              <motion.div key={s.n} {...up(i * 0.07)}
+                className="flex items-start gap-4 p-4 sm:p-5 rounded-2xl border border-white/5 hover:border-pink-500/20 transition-colors relative"
+                style={{ background: 'rgba(255,255,255,0.03)' }}>
+                {/* Number bubble */}
+                <div className="w-14 h-14 rounded-2xl flex-shrink-0 flex items-center justify-center font-display font-black text-sm relative z-10 border border-white/8"
+                  style={{ background: 'linear-gradient(135deg, #ec4899 0%, #d946ef 50%, #9333ea 100%)', boxShadow: '0 4px 16px rgba(236,72,153,0.25)' }}>
+                  <span className="text-white">{s.n}</span>
+                </div>
+                <div className="flex-1 flex items-center min-h-[56px]">
+                  <p className="text-sm sm:text-base text-white/75 leading-relaxed">{s.label}</p>
+                </div>
               </motion.div>
             ))}
           </div>
 
-          {/* CTA strip */}
-          <motion.div {...fadeUp(0.3)} className="mt-10 sm:mt-14 p-7 sm:p-10 rounded-3xl bg-gradient-to-br from-[#1a0a2e] via-[#200d40] to-[#1a0a2e] border border-purple-500/20 text-center relative overflow-hidden">
-            <div className="absolute inset-0 pointer-events-none">
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-40 rounded-full bg-purple-600/20 blur-3xl" />
-            </div>
-            <div className="relative">
-              <h3 className="font-display font-black text-2xl sm:text-3xl text-white mb-3">Ready to experience it all?</h3>
-              <p className="text-white/60 mb-6 max-w-lg mx-auto text-sm sm:text-base">
-                Join millions of users already connecting, creating, selling, and thriving on SmartzConnect.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Link to="/register"
-                  className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl bg-gradient-to-r from-purple-600 to-purple-500 text-white font-bold text-sm shadow-xl shadow-purple-600/30 hover:shadow-purple-600/50 hover:scale-105 transition-all">
-                  Join Free Today <ArrowRight className="w-4 h-4" />
-                </Link>
-                <Link to="/app/subscriptions"
-                  className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl bg-white/10 border border-white/20 text-white font-semibold text-sm hover:bg-white/20 transition-all">
-                  View Pricing
-                </Link>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      </Section>
-
-      {/* ══ 8. HOW TO JOIN ═══════════════════════════════════════════════════ */}
-      <Section bg="dark:bg-[#080510] bg-gray-50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div {...fadeUp()} className="text-center mb-12 sm:mb-16">
-            <SectionBadge icon={UserPlus} label="How to Join" color="text-orange-400" bg="bg-orange-500/10 border-orange-500/20" />
-            <h2 className="font-display font-black text-3xl sm:text-4xl lg:text-5xl dark:text-white text-gray-900 mb-4 leading-tight">
-              Join in
-              <span className="bg-gradient-to-r from-orange-400 to-amber-400 bg-clip-text text-transparent"> 5 Simple Steps</span>
-            </h2>
-            <p className="dark:text-gray-400 text-gray-600 max-w-xl mx-auto text-base sm:text-lg">
-              Getting started with SmartzConnect takes less than two minutes. Your complete digital life — one tap away.
-            </p>
-          </motion.div>
-
-          <div className="space-y-3 sm:space-y-4 mb-10 sm:mb-14">
-            {steps.map((step, i) => {
-              const Icon = step.icon
-              return (
-                <motion.div key={step.num} {...fadeUp(i * 0.08)}
-                  className="flex items-start gap-5 p-5 sm:p-6 rounded-2xl dark:bg-[#130E1E] bg-white border dark:border-white/6 border-gray-100 hover:border-orange-500/20 hover:shadow-lg transition-all group">
-                  <div className="flex-shrink-0 w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-600 to-purple-500 flex items-center justify-center shadow-lg shadow-purple-600/20 group-hover:scale-105 transition-transform">
-                    <Icon className="w-5 h-5 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-[10px] font-black text-purple-400 tracking-widest">{step.num}</span>
-                      <h3 className="font-display font-bold text-sm sm:text-base dark:text-white text-gray-900">{step.title}</h3>
-                    </div>
-                    <p className="text-xs sm:text-sm dark:text-gray-400 text-gray-600 leading-relaxed">{step.desc}</p>
-                  </div>
-                </motion.div>
-              )
-            })}
-          </div>
-
           {/* Final CTA */}
-          <motion.div {...fadeUp(0.4)} className="text-center">
-            <Link to="/register"
-              className="inline-flex items-center gap-3 px-10 py-4 rounded-2xl bg-gradient-to-r from-purple-600 to-purple-500 text-white font-black text-base shadow-2xl shadow-purple-600/30 hover:shadow-purple-600/50 hover:scale-105 transition-all">
-              <UserPlus className="w-5 h-5" />
-              Create Your Free Account
-            </Link>
-            <p className="mt-4 text-xs dark:text-gray-500 text-gray-400">
-              No credit card required · Free forever · Upgrade anytime
+          <motion.div {...up(0.4)} className="text-center">
+            {/* Tagline banner */}
+            <div className="inline-block mb-8 px-5 py-3 rounded-2xl border border-white/8 text-center"
+              style={{ background: 'rgba(255,255,255,0.04)' }}>
+              <p className="text-xs sm:text-sm font-bold tracking-wide text-white/60">
+                <span className="text-pink-400">SmartzConnect</span>
+                <span className="mx-2 text-white/25">—</span>
+                Connecting People.
+                <span className="text-fuchsia-400 mx-1">Building Relationships.</span>
+                Creating Opportunities.
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Link to="/register"
+                className="inline-flex items-center gap-2.5 px-10 py-4 rounded-2xl font-black text-base text-white shadow-2xl hover:opacity-90 hover:scale-105 active:scale-100 transition-all"
+                style={{ background: 'linear-gradient(135deg, #ec4899 0%, #d946ef 50%, #9333ea 100%)', boxShadow: '0 8px 40px rgba(236,72,153,0.4)' }}>
+                <UserPlus className="w-5 h-5" />
+                Create Your Free Account
+              </Link>
+              <Link to="/login"
+                className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl font-bold text-sm text-white/70 border border-white/10 hover:border-white/20 hover:text-white transition-all"
+                style={{ background: 'rgba(255,255,255,0.04)' }}>
+                Already a member? Sign In
+              </Link>
+            </div>
+            <p className="mt-5 text-xs text-white/30">
+              Free to join · No credit card required · Upgrade anytime
             </p>
           </motion.div>
         </div>
-      </Section>
+      </Sec>
     </main>
   )
 }
