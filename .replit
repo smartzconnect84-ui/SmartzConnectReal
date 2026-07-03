@@ -49,3 +49,4 @@ VITE_STREAM_API_KEY = "awspcvfkzuq7"
 
 [userenv.development]
 SUPABASE_DB_URL = "postgresql://postgres.ufmuhwepyxzaldvcbipd:Afrohope2021@aws-0-eu-west-1.pooler.supabase.com:6543/postgres"
+GITHUB_PAT = "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"
