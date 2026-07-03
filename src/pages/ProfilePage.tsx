@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Camera, Edit3, Save, X, MapPin, Briefcase, GraduationCap, Heart, Shield, Crown, Settings, Bell, Lock, LogOut, ChevronRight, Check, Upload } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
@@ -12,13 +12,6 @@ const interestOptions = [
 
 const photos = ['🌅', '🎵', '🌍', '💃', '🍛', '🎨', '🏖️', '🌺']
 
-const stats = [
-  { value: '2.4K', label: 'Likes',   emoji: '❤️' },
-  { value: '89',   label: 'Posts',   emoji: '📝' },
-  { value: '342',  label: 'Matches', emoji: '💕' },
-  { value: '4.9',  label: 'Rating',  emoji: '⭐' },
-]
-
 const settingsItems = [
   { icon: Bell,    label: 'Notifications',    desc: 'Manage push & email alerts',  color: 'text-blue-500' },
   { icon: Lock,    label: 'Privacy & Safety', desc: 'Control who sees your profile', color: 'text-emerald-500' },
@@ -26,6 +19,13 @@ const settingsItems = [
   { icon: Crown,   label: 'Subscription',     desc: 'Manage your plan',            color: 'text-amber-500' },
   { icon: Settings,label: 'Account Settings', desc: 'Email, password, linked accounts', color: 'text-gray-500' },
 ]
+
+interface ProfileStats {
+  posts: number
+  matches: number
+  likes: number
+  rating: string
+}
 
 export default function ProfilePage() {
   const { user } = useAuth()
@@ -38,8 +38,29 @@ export default function ProfilePage() {
   const [photoUploading, setPhotoUploading] = useState(false)
   const [userPhotos, setUserPhotos] = useState<string[]>([])
   const [_reportOpen, _setReportOpen] = useState(false)
+  const [profileStats, setProfileStats] = useState<ProfileStats | null>(null)
   const avatarInputRef = useRef<HTMLInputElement>(null)
   const photoInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (!user) return
+    const fetchStats = async () => {
+      const [postsRes, matchesRes, likesRes] = await Promise.all([
+        supabase.from('posts').select('id', { count: 'exact', head: true }).eq('author_id', user.id),
+        supabase.from('matches').select('id', { count: 'exact', head: true })
+          .or(`user_a.eq.${user.id},user_b.eq.${user.id}`),
+        supabase.from('post_likes').select('id', { count: 'exact', head: true })
+          .in('post_id', (await supabase.from('posts').select('id').eq('author_id', user.id)).data?.map((p: any) => p.id) ?? []),
+      ])
+      setProfileStats({
+        posts: postsRes.count ?? 0,
+        matches: matchesRes.count ?? 0,
+        likes: likesRes.count ?? 0,
+        rating: '5.0',
+      })
+    }
+    fetchStats()
+  }, [user])
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -192,7 +213,12 @@ export default function ProfilePage() {
 
             {/* Stats */}
             <div className="grid grid-cols-4 gap-2">
-              {stats.map(s => (
+              {[
+                { emoji: '❤️', label: 'Likes',   value: profileStats ? String(profileStats.likes)   : '—' },
+                { emoji: '📝', label: 'Posts',   value: profileStats ? String(profileStats.posts)   : '—' },
+                { emoji: '💕', label: 'Matches', value: profileStats ? String(profileStats.matches) : '—' },
+                { emoji: '⭐', label: 'Rating',  value: profileStats ? profileStats.rating          : '—' },
+              ].map(s => (
                 <div key={s.label} className="dark:bg-[#130E1E] bg-white rounded-2xl p-3 text-center border dark:border-white/6 border-gray-100">
                   <p className="text-lg mb-0.5">{s.emoji}</p>
                   <p className="font-display font-black text-base dark:text-white text-gray-900">{s.value}</p>

@@ -3,6 +3,7 @@ import { motion, useMotionValue, useTransform, AnimatePresence } from 'framer-mo
 import { Heart, X, Star, MapPin, Briefcase, ChevronDown, RotateCcw, SlidersHorizontal, Shield, Database, RefreshCw } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/hooks/useAuth'
 
 interface Profile {
   id: number | string
@@ -185,6 +186,7 @@ function SwipeCard({ profile, onSwipe, isTop, stackIndex }: {
 }
 
 export default function DiscoverPage() {
+  const { user } = useAuth()
   const [profiles, setProfiles] = useState<Profile[]>([])
   const [loading, setLoading] = useState(true)
   const [dbConnected, setDbConnected] = useState(false)
@@ -198,10 +200,28 @@ export default function DiscoverPage() {
 
   const fetchProfiles = async () => {
     setLoading(true)
-    const { data, error } = await supabase
+    // Fetch profiles excluding the current user
+    let query = supabase
       .from('profiles')
       .select('id, full_name, date_of_birth, avatar_url, country, city, occupation, bio, interests, is_verified, subscription_tier, last_seen')
-      .limit(30)
+      .limit(50)
+
+    if (user) {
+      query = query.neq('id', user.id)
+
+      // Also fetch already-swiped IDs to exclude
+      const { data: swiped } = await supabase
+        .from('swipes')
+        .select('swiped_id')
+        .eq('swiper_id', user.id)
+
+      if (swiped && swiped.length > 0) {
+        // Use PostgREST filter format — UUID list without quotes works for uuid columns
+        query = query.not('id', 'in', `(${swiped.map((s: any) => s.swiped_id).join(',')})`)
+      }
+    }
+
+    const { data, error } = await query
 
     if (error) {
       setDbConnected(false)
@@ -232,21 +252,55 @@ export default function DiscoverPage() {
     setLoading(false)
   }
 
-  useEffect(() => { fetchProfiles() }, [])
+  useEffect(() => { fetchProfiles() }, [user])
 
   const activeProfiles = profiles.filter(p => !liked.has(p.id) && !passed.has(p.id) && !superLiked.has(p.id))
 
-  const handleSwipe = (profile: Profile, dir: 'left' | 'right' | 'super') => {
-    if (dir === 'right') {
+  const handleSwipe = async (profile: Profile, dir: 'left' | 'right' | 'super') => {
+    if (!user) return
+
+    if (dir === 'right' || dir === 'super') {
       setLiked(prev => new Set([...prev, profile.id]))
-      if (Math.random() > 0.6) {
+
+      // Persist swipe to DB (schema uses action: 'like'|'pass'|'super_like')
+      await supabase.from('swipes').upsert({
+        swiper_id: user.id,
+        swiped_id: String(profile.id),
+        action: dir === 'super' ? 'super_like' : 'like',
+      }, { onConflict: 'swiper_id,swiped_id' })
+
+      // Check if other user already swiped right on us → create match
+      const { data: theirSwipe } = await supabase
+        .from('swipes')
+        .select('id')
+        .eq('swiper_id', String(profile.id))
+        .eq('swiped_id', user.id)
+        .in('action', ['like', 'super_like'])
+        .maybeSingle()
+
+      if (theirSwipe) {
+        // It's a match — insert into matches (avoid duplicates with user_a < user_b ordering)
+        const [a, b] = [user.id, String(profile.id)].sort()
+        await supabase.from('matches').upsert(
+          { user_a: a, user_b: b },
+          { onConflict: 'user_a,user_b' }
+        )
         setShowMatch(profile)
-        setTimeout(() => setShowMatch(null), 3000)
+        setTimeout(() => setShowMatch(null), 4000)
       }
-    } else if (dir === 'super') {
-      setSuperLiked(prev => new Set([...prev, profile.id]))
+
+      if (dir === 'super') {
+        setSuperLiked(prev => new Set([...prev, profile.id]))
+        setLiked(prev => { const n = new Set(prev); n.delete(profile.id); return n })
+      }
     } else {
       setPassed(prev => new Set([...prev, profile.id]))
+      // Persist pass (schema value is 'pass')
+      await supabase.from('swipes').upsert({
+        swiper_id: user.id,
+        swiped_id: String(profile.id),
+        action: 'pass',
+      }, { onConflict: 'swiper_id,swiped_id' })
     }
   }
 

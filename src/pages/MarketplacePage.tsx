@@ -110,6 +110,14 @@ function ProductDrawer({ product, onClose, cart, onAddToCart }: {
   )
 }
 
+interface NewListing {
+  name: string
+  price: string
+  category: string
+  description: string
+  location: string
+}
+
 export default function MarketplacePage() {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
@@ -120,14 +128,16 @@ export default function MarketplacePage() {
   const [cart, setCart] = useState<Record<string | number, number>>({})
   const [wishlist, setWishlist] = useState<Set<string | number>>(new Set())
   const [showUpload, setShowUpload] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [newListing, setNewListing] = useState<NewListing>({ name: '', price: '', category: 'Fashion', description: '', location: '' })
   const { user } = useAuth()
 
   const fetchProducts = async () => {
     setLoading(true)
     let query = supabase
       .from('marketplace_items')
-      .select('id, name, price, original_price, description, category, location, seller_id, image_url, is_verified, badge, sold_count, in_stock, rating, review_count, profiles:seller_id(full_name)')
-      .eq('status', 'active')
+      .select('id, title, price, original_price, description, category, location, seller_id, image_url, is_verified, badge, sold_count, stock_qty, profiles:seller_id(full_name)')
+      .eq('is_active', true)
       .order('created_at', { ascending: false })
 
     if (activeCategory !== 'All') {
@@ -147,21 +157,19 @@ export default function MarketplacePage() {
       setDbConnected(true)
       const mapped: Product[] = (data || []).map((p: any) => ({
         id: p.id,
-        name: p.name,
+        name: p.title,                            // schema column: title
         price: p.price,
         originalPrice: p.original_price,
         description: p.description,
         category: p.category,
         location: p.location,
-        seller: p.profiles?.full_name || 'Seller',
+        seller: (p.profiles as any)?.full_name || 'Seller',
         seller_id: p.seller_id,
         image_url: p.image_url,
         verified: p.is_verified,
         badge: p.badge,
         sold: p.sold_count,
-        inStock: p.in_stock !== false,
-        rating: p.rating,
-        reviews: p.review_count,
+        inStock: (p.stock_qty ?? 1) > 0,          // schema column: stock_qty
       }))
       setProducts(mapped)
     }
@@ -186,6 +194,27 @@ export default function MarketplacePage() {
       if (next.has(id)) next.delete(id); else next.add(id)
       return next
     })
+  }
+
+  const submitListing = async () => {
+    if (!user || !newListing.name.trim() || !newListing.price) return
+    setSubmitting(true)
+    const { error } = await supabase.from('marketplace_items').insert({
+      seller_id: user.id,
+      title: newListing.name.trim(),              // schema column: title
+      price: parseFloat(newListing.price),
+      category: newListing.category,
+      description: newListing.description.trim() || null,
+      location: newListing.location.trim() || null,
+      is_active: true,                            // schema column: is_active
+      stock_qty: 1,                               // schema column: stock_qty
+    })
+    setSubmitting(false)
+    if (!error) {
+      setNewListing({ name: '', price: '', category: 'Fashion', description: '', location: '' })
+      setShowUpload(false)
+      fetchProducts()
+    }
   }
 
   const cartCount = Object.values(cart).reduce((a, b) => a + b, 0)
@@ -227,16 +256,45 @@ export default function MarketplacePage() {
               <div className="dark:bg-white/5 bg-gray-50 rounded-2xl border dark:border-white/8 border-gray-200 p-4">
                 <p className="text-sm font-bold dark:text-white text-gray-900 mb-3">List a Product</p>
                 <div className="grid grid-cols-2 gap-2 mb-2">
-                  <input placeholder="Product name" className="col-span-2 px-3 py-2 rounded-xl text-sm dark:bg-white/5 bg-white border dark:border-white/8 border-gray-200 dark:text-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-brand-pink" />
-                  <input placeholder="Price (USD)" type="number" className="px-3 py-2 rounded-xl text-sm dark:bg-white/5 bg-white border dark:border-white/8 border-gray-200 dark:text-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-brand-pink" />
-                  <select className="px-3 py-2 rounded-xl text-sm dark:bg-white/5 bg-white border dark:border-white/8 border-gray-200 dark:text-white text-gray-900 focus:outline-none focus:border-brand-pink">
-                    {categories.slice(1).map(c => <option key={c}>{c}</option>)}
+                  <input
+                    placeholder="Product name *"
+                    value={newListing.name}
+                    onChange={e => setNewListing(l => ({ ...l, name: e.target.value }))}
+                    className="col-span-2 px-3 py-2 rounded-xl text-sm dark:bg-white/5 bg-white border dark:border-white/8 border-gray-200 dark:text-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-brand-pink" />
+                  <input
+                    placeholder="Price (USD) *"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={newListing.price}
+                    onChange={e => setNewListing(l => ({ ...l, price: e.target.value }))}
+                    className="px-3 py-2 rounded-xl text-sm dark:bg-white/5 bg-white border dark:border-white/8 border-gray-200 dark:text-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-brand-pink" />
+                  <select
+                    value={newListing.category}
+                    onChange={e => setNewListing(l => ({ ...l, category: e.target.value }))}
+                    className="px-3 py-2 rounded-xl text-sm dark:bg-white/5 bg-white border dark:border-white/8 border-gray-200 dark:text-white text-gray-900 focus:outline-none focus:border-brand-pink">
+                    {categories.slice(1).map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
-                  <textarea placeholder="Description" rows={2} className="col-span-2 px-3 py-2 rounded-xl text-sm dark:bg-white/5 bg-white border dark:border-white/8 border-gray-200 dark:text-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-brand-pink resize-none" />
+                  <input
+                    placeholder="Location (optional)"
+                    value={newListing.location}
+                    onChange={e => setNewListing(l => ({ ...l, location: e.target.value }))}
+                    className="col-span-2 px-3 py-2 rounded-xl text-sm dark:bg-white/5 bg-white border dark:border-white/8 border-gray-200 dark:text-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-brand-pink" />
+                  <textarea
+                    placeholder="Description (optional)"
+                    rows={2}
+                    value={newListing.description}
+                    onChange={e => setNewListing(l => ({ ...l, description: e.target.value }))}
+                    className="col-span-2 px-3 py-2 rounded-xl text-sm dark:bg-white/5 bg-white border dark:border-white/8 border-gray-200 dark:text-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-brand-pink resize-none" />
                 </div>
                 <div className="flex gap-2">
                   <button onClick={() => setShowUpload(false)} className="flex-1 py-2 rounded-xl dark:bg-white/5 bg-white border dark:border-white/8 border-gray-200 text-sm dark:text-gray-400 text-gray-600">Cancel</button>
-                  <button className="flex-1 py-2 rounded-xl bg-love-gradient text-white text-sm font-bold">List Product</button>
+                  <button
+                    onClick={submitListing}
+                    disabled={submitting || !newListing.name.trim() || !newListing.price}
+                    className="flex-1 py-2 rounded-xl bg-love-gradient text-white text-sm font-bold disabled:opacity-50">
+                    {submitting ? 'Listing…' : 'List Product'}
+                  </button>
                 </div>
               </div>
             </motion.div>
