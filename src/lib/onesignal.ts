@@ -2,20 +2,12 @@ import { supabase } from '@/lib/supabase'
 
 const appId = import.meta.env.VITE_ONESIGNAL_APP_ID as string
 
-const PROD_HOSTNAME = 'smartzconnect.com'
-const CF_PAGES_HOSTNAME = 'smartzconnect.pages.dev'
-const isProduction = window.location.hostname === PROD_HOSTNAME ||
-  window.location.hostname.endsWith('.' + PROD_HOSTNAME) ||
-  window.location.hostname === CF_PAGES_HOSTNAME ||
-  window.location.hostname.endsWith('.' + CF_PAGES_HOSTNAME)
-
+// OneSignal initialises on any domain as long as the App ID is set.
+// Domain restrictions are configured inside the OneSignal dashboard
+// (Site URL whitelist), not in client code.
 export function initOneSignal() {
-  if (!appId) {
-    return
-  }
-  if (!isProduction) {
-    return
-  }
+  if (!appId) return   // skip silently when not configured
+  if (typeof window === 'undefined') return
 
   const script = document.createElement('script')
   script.src = 'https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js'
@@ -26,11 +18,15 @@ export function initOneSignal() {
       try {
         await OneSignal.init({
           appId,
-          safari_web_id: `web.onesignal.auto.${appId}`,
           notifyButton: { enable: false },
-          allowLocalhostAsSecureOrigin: false,
+          // Allow localhost for development/staging (HTTPS still required on prod)
+          allowLocalhostAsSecureOrigin: import.meta.env.DEV,
+          serviceWorkerParam: { scope: '/' },
+          serviceWorkerPath: 'OneSignalSDKWorker.js',
         })
-      } catch { /* ignore init error */ }
+      } catch (err) {
+        console.warn('[OneSignal] init error:', err)
+      }
     })
   }
   document.head.appendChild(script)
@@ -46,24 +42,26 @@ export async function linkOneSignalUser(userId: string) {
     await os.login(userId)
     await os.User.addTag('user_id', userId)
   } catch (err) {
-    console.warn('OneSignal user link failed:', err)
+    console.warn('[OneSignal] user link failed:', err)
   }
 }
 
 export async function unlinkOneSignalUser() {
+  if (!appId) return
   const os = (window as any).OneSignal
   if (!os) return
   try {
     await os.logout()
-  } catch { /* ignore logout error */ }
+  } catch { /* ignore */ }
 }
 
-export async function requestNotificationPermission() {
+export async function requestNotificationPermission(): Promise<boolean> {
+  if (!appId) return false
   const os = (window as any).OneSignal
   if (!os) return false
   try {
     await os.Notifications.requestPermission()
-    return os.Notifications.permission
+    return os.Notifications.permission === true
   } catch {
     return false
   }
@@ -85,6 +83,6 @@ export async function sendPushNotification({
       body: { userId, title, message, url },
     })
   } catch (err) {
-    console.warn('Push notification send failed:', err)
+    console.warn('[OneSignal] push send failed:', err)
   }
 }

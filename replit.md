@@ -51,6 +51,36 @@ supabase/
   *.sql            # Database schema (v1–v4)
 ```
 
+## Deploying to Vercel
+
+The project ships with a `vercel.json` that configures:
+- SPA fallback routing (`/* → /index.html`) so `/app/*` and `/admin/*` routes load correctly
+- Security headers (CSP, X-Frame-Options, etc.)
+- Long-lived cache headers for assets
+
+**Steps:**
+1. Connect your GitHub repo to Vercel (or `vercel --prod` from the CLI).
+2. Set the following **Environment Variables** in the Vercel dashboard (Settings → Environment Variables):
+
+| Variable | Value |
+|---|---|
+| `VITE_SUPABASE_URL` | Your Supabase project URL |
+| `VITE_SUPABASE_ANON_KEY` | Supabase anon public key |
+| `VITE_STREAM_API_KEY` | GetStream API key |
+| `VITE_LIVEKIT_WS_URL` | LiveKit WebSocket URL |
+| `VITE_ONESIGNAL_APP_ID` | OneSignal Web App ID |
+| `VITE_TURNSTILE_SITE_KEY` | Cloudflare Turnstile site key (optional) |
+
+3. Vercel auto-detects Vite. Build command: `npm run build`, output: `dist`.
+4. After deploying, add the Vercel domain (`*.vercel.app` or your custom domain) in the **OneSignal dashboard → Settings → Site URL** so push subscriptions are accepted.
+
+## OneSignal Push Notifications
+
+- The service worker is at `public/OneSignalSDKWorker.js` (served at `https://yourdomain/OneSignalSDKWorker.js`).
+- Set `VITE_ONESIGNAL_APP_ID` in Replit **and** in Vercel env vars.
+- Set `ONESIGNAL_APP_ID` and `ONESIGNAL_REST_API_KEY` as **Supabase Edge Function secrets** so the `send-push` function can trigger notifications server-side.
+- OneSignal requires HTTPS — push works on Vercel by default; for local testing set `allowLocalhostAsSecureOrigin: true` (already set when `import.meta.env.DEV` is true).
+
 ## User preferences
 
 - Leave existing project structure and stack intact unless explicitly asked to change it.
