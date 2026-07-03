@@ -259,13 +259,21 @@ export default function ChatPage() {
           </div>
         ) : connectTimeout && !connected ? (
           <div className="flex flex-col items-center justify-center h-full gap-4 text-center px-8">
-            <div className="w-14 h-14 rounded-2xl dark:bg-purple-900/20 bg-gray-100 flex items-center justify-center">
-              <WifiOff className="w-7 h-7 dark:text-pink-400 text-gray-500" />
+            <div className="w-16 h-16 rounded-2xl dark:bg-purple-900/20 bg-gray-100 flex items-center justify-center">
+              <WifiOff className="w-8 h-8 dark:text-pink-400 text-gray-400" />
             </div>
             <div>
-              <p className="font-bold dark:text-white text-gray-900 mb-1">Chat service unavailable</p>
-              <p className="text-sm dark:text-pink-300/60 text-gray-500">Messaging couldn't connect. Check that VITE_STREAM_API_KEY is set and refresh the page.</p>
+              <p className="font-bold dark:text-white text-gray-900 mb-2">Chat not available</p>
+              <p className="text-sm dark:text-pink-300/60 text-gray-500 leading-relaxed max-w-xs">
+                Real-time messaging is not configured yet. Contact support or check back soon.
+              </p>
             </div>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 rounded-xl bg-love-gradient text-white text-xs font-bold shadow-md shadow-pink-500/20 hover:opacity-90 transition-opacity"
+            >
+              Retry Connection
+            </button>
           </div>
         ) : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full gap-4 text-center px-8">
