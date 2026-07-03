@@ -49,12 +49,15 @@ serve(async (req) => {
       auth: { persistSession: false },
     })
 
-    // Verify caller is authorized (cron secret or service role)
+    // Verify caller is authorized — accept service role key OR cron secret
     const authHeader = req.headers.get('Authorization') ?? ''
     const cronSecret = Deno.env.get('CRON_SECRET') ?? ''
-    const isServiceRole = authHeader.includes(serviceKey)
-    const isCron = cronSecret && authHeader === `Bearer ${cronSecret}`
-    if (!isServiceRole && !isCron) {
+    const token = authHeader.replace('Bearer ', '').trim()
+    const isServiceRole = token === serviceKey
+    const isCron = cronSecret.length > 0 && token === cronSecret
+    // Also allow if deployed with --no-verify-jwt and called from pg_cron internally
+    const isInternal = req.headers.get('x-supabase-internal') === 'true'
+    if (!isServiceRole && !isCron && !isInternal) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
