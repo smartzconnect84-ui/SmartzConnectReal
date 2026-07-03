@@ -1,80 +1,99 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronLeft, ChevronRight, Heart, Play, Star, Users, MapPin, Sparkles } from 'lucide-react'
+import { ArrowRight, Play } from 'lucide-react'
 
 interface Slide {
+  badge: string
+  badgeColor: string
+  headlineWhite: string
+  headlinePurple: string
+  headlineOrange: string
+  sub: string
   image: string
   objectPosition: string
-  badge: string
-  headline: string
-  sub: string
-  cta: string
-  ctaLink: string
-  stat: { icon: React.ElementType; value: string; label: string }
 }
 
 const slides: Slide[] = [
   {
+    badge: 'SMARTZSOCIAL',
+    badgeColor: 'from-violet-500 to-purple-600',
+    headlineWhite: 'One feed.',
+    headlinePurple: 'Every',
+    headlineOrange: 'friend.',
+    sub: 'Share laughs, livestream the moment, and stay close to the people that make your day.',
     image: '/hero-scroll.jpg',
     objectPosition: 'center 30%',
-    badge: "✨ Africa's #1 Super-App",
-    headline: 'Connect, Date &\nThrive in Africa',
-    sub: "SmartzConnect brings you social networking, smart dating, live streaming, a marketplace, and rides — all on one platform built for Africa.",
-    cta: 'Join Free Today',
-    ctaLink: '/register',
-    stat: { icon: Sparkles, value: 'All-in-One', label: 'Super-App' },
   },
   {
-    image: '/hero-friends.jpg',
-    objectPosition: 'center 25%',
-    badge: "🌍 Africa's #1 Social Platform",
-    headline: 'Where Friendships\nBecome Forever',
-    sub: 'Join Africans building real connections, sharing moments, and creating memories that last a lifetime.',
-    cta: 'Find Your People',
-    ctaLink: '/register',
-    stat: { icon: Users, value: 'Growing', label: 'Community' },
-  },
-  {
+    badge: 'SMARTZDATING',
+    badgeColor: 'from-pink-500 to-rose-600',
+    headlineWhite: 'One match.',
+    headlinePurple: 'Every',
+    headlineOrange: 'feeling.',
+    sub: 'AI-powered compatibility that connects you with someone truly special across Africa and beyond.',
     image: '/hero-date.jpg',
     objectPosition: 'center 20%',
-    badge: '💕 Smart Matching Technology',
-    headline: 'Your Perfect Match\nIs Waiting',
-    sub: 'Our AI-powered matching engine analyses compatibility factors to connect you with someone truly special.',
-    cta: 'Start Matching',
-    ctaLink: '/register',
-    stat: { icon: Heart, value: 'Daily', label: 'New Matches' },
   },
   {
-    image: '/hero-couple.jpg',
-    objectPosition: 'center 20%',
-    badge: '👑 Love Stories Across Africa',
-    headline: 'Real Love,\nReal Connections',
-    sub: 'From Monrovia to Lagos, Nairobi to Accra — SmartzConnect is where African love stories begin and flourish.',
-    cta: 'Join Free Today',
-    ctaLink: '/register',
-    stat: { icon: Star, value: '4.9★', label: 'App Rating' },
-  },
-  {
+    badge: 'SMARTZTV',
+    badgeColor: 'from-purple-500 to-violet-600',
+    headlineWhite: 'Go live.',
+    headlinePurple: 'Get',
+    headlineOrange: 'paid.',
+    sub: 'Broadcast to millions, earn virtual gifts, and build your creator empire on SmartzTV.',
     image: '/hero-networking.jpg',
     objectPosition: 'center 25%',
-    badge: '📱 Scroll, Connect, Vibe',
-    headline: 'Your Social Feed,\nYour World',
-    sub: 'Share your life, discover trending content, go live on SmartzTV, and stay connected with your community 24/7.',
-    cta: 'Explore the Feed',
-    ctaLink: '/register',
-    stat: { icon: Play, value: 'Live', label: 'Streaming Now' },
   },
   {
+    badge: 'SMARTZRIDE',
+    badgeColor: 'from-emerald-500 to-teal-600',
+    headlineWhite: 'Book a ride.',
+    headlinePurple: 'In',
+    headlineOrange: 'seconds.',
+    sub: 'Safe, affordable ride-hailing with verified drivers and real-time tracking across Africa.',
     image: '/hero-friends.jpg',
-    objectPosition: 'center 30%',
-    badge: '🤝 Professional Networking',
-    headline: 'Connect, Grow &\nThrive Together',
-    sub: "Build your professional network, discover opportunities, and collaborate with Africa's brightest minds on one platform.",
-    cta: 'Build Your Network',
-    ctaLink: '/register',
-    stat: { icon: MapPin, value: '47+', label: 'Countries' },
+    objectPosition: 'center 25%',
   },
+  {
+    badge: 'SMARTZMARKET',
+    badgeColor: 'from-amber-500 to-orange-600',
+    headlineWhite: 'Buy & sell.',
+    headlinePurple: 'Every',
+    headlineOrange: 'thing.',
+    sub: "Africa's social marketplace — list products, accept Mobile Money, and reach millions of buyers.",
+    image: '/hero-couple.jpg',
+    objectPosition: 'center 20%',
+  },
+  {
+    badge: 'SMARTZDELIVERY',
+    badgeColor: 'from-blue-500 to-cyan-600',
+    headlineWhite: 'Deliver fast.',
+    headlinePurple: 'Earn',
+    headlineOrange: 'more.',
+    sub: 'Fast, reliable local delivery connecting vendors with customers across every neighbourhood.',
+    image: '/hero-scroll.jpg',
+    objectPosition: 'center 35%',
+  },
+  {
+    badge: 'SMARTZADS',
+    badgeColor: 'from-pink-500 to-fuchsia-600',
+    headlineWhite: 'Reach millions.',
+    headlinePurple: 'In',
+    headlineOrange: 'stantly.',
+    sub: 'Run powerful ad campaigns targeted to Africa\'s most engaged digital community.',
+    image: '/hero-networking.jpg',
+    objectPosition: 'center 30%',
+  },
+]
+
+const stats = [
+  { value: '2M+',  label: 'USERS' },
+  { value: '195+', label: 'COUNTRIES' },
+  { value: '1K+',  label: 'BUSINESSES' },
+  { value: '50+',  label: 'DRIVERS' },
+  { value: '1K+',  label: 'VENDORS' },
+  { value: '8K+',  label: 'DAILY CONNECTIONS' },
 ]
 
 export default function Hero() {
@@ -82,7 +101,6 @@ export default function Hero() {
   const [isPlaying, setIsPlaying] = useState(true)
 
   const next = useCallback(() => setCurrent(c => (c + 1) % slides.length), [])
-  const prev = useCallback(() => setCurrent(c => (c - 1 + slides.length) % slides.length), [])
 
   useEffect(() => {
     if (!isPlaying) return
@@ -91,118 +109,158 @@ export default function Hero() {
   }, [isPlaying, next])
 
   const slide = slides[current]
-  const StatIcon = slide.stat.icon
 
   return (
-    <section className="relative w-full h-[90vh] sm:h-screen min-h-[580px] max-h-[960px] overflow-hidden bg-[#0A0710]">
+    <section className="relative w-full min-h-screen overflow-hidden bg-[#080614]" style={{ paddingTop: '80px' }}>
 
-      {/* ── Slides ── */}
+      {/* ── Background image with overlay ── */}
       <AnimatePresence mode="sync">
         <motion.div
           key={current}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.9, ease: [0.25, 0.46, 0.45, 0.94] }}
-          className="absolute inset-0 bg-[#0A0710]"
+          transition={{ duration: 1.0 }}
+          className="absolute inset-0"
         >
-          {/* Ken Burns slow zoom-out on every image */}
           <motion.img
             key={`img-${current}`}
             src={slide.image}
             alt=""
-            initial={{ scale: 1.12 }}
+            initial={{ scale: 1.08 }}
             animate={{ scale: 1.0 }}
-            transition={{ duration: 6.5, ease: 'linear' }}
+            transition={{ duration: 7, ease: 'linear' }}
             className="absolute inset-0 w-full h-full object-cover"
             style={{ objectPosition: slide.objectPosition }}
           />
-          {/* Gradient overlays */}
-          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-black/10 sm:from-black/70 sm:via-black/35 sm:to-black/10" />
-          <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black/60 to-transparent" />
+          {/* Dark purple gradient overlays */}
+          <div className="absolute inset-0 bg-gradient-to-r from-[#080614]/95 via-[#080614]/75 to-[#080614]/40" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#080614]/80 via-transparent to-[#080614]/30" />
         </motion.div>
       </AnimatePresence>
 
-      {/* ── Content ── */}
-      <div className="relative z-10 h-full flex flex-col justify-center px-5 sm:px-10 lg:px-20 max-w-7xl mx-auto">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={current}
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="max-w-2xl"
-          >
-            {/* Badge */}
+      {/* ── Ambient glow orbs ── */}
+      <div className="absolute top-1/4 left-1/3 w-[500px] h-[500px] rounded-full bg-purple-600/10 blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] rounded-full bg-pink-600/8 blur-[100px] pointer-events-none" />
+
+      {/* ── Main content ── */}
+      <div className="relative z-10 max-w-7xl mx-auto px-5 sm:px-8 lg:px-12 flex flex-col justify-center min-h-[calc(100vh-80px)] pb-28">
+        <div className="max-w-2xl">
+
+          {/* Badge */}
+          <AnimatePresence mode="wait">
             <motion.div
-              initial={{ opacity: 0, x: -20 }}
+              key={`badge-${current}`}
+              initial={{ opacity: 0, x: -16 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3 }}
-              className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-white/15 backdrop-blur-md border border-white/25 text-white text-xs sm:text-sm font-semibold mb-4 sm:mb-6"
+              exit={{ opacity: 0, x: -8 }}
+              transition={{ duration: 0.45, delay: 0.1 }}
+              className="mb-5 sm:mb-6"
             >
-              {slide.badge}
+              <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r ${slide.badgeColor} text-white text-xs font-black tracking-widest`}>
+                <span className="w-1.5 h-1.5 rounded-full bg-white/80 animate-pulse" />
+                {slide.badge}
+              </span>
             </motion.div>
+          </AnimatePresence>
 
-            {/* Headline */}
-            <h1 className="font-display font-black text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl text-white leading-[1.05] mb-4 sm:mb-5 whitespace-pre-line drop-shadow-2xl">
-              {slide.headline}
-            </h1>
+          {/* Headline */}
+          <AnimatePresence mode="wait">
+            <motion.h1
+              key={`h1-${current}`}
+              initial={{ opacity: 0, y: 32 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -16 }}
+              transition={{ duration: 0.55, delay: 0.15 }}
+              className="font-display font-black text-4xl sm:text-5xl md:text-6xl lg:text-7xl leading-[1.04] mb-4 sm:mb-5"
+            >
+              <span className="text-white">{slide.headlineWhite} </span>
+              <span className="text-purple-400">{slide.headlinePurple}</span>
+              <br />
+              <span className="text-orange-400">{slide.headlineOrange}</span>
+            </motion.h1>
+          </AnimatePresence>
 
-            {/* Sub */}
-            <p className="text-sm sm:text-base lg:text-lg text-white/85 leading-relaxed mb-6 sm:mb-8 max-w-lg drop-shadow-lg">
+          {/* Sub */}
+          <AnimatePresence mode="wait">
+            <motion.p
+              key={`sub-${current}`}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.45, delay: 0.25 }}
+              className="text-sm sm:text-base lg:text-lg text-white/70 leading-relaxed mb-7 sm:mb-8 max-w-xl"
+            >
               {slide.sub}
-            </p>
+            </motion.p>
+          </AnimatePresence>
 
-            {/* CTAs */}
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-6 sm:mb-8">
-              <Link to={slide.ctaLink}
-                className="inline-flex items-center gap-1.5 sm:gap-2 px-5 sm:px-7 py-3 sm:py-3.5 rounded-xl sm:rounded-2xl bg-love-gradient text-white font-bold text-xs sm:text-sm shadow-2xl shadow-pink-500/40 hover:shadow-pink-500/60 hover:scale-105 transition-all">
-                <Heart className="w-3.5 sm:w-4 h-3.5 sm:h-4" fill="white" />
-                {slide.cta}
-              </Link>
-              <Link to="/about"
-                className="inline-flex items-center gap-1.5 sm:gap-2 px-5 sm:px-7 py-3 sm:py-3.5 rounded-xl sm:rounded-2xl bg-white/15 backdrop-blur-md border border-white/30 text-white font-semibold text-xs sm:text-sm hover:bg-white/25 transition-all">
-                Learn More
-              </Link>
-            </div>
-
-            {/* Stat pill */}
-            <div className="inline-flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl bg-white/10 backdrop-blur-md border border-white/20">
-              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-love-gradient flex items-center justify-center">
-                <StatIcon className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-white" />
-              </div>
-              <div>
-                <p className="text-white font-black text-base sm:text-lg leading-none">{slide.stat.value}</p>
-                <p className="text-white/70 text-[10px] sm:text-xs">{slide.stat.label}</p>
-              </div>
-            </div>
+          {/* CTA buttons */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.35 }}
+            className="flex flex-wrap items-center gap-3 mb-8 sm:mb-10"
+          >
+            <Link
+              to="/register"
+              className="inline-flex items-center gap-2 px-6 sm:px-8 py-3 sm:py-3.5 rounded-xl bg-gradient-to-r from-purple-600 to-purple-500 text-white font-bold text-sm sm:text-base shadow-xl shadow-purple-600/30 hover:shadow-purple-600/50 hover:from-purple-500 hover:to-purple-400 hover:scale-105 transition-all"
+            >
+              Join Now! <ArrowRight className="w-4 h-4" />
+            </Link>
+            <Link
+              to="/about"
+              className="inline-flex items-center gap-2 px-6 sm:px-8 py-3 sm:py-3.5 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 text-white font-semibold text-sm sm:text-base hover:bg-white/20 transition-all"
+            >
+              <Play className="w-4 h-4 fill-white" />
+              Explore
+            </Link>
           </motion.div>
-        </AnimatePresence>
+
+          {/* Trust badges */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.5 }}
+            className="flex flex-wrap items-center gap-4 sm:gap-6 text-white/60 text-xs sm:text-sm"
+          >
+            {['Free to join', '195+ countries', 'One identity'].map(t => (
+              <span key={t} className="flex items-center gap-1.5">
+                <svg className="w-3.5 h-3.5 text-purple-400" viewBox="0 0 14 14" fill="none">
+                  <path d="M2.5 7L5.5 10L11.5 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                {t}
+              </span>
+            ))}
+          </motion.div>
+        </div>
       </div>
 
-      {/* ── Navigation arrows ── */}
-      <button onClick={() => { prev(); setIsPlaying(false) }}
-        className="absolute left-2 sm:left-4 lg:left-6 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white/15 backdrop-blur-md border border-white/25 flex items-center justify-center text-white hover:bg-white/30 transition-all group">
-        <ChevronLeft className="w-4 sm:w-5 h-4 sm:h-5 group-hover:-translate-x-0.5 transition-transform" />
-      </button>
-      <button onClick={() => { next(); setIsPlaying(false) }}
-        className="absolute right-2 sm:right-4 lg:right-6 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white/15 backdrop-blur-md border border-white/25 flex items-center justify-center text-white hover:bg-white/30 transition-all group">
-        <ChevronRight className="w-4 sm:w-5 h-4 sm:h-5 group-hover:translate-x-0.5 transition-transform" />
-      </button>
-
-      {/* ── Dot indicators ── */}
-      <div className="absolute bottom-6 sm:bottom-8 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 sm:gap-2">
+      {/* ── Slide dots ── */}
+      <div className="absolute bottom-20 sm:bottom-24 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5">
         {slides.map((_, i) => (
-          <button key={i} onClick={() => { setCurrent(i); setIsPlaying(false) }}
-            className={`transition-all duration-300 rounded-full ${i === current ? 'w-6 sm:w-8 h-2 sm:h-2.5 bg-white' : 'w-2 sm:w-2.5 h-2 sm:h-2.5 bg-white/40 hover:bg-white/70'}`}
+          <button
+            key={i}
+            onClick={() => { setCurrent(i); setIsPlaying(false) }}
+            className={`transition-all duration-300 rounded-full ${
+              i === current ? 'w-7 h-2 bg-white' : 'w-2 h-2 bg-white/30 hover:bg-white/60'
+            }`}
           />
         ))}
       </div>
 
-      {/* ── Slide counter ── */}
-      <div className="absolute bottom-6 sm:bottom-8 right-4 sm:right-6 z-20 text-white/60 text-[10px] sm:text-xs font-mono hidden sm:block">
-        {String(current + 1).padStart(2, '0')} / {String(slides.length).padStart(2, '0')}
+      {/* ── Stats bar ── */}
+      <div className="absolute bottom-0 left-0 right-0 z-20 bg-[#0D0B1A]/80 backdrop-blur-md border-t border-white/8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8">
+          <div className="grid grid-cols-3 sm:grid-cols-6 divide-x divide-white/8">
+            {stats.map((s, i) => (
+              <div key={i} className="py-3.5 sm:py-4 px-3 sm:px-5 text-center">
+                <p className="font-display font-black text-lg sm:text-xl text-white leading-none">{s.value}</p>
+                <p className="text-[9px] sm:text-[10px] text-white/40 font-semibold tracking-wider mt-0.5">{s.label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </section>
   )
