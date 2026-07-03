@@ -96,7 +96,7 @@ export default function OnboardingPage() {
             <motion.div
               className="h-full bg-love-gradient rounded-full"
               animate={{ width: `${progress}%` }}
-              transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] as any }}
             />
           </div>
           <div className="flex justify-between mt-2.5 px-0.5">
@@ -119,7 +119,7 @@ export default function OnboardingPage() {
               initial={{ opacity: 0, x: 28 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -28 }}
-              transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] as any }}
               className="p-6 sm:p-8"
             >
               <div className="mb-6">

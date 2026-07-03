@@ -81,7 +81,7 @@ export default function AdminLoginPage() {
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] as any }}
           className="dark:bg-[#110D1B] bg-white rounded-3xl border dark:border-white/[0.07] border-gray-100/80 shadow-2xl dark:shadow-black/40 shadow-gray-200/60 p-6 sm:p-8"
         >
           <div className="mb-6">

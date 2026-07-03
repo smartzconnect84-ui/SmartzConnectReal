@@ -159,7 +159,7 @@ export default function RegisterPage() {
         <motion.div
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] as any }}
           className="bg-[#110D1F] rounded-3xl border border-white/8 shadow-2xl shadow-black/60 overflow-hidden"
         >
           <AnimatePresence mode="wait">
@@ -168,7 +168,7 @@ export default function RegisterPage() {
               initial={{ opacity: 0, x: 24 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -24 }}
-              transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] as any }}
               className="p-6 sm:p-8"
             >
               {step === 3 ? (

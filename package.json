@@ -3,11 +3,11 @@
   "version": "0.0.0",
   "type": "module",
   "engines": {
-    "node": "20.x"
+    "node": "22.x"
   },
   "scripts": {
     "dev": "vite",
-    "build": "npx tsc -b && npx vite build",
+    "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },

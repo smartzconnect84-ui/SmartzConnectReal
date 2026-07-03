@@ -88,7 +88,7 @@ export default function SpinChatPage() {
     const extraDeg = Math.random() * 360
     const totalDeg = rotation + spins * 360 + extraDeg
     setRotation(totalDeg)
-    await controls.start({ rotate: totalDeg, transition: { duration: 3 + Math.random() * 2, ease: [0.17, 0.67, 0.12, 0.99] } })
+    await controls.start({ rotate: totalDeg, transition: { duration: 3 + Math.random() * 2, ease: [0.17, 0.67, 0.12, 0.99] as any } })
     const pool = poolProfiles.filter(p => p.online || true)
     const profile = pool[Math.floor(Math.random() * pool.length)]
     setCurrentProfile(profile)

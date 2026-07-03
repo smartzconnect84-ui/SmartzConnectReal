@@ -87,7 +87,7 @@ export function AuthCard({ children, className = '' }: AuthCardProps) {
     <motion.div
       initial={{ opacity: 0, y: 18 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] as any }}
       className={`dark:bg-[#110D1B] bg-white rounded-3xl border dark:border-white/[0.07] border-gray-100/80 shadow-2xl dark:shadow-black/40 shadow-gray-200/60 overflow-hidden ${className}`}
     >
       {children}
