@@ -1,0 +1,23 @@
+# Redesign the SmartzConnect User Dashboard
+
+Redesign the SmartzConnect user login dashboard into a modern, premium, responsive social platform inspired by the best aspects of Facebook, LinkedIn, X (Twitter), Instagram, Discord, and WhatsApp while maintaining a unique SmartzConnect identity.
+
+Create a clean, fast, intuitive dashboard using React, TypeScript, Tailwind CSS, and shadcn/ui with smooth animations, beautiful spacing, rounded cards, and support for both light and dark modes.
+
+The dashboard should include:
+
+* A modern left sidebar with quick navigation to Home, News Feed, Profile, Friends, Messages, Notifications, Video & Audio Calls, Groups, Pages, Events, Marketplace, Jobs, Dating, Learning, Settings, and Help.
+* A top navigation bar with a global search, quick actions, notifications, messages, call shortcuts, and user profile menu.
+* A personalized news feed displaying posts, photos, videos, stories, reels, polls, shared content, and recommended content.
+* A right sidebar showing trending topics, suggested friends, upcoming events, birthdays, online contacts, and sponsored content.
+* Fully redesigned messaging and notification panels with real-time updates.
+* A floating "Create" button for posts, stories, live streams, groups, pages, events, and marketplace listings.
+* Quick access widgets for Video Calls, Audio Calls, Group Calls, Saved Items, Bookmarks, and Recent Activity.
+* Beautiful profile cards, statistics, engagement insights, and personalized recommendations.
+* Responsive layouts optimized for desktop, tablet, and mobile devices.
+* Fast-loading components with lazy loading, skeleton loaders, and smooth page transitions.
+* Consistent typography, modern icons, accessible UI, and excellent user experience throughout.
+* Seamless integration with SmartzConnect's seven services, including Social Networking, Dating, Marketplace, Jobs, Learning, Technology Services, and Business solutions.
+* Integration with GetStream for messaging, LiveKit for video and audio calling, OneSignal for push notifications, and the existing authentication and user management systems.
+
+The final design should feel like a premium, world-class social platform, emphasizing speed, usability, scalability, accessibility, and a polished user experience while preserving the SmartzConnect brand identity.
