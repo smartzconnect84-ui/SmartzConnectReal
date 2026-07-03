@@ -46,3 +46,6 @@ publicDir = "dist"
 VITE_SUPABASE_URL = "https://ufmuhwepyxzaldvcbipd.supabase.co"
 VITE_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVmbXVod2VweXh6YWxkdmNiaXBkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5NjgyNjAsImV4cCI6MjA5NTU0NDI2MH0.IsfvrR37yHihi-IkjeahECn-Tb72bpf72yAyJk5LfIw"
 VITE_STREAM_API_KEY = "awspcvfkzuq7"
+
+[userenv.development]
+SUPABASE_DB_URL = "postgresql://postgres.ufmuhwepyxzaldvcbipd:Afrohope2021@aws-0-eu-west-1.pooler.supabase.com:6543/postgres"
