@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Loader2, Check, ArrowLeft, Globe } from 'lucide-react'
+import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Loader2, Check, Globe } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
-const logoImg = '/logo.png'
+import { AuthLayout, AuthCard, AuthInput, AuthError, AuthLabel } from '@/components/auth/AuthLayout'
 
 const steps = ['Account', 'Profile', 'Done']
 
@@ -44,22 +44,24 @@ const passwordStrength = (pw: string) => {
   return score
 }
 
+const STRENGTH_COLORS = ['bg-red-500', 'bg-orange-500', 'bg-yellow-400', 'bg-emerald-500']
+const STRENGTH_LABELS = ['Weak', 'Fair', 'Good', 'Strong']
+const STRENGTH_TEXT   = ['text-red-500', 'text-orange-500', 'text-yellow-500', 'text-emerald-500']
+
 export default function RegisterPage() {
-  const navigate = useNavigate()
-  const { signUp } = useAuth()
-  const [step, setStep] = useState(1)
-  const [email, setEmail] = useState('')
+  const navigate    = useNavigate()
+  const { signUp }  = useAuth()
+  const [step, setStep]         = useState(1)
+  const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
-  const [name, setName] = useState('')
-  const [country, setCountry] = useState('')
-  const [showPw, setShowPw] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [agreed, setAgreed] = useState(false)
+  const [name, setName]         = useState('')
+  const [country, setCountry]   = useState('')
+  const [showPw, setShowPw]     = useState(false)
+  const [loading, setLoading]   = useState(false)
+  const [error, setError]       = useState('')
+  const [agreed, setAgreed]     = useState(false)
 
   const pwStrength = passwordStrength(password)
-  const strengthColors = ['bg-red-500', 'bg-orange-500', 'bg-yellow-500', 'bg-emerald-500']
-  const strengthLabels = ['Weak', 'Fair', 'Good', 'Strong']
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -78,174 +80,242 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen dark:bg-[#080510] bg-gray-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full bg-pink-500/4 blur-3xl" />
+    <AuthLayout>
+      {/* Step indicator */}
+      <div className="flex items-center justify-center gap-1.5 mb-6">
+        {steps.map((s, i) => (
+          <div key={s} className="flex items-center gap-1.5">
+            <div className={`flex items-center justify-center w-7 h-7 rounded-full text-xs font-black transition-all duration-300 ${
+              i + 1 < step
+                ? 'bg-emerald-500 text-white shadow-sm shadow-emerald-500/40'
+                : i + 1 === step
+                ? 'bg-love-gradient text-white shadow-md shadow-pink-500/30'
+                : 'dark:bg-white/8 bg-gray-200 dark:text-gray-500 text-gray-400'
+            }`}>
+              {i + 1 < step ? <Check className="w-3.5 h-3.5" /> : i + 1}
+            </div>
+            <span className={`text-xs font-semibold transition-colors ${
+              i + 1 === step ? 'text-brand-pink' : 'dark:text-gray-600 text-gray-400'
+            }`}>
+              {s}
+            </span>
+            {i < steps.length - 1 && (
+              <div className={`w-6 h-0.5 rounded-full mx-0.5 transition-colors ${
+                i + 1 < step ? 'bg-emerald-500' : 'dark:bg-white/8 bg-gray-200'
+              }`} />
+            )}
+          </div>
+        ))}
       </div>
 
-      <div className="w-full max-w-md relative">
-        {/* Back to website */}
-        <div className="mb-4">
-          <Link to="/" className="inline-flex items-center gap-1.5 text-xs dark:text-gray-500 text-gray-400 hover:text-brand-pink transition-colors">
-            <ArrowLeft className="w-3.5 h-3.5" />
-            Back to website
-          </Link>
-        </div>
-
-        {/* Logo */}
-        <div className="flex items-center justify-center gap-2 mb-6">
-          <img src={logoImg} alt="SmartzConnect" className="w-10 h-10 object-contain" />
-          <span className="font-display font-black text-xl">
-            <span className="text-gradient-love">Smartz</span>
-            <span className="dark:text-white text-gray-900">Connect</span>
-          </span>
-        </div>
-
-        {/* Progress steps */}
-        <div className="flex items-center justify-center gap-2 mb-6">
-          {steps.map((s, i) => (
-            <div key={s} className="flex items-center gap-2">
-              <div className={`flex items-center justify-center w-7 h-7 rounded-full text-xs font-black transition-all ${i + 1 < step ? 'bg-emerald-500 text-white' : i + 1 === step ? 'bg-love-gradient text-white shadow-md shadow-pink-500/30' : 'dark:bg-white/8 bg-gray-200 dark:text-gray-500 text-gray-400'}`}>
-                {i + 1 < step ? <Check className="w-3.5 h-3.5" /> : i + 1}
-              </div>
-              <span className={`text-xs font-semibold ${i + 1 === step ? 'text-brand-pink' : 'dark:text-gray-500 text-gray-400'}`}>{s}</span>
-              {i < steps.length - 1 && <div className={`w-8 h-0.5 rounded-full ${i + 1 < step ? 'bg-emerald-500' : 'dark:bg-white/8 bg-gray-200'}`} />}
-            </div>
-          ))}
-        </div>
-
-        <div className="dark:bg-[#130E1E] bg-white rounded-3xl border dark:border-white/8 border-gray-100 shadow-2xl shadow-pink-500/5 overflow-hidden">
-          <AnimatePresence mode="wait">
-            <motion.div key={step} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.25 }}
-              className="p-6 sm:p-8">
-
-              {step === 3 ? (
-                <div className="text-center py-6">
-                  <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-                    className="w-20 h-20 rounded-full bg-emerald-500 flex items-center justify-center mx-auto mb-4 shadow-xl shadow-emerald-500/30">
-                    <Check className="w-10 h-10 text-white" />
-                  </motion.div>
-                  <h2 className="font-display font-black text-2xl dark:text-white text-gray-900 mb-2">Account created! 🎉</h2>
-                  <p className="dark:text-gray-400 text-gray-600 text-sm">Check your email to verify your account.</p>
-                  <div className="mt-4 flex justify-center">
-                    <Loader2 className="w-5 h-5 text-brand-pink animate-spin" />
-                  </div>
+      <AuthCard>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={step}
+            initial={{ opacity: 0, x: 24 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -24 }}
+            transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+            className="p-6 sm:p-8"
+          >
+            {step === 3 ? (
+              /* ── Done state ── */
+              <div className="text-center py-8">
+                <motion.div
+                  initial={{ scale: 0, rotate: -20 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{ type: 'spring', stiffness: 280, damping: 22 }}
+                  className="w-20 h-20 rounded-full bg-emerald-500 flex items-center justify-center mx-auto mb-5 shadow-xl shadow-emerald-500/30"
+                >
+                  <Check className="w-10 h-10 text-white" />
+                </motion.div>
+                <h2 className="font-display font-black text-2xl dark:text-white text-gray-900 mb-2">
+                  Account created! 🎉
+                </h2>
+                <p className="dark:text-gray-400 text-gray-600 text-sm">
+                  Check your email to verify your account.
+                </p>
+                <div className="mt-5 flex justify-center">
+                  <Loader2 className="w-5 h-5 text-brand-pink animate-spin" />
                 </div>
-              ) : (
-                <>
-                  <h2 className="font-display font-black text-2xl dark:text-white text-gray-900 mb-1">
+              </div>
+            ) : (
+              <>
+                <div className="mb-6">
+                  <h2 className="font-display font-black text-2xl dark:text-white text-gray-900 mb-1 leading-tight">
                     {step === 1 ? 'Create Account' : 'Your Profile'}
                   </h2>
-                  <p className="text-sm dark:text-gray-400 text-gray-600 mb-6">
+                  <p className="text-sm dark:text-gray-400 text-gray-500">
                     {step === 1 ? 'Join the SmartzConnect community' : 'Tell us a bit about yourself'}
                   </p>
+                </div>
 
-                  {error && (
-                    <div className="mb-4 p-3.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-sm">{error}</div>
+                {error && <div className="mb-5"><AuthError message={error} /></div>}
+
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  {step === 1 && (
+                    <>
+                      {/* Email */}
+                      <div>
+                        <AuthLabel htmlFor="reg-email">Email Address</AuthLabel>
+                        <AuthInput
+                          id="reg-email"
+                          type="email"
+                          value={email}
+                          onChange={e => setEmail(e.target.value)}
+                          required
+                          placeholder="you@example.com"
+                          autoComplete="email"
+                          icon={<Mail className="w-4 h-4" />}
+                        />
+                      </div>
+
+                      {/* Password */}
+                      <div>
+                        <AuthLabel htmlFor="reg-pw">Password</AuthLabel>
+                        <AuthInput
+                          id="reg-pw"
+                          type={showPw ? 'text' : 'password'}
+                          value={password}
+                          onChange={e => setPassword(e.target.value)}
+                          required
+                          minLength={8}
+                          placeholder="Min. 8 characters"
+                          autoComplete="new-password"
+                          icon={<Lock className="w-4 h-4" />}
+                          rightEl={
+                            <button
+                              type="button"
+                              onClick={() => setShowPw(!showPw)}
+                              className="dark:text-gray-500 text-gray-400 hover:text-brand-pink transition-colors p-0.5"
+                              aria-label={showPw ? 'Hide password' : 'Show password'}
+                            >
+                              {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
+                          }
+                        />
+                        {/* Strength meter */}
+                        {password && (
+                          <div className="mt-2.5">
+                            <div className="flex gap-1 mb-1">
+                              {[0, 1, 2, 3].map(i => (
+                                <div
+                                  key={i}
+                                  className={`h-1 flex-1 rounded-full transition-all duration-300 ${
+                                    i < pwStrength ? STRENGTH_COLORS[pwStrength - 1] : 'dark:bg-white/8 bg-gray-200'
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                            <p className={`text-[10px] font-semibold ${STRENGTH_TEXT[pwStrength - 1] || 'text-gray-400'}`}>
+                              {STRENGTH_LABELS[pwStrength - 1] || 'Too short'}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Terms */}
+                      <label className="flex items-start gap-3 cursor-pointer group">
+                        <button
+                          type="button"
+                          role="checkbox"
+                          aria-checked={agreed}
+                          onClick={() => setAgreed(!agreed)}
+                          className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-all focus:outline-none focus:ring-2 focus:ring-brand-pink/30 ${
+                            agreed ? 'bg-brand-pink border-brand-pink' : 'dark:border-white/20 border-gray-300 group-hover:border-brand-pink/50'
+                          }`}
+                        >
+                          {agreed && <Check className="w-3 h-3 text-white" />}
+                        </button>
+                        <span className="text-xs dark:text-gray-400 text-gray-600 leading-relaxed">
+                          I agree to the{' '}
+                          <Link to="/terms" className="text-brand-pink hover:underline font-medium">Terms of Service</Link>
+                          {' '}and{' '}
+                          <Link to="/privacy" className="text-brand-pink hover:underline font-medium">Privacy Policy</Link>
+                        </span>
+                      </label>
+                    </>
                   )}
 
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                    {step === 1 && (
-                      <>
-                        <div>
-                          <label className="text-xs font-semibold dark:text-gray-400 text-gray-600 mb-1.5 block">Email Address</label>
-                          <div className="relative">
-                            <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 dark:text-gray-500 text-gray-400" />
-                            <input type="email" value={email} onChange={e => setEmail(e.target.value)} required
-                              placeholder="you@example.com"
-                              className="w-full pl-10 pr-4 py-3 rounded-xl dark:bg-white/5 bg-gray-50 border dark:border-white/8 border-gray-200 dark:text-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-brand-pink transition-colors text-sm" />
-                          </div>
-                        </div>
-                        <div>
-                          <label className="text-xs font-semibold dark:text-gray-400 text-gray-600 mb-1.5 block">Password</label>
-                          <div className="relative">
-                            <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 dark:text-gray-500 text-gray-400" />
-                            <input type={showPw ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} required minLength={8}
-                              placeholder="Min. 8 characters"
-                              className="w-full pl-10 pr-10 py-3 rounded-xl dark:bg-white/5 bg-gray-50 border dark:border-white/8 border-gray-200 dark:text-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-brand-pink transition-colors text-sm" />
-                            <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3.5 top-1/2 -translate-y-1/2">
-                              {showPw ? <EyeOff className="w-4 h-4 dark:text-gray-500 text-gray-400" /> : <Eye className="w-4 h-4 dark:text-gray-500 text-gray-400" />}
-                            </button>
-                          </div>
-                          {password && (
-                            <div className="mt-2">
-                              <div className="flex gap-1 mb-1">
-                                {[0, 1, 2, 3].map(i => (
-                                  <div key={i} className={`h-1 flex-1 rounded-full transition-all ${i < pwStrength ? strengthColors[pwStrength - 1] : 'dark:bg-white/8 bg-gray-200'}`} />
-                                ))}
-                              </div>
-                              <p className={`text-[10px] font-semibold ${pwStrength >= 3 ? 'text-emerald-500' : pwStrength >= 2 ? 'text-yellow-500' : 'text-red-500'}`}>
-                                {strengthLabels[pwStrength - 1] || 'Too short'}
-                              </p>
-                            </div>
-                          )}
-                        </div>
+                  {step === 2 && (
+                    <>
+                      {/* Full name */}
+                      <div>
+                        <AuthLabel htmlFor="reg-name">Full Name</AuthLabel>
+                        <AuthInput
+                          id="reg-name"
+                          type="text"
+                          value={name}
+                          onChange={e => setName(e.target.value)}
+                          required
+                          placeholder="e.g. Amara Kollie"
+                          autoComplete="name"
+                          icon={<User className="w-4 h-4" />}
+                        />
+                      </div>
 
-                        <label className="flex items-start gap-3 cursor-pointer">
-                          <div onClick={() => setAgreed(!agreed)}
-                            className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-all ${agreed ? 'bg-brand-pink border-brand-pink' : 'dark:border-white/20 border-gray-300'}`}>
-                            {agreed && <Check className="w-3 h-3 text-white" />}
-                          </div>
-                          <span className="text-xs dark:text-gray-400 text-gray-600 leading-relaxed">
-                            I agree to the{' '}
-                            <Link to="/terms" className="text-brand-pink hover:underline">Terms of Service</Link>
-                            {' '}and{' '}
-                            <Link to="/privacy" className="text-brand-pink hover:underline">Privacy Policy</Link>
-                          </span>
-                        </label>
-                      </>
-                    )}
-
-                    {step === 2 && (
-                      <>
-                        <div>
-                          <label className="text-xs font-semibold dark:text-gray-400 text-gray-600 mb-1.5 block">Full Name</label>
-                          <div className="relative">
-                            <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 dark:text-gray-500 text-gray-400" />
-                            <input type="text" value={name} onChange={e => setName(e.target.value)} required
-                              placeholder="e.g. Amara Kollie"
-                              className="w-full pl-10 pr-4 py-3 rounded-xl dark:bg-white/5 bg-gray-50 border dark:border-white/8 border-gray-200 dark:text-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-brand-pink transition-colors text-sm" />
+                      {/* Country */}
+                      <div>
+                        <AuthLabel htmlFor="reg-country">Country</AuthLabel>
+                        <div className="relative">
+                          <Globe className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 dark:text-gray-500 text-gray-400 pointer-events-none" />
+                          <select
+                            id="reg-country"
+                            value={country}
+                            onChange={e => setCountry(e.target.value)}
+                            required
+                            className="w-full pl-10 pr-4 py-3 rounded-xl dark:bg-white/[0.04] bg-gray-50/80 border dark:border-white/[0.08] border-gray-200 dark:text-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-pink/20 focus:border-brand-pink transition-all text-sm appearance-none cursor-pointer"
+                          >
+                            <option value="" disabled>Select your country</option>
+                            {ALL_COUNTRIES.map(c => (
+                              <option key={c} value={c} className="dark:bg-[#130E1E] bg-white">{c}</option>
+                            ))}
+                          </select>
+                          <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none">
+                            <svg className="w-4 h-4 dark:text-gray-500 text-gray-400" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                              <path d="M4 6l4 4 4-4" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
                           </div>
                         </div>
-                        <div>
-                          <label className="text-xs font-semibold dark:text-gray-400 text-gray-600 mb-1.5 block">Country</label>
-                          <div className="relative">
-                            <Globe className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 dark:text-gray-500 text-gray-400 pointer-events-none" />
-                            <select value={country} onChange={e => setCountry(e.target.value)} required
-                              className="w-full pl-10 pr-4 py-3 rounded-xl dark:bg-white/5 bg-gray-50 border dark:border-white/8 border-gray-200 dark:text-white text-gray-900 focus:outline-none focus:border-brand-pink transition-colors text-sm appearance-none cursor-pointer">
-                              <option value="" disabled>Select your country</option>
-                              {ALL_COUNTRIES.map(c => (
-                                <option key={c} value={c} className="dark:bg-[#130E1E] bg-white text-gray-900 dark:text-white">{c}</option>
-                              ))}
-                            </select>
-                          </div>
-                        </div>
-                        <div className="p-4 rounded-2xl bg-love-soft border border-pink-500/20">
-                          <p className="text-xs dark:text-gray-300 text-gray-700 leading-relaxed">
-                            🎉 Almost there! After signing up, we'll send you a confirmation email. Click the link to activate your account.
-                          </p>
-                        </div>
-                      </>
-                    )}
+                      </div>
 
-                    <button type="submit" disabled={loading || (step === 1 && !agreed)}
-                      className="w-full py-3.5 rounded-xl bg-love-gradient text-white font-bold text-sm hover:shadow-lg hover:shadow-pink-500/25 transition-all disabled:opacity-50 flex items-center justify-center gap-2">
-                      {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : step === 1 ? <><ArrowRight className="w-4 h-4" /> Continue</> : <><Check className="w-4 h-4" /> Create Account</>}
-                    </button>
-                  </form>
-                </>
-              )}
-            </motion.div>
-          </AnimatePresence>
-        </div>
+                      {/* Info banner */}
+                      <div className="p-4 rounded-2xl bg-pink-500/[0.06] border border-pink-500/[0.15]">
+                        <p className="text-xs dark:text-gray-300 text-gray-700 leading-relaxed">
+                          🎉 Almost there! After signing up, we'll send you a confirmation email. Click the link to activate your account.
+                        </p>
+                      </div>
+                    </>
+                  )}
 
-        {step < 3 && (
-          <p className="text-center mt-5 text-sm dark:text-gray-400 text-gray-600">
-            Already have an account?{' '}
-            <Link to="/login" className="text-brand-pink font-bold hover:underline">Sign in</Link>
-          </p>
-        )}
-      </div>
-    </div>
+                  {/* Submit */}
+                  <button
+                    type="submit"
+                    disabled={loading || (step === 1 && !agreed)}
+                    className="w-full py-3.5 rounded-xl bg-love-gradient text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-pink-500/20 hover:shadow-pink-500/40 hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:shadow-none mt-1"
+                  >
+                    {loading
+                      ? <><Loader2 className="w-4 h-4 animate-spin" /> Creating account...</>
+                      : step === 1
+                      ? <><span>Continue</span> <ArrowRight className="w-4 h-4" /></>
+                      : <><Check className="w-4 h-4" /> <span>Create Account</span></>
+                    }
+                  </button>
+                </form>
+              </>
+            )}
+          </motion.div>
+        </AnimatePresence>
+      </AuthCard>
+
+      {step < 3 && (
+        <p className="text-center mt-5 text-sm dark:text-gray-400 text-gray-600">
+          Already have an account?{' '}
+          <Link to="/login" className="text-brand-pink font-bold hover:underline">
+            Sign in
+          </Link>
+        </p>
+      )}
+    </AuthLayout>
   )
 }
