@@ -7,6 +7,7 @@ import {
   Users, Calendar, Gift, ChevronRight, Wifi, Camera, X
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { uploadToSufy } from '@/lib/sufy'
 import { useAuth } from '@/hooks/useAuth'
 
 // ── Types ───────────────────────────────────────────────────────────────────
@@ -148,20 +149,15 @@ function StoriesBar({ user }: { user: { id?: string; email?: string } | null }) 
     if (!file || !user?.id) return
     setUploading(true)
     try {
-      const ext = file.name.split('.').pop()
-      const path = `stories/${user.id}/${Date.now()}.${ext}`
-      const { error: uploadErr } = await supabase.storage.from('user-uploads').upload(path, file, { upsert: false })
-      if (!uploadErr) {
-        const { data: urlData } = supabase.storage.from('user-uploads').getPublicUrl(path)
-        const isVideo = file.type.startsWith('video/')
-        await supabase.from('stories').insert({
-          author_id: user.id,
-          media_url: urlData.publicUrl,
-          media_type: isVideo ? 'video' : 'image',
-          expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-        })
-        await loadStories()
-      }
+      const publicUrl = await uploadToSufy(file, 'stories')
+      const isVideo = file.type.startsWith('video/')
+      await supabase.from('stories').insert({
+        author_id: user.id,
+        media_url: publicUrl,
+        media_type: isVideo ? 'video' : 'image',
+        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      })
+      await loadStories()
     } catch { /* ignore */ }
     setUploading(false)
   }

@@ -7,6 +7,7 @@ import {
   MapPin, DollarSign, Tag, ChevronRight, CheckCircle,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { uploadToSufy } from '@/lib/sufy'
 import { useAuth } from '@/hooks/useAuth'
 
 /* ──────────────── types ──────────────── */
@@ -292,13 +293,10 @@ function ListingModal({ onClose }: { onClose: () => void }) {
   const handleImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]; if (!file || !user) return
     setUploading(true)
-    const ext = file.name.split('.').pop()
-    const path = `marketplace/${user.id}/${Date.now()}.${ext}`
-    const { error: upErr } = await supabase.storage.from('user-uploads').upload(path, file, { upsert: false })
-    if (!upErr) {
-      const { data } = supabase.storage.from('user-uploads').getPublicUrl(path)
-      setImageUrl(data.publicUrl)
-    }
+    try {
+      const publicUrl = await uploadToSufy(file, 'marketplace')
+      setImageUrl(publicUrl)
+    } catch { /* ignore */ }
     setUploading(false)
   }
 
@@ -392,14 +390,17 @@ function StoryModal({ onClose }: { onClose: () => void }) {
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]; if (!file || !user) return
     setUploading(true); setError('')
-    const ext = file.name.split('.').pop()
-    const path = `stories/${user.id}/${Date.now()}.${ext}`
-    const { error: upErr } = await supabase.storage.from('user-uploads').upload(path, file, { upsert: false })
-    if (upErr) { setError(upErr.message); setUploading(false); return }
-    const { data: urlData } = supabase.storage.from('user-uploads').getPublicUrl(path)
+    let publicUrl: string
+    try {
+      publicUrl = await uploadToSufy(file, 'stories')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Upload failed')
+      setUploading(false)
+      return
+    }
     const { error: insertErr } = await supabase.from('stories').insert({
       user_id: user.id,
-      media_url: urlData.publicUrl,
+      media_url: publicUrl,
       media_type: file.type.startsWith('video/') ? 'video' : 'image',
       expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
     })

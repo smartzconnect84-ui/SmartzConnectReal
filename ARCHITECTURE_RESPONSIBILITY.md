@@ -87,11 +87,18 @@ Every workflow above has exactly one entry point, one data owner, one processing
 
 ## Two concrete gaps vs. the target architecture (only real drift found)
 
-1. **Storage (open):** Media binaries currently live in Supabase Storage buckets (`user-uploads`, `db-backups`, and the buckets declared in `schema_v6_addendum.sql`). Per the target architecture, this should move to SUFY.com, with Supabase retaining only URL/metadata columns. Not yet migrated — pending SUFY.com credentials/SDK.
+1. **Storage (resolved):** Media binaries previously lived in Supabase Storage buckets (`user-uploads`, `db-backups`). Now SUFY.com (S3-protocol compatible object storage) is the single owner of binary storage:
+   - `supabase/functions/_shared/sufyStorage.ts` — SigV4 client (via `aws4fetch`) for presigning PUT URLs and issuing deletes against the SUFY bucket. Credentials (`SUFY_ACCESS_KEY_ID`, `SUFY_SECRET_ACCESS_KEY`, `SUFY_BUCKET`, `SUFY_REGION`) live only in Edge Function secrets, never reach the browser.
+   - `supabase/functions/sufy-presign/index.ts` — authenticated (via `requireUser`) endpoint that issues a short-lived presigned PUT URL scoped to `<folder>/<caller's own user id>/...`, so a user can never be issued a URL outside their own namespace.
+   - `supabase/functions/sufy-delete/index.ts` — authenticated delete, rejects any key that doesn't contain the caller's own user id segment.
+   - `src/lib/sufy.ts` — frontend helper (`uploadToSufy`, `deleteFromSufy`, `sufyKeyFromUrl`) that calls the presign function, then PUTs the file straight to SUFY from the browser. Supabase never sees the binary.
+   - Call sites migrated off `supabase.storage`: avatar/cover/photo uploads and photo delete in `ProfilePage.tsx`, story upload in `FeedPage.tsx`, and marketplace image + story upload in `CreateModal.tsx`.
+   - Supabase's `platform_files` table (already had the right columns: `file_url`, `user_id`, `entity_type`, `entity_id`, `bucket`, `is_public`, with RLS scoping every row to its owner) is now used as the reference-row owner for profile photos, replacing the old `storage.list()` bucket-listing approach.
+   - Result: SUFY.com owns every binary; Supabase owns only the URL/metadata reference row. No duplication.
 2. **Session Service (resolved):** Token signing for Stream and LiveKit was implemented twice (once per provider) inside Supabase Edge Functions. Consolidated into `supabase/functions/_shared/sessionService.ts`, which is now the single place that:
    - Verifies the caller's Supabase identity (`requireUser`)
    - Builds and signs every external-service JWT (`signJwtHS256`)
    - Produces consistent CORS/JSON responses
    `supabase/functions/stream-token/index.ts` and `supabase/functions/livekit-token/index.ts` now both call into this shared module instead of duplicating HMAC-SHA256 signing logic. No behavior change — same headers, same claims, same expiry windows (Stream: 24h, LiveKit: 6h) — only the duplicated signing code was removed.
 
-Next up: SUFY.com storage integration (gap #1), as you requested.
+Both identified gaps are now resolved. No feature has two Primary Owners; SUFY.com and the Session Service are each a single, non-duplicated point of ownership.

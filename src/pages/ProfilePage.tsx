@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
+import { uploadToSufy, deleteFromSufy, sufyKeyFromUrl } from '@/lib/sufy'
 
 const interestOptions = [
   'Music', 'Travel', 'Cooking', 'Art', 'Tech', 'Fitness', 'Fashion', 'Gaming',
@@ -125,12 +126,15 @@ export default function ProfilePage() {
 
   const loadPhotos = useCallback(async () => {
     if (!user) return
-    const { data } = await supabase.storage.from('user-uploads').list(`photos/${user.id}`, { limit: 30 })
+    const { data } = await supabase
+      .from('platform_files')
+      .select('file_url')
+      .eq('user_id', user.id)
+      .eq('entity_type', 'profile_photo')
+      .order('created_at', { ascending: false })
+      .limit(30)
     if (data) {
-      const urls = data.map(f =>
-        supabase.storage.from('user-uploads').getPublicUrl(`photos/${user.id}/${f.name}`).data.publicUrl
-      )
-      setUserPhotos(urls)
+      setUserPhotos(data.map((f: any) => f.file_url))
     }
   }, [user])
 
@@ -145,15 +149,9 @@ export default function ProfilePage() {
     if (!file || !user) return
     setUploading(true)
     try {
-      const ext = file.name.split('.').pop()
-      const path = `avatars/${user.id}.${ext}`
-      const { error } = await supabase.storage.from('user-uploads').upload(path, file, { upsert: true })
-      if (!error) {
-        const { data } = supabase.storage.from('user-uploads').getPublicUrl(path)
-        const url = data.publicUrl + '?t=' + Date.now()
-        setAvatarUrl(url)
-        await supabase.from('profiles').update({ avatar_url: data.publicUrl }).eq('id', user.id)
-      }
+      const publicUrl = await uploadToSufy(file, 'avatars')
+      setAvatarUrl(publicUrl + '?t=' + Date.now())
+      await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', user.id)
     } catch { /* ignore */ }
     setUploading(false)
   }
@@ -163,15 +161,9 @@ export default function ProfilePage() {
     if (!file || !user) return
     setCoverUploading(true)
     try {
-      const ext = file.name.split('.').pop()
-      const path = `covers/${user.id}.${ext}`
-      const { error } = await supabase.storage.from('user-uploads').upload(path, file, { upsert: true })
-      if (!error) {
-        const { data } = supabase.storage.from('user-uploads').getPublicUrl(path)
-        const url = data.publicUrl + '?t=' + Date.now()
-        setCoverUrl(url)
-        await supabase.from('profiles').update({ cover_url: data.publicUrl }).eq('id', user.id)
-      }
+      const publicUrl = await uploadToSufy(file, 'covers')
+      setCoverUrl(publicUrl + '?t=' + Date.now())
+      await supabase.from('profiles').update({ cover_url: publicUrl }).eq('id', user.id)
     } catch { /* ignore */ }
     setCoverUploading(false)
   }
@@ -181,23 +173,27 @@ export default function ProfilePage() {
     if (!file || !user) return
     setPhotoUploading(true)
     try {
-      const ext = file.name.split('.').pop()
-      const path = `photos/${user.id}/${Date.now()}.${ext}`
-      const { error } = await supabase.storage.from('user-uploads').upload(path, file, { upsert: false })
-      if (!error) {
-        const { data } = supabase.storage.from('user-uploads').getPublicUrl(path)
-        setUserPhotos(prev => [data.publicUrl, ...prev])
-      }
+      const publicUrl = await uploadToSufy(file, 'photos')
+      await supabase.from('platform_files').insert({
+        user_id: user.id,
+        file_url: publicUrl,
+        entity_type: 'profile_photo',
+        entity_id: user.id,
+        bucket: 'sufy',
+        is_public: true,
+      })
+      setUserPhotos(prev => [publicUrl, ...prev])
     } catch { /* ignore */ }
     setPhotoUploading(false)
   }
 
   const handleDeletePhoto = async (url: string) => {
     if (!user) return
-    const parts = url.split(`/user-uploads/`)
-    if (parts.length < 2) { setUserPhotos(prev => prev.filter(u => u !== url)); return }
-    const filePath = parts[1].split('?')[0]
-    await supabase.storage.from('user-uploads').remove([filePath])
+    const key = sufyKeyFromUrl(url)
+    try {
+      if (key) await deleteFromSufy(key)
+      await supabase.from('platform_files').delete().eq('user_id', user.id).eq('file_url', url)
+    } catch { /* ignore */ }
     setUserPhotos(prev => prev.filter(u => u !== url))
   }
 
