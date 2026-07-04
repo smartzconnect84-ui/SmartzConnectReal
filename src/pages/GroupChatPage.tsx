@@ -187,19 +187,19 @@ export default function GroupChatPage() {
   })
 
   return (
-    <div className="h-full flex dark:bg-[#0A0710] bg-gray-50">
+    <div className="h-full flex dark:bg-pink-50 bg-gray-50">
 
       {/* Room list */}
-      <div className={`flex flex-col w-full lg:w-80 xl:w-96 flex-shrink-0 dark:bg-[#0D0A14] bg-white border-r dark:border-purple-900/20 border-gray-100 ${activeRoom ? 'hidden lg:flex' : 'flex'}`}>
-        <div className="px-4 pt-5 pb-3 border-b dark:border-purple-900/20 border-gray-100">
+      <div className={`flex flex-col w-full lg:w-80 xl:w-96 flex-shrink-0 dark:bg-white bg-white border-r dark:border-pink-200 border-gray-100 ${activeRoom ? 'hidden lg:flex' : 'flex'}`}>
+        <div className="px-4 pt-5 pb-3 border-b dark:border-pink-200 border-gray-100">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="font-display font-black text-xl dark:text-white text-gray-900">Groups 💬</h1>
-              <p className="text-xs dark:text-pink-300/60 text-gray-500">{rooms.length > 0 ? `${rooms.length} rooms` : 'No rooms yet'}</p>
+              <h1 className="font-display font-black text-xl dark:text-gray-900 text-gray-900">Groups 💬</h1>
+              <p className="text-xs dark:text-gray-500 text-gray-500">{rooms.length > 0 ? `${rooms.length} rooms` : 'No rooms yet'}</p>
             </div>
             <div className="flex gap-1.5">
-              <button onClick={fetchRooms} className="w-8 h-8 rounded-xl dark:bg-white/5 bg-gray-100 flex items-center justify-center hover:text-brand-pink transition-colors">
-                <RefreshCw className="w-3.5 h-3.5 dark:text-gray-400 text-gray-600" />
+              <button onClick={fetchRooms} className="w-8 h-8 rounded-xl dark:bg-pink-100 bg-gray-100 flex items-center justify-center hover:text-brand-pink transition-colors">
+                <RefreshCw className="w-3.5 h-3.5 dark:text-gray-600 text-gray-600" />
               </button>
               <button onClick={() => setShowCreateModal(true)} className="w-8 h-8 rounded-xl bg-love-gradient flex items-center justify-center hover:opacity-90 transition-opacity">
                 <Plus className="w-4 h-4 text-white" />
@@ -207,14 +207,14 @@ export default function GroupChatPage() {
             </div>
           </div>
           <div className="relative mb-3">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 dark:text-gray-500 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 dark:text-gray-400 text-gray-400" />
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search rooms…"
-              className="w-full pl-9 pr-4 py-2.5 rounded-xl dark:bg-purple-900/10 dark:border dark:border-purple-500/15 bg-gray-50 border border-gray-200 text-sm dark:text-white text-gray-900 placeholder:dark:text-purple-400/50 placeholder:text-gray-400 focus:outline-none focus:dark:border-pink-500/30 transition-colors" />
+              className="w-full pl-9 pr-4 py-2.5 rounded-xl dark:bg-pink-50 dark:border dark:border-pink-200 bg-gray-50 border border-gray-200 text-sm dark:text-gray-900 text-gray-900 placeholder:dark:text-gray-400 placeholder:text-gray-400 focus:outline-none focus:dark:border-pink-400 transition-colors" />
           </div>
           <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-hide">
             {categories.map(cat => (
               <button key={cat} onClick={() => setActiveCategory(cat)}
-                className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${activeCategory === cat ? 'bg-love-gradient text-white' : 'dark:bg-white/5 bg-gray-100 dark:text-purple-300/70 text-gray-600 hover:text-brand-pink'}`}>
+                className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${activeCategory === cat ? 'bg-love-gradient text-white' : 'dark:bg-pink-100 bg-gray-100 dark:text-gray-600 text-gray-600 hover:text-brand-pink'}`}>
                 {categoryEmojis[cat] || ''} {cat}
               </button>
             ))}
@@ -225,37 +225,37 @@ export default function GroupChatPage() {
           {loadingRooms ? (
             <div className="flex flex-col items-center justify-center py-16 gap-3">
               <div className="w-8 h-8 rounded-full border-2 border-pink-500/30 border-t-pink-500 animate-spin" />
-              <p className="text-sm dark:text-pink-300/60 text-gray-500">Loading rooms…</p>
+              <p className="text-sm dark:text-gray-500 text-gray-500">Loading rooms…</p>
             </div>
           ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 gap-4 text-center px-6">
               <div className="text-4xl">💬</div>
               <div>
-                <p className="font-bold dark:text-white text-gray-900 mb-1">No group rooms yet</p>
-                <p className="text-sm dark:text-pink-300/60 text-gray-500">Create the first community room!</p>
+                <p className="font-bold dark:text-gray-900 text-gray-900 mb-1">No group rooms yet</p>
+                <p className="text-sm dark:text-gray-500 text-gray-500">Create the first community room!</p>
               </div>
               <button onClick={() => setShowCreateModal(true)} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-love-gradient text-white text-sm font-bold">
                 <Plus className="w-4 h-4" /> Create Room
               </button>
             </div>
           ) : (
-            <div className="divide-y dark:divide-purple-900/15 divide-gray-50">
+            <div className="divide-y dark:divide-pink-100 divide-gray-50">
               {filtered.map((room, i) => (
                 <motion.div key={room.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.02 }}
                   onClick={() => openRoom(room)}
-                  className={`flex items-center gap-3 px-4 py-3.5 cursor-pointer transition-colors ${activeRoom?.id === room.id ? 'dark:bg-purple-900/20 bg-pink-50' : 'hover:dark:bg-purple-900/10 hover:bg-pink-50/30'}`}>
-                  <div className="w-12 h-12 rounded-2xl dark:bg-purple-900/20 bg-gray-100 flex items-center justify-center text-2xl flex-shrink-0">{room.emoji}</div>
+                  className={`flex items-center gap-3 px-4 py-3.5 cursor-pointer transition-colors ${activeRoom?.id === room.id ? 'dark:bg-pink-100 bg-pink-50' : 'hover:dark:bg-pink-50 hover:bg-pink-50/30'}`}>
+                  <div className="w-12 h-12 rounded-2xl dark:bg-pink-100 bg-gray-100 flex items-center justify-center text-2xl flex-shrink-0">{room.emoji}</div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-0.5">
                       <div className="flex items-center gap-1.5 min-w-0">
-                        <span className="font-bold text-sm dark:text-white text-gray-900 truncate">{room.name}</span>
-                        {room.type === 'private' && <Lock className="w-3 h-3 dark:text-purple-400 text-gray-400 flex-shrink-0" />}
+                        <span className="font-bold text-sm dark:text-gray-900 text-gray-900 truncate">{room.name}</span>
+                        {room.type === 'private' && <Lock className="w-3 h-3 dark:text-gray-500 text-gray-400 flex-shrink-0" />}
                         {room.pinned && <Crown className="w-3 h-3 text-amber-400 flex-shrink-0" />}
                       </div>
-                      <span className="text-[10px] dark:text-pink-400/50 text-gray-400 flex-shrink-0 ml-2">{room.lastTime}</span>
+                      <span className="text-[10px] dark:text-gray-400 text-gray-400 flex-shrink-0 ml-2">{room.lastTime}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <p className="text-xs dark:text-purple-300/60 text-gray-500 truncate">{room.topic || `${room.members} members`}</p>
+                      <p className="text-xs dark:text-gray-500 text-gray-500 truncate">{room.topic || `${room.members} members`}</p>
                       {room.unread > 0 && (
                         <span className="w-5 h-5 rounded-full bg-brand-pink text-white text-[9px] font-black flex items-center justify-center flex-shrink-0 ml-1">{room.unread}</span>
                       )}
@@ -269,23 +269,23 @@ export default function GroupChatPage() {
       </div>
 
       {/* Chat panel */}
-      <div className={`flex-1 flex flex-col dark:bg-[#0A0710] bg-gray-50 ${activeRoom ? 'flex' : 'hidden lg:flex'}`}>
+      <div className={`flex-1 flex flex-col dark:bg-pink-50 bg-gray-50 ${activeRoom ? 'flex' : 'hidden lg:flex'}`}>
         {activeRoom ? (
           <>
             {/* Chat header */}
-            <div className="flex items-center gap-3 px-4 py-3.5 dark:bg-[#0D0A14] bg-white border-b dark:border-purple-900/20 border-gray-100 flex-shrink-0">
-              <button onClick={() => setActiveRoom(null)} className="lg:hidden w-8 h-8 rounded-lg dark:bg-white/5 bg-gray-100 flex items-center justify-center">
-                <X className="w-4 h-4 dark:text-gray-400 text-gray-600" />
+            <div className="flex items-center gap-3 px-4 py-3.5 dark:bg-white bg-white border-b dark:border-pink-200 border-gray-100 flex-shrink-0">
+              <button onClick={() => setActiveRoom(null)} className="lg:hidden w-8 h-8 rounded-lg dark:bg-pink-100 bg-gray-100 flex items-center justify-center">
+                <X className="w-4 h-4 dark:text-gray-700 text-gray-600" />
               </button>
-              <div className="w-10 h-10 rounded-2xl dark:bg-purple-900/20 bg-gray-100 flex items-center justify-center text-xl">{activeRoom.emoji}</div>
+              <div className="w-10 h-10 rounded-2xl dark:bg-pink-100 bg-gray-100 flex items-center justify-center text-xl">{activeRoom.emoji}</div>
               <div className="flex-1">
-                <p className="font-bold dark:text-white text-gray-900">{activeRoom.name}</p>
-                <p className="text-xs dark:text-pink-300/60 text-gray-500">
+                <p className="font-bold dark:text-gray-900 text-gray-900">{activeRoom.name}</p>
+                <p className="text-xs dark:text-gray-500 text-gray-500">
                   {activeRoom.members > 0 ? `${activeRoom.members.toLocaleString()} members` : activeRoom.topic}
                 </p>
               </div>
-              <button onClick={() => setShowMembers(!showMembers)} className="w-8 h-8 rounded-xl dark:bg-white/5 bg-gray-100 flex items-center justify-center hover:text-brand-pink transition-colors">
-                <Users className="w-4 h-4 dark:text-purple-300/60 text-gray-600" />
+              <button onClick={() => setShowMembers(!showMembers)} className="w-8 h-8 rounded-xl dark:bg-pink-100 bg-gray-100 flex items-center justify-center hover:text-brand-pink transition-colors">
+                <Users className="w-4 h-4 dark:text-gray-600 text-gray-600" />
               </button>
             </div>
 
@@ -294,24 +294,24 @@ export default function GroupChatPage() {
               {loadingMsgs ? (
                 <div className="flex flex-col items-center justify-center h-full gap-3">
                   <div className="w-8 h-8 rounded-full border-2 border-pink-500/30 border-t-pink-500 animate-spin" />
-                  <p className="text-sm dark:text-pink-300/60 text-gray-500">Loading messages…</p>
+                  <p className="text-sm dark:text-gray-500 text-gray-500">Loading messages…</p>
                 </div>
               ) : messages.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full gap-3 text-center px-8">
                   <div className="text-4xl">{activeRoom.emoji}</div>
-                  <p className="font-bold dark:text-white text-gray-900">Start the conversation!</p>
-                  <p className="text-sm dark:text-pink-300/60 text-gray-500">Be the first to say something in {activeRoom.name}</p>
+                  <p className="font-bold dark:text-gray-900 text-gray-900">Start the conversation!</p>
+                  <p className="text-sm dark:text-gray-500 text-gray-500">Be the first to say something in {activeRoom.name}</p>
                 </div>
               ) : (
                 messages.map((msg) => (
                   <div key={msg.id} className={`flex ${msg.mine ? 'justify-end' : 'justify-start'} gap-2`}>
                     {!msg.mine && (
-                      <div className="w-8 h-8 rounded-full dark:bg-purple-900/20 bg-gray-100 flex items-center justify-center text-sm flex-shrink-0 mt-1">{msg.emoji}</div>
+                      <div className="w-8 h-8 rounded-full dark:bg-pink-100 bg-gray-100 flex items-center justify-center text-sm flex-shrink-0 mt-1">{msg.emoji}</div>
                     )}
-                    <div className={`max-w-[75%] ${msg.mine ? '' : ''}`}>
+                    <div className={`max-w-[75%]`}>
                       {!msg.mine && (
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="text-xs font-bold dark:text-pink-300 text-gray-700">{msg.author}</span>
+                          <span className="text-xs font-bold dark:text-gray-700 text-gray-700">{msg.author}</span>
                           {msg.role === 'admin' && <Shield className="w-3 h-3 text-purple-400" />}
                         </div>
                       )}
@@ -319,12 +319,12 @@ export default function GroupChatPage() {
                         msg.mine
                           ? 'bg-love-gradient text-white rounded-br-sm'
                           : msg.role === 'admin'
-                            ? 'dark:bg-purple-800/30 dark:border dark:border-purple-500/20 bg-purple-50 dark:text-purple-200 text-purple-900 rounded-bl-sm'
-                            : 'dark:bg-purple-900/20 dark:border dark:border-purple-500/10 bg-gray-100 dark:text-pink-50 text-gray-900 rounded-bl-sm'
+                            ? 'dark:bg-purple-100 dark:border dark:border-purple-200 bg-purple-50 dark:text-purple-900 text-purple-900 rounded-bl-sm'
+                            : 'dark:bg-white dark:border dark:border-pink-200 bg-gray-100 dark:text-gray-900 text-gray-900 rounded-bl-sm dark:shadow-sm'
                       }`}>
                         {msg.text}
                       </div>
-                      <p className={`text-[10px] mt-1 dark:text-pink-400/40 text-gray-400 ${msg.mine ? 'text-right' : ''}`}>{msg.time}</p>
+                      <p className={`text-[10px] mt-1 dark:text-gray-400 text-gray-400 ${msg.mine ? 'text-right' : ''}`}>{msg.time}</p>
                     </div>
                   </div>
                 ))
@@ -333,13 +333,13 @@ export default function GroupChatPage() {
             </div>
 
             {/* Input */}
-            <div className="px-3 py-3 dark:bg-[#0D0A14] bg-white border-t dark:border-purple-900/20 border-gray-100 flex-shrink-0">
-              <div className="flex items-center gap-2 dark:bg-purple-900/10 dark:border dark:border-purple-500/15 bg-gray-100 border border-transparent rounded-2xl px-3 py-2 focus-within:dark:border-pink-500/30">
+            <div className="px-3 py-3 dark:bg-white bg-white border-t dark:border-pink-200 border-gray-100 flex-shrink-0">
+              <div className="flex items-center gap-2 dark:bg-pink-50 dark:border dark:border-pink-200 bg-gray-100 border border-transparent rounded-2xl px-3 py-2 focus-within:dark:border-pink-400">
                 <span className="text-lg cursor-default">😊</span>
                 <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && sendMsg()}
                   placeholder="Message the group…"
-                  className="flex-1 bg-transparent text-sm dark:text-pink-50 text-gray-900 placeholder:dark:text-purple-400/50 placeholder:text-gray-400 focus:outline-none" />
-                <button onClick={() => {}} className="dark:text-purple-400/60 text-gray-400 hover:text-brand-pink transition-colors"><Mic className="w-4 h-4" /></button>
+                  className="flex-1 bg-transparent text-sm dark:text-gray-900 text-gray-900 placeholder:dark:text-gray-400 placeholder:text-gray-400 focus:outline-none" />
+                <button onClick={() => {}} className="dark:text-gray-400 text-gray-400 hover:text-brand-pink transition-colors"><Mic className="w-4 h-4" /></button>
                 <button onClick={sendMsg} disabled={!input.trim() || sending}
                   className="w-8 h-8 rounded-xl bg-love-gradient flex items-center justify-center disabled:opacity-40 hover:opacity-90 transition-all">
                   {sending ? <Loader2 className="w-3.5 h-3.5 text-white animate-spin" /> : <Send className="w-3.5 h-3.5 text-white" />}
@@ -351,8 +351,8 @@ export default function GroupChatPage() {
           <div className="flex-1 flex flex-col items-center justify-center gap-4">
             <div className="text-5xl">💬</div>
             <div className="text-center">
-              <p className="font-bold dark:text-white text-gray-900 mb-1">Select a room</p>
-              <p className="text-sm dark:text-pink-300/60 text-gray-500">Choose a group from the list to start chatting</p>
+              <p className="font-bold dark:text-gray-900 text-gray-900 mb-1">Select a room</p>
+              <p className="text-sm dark:text-gray-500 text-gray-500">Choose a group from the list to start chatting</p>
             </div>
           </div>
         )}
@@ -366,30 +366,30 @@ export default function GroupChatPage() {
             onClick={() => setShowCreateModal(false)}>
             <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} transition={{ type: 'spring', damping: 30 }}
               onClick={e => e.stopPropagation()}
-              className="dark:bg-[#0D0A14] bg-white rounded-t-3xl sm:rounded-3xl w-full sm:max-w-md overflow-hidden">
-              <div className="flex items-center justify-between px-5 py-4 border-b dark:border-purple-900/20 border-gray-100">
-                <h2 className="font-display font-black text-lg dark:text-white text-gray-900">Create Room</h2>
-                <button onClick={() => setShowCreateModal(false)} className="w-8 h-8 rounded-xl dark:bg-white/5 bg-gray-100 flex items-center justify-center">
-                  <X className="w-4 h-4 dark:text-gray-400 text-gray-600" />
+              className="dark:bg-white bg-white rounded-t-3xl sm:rounded-3xl w-full sm:max-w-md overflow-hidden">
+              <div className="flex items-center justify-between px-5 py-4 border-b dark:border-pink-200 border-gray-100">
+                <h2 className="font-display font-black text-lg dark:text-gray-900 text-gray-900">Create Room</h2>
+                <button onClick={() => setShowCreateModal(false)} className="w-8 h-8 rounded-xl dark:bg-pink-100 bg-gray-100 flex items-center justify-center">
+                  <X className="w-4 h-4 dark:text-gray-700 text-gray-600" />
                 </button>
               </div>
               <div className="p-5 space-y-4">
                 <div className="flex gap-3 items-center">
                   <input value={createForm.emoji} onChange={e => setCreateForm(f => ({ ...f, emoji: e.target.value }))}
-                    className="w-14 h-14 rounded-2xl dark:bg-purple-900/10 bg-gray-50 text-center text-2xl border dark:border-purple-500/15 border-gray-200 focus:outline-none focus:dark:border-pink-500/30" maxLength={2} />
+                    className="w-14 h-14 rounded-2xl dark:bg-pink-50 bg-gray-50 text-center text-2xl border dark:border-pink-200 border-gray-200 focus:outline-none focus:dark:border-pink-400" maxLength={2} />
                   <input value={createForm.name} onChange={e => setCreateForm(f => ({ ...f, name: e.target.value }))}
-                    placeholder="Room name*" className="flex-1 px-4 py-3 rounded-xl dark:bg-purple-900/10 bg-gray-50 dark:text-white text-gray-900 placeholder:dark:text-purple-400/50 placeholder:text-gray-400 border dark:border-purple-500/15 border-gray-200 text-sm focus:outline-none focus:dark:border-pink-500/30" />
+                    placeholder="Room name*" className="flex-1 px-4 py-3 rounded-xl dark:bg-pink-50 bg-gray-50 dark:text-gray-900 text-gray-900 placeholder:dark:text-gray-400 placeholder:text-gray-400 border dark:border-pink-200 border-gray-200 text-sm focus:outline-none focus:dark:border-pink-400" />
                 </div>
                 <input value={createForm.topic} onChange={e => setCreateForm(f => ({ ...f, topic: e.target.value }))}
-                  placeholder="Room topic / description" className="w-full px-4 py-3 rounded-xl dark:bg-purple-900/10 bg-gray-50 dark:text-white text-gray-900 placeholder:dark:text-purple-400/50 placeholder:text-gray-400 border dark:border-purple-500/15 border-gray-200 text-sm focus:outline-none focus:dark:border-pink-500/30" />
+                  placeholder="Room topic / description" className="w-full px-4 py-3 rounded-xl dark:bg-pink-50 bg-gray-50 dark:text-gray-900 text-gray-900 placeholder:dark:text-gray-400 placeholder:text-gray-400 border dark:border-pink-200 border-gray-200 text-sm focus:outline-none focus:dark:border-pink-400" />
                 <select value={createForm.category} onChange={e => setCreateForm(f => ({ ...f, category: e.target.value }))}
-                  className="w-full px-4 py-3 rounded-xl dark:bg-purple-900/10 bg-gray-50 dark:text-white text-gray-900 border dark:border-purple-500/15 border-gray-200 text-sm focus:outline-none focus:dark:border-pink-500/30">
+                  className="w-full px-4 py-3 rounded-xl dark:bg-pink-50 bg-gray-50 dark:text-gray-900 text-gray-900 border dark:border-pink-200 border-gray-200 text-sm focus:outline-none focus:dark:border-pink-400">
                   {categories.filter(c => c !== 'All').map(c => <option key={c} value={c}>{categoryEmojis[c] || ''} {c}</option>)}
                 </select>
                 <div className="flex gap-2">
                   {(['public', 'private'] as const).map(t => (
                     <button key={t} onClick={() => setCreateForm(f => ({ ...f, type: t }))}
-                      className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all ${createForm.type === t ? 'bg-love-gradient text-white' : 'dark:bg-white/5 bg-gray-100 dark:text-purple-300/70 text-gray-600'}`}>
+                      className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all ${createForm.type === t ? 'bg-love-gradient text-white' : 'dark:bg-pink-100 bg-gray-100 dark:text-gray-700 text-gray-600'}`}>
                       {t === 'public' ? <Globe className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
                       {t === 'public' ? 'Public' : 'Private'}
                     </button>
