@@ -123,7 +123,7 @@ const STEPS = [
 /* ── shared section shell ── */
 function Sec({ id, dark, children }: { id?: string; dark?: boolean; children: React.ReactNode }) {
   return (
-    <section id={id} className={`relative overflow-hidden py-16 sm:py-20 lg:py-24 ${dark ? 'bg-black' : 'bg-[#05000d]'}`}>
+    <section id={id} className={`relative overflow-hidden py-16 sm:py-20 lg:py-24 ${dark ? 'bg-black' : 'bg-[#05000d]'} mt-[0px] mb-[0px] pt-[5.6px] pb-[5.6px]`}>
       {children}
     </section>
   )
@@ -142,7 +142,7 @@ function Badge({ icon: Icon, label, pink, className = 'mb-5' }: { icon: React.El
 /* ── section heading ── */
 function Heading({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return (
-    <h2 className={`font-display font-black text-3xl sm:text-4xl lg:text-5xl text-white leading-tight mb-4 ${className}`}>
+    <h2 className={`font-display font-black sm:text-4xl lg:text-5xl text-white mb-4 text-[20px] ${className}`}>
       {children}
     </h2>
   )
@@ -180,13 +180,17 @@ export default function HomePage() {
               <Heading className="text-center">
                 Connecting People.<br />
                 <span className="bg-gradient-to-r from-pink-400 via-fuchsia-400 to-purple-400 bg-clip-text text-transparent">
-                  Building Relationships.
+                  Build Relationships.
                 </span>
               </Heading>
-              <p className="text-white/60 text-base sm:text-lg leading-relaxed mb-5">
-                SmartzConnect is a modern social technology platform designed to bring people closer together through meaningful connections, authentic relationships, and shared opportunities. We believe that every great friendship, relationship, career, business, and community begins with a single connection.
+              <p className="text-white/60 text-base sm:text-lg leading-relaxed mb-5 text-justify pl-[10px] pr-[10px]">
+                SmartzConnect is a next-generation social platform built to help people form meaningful relationships that extend beyond digital interaction.
+                <br /><br />
+                It connects individuals through shared interests, opportunities, and communities—making it easier to build friendships, grow careers, discover businesses, and create lasting partnerships.
+                <br /><br />
+                At its core, SmartzConnect is focused on one mission: turning every connection into something valuable, authentic, and life-changing.
               </p>
-              <p className="text-white/50 text-sm sm:text-base leading-relaxed">
+              <p className="text-white/50 sm:text-base text-[14px] pl-[10px] pr-[10px] text-justify">
                 Our platform empowers people to meet new friends, build lasting relationships, connect with family, discover communities, grow professionally, promote businesses, and explore opportunities — all within one secure and engaging digital ecosystem.
               </p>
             </motion.div>
@@ -271,7 +275,7 @@ export default function HomePage() {
                   <span className="text-2xl flex-shrink-0 mt-0.5">{p.icon}</span>
                   <div>
                     <p className="font-bold text-white text-sm sm:text-base mb-1">{p.title}</p>
-                    <p className="text-xs sm:text-sm text-white/50 leading-relaxed">{p.desc}</p>
+                    <p className="sm:text-sm text-white/50 text-[12px]">{p.desc}</p>
                   </div>
                 </motion.div>
               ))}
@@ -279,7 +283,7 @@ export default function HomePage() {
 
             {/* Text */}
             <motion.div {...up()} className="order-1 lg:order-2">
-              <Badge icon={Target} label="Our Mission" />
+              <Badge icon={Target} label="Our Mission" className="mb-5 text-center" />
               <Heading>
                 Connecting People{' '}
                 <span className="bg-gradient-to-r from-purple-400 to-fuchsia-400 bg-clip-text text-transparent">
@@ -333,7 +337,7 @@ export default function HomePage() {
                     <span className="text-lg">{s.emoji}</span>
                     <h3 className="font-display font-black text-sm sm:text-base text-white leading-tight">{s.name}</h3>
                   </div>
-                  <p className="text-xs sm:text-sm text-white/50 leading-relaxed relative">{s.desc}</p>
+                  <p className="sm:text-sm text-white/50 relative text-[12px]">{s.desc}</p>
                 </motion.div>
               )
             })}
@@ -373,7 +377,7 @@ export default function HomePage() {
                     <Icon className="w-5 h-5 text-pink-400" />
                   </div>
                   <h3 className="font-display font-bold text-white text-sm sm:text-base mb-2">{v.title}</h3>
-                  <p className="text-xs sm:text-sm text-white/50 leading-relaxed">{v.desc}</p>
+                  <p className="sm:text-sm text-white/50 text-[12px]">{v.desc}</p>
                 </motion.div>
               )
             })}
@@ -392,11 +396,11 @@ export default function HomePage() {
 
             {/* Text */}
             <motion.div {...up()}>
-              <Badge icon={CheckCircle} label="Why Choose Us?" pink className="mb-5 mt-[1px] ml-[123px] mr-[0px]" />
+              <Badge icon={CheckCircle} label="Why Choose Us?" pink className="mb-5 mt-[1px] mr-[0px] ml-[0px]" />
               <Heading>
                 More Than Just{' '}
                 <span className="bg-gradient-to-r from-pink-400 to-fuchsia-400 bg-clip-text text-transparent">
-                  Another Platform
+                  A Platform
                 </span>
               </Heading>
               <p className="text-white/60 text-base sm:text-lg leading-relaxed mb-6">

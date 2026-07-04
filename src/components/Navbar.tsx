@@ -109,7 +109,7 @@ export default function Navbar() {
             ? 'bg-[#0D0B1A]/90 backdrop-blur-xl shadow-2xl shadow-black/40 border border-white/8'
             : 'bg-[#0D0B1A]/75 backdrop-blur-md border border-white/8'
         }`}>
-          <div className="flex items-center justify-between h-14 sm:h-16 px-4 sm:px-6 border-t-[#FF1493] border-r-[#FF1493] border-b-[#FF1493] border-l-[#FF1493] border-t-[1px] border-r-[1px] border-b-[1px] border-l-[1px]">
+          <div className="flex items-center justify-between h-14 sm:h-16 px-4 sm:px-6 border-t-[#FF1493] border-r-[#FF1493] border-b-[#FF1493] border-l-[#FF1493] border-t-[1px] border-r-[1px] border-b-[1px] border-l-[1px] rounded-tl-[1px] rounded-tr-[1px] rounded-br-[1px] rounded-bl-[1px]">
 
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2.5 group flex-shrink-0">

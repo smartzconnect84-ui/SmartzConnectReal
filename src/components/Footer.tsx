@@ -40,10 +40,10 @@ const footerLinks = {
 }
 
 const stats = [
-  { value: '2M+',   label: 'Active Users' },
-  { value: '47',    label: 'Countries' },
-  { value: '500K+', label: 'Matches Made' },
-  { value: '4.9★',  label: 'App Rating' },
+  { value: '10K+',  label: 'Active Users' },
+  { value: '195+',  label: 'Countries' },
+  { value: '1K+',   label: 'Matches Made' },
+  { value: '3★',    label: 'App Rating' },
 ]
 
 const socials = [
@@ -146,7 +146,7 @@ export default function Footer() {
             {countries.map(c => (
               <span key={c} className="text-[10px] sm:text-xs text-gray-500 bg-white/3 px-2 py-0.5 sm:py-1 rounded-lg border border-white/5">{c}</span>
             ))}
-            <span className="text-[10px] sm:text-xs text-gray-500 bg-white/3 px-2 py-0.5 sm:py-1 rounded-lg border border-white/5">+37 more</span>
+            <span className="text-[10px] sm:text-xs text-gray-500 bg-white/3 px-2 py-0.5 sm:py-1 rounded-lg border border-white/5">100+more</span>
           </div>
         </div>
 
