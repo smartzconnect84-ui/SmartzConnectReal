@@ -1,0 +1,346 @@
+# SmartzConnect Master Responsibility Allocation Prompt
+
+You are a Principal Software Architect responsible for restructuring the SmartzConnect platform into a clean, scalable, production-ready architecture.
+
+## Objective
+
+Redistribute responsibilities across all services so that:
+
+* Every feature has a clearly assigned owner.
+* No feature or responsibility is left unassigned.
+* No feature is implemented by multiple services unless intentional and documented.
+* Every service has a single, well-defined purpose.
+* The architecture follows the Single Responsibility Principle.
+* The system remains modular, scalable, secure, and easy to maintain.
+
+Before producing the final architecture, perform a complete audit of all features, workflows, APIs, storage, security, real-time communication, media handling, notifications, analytics, moderation, and integrations.
+
+---
+
+# Services
+
+The architecture includes:
+
+* Supabase
+* SUFY.com
+* Stream
+* LiveKit
+* OneSignal
+* Event Queue
+* Session Service
+* Frontend
+* Additional supporting services if absolutely necessary
+
+Do not introduce a new service if an existing one is the correct owner.
+
+---
+
+# Required Process
+
+## Phase 1 — Discover Everything
+
+Identify every feature, workflow, component, background process, scheduled task, integration, API, storage requirement, and security requirement used by SmartzConnect.
+
+Nothing may be skipped.
+
+If a feature exists anywhere in the application, it must appear in the audit.
+
+---
+
+## Phase 2 — Assign Ownership
+
+For every discovered responsibility, assign exactly one Primary Owner.
+
+Optionally assign Supporting Services where appropriate.
+
+Example:
+
+Primary Owner:
+
+* Supabase
+
+Supporting:
+
+* Event Queue
+* OneSignal
+
+Never assign two Primary Owners.
+
+---
+
+## Phase 3 — Remove Duplication
+
+Detect responsibilities performed by more than one service.
+
+Examples include:
+
+* Duplicate storage
+* Duplicate authentication
+* Duplicate notifications
+* Duplicate messaging
+* Duplicate media processing
+* Duplicate analytics
+* Duplicate caching
+* Duplicate authorization
+* Duplicate token generation
+
+For every duplication:
+
+* Explain why it exists.
+* Decide which service should own it.
+* Remove it from every other service.
+
+---
+
+## Phase 4 — Detect Missing Ownership
+
+Verify that every feature has an owner.
+
+If any feature has no owner:
+
+* Assign one.
+* Explain why.
+
+The final architecture must contain zero orphaned responsibilities.
+
+---
+
+## Phase 5 — Validate Data Flow
+
+Trace every workflow from start to finish.
+
+Examples include:
+
+* Registration
+* Login
+* OAuth
+* Profile updates
+* Media uploads
+* Feed creation
+* Likes
+* Comments
+* Shares
+* Stories
+* Swipes
+* Matching
+* Chat
+* Voice calls
+* Video calls
+* Push notifications
+* Marketplace
+* Ride-hailing
+* Search
+* Reports
+* Moderation
+* Payments
+* Analytics
+* Background jobs
+* Admin actions
+
+Ensure each workflow has:
+
+* one entry point
+* one data owner
+* one storage owner
+* one processing owner
+* one notification owner (if applicable)
+
+No workflow may contain unnecessary duplication.
+
+---
+
+## Service Rules
+
+### Supabase
+
+Owns:
+
+* Authentication
+* User identities
+* PostgreSQL database
+* Core relational data
+* Row Level Security
+* Edge Functions
+* Business logic
+* Administrative data
+* Metadata
+* Event creation
+
+Does NOT own:
+
+* Chat engine
+* Video/audio engine
+* Heavy media delivery
+* Push delivery
+
+---
+
+### SUFY.com
+
+Owns:
+
+* Object storage
+* Image storage
+* Video storage
+* File storage
+* CDN delivery
+* File optimization
+* Media lifecycle
+
+Does NOT own:
+
+* User records
+* Metadata
+* Authentication
+* Database records
+
+Supabase stores only media references and metadata.
+
+---
+
+### Stream
+
+Owns:
+
+* Direct messaging
+* Group messaging
+* Message synchronization
+* Typing indicators
+* Read receipts
+* Chat channels
+* Message history
+
+Does NOT own:
+
+* Authentication
+* User database
+* Calls
+* Push notifications
+* File storage
+
+---
+
+### LiveKit
+
+Owns:
+
+* Audio calls
+* Video calls
+* Screen sharing
+* Call rooms
+* Real-time media sessions
+
+Does NOT own:
+
+* Messaging
+* Authentication
+* Notifications
+* Storage
+
+---
+
+### OneSignal
+
+Owns:
+
+* Push notification delivery
+* Device subscriptions
+* Notification routing
+
+Does NOT own:
+
+* Business logic
+* Event generation
+* User data
+* Chat
+* Calls
+
+---
+
+### Event Queue
+
+Owns:
+
+* Asynchronous processing
+* Background jobs
+* Retry logic
+* Event routing
+* Scheduled processing
+* Workload buffering
+
+Does NOT own:
+
+* Permanent storage
+* Authentication
+* Business data
+
+---
+
+### Session Service
+
+Owns:
+
+* Token generation
+* Session validation
+* External service authentication
+* Access control for integrated services
+
+Does NOT own:
+
+* User data
+* Media
+* Chat
+* Calls
+
+---
+
+### Frontend
+
+Owns:
+
+* User interface
+* User interactions
+* Client-side state
+* Presentation logic
+
+Does NOT own:
+
+* Secrets
+* API keys
+* Business logic
+* Database operations
+* Token generation
+
+---
+
+# Final Validation
+
+Before finishing, verify:
+
+✓ Every feature is assigned.
+
+✓ Every workflow is complete.
+
+✓ Every API has an owner.
+
+✓ Every database table has an owner.
+
+✓ Every upload has an owner.
+
+✓ Every notification has an owner.
+
+✓ Every background task has an owner.
+
+✓ Every security responsibility has an owner.
+
+✓ Every integration has an owner.
+
+✓ Every feature appears exactly once as a Primary Owner.
+
+✓ Supporting services are only used where necessary.
+
+✓ No duplicated responsibilities remain.
+
+✓ No hidden gaps remain.
+
+If any responsibility is duplicated or unassigned, continue refining the architecture until every responsibility has exactly one Primary Owner and the entire SmartzConnect platform is fully covered.
