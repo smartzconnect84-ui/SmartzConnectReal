@@ -1,18 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
-// JWT requires base64url (NOT standard base64)
-function base64url(input: string | Uint8Array): string {
-  const b64 = typeof input === 'string'
-    ? btoa(input)
-    : btoa(String.fromCharCode(...input))
-  return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
-}
+import { corsHeaders, jsonResponse, requireUser, signJwtHS256, nowAndExpiry } from '../_shared/sessionService.ts'
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -20,73 +8,31 @@ serve(async (req) => {
   }
 
   try {
-    const authHeader = req.headers.get('Authorization')
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
-
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!
-    const supabase = createClient(supabaseUrl, supabaseKey, {
-      global: { headers: { Authorization: authHeader } },
-    })
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
+    const { user, error, supabaseUrl } = await requireUser(req)
+    if (error) return error
 
     const streamSecret = Deno.env.get('STREAM_API_SECRET')
     if (!streamSecret) {
-      return new Response(JSON.stringify({ error: 'Stream not configured' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+      return jsonResponse({ error: 'Stream not configured' }, 500)
     }
 
-    const userId = user.id
-    const now = Math.floor(Date.now() / 1000)
-    const exp = now + 60 * 60 * 24 // 24 hours
+    const userId = user!.id
+    const { now, exp } = nowAndExpiry(60 * 60 * 24) // 24 hours
 
-    // Proper base64url-encoded JWT required by GetStream
-    const encHeader  = base64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }))
-    const encPayload = base64url(JSON.stringify({ user_id: userId, iat: now, exp }))
-    const sigInput   = `${encHeader}.${encPayload}`
+    const token = await signJwtHS256({ user_id: userId, iat: now, exp }, streamSecret)
 
-    const key = await crypto.subtle.importKey(
-      'raw',
-      new TextEncoder().encode(streamSecret),
-      { name: 'HMAC', hash: 'SHA-256' },
-      false,
-      ['sign']
-    )
-    const sigBytes = new Uint8Array(
-      await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(sigInput))
-    )
-    const token = `${sigInput}.${base64url(sigBytes)}`
-
-    // Cache token in Supabase
+    // Cache token in Supabase (Supabase remains the data owner of stream_tokens;
+    // the Session Service only signs the token, it does not own storage of it)
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const adminClient = createClient(supabaseUrl, serviceKey)
+    const adminClient = createClient(supabaseUrl!, serviceKey)
     await adminClient.from('stream_tokens').upsert({
       user_id: userId,
       token,
       expires_at: new Date(exp * 1000).toISOString(),
     })
 
-    return new Response(JSON.stringify({ token, userId }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    return jsonResponse({ token, userId })
   } catch (err) {
-    return new Response(JSON.stringify({ error: String(err) }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    return jsonResponse({ error: String(err) }, 500)
   }
 })

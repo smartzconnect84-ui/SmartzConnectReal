@@ -87,7 +87,11 @@ Every workflow above has exactly one entry point, one data owner, one processing
 
 ## Two concrete gaps vs. the target architecture (only real drift found)
 
-1. **Storage:** Media binaries currently live in Supabase Storage buckets (`user-uploads`, `db-backups`, and the buckets declared in `schema_v6_addendum.sql`). Per the target architecture, this should move to SUFY.com, with Supabase retaining only URL/metadata columns. Not migrated in this pass — no SUFY.com credentials or SDK exist in the project yet.
-2. **Session Service:** Token signing for Stream and LiveKit is implemented twice (once per provider) inside Supabase Edge Functions instead of a single shared service. Functionally correct today, but violates single-responsibility/no-duplication requirement.
+1. **Storage (open):** Media binaries currently live in Supabase Storage buckets (`user-uploads`, `db-backups`, and the buckets declared in `schema_v6_addendum.sql`). Per the target architecture, this should move to SUFY.com, with Supabase retaining only URL/metadata columns. Not yet migrated — pending SUFY.com credentials/SDK.
+2. **Session Service (resolved):** Token signing for Stream and LiveKit was implemented twice (once per provider) inside Supabase Edge Functions. Consolidated into `supabase/functions/_shared/sessionService.ts`, which is now the single place that:
+   - Verifies the caller's Supabase identity (`requireUser`)
+   - Builds and signs every external-service JWT (`signJwtHS256`)
+   - Produces consistent CORS/JSON responses
+   `supabase/functions/stream-token/index.ts` and `supabase/functions/livekit-token/index.ts` now both call into this shared module instead of duplicating HMAC-SHA256 signing logic. No behavior change — same headers, same claims, same expiry windows (Stream: 24h, LiveKit: 6h) — only the duplicated signing code was removed.
 
-I did not change any code or infrastructure in this pass — this document is the factual audit and ownership assignment you asked for. Say the word if you want me to actually execute gap #1 (SUFY.com storage) and/or gap #2 (consolidated Session Service) next.
+Next up: SUFY.com storage integration (gap #1), as you requested.
