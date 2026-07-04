@@ -88,12 +88,12 @@ const slides: Slide[] = [
 ]
 
 const stats = [
-  { value: '2M+',  label: 'USERS' },
+  { value: '15K+', label: 'USERS' },
   { value: '195+', label: 'COUNTRIES' },
   { value: '1K+',  label: 'BUSINESSES' },
-  { value: '50+',  label: 'DRIVERS' },
+  { value: '20+',  label: 'DRIVERS' },
   { value: '1K+',  label: 'VENDORS' },
-  { value: '8K+',  label: 'DAILY CONNECTIONS' },
+  { value: '8K+',  label: 'CONNECTIONS' },
 ]
 
 export default function Hero() {
@@ -204,7 +204,7 @@ export default function Hero() {
           >
             <Link
               to="/register"
-              className="inline-flex items-center gap-2 px-6 sm:px-8 py-3 sm:py-3.5 rounded-xl bg-gradient-to-r from-purple-600 to-purple-500 text-white font-bold text-sm sm:text-base shadow-xl shadow-purple-600/30 hover:shadow-purple-600/50 hover:from-purple-500 hover:to-purple-400 hover:scale-105 transition-all"
+              className="inline-flex items-center gap-2 px-6 sm:px-8 py-3 sm:py-3.5 rounded-xl bg-gradient-to-r from-purple-600 to-purple-500 text-white font-bold text-sm sm:text-base shadow-xl shadow-purple-600/30 hover:shadow-purple-600/50 hover:from-purple-500 hover:to-purple-400 hover:scale-105 transition-all border-t-[#FF0000] border-r-[#FF0000] border-b-[#FF0000] border-l-[#FF0000]"
             >
               Join Now! <ArrowRight className="w-4 h-4" />
             </Link>

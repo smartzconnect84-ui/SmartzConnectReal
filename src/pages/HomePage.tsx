@@ -130,9 +130,9 @@ function Sec({ id, dark, children }: { id?: string; dark?: boolean; children: Re
 }
 
 /* ── pill badge ── */
-function Badge({ icon: Icon, label, pink }: { icon: React.ElementType; label: string; pink?: boolean }) {
+function Badge({ icon: Icon, label, pink, className = 'mb-5' }: { icon: React.ElementType; label: string; pink?: boolean; className?: string }) {
   return (
-    <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border mb-5 ${pink ? 'bg-pink-500/10 border-pink-500/25 text-pink-400' : 'bg-purple-500/10 border-purple-500/25 text-purple-400'}`}>
+    <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border ${pink ? 'bg-pink-500/10 border-pink-500/25 text-pink-400' : 'bg-purple-500/10 border-purple-500/25 text-purple-400'} ${className}`}>
       <Icon className="w-4 h-4" />
       <span className="text-sm font-bold tracking-wide">{label}</span>
     </div>
@@ -140,9 +140,9 @@ function Badge({ icon: Icon, label, pink }: { icon: React.ElementType; label: st
 }
 
 /* ── section heading ── */
-function Heading({ children }: { children: React.ReactNode }) {
+function Heading({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return (
-    <h2 className="font-display font-black text-3xl sm:text-4xl lg:text-5xl text-white leading-tight mb-4">
+    <h2 className={`font-display font-black text-3xl sm:text-4xl lg:text-5xl text-white leading-tight mb-4 ${className}`}>
       {children}
     </h2>
   )
@@ -176,8 +176,8 @@ export default function HomePage() {
 
             {/* Text */}
             <motion.div {...up()}>
-              <Badge icon={Globe} label="About Us" />
-              <Heading>
+              <Badge icon={Globe} label="About Us" className="ml-[12px] mt-[0px] mb-[15px] mr-[0px] text-center" />
+              <Heading className="text-center">
                 Connecting People.<br />
                 <span className="bg-gradient-to-r from-pink-400 via-fuchsia-400 to-purple-400 bg-clip-text text-transparent">
                   Building Relationships.
@@ -348,7 +348,7 @@ export default function HomePage() {
         </div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
           <motion.div {...up()} className="text-center mb-12 sm:mb-16">
-            <Badge icon={Award} label="Core Values" />
+            <Badge icon={Award} label="Core Values" className="mb-5 border-t-[#FF1493] border-r-[#FF1493] border-b-[#FF1493] border-l-[#FF1493]" />
             <Heading>
               The Principles That{' '}
               <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
@@ -365,7 +365,7 @@ export default function HomePage() {
               const Icon = v.icon
               return (
                 <motion.div key={v.title} {...up(i * 0.06)}
-                  className="p-6 rounded-2xl border border-white/5 hover:border-purple-500/25 hover:shadow-lg transition-all group relative overflow-hidden"
+                  className="p-6 rounded-2xl border border-white/5 hover:border-purple-500/25 hover:shadow-lg transition-all group relative overflow-hidden border-t-[#FF1493] border-r-[#FF1493] border-b-[#FF1493] border-l-[#FF1493]"
                   style={{ background: 'rgba(255,255,255,0.03)' }}>
                   {/* Accent line top */}
                   <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-pink-500/30 to-transparent" />
@@ -392,7 +392,7 @@ export default function HomePage() {
 
             {/* Text */}
             <motion.div {...up()}>
-              <Badge icon={CheckCircle} label="Why Choose Us?" pink />
+              <Badge icon={CheckCircle} label="Why Choose Us?" pink className="mb-5 mt-[1px] ml-[123px] mr-[0px]" />
               <Heading>
                 More Than Just{' '}
                 <span className="bg-gradient-to-r from-pink-400 to-fuchsia-400 bg-clip-text text-transparent">
@@ -406,7 +406,7 @@ export default function HomePage() {
                 With one account, you unlock everything:
               </p>
               <Link to="/register"
-                className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl font-bold text-sm text-white shadow-xl hover:opacity-90 hover:scale-105 active:scale-100 transition-all"
+                className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl font-bold text-sm text-white shadow-xl hover:opacity-90 hover:scale-105 active:scale-100 transition-all ml-[120px] mr-[120px] pl-[20px] pr-[20px]"
                 style={{ background: 'linear-gradient(135deg, #ec4899 0%, #d946ef 50%, #9333ea 100%)', boxShadow: '0 6px 30px rgba(236,72,153,0.35)' }}>
                 Get Started Free <ArrowRight className="w-4 h-4" />
               </Link>

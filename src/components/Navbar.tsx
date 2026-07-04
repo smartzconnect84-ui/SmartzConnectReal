@@ -109,14 +109,14 @@ export default function Navbar() {
             ? 'bg-[#0D0B1A]/90 backdrop-blur-xl shadow-2xl shadow-black/40 border border-white/8'
             : 'bg-[#0D0B1A]/75 backdrop-blur-md border border-white/8'
         }`}>
-          <div className="flex items-center justify-between h-14 sm:h-16 px-4 sm:px-6">
+          <div className="flex items-center justify-between h-14 sm:h-16 px-4 sm:px-6 border-t-[#FF1493] border-r-[#FF1493] border-b-[#FF1493] border-l-[#FF1493] border-t-[1px] border-r-[1px] border-b-[1px] border-l-[1px]">
 
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2.5 group flex-shrink-0">
               <img
                 src={logoImg}
                 alt="SmartzConnect"
-                className="h-8 w-auto object-contain group-hover:scale-105 transition-transform drop-shadow-lg"
+                className="h-8 w-auto object-contain group-hover:scale-105 transition-transform drop-shadow-lg ml-[0px] mr-[0px] mt-[0px] mb-[0px] pl-[0px] pr-[0px]"
               />
               <span className="font-display font-black text-lg hidden sm:block">
                 <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Smartz</span>
@@ -179,7 +179,7 @@ export default function Navbar() {
                 <button
                   onClick={() => { setDismissed(false); setOpen(true); setUnreadCount(0) }}
                   title="Open support chat"
-                  className="relative w-9 h-9 rounded-xl flex items-center justify-center text-white/60 hover:text-white bg-white/8 hover:bg-white/12 transition-all"
+                  className="relative w-9 h-9 rounded-xl flex items-center justify-center hover:text-white bg-white/8 hover:bg-white/12 transition-all text-[#FF1493]"
                 >
                   <MessageCircle className="w-4 h-4" />
                   {unreadCount > 0 && (
