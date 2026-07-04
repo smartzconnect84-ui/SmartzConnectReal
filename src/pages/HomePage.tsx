@@ -134,7 +134,7 @@ function Badge({ icon: Icon, label, pink, className = 'mb-5' }: { icon: React.El
   return (
     <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border ${pink ? 'bg-pink-500/10 border-pink-500/25 text-pink-400' : 'bg-purple-500/10 border-purple-500/25 text-purple-400'} ${className}`}>
       <Icon className="w-4 h-4" />
-      <span className="text-sm font-bold tracking-wide">{label}</span>
+      <span className="text-sm tracking-wide font-bold text-left">{label}</span>
     </div>
   )
 }
@@ -171,26 +171,26 @@ export default function HomePage() {
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] rounded-full bg-purple-600/8 blur-3xl" />
         </div>
 
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative ml-[12px] mr-[12px] pt-[12px] pb-[12px]">
           <div className="grid lg:grid-cols-2 gap-14 lg:gap-20 items-center">
 
             {/* Text */}
             <motion.div {...up()}>
-              <Badge icon={Globe} label="About Us" className="ml-[12px] mt-[0px] mb-[15px] mr-[0px] text-center" />
+              <Badge icon={Globe} label="About SmartzConnect" className="ml-[12px] mt-[0px] mb-[15px] mr-[0px] text-center" />
               <Heading className="text-center">
                 Connecting People.<br />
                 <span className="bg-gradient-to-r from-pink-400 via-fuchsia-400 to-purple-400 bg-clip-text text-transparent">
                   Build Relationships.
                 </span>
               </Heading>
-              <p className="text-white/60 text-base sm:text-lg leading-relaxed mb-5 text-justify pl-[10px] pr-[10px]">
+              <p className="text-white/60 text-base sm:text-lg leading-relaxed mb-5 text-left pl-[1px] pr-[1px]">
                 SmartzConnect is a next-generation social platform built to help people form meaningful relationships that extend beyond digital interaction.
                 <br /><br />
                 It connects individuals through shared interests, opportunities, and communities—making it easier to build friendships, grow careers, discover businesses, and create lasting partnerships.
                 <br /><br />
                 At its core, SmartzConnect is focused on one mission: turning every connection into something valuable, authentic, and life-changing.
               </p>
-              <p className="text-white/50 sm:text-base text-[14px] pl-[10px] pr-[10px] text-justify">
+              <p className="text-white/50 sm:text-base text-[14px] text-left pl-[1px] pr-[1px]">
                 Our platform empowers people to meet new friends, build lasting relationships, connect with family, discover communities, grow professionally, promote businesses, and explore opportunities — all within one secure and engaging digital ecosystem.
               </p>
             </motion.div>
@@ -198,10 +198,10 @@ export default function HomePage() {
             {/* Stat grid */}
             <motion.div {...up(0.18)} className="grid grid-cols-2 gap-3 sm:gap-4">
               {[
-                { val: 'Social',   sub: 'Networking',            grd: 'from-pink-500 to-fuchsia-600' },
+                { val: 'Social',   sub: 'Friendship',            grd: 'from-pink-500 to-fuchsia-600' },
                 { val: 'Dating',   sub: 'Relationships',         grd: 'from-fuchsia-500 to-purple-600' },
-                { val: 'Business', sub: 'Professional Network',  grd: 'from-purple-600 to-violet-700' },
-                { val: 'Market',   sub: 'Place & Jobs',          grd: 'from-violet-600 to-pink-600' },
+                { val: 'Business', sub: 'Networking',            grd: 'from-purple-600 to-violet-700' },
+                { val: 'Market',   sub: 'Buy & Sell',            grd: 'from-violet-600 to-pink-600' },
               ].map(s => (
                 <div key={s.sub}
                   className="p-5 sm:p-6 rounded-2xl border border-white/5 text-center relative overflow-hidden"
@@ -239,7 +239,7 @@ export default function HomePage() {
                 style={{ background: 'rgba(255,255,255,0.04)' }}>
                 {/* Quote marks */}
                 <div className="text-6xl font-display font-black text-pink-500/20 leading-none mb-2 select-none">"</div>
-                <p className="text-base sm:text-xl text-white/80 leading-relaxed font-medium">
+                <p className="text-base sm:text-xl text-white/80 leading-relaxed font-medium text-center">
                   To become the world's most trusted platform for building meaningful social connections, lasting relationships, thriving communities, and digital opportunities that positively transform lives.
                 </p>
                 <div className="mt-6 flex items-center justify-center gap-2">
@@ -290,7 +290,7 @@ export default function HomePage() {
                   Beyond Borders
                 </span>
               </Heading>
-              <p className="text-white/60 text-base sm:text-lg leading-relaxed mb-5">
+              <p className="text-white/60 text-base sm:text-lg leading-relaxed mb-5 pl-[1px] pr-[1px]">
                 Our mission is to connect people beyond borders by creating a safe, inclusive, and innovative platform where friendships flourish, relationships grow, communities unite, businesses thrive, and opportunities become accessible to everyone.
               </p>
               <p className="text-white/40 text-sm sm:text-base leading-relaxed border-l-2 border-pink-500/40 pl-4 italic">
@@ -316,7 +316,7 @@ export default function HomePage() {
                 Many Possibilities
               </span>
             </Heading>
-            <p className="text-white/50 max-w-2xl mx-auto text-base sm:text-lg">
+            <p className="text-white/50 max-w-2xl mx-auto text-base sm:text-lg pl-[1px] pr-[1px] ml-[0px] mr-[0px]">
               SmartzConnect brings together multiple services into one connected platform — built around the most important thing: people.
             </p>
           </motion.div>
@@ -397,20 +397,20 @@ export default function HomePage() {
             {/* Text */}
             <motion.div {...up()}>
               <Badge icon={CheckCircle} label="Why Choose Us?" pink className="mb-5 mt-[1px] mr-[0px] ml-[0px]" />
-              <Heading>
+              <Heading className="text-left text-[14px]">
                 More Than Just{' '}
                 <span className="bg-gradient-to-r from-pink-400 to-fuchsia-400 bg-clip-text text-transparent">
                   A Platform
                 </span>
               </Heading>
-              <p className="text-white/60 text-base sm:text-lg leading-relaxed mb-6">
+              <p className="text-white/60 sm:text-lg pl-[1px] pr-[1px] text-[14px] mb-[20px] ml-[0px] mt-[0px] mr-[12px] text-left">
                 SmartzConnect is a place where friendships begin, relationships grow, communities flourish, businesses connect, and opportunities become reality.
               </p>
               <p className="text-white/50 text-sm sm:text-base leading-relaxed mb-8">
                 With one account, you unlock everything:
               </p>
               <Link to="/register"
-                className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl font-bold text-sm text-white shadow-xl hover:opacity-90 hover:scale-105 active:scale-100 transition-all ml-[120px] mr-[120px] pl-[20px] pr-[20px]"
+                className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl font-bold text-sm text-white shadow-xl hover:opacity-90 hover:scale-105 active:scale-100 transition-all pl-[20px] pr-[20px] ml-[10px] mr-[10px]"
                 style={{ background: 'linear-gradient(135deg, #ec4899 0%, #d946ef 50%, #9333ea 100%)', boxShadow: '0 6px 30px rgba(236,72,153,0.35)' }}>
                 Get Started Free <ArrowRight className="w-4 h-4" />
               </Link>
@@ -449,8 +449,8 @@ export default function HomePage() {
                 More Meaningful
               </span>
             </Heading>
-            <p className="text-white/50 max-w-2xl mx-auto text-base sm:text-lg">
-              SmartzConnect is designed to make connecting easier, more meaningful, and more enjoyable — across every dimension of your life.
+            <p className="text-white/50 max-w-2xl mx-auto text-base sm:text-lg text-center">
+              SmartzConnect is designed to make connecting easier, meaningful, and more enjoyable — across every dimension of life.
             </p>
           </motion.div>
 
@@ -517,7 +517,7 @@ export default function HomePage() {
                 7 Simple Steps
               </span>
             </Heading>
-            <p className="text-white/50 max-w-xl mx-auto text-base sm:text-lg">
+            <p className="text-white/50 max-w-xl mx-auto text-base sm:text-lg ml-[1px] mr-[1px]">
               Becoming part of the SmartzConnect community is quick and easy.
             </p>
           </motion.div>
@@ -559,13 +559,13 @@ export default function HomePage() {
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link to="/register"
-                className="inline-flex items-center gap-2.5 px-10 py-4 rounded-2xl font-black text-base text-white shadow-2xl hover:opacity-90 hover:scale-105 active:scale-100 transition-all"
+                className="inline-flex items-center gap-2.5 px-10 py-4 rounded-2xl font-black text-base text-white shadow-2xl hover:opacity-90 hover:scale-105 active:scale-100 transition-all ml-[10px] mr-[10px]"
                 style={{ background: 'linear-gradient(135deg, #ec4899 0%, #d946ef 50%, #9333ea 100%)', boxShadow: '0 8px 40px rgba(236,72,153,0.4)' }}>
                 <UserPlus className="w-5 h-5" />
                 Create Your Free Account
               </Link>
               <Link to="/login"
-                className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl font-bold text-sm text-white/70 border border-white/10 hover:border-white/20 hover:text-white transition-all"
+                className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl font-bold text-sm text-white/70 border border-white/10 hover:border-white/20 hover:text-white transition-all border-t-[#fff] border-r-[#fff] border-b-[#fff] border-l-[#fff]"
                 style={{ background: 'rgba(255,255,255,0.04)' }}>
                 Already a member? Sign In
               </Link>
