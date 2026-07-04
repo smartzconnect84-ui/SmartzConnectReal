@@ -1,29 +1,36 @@
 -- ============================================================
 -- SmartzConnect — Mobile Money Payments Table
 -- Add this to your Supabase SQL Editor
+-- NOTE: This file reflects the LIVE schema (status enum updated
+--       from legacy pending_verification/verified/expired to
+--       pending/confirmed/rejected/refunded in schema_v7_production.sql)
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS mobile_money_payments (
   id                UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id           UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-  provider          TEXT NOT NULL CHECK (provider IN ('mtn', 'orange')),
+  user_id           UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  provider          TEXT NOT NULL CHECK (provider IN ('mtn', 'orange', 'other')),
+  phone_number      TEXT,
   amount_usd        DECIMAL(10,2) NOT NULL,
-  plan_id           TEXT NOT NULL CHECK (plan_id IN ('premium', 'vip')),
-  transaction_id    TEXT NOT NULL,
-  status            TEXT DEFAULT 'pending_verification'
-                    CHECK (status IN ('pending_verification', 'verified', 'rejected', 'expired')),
-  verified_by       UUID REFERENCES profiles(id),
+  amount_local      DECIMAL(10,2),
+  currency_local    TEXT DEFAULT 'LRD',
+  transaction_id    TEXT UNIQUE,
+  plan_id           TEXT,
+  status            TEXT DEFAULT 'pending'
+                    CHECK (status IN ('pending', 'confirmed', 'rejected', 'refunded')),
+  notes             TEXT,
+  verified_by       UUID REFERENCES auth.users(id),
   verified_at       TIMESTAMPTZ,
-  rejection_reason  TEXT,
-  expires_at        TIMESTAMPTZ NOT NULL,
-  created_at        TIMESTAMPTZ DEFAULT NOW()
+  created_at        TIMESTAMPTZ DEFAULT NOW(),
+  updated_at        TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- Indexes
-CREATE INDEX IF NOT EXISTS idx_mobile_money_user ON mobile_money_payments(user_id);
-CREATE INDEX IF NOT EXISTS idx_mobile_money_status ON mobile_money_payments(status);
-CREATE INDEX IF NOT EXISTS idx_mobile_money_txid ON mobile_money_payments(transaction_id);
-CREATE INDEX IF NOT EXISTS idx_mobile_money_expires ON mobile_money_payments(expires_at);
+CREATE INDEX IF NOT EXISTS idx_mobile_money_user    ON mobile_money_payments(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_mobile_money_status  ON mobile_money_payments(status);
+CREATE INDEX IF NOT EXISTS idx_mobile_money_txid    ON mobile_money_payments(transaction_id);
+CREATE INDEX IF NOT EXISTS payments_status_idx      ON mobile_money_payments(status);
+CREATE INDEX IF NOT EXISTS payments_user_idx        ON mobile_money_payments(user_id, created_at DESC);
 
 -- Enable RLS
 ALTER TABLE mobile_money_payments ENABLE ROW LEVEL SECURITY;
@@ -52,23 +59,11 @@ CREATE POLICY "Admins can update payment status"
 -- Enable Realtime for payment status updates
 ALTER PUBLICATION supabase_realtime ADD TABLE mobile_money_payments;
 
--- Auto-expire payments after 15 minutes (run as a cron job or Edge Function)
--- This is a helper function admins can call
-CREATE OR REPLACE FUNCTION expire_old_mobile_payments()
-RETURNS void AS $$
-BEGIN
-  UPDATE mobile_money_payments
-  SET status = 'expired'
-  WHERE status = 'pending_verification'
-    AND expires_at < NOW();
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- Auto-activate subscription when payment is verified
+-- Auto-activate subscription when payment is confirmed
 CREATE OR REPLACE FUNCTION activate_subscription_on_payment()
 RETURNS TRIGGER AS $$
 BEGIN
-  IF NEW.status = 'verified' AND OLD.status = 'pending_verification' THEN
+  IF NEW.status = 'confirmed' AND OLD.status = 'pending' THEN
     -- Upsert subscription
     INSERT INTO subscriptions (user_id, tier, status, price_usd, started_at, expires_at, auto_renew)
     VALUES (

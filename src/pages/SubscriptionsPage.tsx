@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Check, Crown, Heart, Zap, X, Shield, Star, Gift } from 'lucide-react'
+import { Check, Crown, Heart, Zap, X, Shield, Star, Gift, AlertCircle, Loader2 } from 'lucide-react'
 import CurrencyConverter from '@/components/CurrencyConverter'
+import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/hooks/useAuth'
 
 const plans = [
   {
@@ -61,10 +63,43 @@ const momoMethods = [
 ]
 
 function PaymentModal({ plan, onClose }: { plan: typeof plans[0]; onClose: () => void }) {
+  const { user } = useAuth()
   const [method, setMethod] = useState('mtn')
   const [txId, setTxId] = useState('')
   const [step, setStep] = useState<'select' | 'confirm' | 'success'>('select')
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const selected = momoMethods.find(m => m.id === method)!
+
+  const handleSubmitPayment = async () => {
+    if (!user) { setError('You must be logged in to submit a payment.'); return }
+    setSubmitting(true)
+    setError(null)
+
+    const { error: insertError } = await supabase
+      .from('mobile_money_payments')
+      .insert({
+        user_id: user.id,
+        provider: method,
+        amount_usd: plan.price,
+        transaction_id: txId.trim(),
+        plan_id: plan.id,
+        status: 'pending',
+      })
+
+    if (insertError) {
+      if (insertError.code === '23505') {
+        setError('This Transaction ID has already been submitted. Please check your ID and try again.')
+      } else {
+        setError(insertError.message)
+      }
+      setSubmitting(false)
+      return
+    }
+
+    setSubmitting(false)
+    setStep('success')
+  }
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -117,7 +152,7 @@ function PaymentModal({ plan, onClose }: { plan: typeof plans[0]; onClose: () =>
               <input value={txId} onChange={e => setTxId(e.target.value)} placeholder="Enter Transaction ID (e.g. TXN123456)"
                 className="w-full px-4 py-3 rounded-xl dark:bg-white/5 bg-gray-50 border dark:border-white/10 border-gray-200 dark:text-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-brand-pink transition-colors text-sm mb-4" />
 
-              <button onClick={() => txId && setStep('confirm')} disabled={!txId}
+              <button onClick={() => txId.trim() && setStep('confirm')} disabled={!txId.trim()}
                 className="w-full py-4 rounded-2xl bg-love-gradient text-white font-bold text-sm shadow-lg shadow-pink-500/25 hover:opacity-90 transition-opacity disabled:opacity-40">
                 Submit Payment →
               </button>
@@ -127,11 +162,34 @@ function PaymentModal({ plan, onClose }: { plan: typeof plans[0]; onClose: () =>
           {step === 'confirm' && (
             <div className="text-center py-4">
               <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 0.5 }} className="text-5xl mb-4">⏳</motion.div>
-              <h3 className="font-bold dark:text-white text-gray-900 mb-2">Verifying Payment</h3>
-              <p className="text-sm dark:text-gray-400 text-gray-600 mb-2">Transaction ID: <span className="font-bold text-brand-pink">{txId}</span></p>
-              <p className="text-xs dark:text-gray-500 text-gray-400 mb-6">Our team will verify your payment within 15 minutes and activate your {plan.name} plan.</p>
-              <button onClick={() => setStep('success')} className="w-full py-3.5 rounded-2xl bg-love-gradient text-white font-bold text-sm shadow-md shadow-pink-500/20">
-                I've Sent the Payment ✓
+              <h3 className="font-bold dark:text-white text-gray-900 mb-2">Confirm Your Payment</h3>
+              <p className="text-sm dark:text-gray-400 text-gray-600 mb-1">
+                Transaction ID: <span className="font-bold text-brand-pink">{txId}</span>
+              </p>
+              <p className="text-sm dark:text-gray-400 text-gray-600 mb-1">
+                Method: <span className="font-semibold dark:text-white text-gray-900">{selected.name}</span>
+              </p>
+              <p className="text-xs dark:text-gray-500 text-gray-400 mb-6">
+                Our team will verify your payment within 15 minutes and activate your {plan.name} plan.
+              </p>
+
+              {error && (
+                <div className="flex items-start gap-2 p-3 mb-4 dark:bg-red-500/10 bg-red-50 rounded-xl border dark:border-red-500/20 border-red-200 text-left">
+                  <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-red-400">{error}</p>
+                </div>
+              )}
+
+              <button onClick={handleSubmitPayment} disabled={submitting}
+                className="w-full py-3.5 rounded-2xl bg-love-gradient text-white font-bold text-sm shadow-md shadow-pink-500/20 disabled:opacity-60 flex items-center justify-center gap-2">
+                {submitting
+                  ? <><Loader2 className="w-4 h-4 animate-spin" /> Submitting…</>
+                  : "I've Sent the Payment ✓"
+                }
+              </button>
+              <button onClick={() => { setStep('select'); setError(null) }}
+                className="mt-3 w-full py-2.5 rounded-xl dark:bg-white/5 bg-gray-100 dark:text-gray-400 text-gray-600 text-sm font-semibold hover:text-brand-pink transition-colors">
+                ← Back
               </button>
             </div>
           )}
@@ -140,7 +198,8 @@ function PaymentModal({ plan, onClose }: { plan: typeof plans[0]; onClose: () =>
             <div className="text-center py-4">
               <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 300 }} className="text-6xl mb-4">🎉</motion.div>
               <h3 className="font-display font-black text-2xl text-gradient-love mb-2">Payment Submitted!</h3>
-              <p className="text-sm dark:text-gray-400 text-gray-600 mb-6">Your {plan.name} plan will be activated within 15 minutes. You'll receive a notification when it's ready.</p>
+              <p className="text-sm dark:text-gray-400 text-gray-600 mb-2">Your {plan.name} plan will be activated within 15 minutes.</p>
+              <p className="text-xs dark:text-gray-500 text-gray-400 mb-6">You'll receive a notification when it's ready. Thank you! 💕</p>
               <button onClick={onClose} className="w-full py-3.5 rounded-2xl bg-love-gradient text-white font-bold text-sm shadow-md shadow-pink-500/20">
                 Done 💕
               </button>
@@ -237,7 +296,7 @@ export default function SubscriptionsPage() {
                   </div>
                 </div>
 
-                {/* Features preview (top 5) */}
+                {/* Features preview (top 6) */}
                 <div className="grid grid-cols-2 gap-1.5 mb-4">
                   {plan.features.slice(0, 6).map(f => (
                     <div key={f.text} className={`flex items-center gap-1.5 text-[10px] ${f.ok ? 'dark:text-gray-300 text-gray-700' : 'dark:text-gray-600 text-gray-400'}`}>

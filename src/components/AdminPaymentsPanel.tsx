@@ -1,19 +1,22 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { CheckCircle2, XCircle, Clock, RefreshCw, Smartphone } from 'lucide-react'
+import { CheckCircle2, XCircle, RefreshCw, Smartphone, InboxIcon } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { MOBILE_MONEY_CONFIG } from '@/lib/mobileMoney'
+
+type PaymentStatus = 'pending' | 'confirmed' | 'rejected' | 'refunded'
+type FilterType = 'all' | 'pending' | 'confirmed' | 'rejected' | 'refunded'
 
 interface Payment {
   id: string
   user_id: string
-  provider: 'mtn' | 'orange'
+  provider: 'mtn' | 'orange' | 'other'
   amount_usd: number
   plan_id: string
   transaction_id: string
-  status: 'pending_verification' | 'verified' | 'rejected' | 'expired'
-  expires_at: string
+  status: PaymentStatus
   created_at: string
+  verified_at: string | null
   profiles?: { full_name: string; email: string; username: string }
 }
 
@@ -21,88 +24,54 @@ export default function AdminPaymentsPanel() {
   const [payments, setPayments] = useState<Payment[]>([])
   const [loading, setLoading] = useState(true)
   const [processing, setProcessing] = useState<string | null>(null)
-  const [filter, setFilter] = useState<'all' | 'pending_verification' | 'verified' | 'rejected'>('pending_verification')
+  const [filter, setFilter] = useState<FilterType>('pending')
 
   const fetchPayments = async () => {
     setLoading(true)
-    try {
-      const { data, error } = await supabase
-        .from('mobile_money_payments')
-        .select('*, profiles(full_name, email, username)')
-        .order('created_at', { ascending: false })
-        .limit(50)
+    const { data, error } = await supabase
+      .from('mobile_money_payments')
+      .select('*, profiles(full_name, email, username)')
+      .order('created_at', { ascending: false })
+      .limit(50)
 
-      if (!error && data) setPayments(data as Payment[])
-    } catch (e) {
-      console.warn('Payments fetch error (dev mode):', e)
-      // Show mock data in dev
-      setPayments([
-        {
-          id: '1', user_id: 'u1', provider: 'mtn', amount_usd: 9.99, plan_id: 'premium',
-          transaction_id: 'TXN123456789', status: 'pending_verification',
-          expires_at: new Date(Date.now() + 8 * 60 * 1000).toISOString(),
-          created_at: new Date().toISOString(),
-          profiles: { full_name: 'Amara K.', email: 'amara@example.com', username: 'amara_k' }
-        },
-        {
-          id: '2', user_id: 'u2', provider: 'orange', amount_usd: 24.99, plan_id: 'vip',
-          transaction_id: 'ORG987654321', status: 'pending_verification',
-          expires_at: new Date(Date.now() + 12 * 60 * 1000).toISOString(),
-          created_at: new Date(Date.now() - 3 * 60 * 1000).toISOString(),
-          profiles: { full_name: 'Kofi A.', email: 'kofi@example.com', username: 'kofi_a' }
-        },
-      ])
-    } finally {
-      setLoading(false)
+    if (!error && data) {
+      setPayments(data as Payment[])
+    } else if (error) {
+      console.warn('Payments fetch error:', error.message)
     }
+    setLoading(false)
   }
 
   useEffect(() => { fetchPayments() }, [])
 
   const handleVerify = async (paymentId: string) => {
     setProcessing(paymentId)
-    try {
-      const { error } = await supabase
-        .from('mobile_money_payments')
-        .update({ status: 'verified', verified_at: new Date().toISOString() })
-        .eq('id', paymentId)
-      if (!error) {
-        setPayments(prev => prev.map(p => p.id === paymentId ? { ...p, status: 'verified' } : p))
-      }
-    } catch {
-      setPayments(prev => prev.map(p => p.id === paymentId ? { ...p, status: 'verified' } : p))
-    } finally {
-      setProcessing(null)
+    const { error } = await supabase
+      .from('mobile_money_payments')
+      .update({ status: 'confirmed', verified_at: new Date().toISOString() })
+      .eq('id', paymentId)
+
+    if (!error) {
+      setPayments(prev => prev.map(p => p.id === paymentId ? { ...p, status: 'confirmed' as PaymentStatus, verified_at: new Date().toISOString() } : p))
     }
+    setProcessing(null)
   }
 
   const handleReject = async (paymentId: string) => {
     setProcessing(paymentId)
-    try {
-      const { error } = await supabase
-        .from('mobile_money_payments')
-        .update({ status: 'rejected' })
-        .eq('id', paymentId)
-      if (!error) {
-        setPayments(prev => prev.map(p => p.id === paymentId ? { ...p, status: 'rejected' } : p))
-      }
-    } catch {
-      setPayments(prev => prev.map(p => p.id === paymentId ? { ...p, status: 'rejected' } : p))
-    } finally {
-      setProcessing(null)
-    }
-  }
+    const { error } = await supabase
+      .from('mobile_money_payments')
+      .update({ status: 'rejected' })
+      .eq('id', paymentId)
 
-  const getTimeLeft = (expiresAt: string) => {
-    const diff = new Date(expiresAt).getTime() - Date.now()
-    if (diff <= 0) return 'Expired'
-    const m = Math.floor(diff / 60000)
-    const s = Math.floor((diff % 60000) / 1000)
-    return `${m}m ${s}s`
+    if (!error) {
+      setPayments(prev => prev.map(p => p.id === paymentId ? { ...p, status: 'rejected' as PaymentStatus } : p))
+    }
+    setProcessing(null)
   }
 
   const filtered = payments.filter(p => filter === 'all' || p.status === filter)
-  const pendingCount = payments.filter(p => p.status === 'pending_verification').length
+  const pendingCount = payments.filter(p => p.status === 'pending').length
 
   return (
     <div className="dark:bg-[#130E1E] bg-white rounded-2xl border dark:border-white/6 border-pink-100 overflow-hidden">
@@ -126,11 +95,15 @@ export default function AdminPaymentsPanel() {
 
       {/* Filter tabs */}
       <div className="flex gap-1 p-3 border-b dark:border-white/5 border-gray-100">
-        {(['pending_verification', 'verified', 'rejected', 'all'] as const).map(f => (
+        {(['pending', 'confirmed', 'rejected', 'refunded', 'all'] as const).map(f => (
           <button key={f} onClick={() => setFilter(f)}
             className={`px-3 py-1.5 rounded-lg text-[10px] font-semibold capitalize transition-all ${filter === f ? 'bg-love-gradient text-white' : 'dark:bg-white/5 bg-gray-100 dark:text-gray-400 text-gray-600 hover:text-brand-pink'}`}>
-            {f === 'pending_verification' ? '⏳ Pending' : f === 'verified' ? '✅ Verified' : f === 'rejected' ? '❌ Rejected' : '📋 All'}
-            {f === 'pending_verification' && pendingCount > 0 && (
+            {f === 'pending'   ? '⏳ Pending'
+            : f === 'confirmed' ? '✅ Verified'
+            : f === 'rejected'  ? '❌ Rejected'
+            : f === 'refunded'  ? '↩️ Refunded'
+            :                    '📋 All'}
+            {f === 'pending' && pendingCount > 0 && (
               <span className="ml-1 w-4 h-4 rounded-full bg-amber-400 text-black text-[9px] font-black inline-flex items-center justify-center">{pendingCount}</span>
             )}
           </button>
@@ -145,13 +118,13 @@ export default function AdminPaymentsPanel() {
           </div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-12">
-            <CheckCircle2 className="w-10 h-10 dark:text-gray-700 text-gray-300 mx-auto mb-2" />
+            <InboxIcon className="w-10 h-10 dark:text-gray-700 text-gray-300 mx-auto mb-2" />
             <p className="text-sm dark:text-gray-500 text-gray-400">No payments in this category</p>
           </div>
         ) : (
           filtered.map((payment, i) => {
-            const cfg = MOBILE_MONEY_CONFIG[payment.provider]
-            const isPending = payment.status === 'pending_verification'
+            const cfg = MOBILE_MONEY_CONFIG[payment.provider] ?? MOBILE_MONEY_CONFIG['mtn']
+            const isPending = payment.status === 'pending'
             const isProcessing = processing === payment.id
 
             return (
@@ -177,14 +150,14 @@ export default function AdminPaymentsPanel() {
                       <div className="text-right flex-shrink-0">
                         <p className="text-sm font-black text-brand-pink">${payment.amount_usd}</p>
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                          payment.status === 'pending_verification' ? 'bg-amber-500/15 text-amber-400' :
-                          payment.status === 'verified' ? 'bg-emerald-500/15 text-emerald-400' :
-                          payment.status === 'rejected' ? 'bg-red-500/15 text-red-400' :
-                          'dark:bg-white/8 bg-gray-100 dark:text-gray-400 text-gray-500'
+                          payment.status === 'pending'   ? 'bg-amber-500/15 text-amber-400' :
+                          payment.status === 'confirmed' ? 'bg-emerald-500/15 text-emerald-400' :
+                          payment.status === 'rejected'  ? 'bg-red-500/15 text-red-400' :
+                                                           'dark:bg-white/8 bg-gray-100 dark:text-gray-400 text-gray-500'
                         }`}>
-                          {payment.status === 'pending_verification' ? '⏳ Pending' :
-                           payment.status === 'verified' ? '✅ Verified' :
-                           payment.status === 'rejected' ? '❌ Rejected' : '💀 Expired'}
+                          {payment.status === 'pending'   ? '⏳ Pending' :
+                           payment.status === 'confirmed' ? '✅ Verified' :
+                           payment.status === 'rejected'  ? '❌ Rejected' : '↩️ Refunded'}
                         </span>
                       </div>
                     </div>
@@ -194,25 +167,24 @@ export default function AdminPaymentsPanel() {
                         <span className="font-medium dark:text-gray-300 text-gray-600">Provider:</span> {cfg.name}
                       </span>
                       <span className="text-[10px] dark:text-gray-500 text-gray-400">
-                        <span className="font-medium dark:text-gray-300 text-gray-600">Plan:</span> {payment.plan_id.toUpperCase()}
+                        <span className="font-medium dark:text-gray-300 text-gray-600">Plan:</span> {(payment.plan_id || '').toUpperCase()}
                       </span>
                       <span className="text-[10px] dark:text-gray-500 text-gray-400">
-                        <span className="font-medium dark:text-gray-300 text-gray-600">Submitted:</span> {new Date(payment.created_at).toLocaleTimeString()}
+                        <span className="font-medium dark:text-gray-300 text-gray-600">Submitted:</span> {new Date(payment.created_at).toLocaleString()}
                       </span>
+                      {payment.verified_at && (
+                        <span className="text-[10px] dark:text-gray-500 text-gray-400">
+                          <span className="font-medium dark:text-gray-300 text-gray-600">Verified:</span> {new Date(payment.verified_at).toLocaleString()}
+                        </span>
+                      )}
                     </div>
 
                     {/* Transaction ID */}
                     <div className="flex items-center gap-2 mb-3">
                       <div className="flex-1 px-3 py-1.5 rounded-lg dark:bg-white/5 bg-gray-50 border dark:border-white/8 border-gray-200">
                         <p className="text-[10px] dark:text-gray-500 text-gray-400 mb-0.5">Transaction ID</p>
-                        <p className="text-xs font-mono font-bold dark:text-white text-gray-900">{payment.transaction_id}</p>
+                        <p className="text-xs font-mono font-bold dark:text-white text-gray-900">{payment.transaction_id || '—'}</p>
                       </div>
-                      {isPending && (
-                        <div className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20">
-                          <Clock className="w-3 h-3 text-amber-400" />
-                          <span className="text-[10px] font-mono font-bold text-amber-400">{getTimeLeft(payment.expires_at)}</span>
-                        </div>
-                      )}
                     </div>
 
                     {/* Action buttons */}
