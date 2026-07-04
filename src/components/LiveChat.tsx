@@ -219,7 +219,7 @@ export default function LiveChat() {
                         <div className={`max-w-[85%] ${msg.isBot ? '' : 'items-end flex flex-col'}`}>
                           <div className={`px-3 py-2.5 rounded-2xl ${
                             msg.isBot
-                              ? 'dark:bg-white/8 dark:text-white rounded-tl-sm text-[#000000] bg-[#ffff] border-t-[#FF1493] border-r-[#FF1493] border-b-[#FF1493] border-l-[#FF1493] border-t-[2px] border-r-[2px] border-b-[2px] border-l-[2px] text-[12px]'
+                              ? 'dark:bg-white/8 dark:text-white rounded-tl-sm bg-[#ffff] border-t-[#FF1493] border-r-[#FF1493] border-b-[#FF1493] border-l-[#FF1493] border-t-[2px] border-r-[2px] border-b-[2px] border-l-[2px] text-[14px] text-[#000] pt-[1px] pb-[1px] mt-[10px] mb-[10px]'
                               : 'bg-love-gradient text-white rounded-tr-sm'
                           }`}>
                             {formatText(msg.text)}
