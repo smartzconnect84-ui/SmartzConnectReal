@@ -1,5 +1,5 @@
 {
-  "installCommand": "npm install",
+  "installCommand": "npm install --ignore-scripts && node node_modules/esbuild/install.js",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": "vite",
