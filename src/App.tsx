@@ -41,6 +41,7 @@ import MarketplacePage     from '@/pages/MarketplacePage'
 import SmartzTVPage        from '@/pages/SmartzTVPage'
 import RidePage            from '@/pages/RidePage'
 import SubscriptionsPage   from '@/pages/SubscriptionsPage'
+import FriendsPage         from '@/pages/FriendsPage'
 
 import SmartzTVPublicPage  from '@/pages/public/SmartzTVPage'
 import SmartzRidePage      from '@/pages/public/SmartzRidePage'
@@ -149,6 +150,7 @@ export default function App() {
                 <Route path="ride"          element={<RidePage />} />
                 <Route path="subscriptions" element={<SubscriptionsPage />} />
                 <Route path="profile"       element={<ProfilePage />} />
+                <Route path="friends"       element={<FriendsPage />} />
               </Route>
 
               {/* Admin Panel */}

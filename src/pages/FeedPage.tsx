@@ -1,10 +1,10 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Image, Video, Send, Heart, MessageCircle, Share2, MoreHorizontal,
   Bookmark, TrendingUp, RefreshCw, MapPin, Plus, Smile,
-  Users, Calendar, Gift, ChevronRight, Wifi
+  Users, Calendar, Gift, ChevronRight, Wifi, Camera, X
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
@@ -106,51 +106,157 @@ function PostSkeleton() {
 }
 
 // ── Stories Bar ───────────────────────────────────────────────────────────────
-function StoriesBar({ user }: { user: { email?: string } | null }) {
-  const scrollRef = useRef<HTMLDivElement>(null)
+interface DbStory {
+  id: string
+  author_id: string
+  media_url: string
+  media_type: string
+  expires_at: string
+  profile?: { full_name: string | null; avatar_url: string | null; username: string | null }
+}
 
-  const stories: Story[] = [
-    { id: 'own', name: 'Your Story', avatar: user?.email?.[0]?.toUpperCase() ?? 'U', gradient: 'from-brand-pink to-brand-purple', isOwn: true },
-    { id: '1', name: 'Amara D.',    avatar: '👩🏾', gradient: storyGradients[0] },
-    { id: '2', name: 'Kwame A.',    avatar: '👨🏿', gradient: storyGradients[1] },
-    { id: '3', name: 'Zainab O.',   avatar: '👩🏽', gradient: storyGradients[2] },
-    { id: '4', name: 'Emeka C.',    avatar: '👨🏾', gradient: storyGradients[3] },
-    { id: '5', name: 'Ngozi B.',    avatar: '👩🏿', gradient: storyGradients[4] },
-    { id: '6', name: 'Kofi M.',     avatar: '👨🏽', gradient: storyGradients[5] },
-  ]
+interface ViewStory {
+  id: string
+  authorId: string
+  name: string
+  avatar: string | null
+  mediaUrl: string
+  isOwn?: boolean
+}
+
+function StoriesBar({ user }: { user: { id?: string; email?: string } | null }) {
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const storyInputRef = useRef<HTMLInputElement>(null)
+  const [dbStories, setDbStories] = useState<DbStory[]>([])
+  const [uploading, setUploading] = useState(false)
+  const [viewing, setViewing] = useState<ViewStory | null>(null)
+
+  const loadStories = useCallback(async () => {
+    const { data } = await supabase
+      .from('stories')
+      .select('id,author_id,media_url,media_type,expires_at,profiles(full_name,avatar_url,username)')
+      .gt('expires_at', new Date().toISOString())
+      .order('created_at', { ascending: false })
+      .limit(20)
+    if (data) setDbStories(data as any)
+  }, [])
+
+  useEffect(() => { loadStories() }, [loadStories])
+
+  const handleStoryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !user?.id) return
+    setUploading(true)
+    try {
+      const ext = file.name.split('.').pop()
+      const path = `stories/${user.id}/${Date.now()}.${ext}`
+      const { error: uploadErr } = await supabase.storage.from('user-uploads').upload(path, file, { upsert: false })
+      if (!uploadErr) {
+        const { data: urlData } = supabase.storage.from('user-uploads').getPublicUrl(path)
+        const isVideo = file.type.startsWith('video/')
+        await supabase.from('stories').insert({
+          author_id: user.id,
+          media_url: urlData.publicUrl,
+          media_type: isVideo ? 'video' : 'image',
+          expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        })
+        await loadStories()
+      }
+    } catch { /* ignore */ }
+    setUploading(false)
+  }
+
+  const myStory = dbStories.find(s => s.author_id === user?.id)
+  const othersStories = dbStories.filter(s => s.author_id !== user?.id)
 
   return (
-    <div className="dark:bg-[#0D0A14] bg-white rounded-2xl border dark:border-white/6 border-gray-200 mb-3 shadow-sm overflow-hidden">
-      <div
-        ref={scrollRef}
-        className="flex gap-3 px-4 py-3.5 overflow-x-auto scrollbar-none"
-        style={{ scrollbarWidth: 'none' }}
-      >
-        {stories.map(story => (
-          <button key={story.id} className="flex flex-col items-center gap-1.5 flex-shrink-0 group">
-            <div className="relative">
-              {/* Ring for non-own stories */}
-              {!story.isOwn && (
-                <div className="absolute -inset-0.5 rounded-full bg-love-gradient" />
-              )}
-              <div className={`relative w-14 h-14 rounded-full bg-gradient-to-br ${story.gradient} flex items-center justify-center text-xl overflow-hidden border-2 dark:border-[#0D0A14] border-white`}>
-                {typeof story.avatar === 'string' && story.avatar.length <= 2 && !story.isOwn
-                  ? <span>{story.avatar}</span>
-                  : <span className="text-white font-bold text-lg">{story.avatar}</span>}
-              </div>
-              {story.isOwn && (
-                <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-love-gradient flex items-center justify-center border-2 dark:border-[#0D0A14] border-white">
-                  <Plus className="w-3 h-3 text-white" />
-                </div>
-              )}
-            </div>
-            <span className="text-[10px] font-semibold dark:text-gray-400 text-gray-500 max-w-[56px] truncate text-center group-hover:text-brand-pink transition-colors">
-              {story.name}
-            </span>
+    <>
+      {/* Story viewer overlay */}
+      {viewing && (
+        <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center" onClick={() => setViewing(null)}>
+          <button className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center" onClick={() => setViewing(null)}>
+            <X className="w-5 h-5 text-white" />
           </button>
-        ))}
+          <div className="max-w-sm w-full mx-4 rounded-2xl overflow-hidden">
+            {viewing.mediaUrl.match(/\.(mp4|webm|mov)$/i)
+              ? <video src={viewing.mediaUrl} autoPlay controls className="w-full" />
+              : <img src={viewing.mediaUrl} alt="Story" className="w-full object-contain max-h-[80vh]" />
+            }
+            <div className="bg-black/60 p-3 flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-love-gradient flex items-center justify-center text-white text-sm font-bold overflow-hidden">
+                {viewing.avatar ? <img src={viewing.avatar} alt="" className="w-full h-full object-cover" /> : viewing.name[0]}
+              </div>
+              <p className="text-white text-sm font-semibold">{viewing.name}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="dark:bg-[#0D0A14] bg-white rounded-2xl border dark:border-white/6 border-gray-200 mb-3 shadow-sm overflow-hidden">
+        <div ref={scrollRef} className="flex gap-3 px-4 py-3.5 overflow-x-auto scrollbar-none" style={{ scrollbarWidth: 'none' }}>
+
+          {/* Own story / add story */}
+          <div className="flex flex-col items-center gap-1.5 flex-shrink-0 group">
+            <div className="relative">
+              <button
+                onClick={() => myStory
+                  ? setViewing({ id: myStory.id, authorId: myStory.author_id, name: 'Your Story', avatar: null, mediaUrl: myStory.media_url })
+                  : storyInputRef.current?.click()
+                }
+                disabled={uploading}
+                className={`w-14 h-14 rounded-full bg-gradient-to-br from-brand-pink to-brand-purple flex items-center justify-center text-white font-bold text-lg overflow-hidden border-2 dark:border-[#0D0A14] border-white ${myStory ? 'ring-2 ring-offset-1 ring-pink-500' : ''}`}>
+                {uploading
+                  ? <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                  : <span className="text-lg">{user?.email?.[0]?.toUpperCase() ?? 'U'}</span>
+                }
+              </button>
+              {!myStory && !uploading && (
+                <button onClick={() => storyInputRef.current?.click()}
+                  className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-love-gradient flex items-center justify-center border-2 dark:border-[#0D0A14] border-white">
+                  <Plus className="w-3 h-3 text-white" />
+                </button>
+              )}
+              <input ref={storyInputRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleStoryUpload} />
+            </div>
+            <span className="text-[10px] font-semibold dark:text-gray-400 text-gray-500 max-w-[56px] truncate text-center">
+              {myStory ? 'Your Story' : 'Add Story'}
+            </span>
+          </div>
+
+          {/* Others' stories */}
+          {othersStories.map((story, idx) => {
+            const profile = (story as any).profiles as { full_name: string | null; avatar_url: string | null; username: string | null } | null
+            const name = profile?.full_name || profile?.username || 'User'
+            return (
+              <button key={story.id}
+                onClick={() => setViewing({ id: story.id, authorId: story.author_id, name, avatar: profile?.avatar_url ?? null, mediaUrl: story.media_url })}
+                className="flex flex-col items-center gap-1.5 flex-shrink-0 group">
+                <div className="relative">
+                  <div className="absolute -inset-0.5 rounded-full bg-love-gradient" />
+                  <div className={`relative w-14 h-14 rounded-full bg-gradient-to-br ${storyGradients[idx % storyGradients.length]} flex items-center justify-center text-xl overflow-hidden border-2 dark:border-[#0D0A14] border-white`}>
+                    {profile?.avatar_url
+                      ? <img src={profile.avatar_url} alt={name} className="w-full h-full object-cover" />
+                      : <span className="text-white font-bold">{name[0]?.toUpperCase()}</span>
+                    }
+                  </div>
+                </div>
+                <span className="text-[10px] font-semibold dark:text-gray-400 text-gray-500 max-w-[56px] truncate text-center group-hover:text-brand-pink transition-colors">
+                  {name.split(' ')[0]}
+                </span>
+              </button>
+            )
+          })}
+
+          {/* Placeholder if no stories */}
+          {othersStories.length === 0 && (
+            <div className="flex items-center gap-2 pl-2">
+              <Camera className="w-4 h-4 dark:text-gray-600 text-gray-300" />
+              <span className="text-[11px] dark:text-gray-500 text-gray-400">Stories from people you follow will appear here</span>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </>
   )
 }
 
@@ -484,28 +590,40 @@ export default function FeedPage() {
   const [error, setError] = useState<string | null>(null)
   const { user } = useAuth()
 
-  const fetchPosts = async () => {
+  const fetchPosts = useCallback(async () => {
     setLoading(true)
     setError(null)
 
     const { data: postRows, error: postErr } = await supabase
       .from('posts')
       .select('id, content, created_at, likes_count, comments_count, shares_count, location, author_id, visibility')
+      .eq('is_deleted', false)
       .order('created_at', { ascending: false })
       .limit(30)
 
     if (postErr) { setError(postErr.message); setLoading(false); return }
-
     if (!postRows?.length) { setPosts([]); setLoading(false); return }
 
-    const authorIds = [...new Set(postRows.map(p => p.author_id).filter(Boolean))]
-    const { data: profiles } = authorIds.length
-      ? await supabase.from('profiles').select('id, full_name, avatar_url, is_verified, subscription_tier, username').in('id', authorIds)
-      : { data: [] }
+    const authorIds = [...new Set(postRows.map((p: any) => p.author_id).filter(Boolean))]
+    const postIds = postRows.map((p: any) => p.id)
 
-    const profileMap = Object.fromEntries((profiles || []).map(p => [p.id, p]))
+    const [profilesRes, likesRes, savesRes] = await Promise.all([
+      authorIds.length
+        ? supabase.from('profiles').select('id, full_name, avatar_url, is_verified, subscription_tier, username').in('id', authorIds)
+        : { data: [] },
+      user?.id
+        ? supabase.from('post_likes').select('post_id').eq('user_id', user.id).in('post_id', postIds)
+        : { data: [] },
+      user?.id
+        ? supabase.from('post_saves').select('post_id').eq('user_id', user.id).in('post_id', postIds)
+        : { data: [] },
+    ])
 
-    const mapped: Post[] = postRows.map((p, i) => {
+    const profileMap = Object.fromEntries(((profilesRes.data as any[]) || []).map((p: any) => [p.id, p]))
+    const likedSet = new Set(((likesRes.data as any[]) || []).map((l: any) => l.post_id))
+    const savedSet = new Set(((savesRes.data as any[]) || []).map((s: any) => s.post_id))
+
+    const mapped: Post[] = postRows.map((p: any, i: number) => {
       const profile = profileMap[p.author_id]
       return {
         id: String(p.id),
@@ -519,8 +637,8 @@ export default function FeedPage() {
         likes: p.likes_count || 0,
         comments: p.comments_count || 0,
         shares: p.shares_count || 0,
-        liked: false,
-        saved: false,
+        liked: likedSet.has(p.id),
+        saved: savedSet.has(p.id),
         verified: profile?.is_verified,
         premium: profile?.subscription_tier === 'vip' || profile?.subscription_tier === 'premium',
       }
@@ -528,20 +646,34 @@ export default function FeedPage() {
 
     setPosts(mapped)
     setLoading(false)
-  }
+  }, [user])
 
-  useEffect(() => { fetchPosts() }, [])
+  useEffect(() => { fetchPosts() }, [fetchPosts])
 
   const toggleLike = async (id: string) => {
+    if (!user?.id) return
     const post = posts.find(p => p.id === id)
     if (!post) return
-    const newLikes = post.liked ? post.likes - 1 : post.likes + 1
-    setPosts(prev => prev.map(p => p.id === id ? { ...p, liked: !p.liked, likes: newLikes } : p))
-    await supabase.from('posts').update({ likes_count: newLikes }).eq('id', id)
+    const nowLiked = !post.liked
+    setPosts(prev => prev.map(p => p.id === id ? { ...p, liked: nowLiked, likes: nowLiked ? p.likes + 1 : p.likes - 1 } : p))
+    if (nowLiked) {
+      await supabase.from('post_likes').insert({ post_id: id, user_id: user.id })
+    } else {
+      await supabase.from('post_likes').delete().eq('post_id', id).eq('user_id', user.id)
+    }
   }
 
-  const toggleSave = (id: string) => {
-    setPosts(prev => prev.map(p => p.id === id ? { ...p, saved: !p.saved } : p))
+  const toggleSave = async (id: string) => {
+    if (!user?.id) return
+    const post = posts.find(p => p.id === id)
+    if (!post) return
+    const nowSaved = !post.saved
+    setPosts(prev => prev.map(p => p.id === id ? { ...p, saved: nowSaved } : p))
+    if (nowSaved) {
+      await supabase.from('post_saves').insert({ post_id: id, user_id: user.id })
+    } else {
+      await supabase.from('post_saves').delete().eq('post_id', id).eq('user_id', user.id)
+    }
   }
 
   return (
