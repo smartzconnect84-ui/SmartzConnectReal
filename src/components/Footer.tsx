@@ -23,12 +23,12 @@ const footerLinks = {
     { label: 'Investors',         href: '/about#investors' },
   ],
   Support: [
-    { label: 'Help Center',       href: '#' },
-    { label: 'Safety Center',     href: '#' },
-    { label: 'Community Rules',   href: '#' },
-    { label: 'Report a Problem',  href: '#' },
+    { label: 'Help Center',       href: '/about#support' },
+    { label: 'Safety Center',     href: '/privacy#safety' },
+    { label: 'Community Rules',   href: '/terms#community' },
+    { label: 'Report a Problem',  href: 'https://wa.me/231776679963?text=Report%20a%20Problem%3A', external: true },
     { label: 'WhatsApp Support',  href: 'https://wa.me/231776679963', external: true },
-    { label: 'Contact Us',        href: '#' },
+    { label: 'Contact Us',        href: 'https://wa.me/231776679963?text=Hello%2C%20I%20need%20help', external: true },
   ],
   Legal: [
     { label: 'Privacy Policy',    href: '/privacy' },

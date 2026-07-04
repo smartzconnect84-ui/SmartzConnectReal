@@ -10,7 +10,17 @@ const segments = ['💕', '🔥', '⭐', '💎', '🎯', '✨', '🌟', '💫', 
 const SEGMENT_COUNT = segments.length
 const SEGMENT_ANGLE = 360 / SEGMENT_COUNT
 
-type SpinProfile = typeof fallbackProfiles[0]
+interface SpinProfile {
+  name: string
+  age: number
+  emoji: string
+  country: string
+  flag: string
+  interests: string[]
+  bio: string
+  online: boolean
+  avatar_url: string | null
+}
 type Phase = 'idle' | 'spinning' | 'matched' | 'chatting' | 'skipped'
 
 export default function SpinChatPage() {
