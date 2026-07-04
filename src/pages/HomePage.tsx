@@ -2,8 +2,8 @@ import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import Hero from '@/components/Hero'
 import {
-  Users, Heart, Briefcase, ShoppingBag, GraduationCap, Monitor,
-  Eye, Target, CheckCircle, UserPlus, Globe, Shield, Sparkles,
+  Heart, Globe, Users, Car, Package, ShoppingBag, Megaphone, Tv,
+  Eye, Target, CheckCircle, UserPlus, Shield, Sparkles,
   Star, Zap, Award, TrendingUp, Handshake, ArrowRight,
 } from 'lucide-react'
 
@@ -12,14 +12,17 @@ const up = (delay = 0) => ({
   initial: { opacity: 0, y: 30 },
   whileInView: { opacity: 1, y: 0 },
   viewport: { once: true, margin: '-50px' },
-  transition: { duration: 0.55, delay, ease: [0.16, 1, 0.3, 1] as any },
+  transition: { duration: 0.55, delay, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] },
 })
 
-/* ── palette tokens ── */
-// Pink:   #ec4899  #f472b6
-// Purple: #9333ea  #a855f7  #7c3aed
-// Black:  #000000  #05000d  #0a0014
-// White:  #ffffff  rgba(255,255,255,…)
+/* ────────────────────────────────────────────────────────────────────────── */
+/*  BRAND PALETTE                                                              */
+/* ────────────────────────────────────────────────────────────────────────── */
+// Pink:  #EC4899
+// Red:   #DC2626
+// Gold:  #D4AF37
+// Black: #000000 / #05000d
+// White: #ffffff
 
 /* ────────────────────────────────────────────────────────────────────────── */
 /*  DATA                                                                       */
@@ -27,114 +30,133 @@ const up = (delay = 0) => ({
 
 const SERVICES = [
   {
-    emoji: '❤️', icon: Heart, name: 'Social Networking',
-    color: 'from-pink-500 to-rose-600',
-    glow: 'shadow-pink-500/25',
-    desc: "Share life's moments, connect with friends and family, join communities, create memories, and stay connected through an engaging social experience.",
+    emoji: '❤️', icon: Heart, name: 'SmartzDating',
+    color: 'from-[#EC4899] to-[#DC2626]',
+    glow: 'shadow-pink-600/30',
+    features: ['Smart Matching', 'Swipe & Match', 'Verified Profiles', 'Messaging', 'Voice & Video Calls', 'AI Recommendations'],
+    desc: 'Find meaningful relationships with AI-powered matching, verified profiles, and safe communication tools.',
   },
   {
-    emoji: '💕', icon: Heart, name: 'Dating & Relationships',
-    color: 'from-fuchsia-500 to-pink-600',
-    glow: 'shadow-fuchsia-500/25',
-    desc: 'Meet genuine people, discover meaningful relationships, and build lasting connections in a safe and respectful environment designed for authentic interactions.',
+    emoji: '🌍', icon: Globe, name: 'SmartzConnect',
+    color: 'from-[#DC2626] to-[#EC4899]',
+    glow: 'shadow-red-600/30',
+    features: ['Professional Networking', 'Careers', 'Companies', 'Business Connections', 'Communities', 'Events'],
+    desc: 'Build your professional network, discover career opportunities, and grow your business across Africa and beyond.',
   },
   {
-    emoji: '💼', icon: Briefcase, name: 'Business & Professional Networking',
-    color: 'from-violet-600 to-purple-700',
-    glow: 'shadow-violet-500/25',
-    desc: 'Connect with entrepreneurs, professionals, employers, clients, and organizations to build valuable business relationships and unlock new opportunities.',
+    emoji: '👥', icon: Users, name: 'SmartzSocial',
+    color: 'from-[#EC4899] to-rose-700',
+    glow: 'shadow-pink-500/30',
+    features: ['Posts', 'Stories', 'Reels', 'Groups', 'Pages', 'Live Streaming', 'Messaging'],
+    desc: "Share life's moments, go live, join communities, and stay close to the people who matter.",
   },
   {
-    emoji: '🛍️', icon: ShoppingBag, name: 'Marketplace',
-    color: 'from-purple-500 to-violet-600',
-    glow: 'shadow-purple-500/25',
-    desc: 'Buy, sell, advertise, and discover products and services from trusted individuals and businesses within the SmartzConnect community.',
+    emoji: '🚗', icon: Car, name: 'SmartzRide',
+    color: 'from-rose-700 to-[#DC2626]',
+    glow: 'shadow-rose-700/30',
+    features: ['Ride Booking', 'Driver Platform', 'Live Tracking', 'Scheduled Trips', 'Secure Payments'],
+    desc: 'Safe, affordable ride-hailing with verified drivers and real-time tracking across African cities.',
   },
   {
-    emoji: '🔍', icon: TrendingUp, name: 'Jobs & Careers',
-    color: 'from-pink-600 to-fuchsia-600',
-    glow: 'shadow-pink-600/25',
-    desc: 'Discover employment opportunities, recruit talented professionals, and advance your career through a growing professional network.',
+    emoji: '📦', icon: Package, name: 'SmartzDelivery',
+    color: 'from-[#DC2626] to-rose-800',
+    glow: 'shadow-red-700/30',
+    features: ['Food Delivery', 'Grocery Delivery', 'Parcel Delivery', 'Courier Services', 'Live Tracking'],
+    desc: 'Fast, reliable local delivery connecting vendors with customers across every neighbourhood.',
   },
   {
-    emoji: '🎓', icon: GraduationCap, name: 'Learning & Development',
-    color: 'from-fuchsia-600 to-purple-600',
-    glow: 'shadow-fuchsia-600/25',
-    desc: 'Learn new skills, share knowledge, participate in educational communities, and support personal and professional growth.',
+    emoji: '🛍', icon: ShoppingBag, name: 'SmartzMarket',
+    color: 'from-rose-600 to-[#EC4899]',
+    glow: 'shadow-rose-600/30',
+    features: ['Buy & Sell', 'Business Stores', 'Digital Products', 'Secure Checkout'],
+    desc: "Africa's social marketplace — list products, accept Mobile Money, and reach millions of buyers.",
   },
   {
-    emoji: '💻', icon: Monitor, name: 'Technology Solutions',
-    color: 'from-purple-600 to-pink-600',
-    glow: 'shadow-purple-600/25',
-    desc: 'Deliver innovative digital solutions, software development, consulting, and technology services that help businesses and organizations succeed.',
+    emoji: '📢', icon: Megaphone, name: 'SmartzAds',
+    color: 'from-[#EC4899] to-[#DC2626]',
+    glow: 'shadow-pink-700/30',
+    features: ['Sponsored Ads', 'Campaign Management', 'Analytics', 'Audience Targeting'],
+    desc: 'Run powerful ad campaigns targeted to Africa\'s most engaged digital community.',
+  },
+  {
+    emoji: '📺', icon: Tv, name: 'SmartzTV',
+    color: 'from-[#DC2626] to-[#EC4899]',
+    glow: 'shadow-red-600/30',
+    features: ['Videos', 'Live Streaming', 'Creator Channels', 'Podcasts', 'Entertainment', 'Education'],
+    desc: 'Broadcast to millions, earn virtual gifts, and build your creator empire on SmartzTV.',
   },
 ]
 
 const VALUES = [
   { icon: Handshake, title: 'Meaningful Connections', desc: 'We believe genuine human relationships have the power to change lives.' },
-  { icon: Shield,    title: 'Trust',                  desc: 'We foster a safe, respectful, and transparent environment where people can connect with confidence.' },
-  { icon: Globe,     title: 'Community',               desc: 'We celebrate diversity and create spaces where everyone belongs.' },
+  { icon: Shield,    title: 'Trust & Safety',         desc: 'We foster a safe, respectful, and transparent environment where people connect with confidence.' },
+  { icon: Globe,     title: 'Community',               desc: 'We celebrate diversity and create spaces where everyone belongs, from Liberia to the world.' },
   { icon: Zap,       title: 'Innovation',              desc: 'We continuously build smarter technologies that strengthen human connection.' },
   { icon: Award,     title: 'Integrity',               desc: 'We act with honesty, accountability, and professionalism in every interaction.' },
   { icon: Users,     title: 'Inclusion',               desc: 'We welcome people from every background, culture, and community.' },
-  { icon: Star,      title: 'Excellence',              desc: 'We strive to deliver exceptional experiences in everything we create.' },
+  { icon: Star,      title: 'Excellence',              desc: 'We strive to deliver world-class experiences in everything we create.' },
   { icon: TrendingUp,title: 'Growth',                  desc: 'We empower individuals, communities, and businesses to reach their full potential.' },
 ]
 
 const WHY_LIST = [
-  'Connect with people who share your interests.',
-  'Build genuine friendships and meaningful relationships.',
+  'One identity. Access all 8 super-products with a single free account.',
+  'Connect with friends, meet meaningful relationships, build lasting communities.',
+  'Book rides, order food, and shop — all without leaving the app.',
+  'Go live, create content, and earn revenue through SmartzTV.',
+  'Grow your business with powerful advertising and marketplace tools.',
   'Stay in touch through secure messaging, voice calls, and video calls.',
-  'Join communities that inspire and support you.',
-  'Grow your business and professional network.',
-  'Buy and sell through an integrated marketplace.',
-  'Discover jobs, learning opportunities, and valuable resources.',
-  'Enjoy a secure, modern, and user-friendly digital experience designed around people.',
+  'Verified profiles and AI-powered matching built for authentic connections.',
+  'Built in Liberia for Africa and the world — Mobile Money payments accepted.',
 ]
 
-const SOCIAL_FEATURES = [
-  'Personalized News Feed', 'Friend Requests & Connections', 'Private & Group Messaging',
-  'Voice & Video Calls', 'Stories, Photos & Videos', 'Groups & Communities',
-  'Pages & Public Profiles', 'Events & Meetups', 'Live Streaming',
-  'Real-Time Notifications', 'Privacy & Safety Controls', 'Memories & Saved Content',
+const DATING_FEATURES = [
+  'AI-Powered Smart Matching', 'Swipe & Match Discovery', 'Verified Profile Badges',
+  'Icebreaker Prompts', 'Interest-Based Compatibility', 'Secure Private Conversations',
+  'Voice & Video Dating Calls', 'Safety Reporting & Blocking', 'Profile Boost',
+  'Super Likes & Match Alerts',
 ]
-const RELATIONSHIP_FEATURES = [
-  'Smart Match Discovery', 'Personalized Match Suggestions', 'Verified Profiles',
-  'Relationship Preferences', 'Interest-Based Connections', 'Secure Private Conversations',
-  'Audio & Video Dating Calls', 'Icebreaker Prompts', 'Profile Compatibility Insights',
-  'Safety Reporting & Blocking Tools',
+const SOCIAL_FEATURES = [
+  'Personalized News Feed', 'Stories, Reels & Videos', 'Live Streaming on SmartzTV',
+  'Groups & Communities', 'Pages & Public Profiles', 'Private & Group Messaging',
+  'Creator Channels & Podcasts', 'Real-Time Notifications', 'Events & Meetups',
+  'Memories & Saved Content',
 ]
 const BUSINESS_FEATURES = [
-  'Professional Profiles', 'Business Pages', 'Marketplace Listings',
-  'Service Promotion', 'Job Opportunities', 'Business Networking',
-  'Advertising Solutions', 'Customer Engagement', 'Technology Services',
+  'Professional Profiles & Pages', 'SmartzMarket — Buy & Sell', 'SmartzAds Campaigns',
+  'Sponsored Ads & Analytics', 'Business Networking & Leads', 'SmartzRide Driver Platform',
+  'SmartzDelivery Courier Services', 'Audience Targeting Tools', 'Secure Mobile Money Checkout',
+  'Career & Job Opportunities',
 ]
 
 const STEPS = [
-  { n: '01', label: 'Create your free SmartzConnect account.' },
-  { n: '02', label: 'Verify your email address or phone number.' },
-  { n: '03', label: 'Complete your profile and personalize your interests.' },
+  { n: '01', label: 'Create your free SmartzConnect account in seconds — no credit card required.' },
+  { n: '02', label: 'Verify your email address or phone number to secure your identity.' },
+  { n: '03', label: 'Complete your profile, set your interests, and personalize your experience.' },
   { n: '04', label: 'Connect with friends, meet new people, or discover meaningful relationships.' },
   { n: '05', label: 'Join communities, share your experiences, and engage with others.' },
-  { n: '06', label: 'Explore our marketplace, career opportunities, learning resources, and business services.' },
-  { n: '07', label: 'Start building meaningful connections that enrich your personal, social, and professional life.' },
+  { n: '06', label: 'Explore the marketplace, ride-hailing, delivery, TV, and advertising tools.' },
+  { n: '07', label: 'Upgrade to Plus or Pro to unlock every feature across all 8 super-products.' },
 ]
 
 /* ── shared section shell ── */
 function Sec({ id, dark, children }: { id?: string; dark?: boolean; children: React.ReactNode }) {
   return (
-    <section id={id} className={`relative overflow-hidden py-16 sm:py-20 lg:py-24 ${dark ? 'bg-black' : 'bg-[#05000d]'} mt-[0px] mb-[0px] pt-[5.6px] pb-[5.6px]`}>
+    <section id={id} className={`relative overflow-hidden py-16 sm:py-20 lg:py-24 ${dark ? 'bg-black' : 'bg-[#05000d]'}`}>
       {children}
     </section>
   )
 }
 
 /* ── pill badge ── */
-function Badge({ icon: Icon, label, pink, className = 'mb-5' }: { icon: React.ElementType; label: string; pink?: boolean; className?: string }) {
+function Badge({ icon: Icon, label, gold, className = 'mb-5' }: { icon: React.ElementType; label: string; gold?: boolean; className?: string }) {
   return (
-    <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border ${pink ? 'bg-pink-500/10 border-pink-500/25 text-pink-400' : 'bg-purple-500/10 border-purple-500/25 text-purple-400'} ${className}`}>
+    <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border ${
+      gold
+        ? 'bg-[#D4AF37]/10 border-[#D4AF37]/30 text-[#D4AF37]'
+        : 'bg-[#EC4899]/10 border-[#EC4899]/25 text-[#EC4899]'
+    } ${className}`}>
       <Icon className="w-4 h-4" />
-      <span className="text-sm tracking-wide font-bold text-left">{label}</span>
+      <span className="text-sm tracking-wide font-bold">{label}</span>
     </div>
   )
 }
@@ -152,7 +174,7 @@ function Heading({ children, className = '' }: { children: React.ReactNode; clas
 function Pill({ label }: { label: string }) {
   return (
     <li className="flex items-center gap-2.5 text-sm text-white/75">
-      <span className="w-1.5 h-1.5 rounded-full bg-pink-500 flex-shrink-0" />
+      <span className="w-1.5 h-1.5 rounded-full bg-[#EC4899] flex-shrink-0" />
       {label}
     </li>
   )
@@ -166,49 +188,50 @@ export default function HomePage() {
 
       {/* ══ 1. ABOUT US ══════════════════════════════════════════════════════ */}
       <Sec dark id="about">
-        {/* BG glow */}
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] rounded-full bg-purple-600/8 blur-3xl" />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] rounded-full bg-[#DC2626]/6 blur-3xl" />
         </div>
 
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative ml-[12px] mr-[12px] pt-[12px] pb-[12px]">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative">
           <div className="grid lg:grid-cols-2 gap-14 lg:gap-20 items-center">
 
             {/* Text */}
             <motion.div {...up()}>
-              <Badge icon={Globe} label="About SmartzConnect" className="ml-[12px] mt-[0px] mb-[15px] mr-[0px] text-center" />
-              <Heading className="text-center">
-                Connecting People.<br />
-                <span className="bg-gradient-to-r from-pink-400 via-fuchsia-400 to-purple-400 bg-clip-text text-transparent">
-                  Build Relationships.
+              <Badge icon={Globe} label="About SmartzConnect" className="mb-5" />
+              <Heading>
+                One Platform.<br />
+                <span style={{ background: 'linear-gradient(135deg, #EC4899 0%, #DC2626 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+                  Endless Connections.
                 </span>
               </Heading>
-              <p className="text-white/60 text-base sm:text-lg leading-relaxed mb-5 text-left pl-[1px] pr-[1px]">
-                SmartzConnect is a next-generation social platform built to help people form meaningful relationships that extend beyond digital interaction.
+              <p className="text-white/60 text-base sm:text-lg leading-relaxed mb-5">
+                SmartzConnect is a next-generation super app built in Liberia for the world — bringing together dating, social networking, professional networking, transportation, delivery, marketplace, advertising, and video entertainment into one secure ecosystem.
                 <br /><br />
-                It connects individuals through shared interests, opportunities, and communities—making it easier to build friendships, grow careers, discover businesses, and create lasting partnerships.
-                <br /><br />
-                At its core, SmartzConnect is focused on one mission: turning every connection into something valuable, authentic, and life-changing.
+                With a single identity, you unlock eight powerful products designed to connect people, grow businesses, and create opportunities across Africa and beyond.
               </p>
-              <p className="text-white/50 sm:text-base text-[14px] text-left pl-[1px] pr-[1px]">
-                Our platform empowers people to meet new friends, build lasting relationships, connect with family, discover communities, grow professionally, promote businesses, and explore opportunities — all within one secure and engaging digital ecosystem.
+              <p className="text-white/50 sm:text-base text-[14px]">
+                Our mission is simple: turn every connection into something valuable, authentic, and life-changing — for individuals, entrepreneurs, and communities everywhere.
               </p>
             </motion.div>
 
-            {/* Stat grid */}
+            {/* 8-product grid */}
             <motion.div {...up(0.18)} className="grid grid-cols-2 gap-3 sm:gap-4">
               {[
-                { val: 'Social',   sub: 'Friendship',            grd: 'from-pink-500 to-fuchsia-600' },
-                { val: 'Dating',   sub: 'Relationships',         grd: 'from-fuchsia-500 to-purple-600' },
-                { val: 'Business', sub: 'Networking',            grd: 'from-purple-600 to-violet-700' },
-                { val: 'Market',   sub: 'Buy & Sell',            grd: 'from-violet-600 to-pink-600' },
+                { val: 'SmartzDating',   sub: 'Smart Matching',   grd: 'from-[#EC4899] to-[#DC2626]' },
+                { val: 'SmartzSocial',   sub: 'Posts & Stories',  grd: 'from-[#DC2626] to-rose-700'  },
+                { val: 'SmartzRide',     sub: 'Ride Booking',     grd: 'from-rose-700 to-[#DC2626]'  },
+                { val: 'SmartzMarket',   sub: 'Buy & Sell',       grd: 'from-[#EC4899] to-rose-700'  },
+                { val: 'SmartzDelivery', sub: 'Fast Delivery',    grd: 'from-[#DC2626] to-[#EC4899]' },
+                { val: 'SmartzAds',      sub: 'Ad Campaigns',     grd: 'from-[#EC4899] to-[#DC2626]' },
+                { val: 'SmartzTV',       sub: 'Live & Creator',   grd: 'from-[#DC2626] to-rose-600'  },
+                { val: 'Pro Network',    sub: 'Careers & Biz',    grd: 'from-rose-600 to-[#DC2626]'  },
               ].map(s => (
                 <div key={s.sub}
-                  className="p-5 sm:p-6 rounded-2xl border border-white/5 text-center relative overflow-hidden"
+                  className="p-4 sm:p-5 rounded-2xl border border-white/5 text-center relative overflow-hidden"
                   style={{ background: 'rgba(255,255,255,0.03)' }}>
                   <div className={`absolute inset-0 opacity-10 bg-gradient-to-br ${s.grd}`} />
-                  <p className={`font-display font-black text-lg sm:text-xl bg-gradient-to-r ${s.grd} bg-clip-text text-transparent mb-1 relative`}>{s.val}</p>
-                  <p className="text-xs sm:text-sm text-white/50 relative">{s.sub}</p>
+                  <p className={`font-display font-black text-sm sm:text-base bg-gradient-to-r ${s.grd} bg-clip-text text-transparent mb-1 relative`}>{s.val}</p>
+                  <p className="text-xs text-white/50 relative">{s.sub}</p>
                 </div>
               ))}
             </motion.div>
@@ -219,33 +242,31 @@ export default function HomePage() {
       {/* ══ 2. VISION ════════════════════════════════════════════════════════ */}
       <Sec id="vision">
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[300px] rounded-full bg-pink-600/6 blur-3xl" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[300px] rounded-full bg-[#EC4899]/5 blur-3xl" />
         </div>
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative">
           <motion.div {...up()}>
-            <Badge icon={Eye} label="Our Vision" pink />
+            <Badge icon={Eye} label="Our Vision" />
             <Heading>
               The World's Most{' '}
-              <span className="bg-gradient-to-r from-pink-400 to-fuchsia-400 bg-clip-text text-transparent">
+              <span style={{ background: 'linear-gradient(135deg, #EC4899 0%, #DC2626 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
                 Trusted Platform
               </span>
             </Heading>
           </motion.div>
           <motion.div {...up(0.14)}>
             <div className="relative mx-auto max-w-3xl">
-              {/* Glow behind card */}
-              <div className="absolute -inset-1 rounded-3xl bg-gradient-to-r from-pink-600/20 via-fuchsia-600/20 to-purple-600/20 blur-xl" />
+              <div className="absolute -inset-1 rounded-3xl blur-xl" style={{ background: 'linear-gradient(135deg, rgba(236,72,153,0.18) 0%, rgba(220,38,38,0.18) 100%)' }} />
               <div className="relative rounded-3xl border border-white/8 p-8 sm:p-12"
                 style={{ background: 'rgba(255,255,255,0.04)' }}>
-                {/* Quote marks */}
-                <div className="text-6xl font-display font-black text-pink-500/20 leading-none mb-2 select-none">"</div>
+                <div className="text-6xl font-display font-black text-[#EC4899]/20 leading-none mb-2 select-none">"</div>
                 <p className="text-base sm:text-xl text-white/80 leading-relaxed font-medium text-center">
-                  To become the world's most trusted platform for building meaningful social connections, lasting relationships, thriving communities, and digital opportunities that positively transform lives.
+                  To become the world's most trusted super app — built in Liberia, embraced by Africa, chosen by the world — where every person can connect, build, earn, and thrive through one secure digital identity.
                 </p>
                 <div className="mt-6 flex items-center justify-center gap-2">
-                  <div className="h-px flex-1 bg-gradient-to-r from-transparent to-pink-500/40" />
-                  <span className="text-xs text-pink-400/70 font-bold tracking-widest uppercase">Our Vision</span>
-                  <div className="h-px flex-1 bg-gradient-to-l from-transparent to-pink-500/40" />
+                  <div className="h-px flex-1" style={{ background: 'linear-gradient(to right, transparent, rgba(236,72,153,0.4))' }} />
+                  <span className="text-xs text-[#EC4899]/70 font-bold tracking-widest uppercase">Our Vision</span>
+                  <div className="h-px flex-1" style={{ background: 'linear-gradient(to left, transparent, rgba(236,72,153,0.4))' }} />
                 </div>
               </div>
             </div>
@@ -256,7 +277,7 @@ export default function HomePage() {
       {/* ══ 3. MISSION ═══════════════════════════════════════════════════════ */}
       <Sec dark id="mission">
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute right-0 top-0 w-[500px] h-[500px] rounded-full bg-purple-700/8 blur-3xl" />
+          <div className="absolute right-0 top-0 w-[500px] h-[500px] rounded-full bg-[#DC2626]/6 blur-3xl" />
         </div>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative">
           <div className="grid lg:grid-cols-2 gap-14 lg:gap-20 items-center">
@@ -264,13 +285,13 @@ export default function HomePage() {
             {/* Pillars */}
             <motion.div {...up(0.1)} className="space-y-3 order-2 lg:order-1">
               {[
-                { icon: '🤝', title: 'Connect Beyond Borders',    desc: 'Creating a platform where people reach across geographies to form lasting bonds.' },
-                { icon: '🛡️', title: 'Safe & Inclusive Spaces',   desc: 'A respectful environment where friendships flourish and communities unite.' },
-                { icon: '💡', title: 'Innovation at the Core',     desc: 'Building smarter technologies that make meaningful human connection effortless.' },
-                { icon: '🌱', title: 'Accessible Opportunities',   desc: 'Ensuring every person can access connections, businesses, and careers that improve their life.' },
+                { icon: '🤝', title: 'Connect Beyond Borders',    desc: 'A platform where people reach across geographies to form lasting bonds — from Monrovia to the world.' },
+                { icon: '🛡️', title: 'Safe & Inclusive Spaces',   desc: 'A verified, respectful environment where friendships flourish and communities thrive together.' },
+                { icon: '💡', title: 'Innovation at the Core',     desc: 'Building smarter technologies that make meaningful human connection and commerce effortless.' },
+                { icon: '🌱', title: 'Accessible Opportunities',   desc: 'Ensuring every person can access connections, businesses, jobs, and careers that improve their life.' },
               ].map((p, i) => (
                 <motion.div key={p.title} {...up(0.06 * i)}
-                  className="flex items-start gap-4 p-4 sm:p-5 rounded-2xl border border-white/5 hover:border-purple-500/20 transition-colors"
+                  className="flex items-start gap-4 p-4 sm:p-5 rounded-2xl border border-white/5 hover:border-[#EC4899]/20 transition-colors"
                   style={{ background: 'rgba(255,255,255,0.03)' }}>
                   <span className="text-2xl flex-shrink-0 mt-0.5">{p.icon}</span>
                   <div>
@@ -283,53 +304,55 @@ export default function HomePage() {
 
             {/* Text */}
             <motion.div {...up()} className="order-1 lg:order-2">
-              <Badge icon={Target} label="Our Mission" className="mb-5 text-center" />
+              <Badge icon={Target} label="Our Mission" className="mb-5" />
               <Heading>
-                Connecting People{' '}
-                <span className="bg-gradient-to-r from-purple-400 to-fuchsia-400 bg-clip-text text-transparent">
-                  Beyond Borders
+                Built in Liberia.{' '}
+                <span style={{ background: 'linear-gradient(135deg, #EC4899 0%, #DC2626 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+                  For the World.
                 </span>
               </Heading>
-              <p className="text-white/60 text-base sm:text-lg leading-relaxed mb-5 pl-[1px] pr-[1px]">
-                Our mission is to connect people beyond borders by creating a safe, inclusive, and innovative platform where friendships flourish, relationships grow, communities unite, businesses thrive, and opportunities become accessible to everyone.
+              <p className="text-white/60 text-base sm:text-lg leading-relaxed mb-5">
+                Our mission is to connect people beyond borders — creating a safe, inclusive, and innovative super app where friendships flourish, relationships grow, communities unite, businesses thrive, and opportunities become accessible to everyone.
               </p>
-              <p className="text-white/40 text-sm sm:text-base leading-relaxed border-l-2 border-pink-500/40 pl-4 italic">
-                "We are committed to making meaningful human connection the foundation of everything we build."
+              <p className="text-white/40 text-sm sm:text-base leading-relaxed border-l-2 border-[#EC4899]/40 pl-4 italic">
+                "We are committed to making meaningful human connection — and real economic opportunity — the foundation of everything we build."
               </p>
             </motion.div>
           </div>
         </div>
       </Sec>
 
-      {/* ══ 4. SERVICES ══════════════════════════════════════════════════════ */}
+      {/* ══ 4. SERVICES (8 products) ══════════════════════════════════════════ */}
       <Sec id="services">
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full bg-pink-700/6 blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full bg-purple-700/6 blur-3xl" />
+          <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full bg-[#EC4899]/5 blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full bg-[#DC2626]/5 blur-3xl" />
         </div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
           <motion.div {...up()} className="text-center mb-12 sm:mb-16">
-            <Badge icon={Sparkles} label="Our Services" pink />
+            <Badge icon={Sparkles} label="8 Super-Products" />
             <Heading>
-              One Platform,{' '}
-              <span className="bg-gradient-to-r from-pink-400 via-fuchsia-400 to-purple-400 bg-clip-text text-transparent">
-                Many Possibilities
+              One Identity.{' '}
+              <span style={{ background: 'linear-gradient(135deg, #EC4899 0%, #DC2626 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+                Endless Possibilities.
               </span>
             </Heading>
-            <p className="text-white/50 max-w-2xl mx-auto text-base sm:text-lg pl-[1px] pr-[1px] ml-[0px] mr-[0px]">
-              SmartzConnect brings together multiple services into one connected platform — built around the most important thing: people.
+            <p className="text-white/50 max-w-2xl mx-auto text-base sm:text-lg">
+              SmartzConnect brings together eight powerful products into one connected ecosystem — built around the most important thing: people.
             </p>
           </motion.div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
             {SERVICES.map((s, i) => {
               const Icon = s.icon
               return (
                 <motion.div key={s.name} {...up(i * 0.06)}
-                  className="group p-5 sm:p-6 rounded-2xl border border-white/5 hover:border-pink-500/20 hover:shadow-2xl transition-all duration-300 relative overflow-hidden"
+                  className="group p-5 sm:p-6 rounded-2xl border border-white/5 hover:border-[#EC4899]/25 hover:shadow-2xl transition-all duration-300 relative overflow-hidden"
                   style={{ background: 'rgba(255,255,255,0.03)' }}>
                   {/* Hover glow */}
-                  <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br ${s.color} opacity-5`} />
+                  <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br ${s.color}`} style={{ opacity: 0 }}
+                    onMouseEnter={e => (e.currentTarget.style.opacity = '0.05')}
+                    onMouseLeave={e => (e.currentTarget.style.opacity = '0')} />
                   <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${s.color} flex items-center justify-center mb-4 shadow-lg ${s.glow} group-hover:scale-110 transition-transform duration-300`}>
                     <Icon className="w-6 h-6 text-white" />
                   </div>
@@ -337,7 +360,16 @@ export default function HomePage() {
                     <span className="text-lg">{s.emoji}</span>
                     <h3 className="font-display font-black text-sm sm:text-base text-white leading-tight">{s.name}</h3>
                   </div>
-                  <p className="sm:text-sm text-white/50 relative text-[12px]">{s.desc}</p>
+                  <p className="text-white/50 text-[12px] sm:text-sm mb-3 leading-relaxed">{s.desc}</p>
+                  {/* Sub-features */}
+                  <ul className="space-y-1">
+                    {s.features.map(f => (
+                      <li key={f} className="flex items-center gap-1.5 text-[11px] text-white/40">
+                        <span className="w-1 h-1 rounded-full bg-[#EC4899]/60 flex-shrink-0" />
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
                 </motion.div>
               )
             })}
@@ -348,14 +380,14 @@ export default function HomePage() {
       {/* ══ 5. CORE VALUES ═══════════════════════════════════════════════════ */}
       <Sec dark id="values">
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] rounded-full bg-purple-800/8 blur-3xl" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] rounded-full bg-[#DC2626]/5 blur-3xl" />
         </div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
           <motion.div {...up()} className="text-center mb-12 sm:mb-16">
-            <Badge icon={Award} label="Core Values" className="mb-5 border-t-[#FF1493] border-r-[#FF1493] border-b-[#FF1493] border-l-[#FF1493]" />
+            <Badge icon={Award} label="Core Values" gold />
             <Heading>
               The Principles That{' '}
-              <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+              <span style={{ background: 'linear-gradient(135deg, #D4AF37 0%, #EC4899 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
                 Define Us
               </span>
             </Heading>
@@ -369,12 +401,12 @@ export default function HomePage() {
               const Icon = v.icon
               return (
                 <motion.div key={v.title} {...up(i * 0.06)}
-                  className="p-6 rounded-2xl border border-white/5 hover:border-purple-500/25 hover:shadow-lg transition-all group relative overflow-hidden border-t-[#FF1493] border-r-[#FF1493] border-b-[#FF1493] border-l-[#FF1493]"
+                  className="p-6 rounded-2xl border border-white/5 hover:border-[#EC4899]/20 hover:shadow-lg transition-all group relative overflow-hidden"
                   style={{ background: 'rgba(255,255,255,0.03)' }}>
-                  {/* Accent line top */}
-                  <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-pink-500/30 to-transparent" />
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-500/15 to-purple-600/15 border border-white/8 flex items-center justify-center mb-4">
-                    <Icon className="w-5 h-5 text-pink-400" />
+                  <div className="absolute top-0 left-6 right-6 h-px" style={{ background: 'linear-gradient(to right, transparent, rgba(212,175,55,0.35), transparent)' }} />
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-4 border border-white/8"
+                    style={{ background: 'linear-gradient(135deg, rgba(236,72,153,0.12) 0%, rgba(212,175,55,0.12) 100%)' }}>
+                    <Icon className="w-5 h-5 text-[#EC4899]" />
                   </div>
                   <h3 className="font-display font-bold text-white text-sm sm:text-base mb-2">{v.title}</h3>
                   <p className="sm:text-sm text-white/50 text-[12px]">{v.desc}</p>
@@ -388,30 +420,30 @@ export default function HomePage() {
       {/* ══ 6. WHY CHOOSE US ═════════════════════════════════════════════════ */}
       <Sec id="why">
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-pink-700/7 blur-3xl" />
-          <div className="absolute right-0 bottom-0 w-[400px] h-[400px] rounded-full bg-purple-700/6 blur-3xl" />
+          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-[#EC4899]/6 blur-3xl" />
+          <div className="absolute right-0 bottom-0 w-[400px] h-[400px] rounded-full bg-[#DC2626]/5 blur-3xl" />
         </div>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative">
           <div className="grid lg:grid-cols-2 gap-14 lg:gap-20 items-center">
 
             {/* Text */}
             <motion.div {...up()}>
-              <Badge icon={CheckCircle} label="Why Choose Us?" pink className="mb-5 mt-[1px] mr-[0px] ml-[0px]" />
-              <Heading className="text-left text-[14px]">
+              <Badge icon={CheckCircle} label="Why Choose Us?" className="mb-5" />
+              <Heading className="text-left">
                 More Than Just{' '}
-                <span className="bg-gradient-to-r from-pink-400 to-fuchsia-400 bg-clip-text text-transparent">
-                  A Platform
+                <span style={{ background: 'linear-gradient(135deg, #EC4899 0%, #DC2626 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+                  An App
                 </span>
               </Heading>
-              <p className="text-white/60 sm:text-lg pl-[1px] pr-[1px] text-[14px] mb-[20px] ml-[0px] mt-[0px] mr-[12px] text-left">
-                SmartzConnect is a place where friendships begin, relationships grow, communities flourish, businesses connect, and opportunities become reality.
+              <p className="text-white/60 sm:text-lg text-[14px] mb-5">
+                SmartzConnect is where friendships begin, relationships grow, businesses connect, creators earn, and communities flourish — all in one place.
               </p>
               <p className="text-white/50 text-sm sm:text-base leading-relaxed mb-8">
-                With one account, you unlock everything:
+                With one free account, you unlock all eight products:
               </p>
               <Link to="/register"
-                className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl font-bold text-sm text-white shadow-xl hover:opacity-90 hover:scale-105 active:scale-100 transition-all pl-[20px] pr-[20px] ml-[10px] mr-[10px]"
-                style={{ background: 'linear-gradient(135deg, #ec4899 0%, #d946ef 50%, #9333ea 100%)', boxShadow: '0 6px 30px rgba(236,72,153,0.35)' }}>
+                className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl font-bold text-sm text-white shadow-xl hover:opacity-90 hover:scale-105 active:scale-100 transition-all"
+                style={{ background: 'linear-gradient(135deg, #EC4899 0%, #DC2626 100%)', boxShadow: '0 6px 30px rgba(236,72,153,0.40)' }}>
                 Get Started Free <ArrowRight className="w-4 h-4" />
               </Link>
             </motion.div>
@@ -421,9 +453,10 @@ export default function HomePage() {
               <ul className="space-y-3">
                 {WHY_LIST.map((item, i) => (
                   <motion.li key={i} {...up(0.05 * i)}
-                    className="flex items-start gap-3.5 p-4 rounded-xl border border-white/5 hover:border-pink-500/15 transition-colors"
+                    className="flex items-start gap-3.5 p-4 rounded-xl border border-white/5 hover:border-[#EC4899]/15 transition-colors"
                     style={{ background: 'rgba(255,255,255,0.03)' }}>
-                    <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center flex-shrink-0 mt-0.5 shadow-md shadow-pink-500/20">
+                    <div className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 shadow-md"
+                      style={{ background: 'linear-gradient(135deg, #EC4899 0%, #DC2626 100%)', boxShadow: '0 4px 12px rgba(236,72,153,0.25)' }}>
                       <CheckCircle className="w-3.5 h-3.5 text-white" />
                     </div>
                     <span className="text-sm text-white/70 leading-relaxed">{item}</span>
@@ -438,62 +471,65 @@ export default function HomePage() {
       {/* ══ 7. FEATURES ══════════════════════════════════════════════════════ */}
       <Sec dark id="features">
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 right-1/3 w-[600px] h-[300px] rounded-full bg-purple-700/7 blur-3xl" />
+          <div className="absolute top-0 right-1/3 w-[600px] h-[300px] rounded-full bg-[#DC2626]/5 blur-3xl" />
         </div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
           <motion.div {...up()} className="text-center mb-12 sm:mb-16">
-            <Badge icon={Sparkles} label="Social & Relationship Features" />
+            <Badge icon={Sparkles} label="Platform Features" />
             <Heading>
               Designed to Make Connecting{' '}
-              <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+              <span style={{ background: 'linear-gradient(135deg, #EC4899 0%, #DC2626 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
                 More Meaningful
               </span>
             </Heading>
             <p className="text-white/50 max-w-2xl mx-auto text-base sm:text-lg text-center">
-              SmartzConnect is designed to make connecting easier, meaningful, and more enjoyable — across every dimension of life.
+              SmartzConnect is designed to make every interaction — social, romantic, professional, or commercial — easier, safer, and more rewarding.
             </p>
           </motion.div>
 
           <div className="grid sm:grid-cols-3 gap-5 sm:gap-6">
-            {/* Social */}
+            {/* Dating & Social */}
             <motion.div {...up(0)} className="p-6 sm:p-7 rounded-2xl border border-white/5 relative overflow-hidden"
               style={{ background: 'rgba(255,255,255,0.03)' }}>
-              <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-pink-500 to-fuchsia-500" />
+              <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: 'linear-gradient(to right, #EC4899, #DC2626)' }} />
               <div className="flex items-center gap-2.5 mb-5">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-pink-500 to-fuchsia-600 flex items-center justify-center shadow-lg shadow-pink-500/25">
-                  <Users className="w-4.5 h-4.5 text-white" />
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center shadow-lg"
+                  style={{ background: 'linear-gradient(135deg, #EC4899 0%, #DC2626 100%)', boxShadow: '0 4px 16px rgba(236,72,153,0.30)' }}>
+                  <Heart className="w-4 h-4 text-white" />
                 </div>
-                <h3 className="font-display font-black text-base text-white">Social Features</h3>
+                <h3 className="font-display font-black text-base text-white">Dating & Social</h3>
+              </div>
+              <ul className="space-y-2.5">
+                {DATING_FEATURES.map(f => <Pill key={f} label={f} />)}
+              </ul>
+            </motion.div>
+
+            {/* Social & Content */}
+            <motion.div {...up(0.08)} className="p-6 sm:p-7 rounded-2xl border border-white/5 relative overflow-hidden"
+              style={{ background: 'rgba(255,255,255,0.03)' }}>
+              <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: 'linear-gradient(to right, #DC2626, #EC4899)' }} />
+              <div className="flex items-center gap-2.5 mb-5">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center shadow-lg"
+                  style={{ background: 'linear-gradient(135deg, #DC2626 0%, #EC4899 100%)', boxShadow: '0 4px 16px rgba(220,38,38,0.30)' }}>
+                  <Users className="w-4 h-4 text-white" />
+                </div>
+                <h3 className="font-display font-black text-base text-white">Social & Content</h3>
               </div>
               <ul className="space-y-2.5">
                 {SOCIAL_FEATURES.map(f => <Pill key={f} label={f} />)}
               </ul>
             </motion.div>
 
-            {/* Relationship */}
-            <motion.div {...up(0.08)} className="p-6 sm:p-7 rounded-2xl border border-white/5 relative overflow-hidden"
-              style={{ background: 'rgba(255,255,255,0.03)' }}>
-              <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-fuchsia-500 to-purple-500" />
-              <div className="flex items-center gap-2.5 mb-5">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-fuchsia-500 to-purple-600 flex items-center justify-center shadow-lg shadow-fuchsia-500/25">
-                  <Heart className="w-4.5 h-4.5 text-white" />
-                </div>
-                <h3 className="font-display font-black text-base text-white">Relationship Features</h3>
-              </div>
-              <ul className="space-y-2.5">
-                {RELATIONSHIP_FEATURES.map(f => <Pill key={f} label={f} />)}
-              </ul>
-            </motion.div>
-
-            {/* Business */}
+            {/* Business & Commerce */}
             <motion.div {...up(0.16)} className="p-6 sm:p-7 rounded-2xl border border-white/5 relative overflow-hidden"
               style={{ background: 'rgba(255,255,255,0.03)' }}>
-              <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-purple-500 to-pink-500" />
+              <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: 'linear-gradient(to right, #D4AF37, #EC4899)' }} />
               <div className="flex items-center gap-2.5 mb-5">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center shadow-lg shadow-purple-500/25">
-                  <Briefcase className="w-4.5 h-4.5 text-white" />
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center shadow-lg"
+                  style={{ background: 'linear-gradient(135deg, #D4AF37 0%, #EC4899 100%)', boxShadow: '0 4px 16px rgba(212,175,55,0.30)' }}>
+                  <ShoppingBag className="w-4 h-4 text-white" />
                 </div>
-                <h3 className="font-display font-black text-base text-white">Business Features</h3>
+                <h3 className="font-display font-black text-base text-white">Business & Commerce</h3>
               </div>
               <ul className="space-y-2.5">
                 {BUSINESS_FEATURES.map(f => <Pill key={f} label={f} />)}
@@ -506,34 +542,33 @@ export default function HomePage() {
       {/* ══ 8. HOW TO JOIN ═══════════════════════════════════════════════════ */}
       <Sec id="join">
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[700px] h-[350px] rounded-full bg-pink-700/7 blur-3xl" />
+          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[700px] h-[350px] rounded-full bg-[#EC4899]/6 blur-3xl" />
         </div>
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative">
           <motion.div {...up()} className="text-center mb-12 sm:mb-16">
-            <Badge icon={UserPlus} label="How to Join" pink />
+            <Badge icon={UserPlus} label="How to Join" />
             <Heading>
               Start in{' '}
-              <span className="bg-gradient-to-r from-pink-400 via-fuchsia-400 to-purple-400 bg-clip-text text-transparent">
+              <span style={{ background: 'linear-gradient(135deg, #EC4899 0%, #DC2626 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
                 7 Simple Steps
               </span>
             </Heading>
-            <p className="text-white/50 max-w-xl mx-auto text-base sm:text-lg ml-[1px] mr-[1px]">
-              Becoming part of the SmartzConnect community is quick and easy.
+            <p className="text-white/50 max-w-xl mx-auto text-base sm:text-lg">
+              Joining the SmartzConnect ecosystem is quick, free, and requires no credit card.
             </p>
           </motion.div>
 
           {/* Steps */}
           <div className="space-y-3 mb-14 sm:mb-16 relative">
-            {/* Connector line */}
-            <div className="absolute left-[27px] top-12 bottom-12 w-px bg-gradient-to-b from-pink-500/40 via-fuchsia-500/40 to-purple-500/40 hidden sm:block" />
+            <div className="absolute left-[27px] top-12 bottom-12 w-px hidden sm:block"
+              style={{ background: 'linear-gradient(to bottom, rgba(236,72,153,0.40), rgba(220,38,38,0.40), rgba(212,175,55,0.30))' }} />
 
             {STEPS.map((s, i) => (
               <motion.div key={s.n} {...up(i * 0.07)}
-                className="flex items-start gap-4 p-4 sm:p-5 rounded-2xl border border-white/5 hover:border-pink-500/20 transition-colors relative"
+                className="flex items-start gap-4 p-4 sm:p-5 rounded-2xl border border-white/5 hover:border-[#EC4899]/20 transition-colors relative"
                 style={{ background: 'rgba(255,255,255,0.03)' }}>
-                {/* Number bubble */}
                 <div className="w-14 h-14 rounded-2xl flex-shrink-0 flex items-center justify-center font-display font-black text-sm relative z-10 border border-white/8"
-                  style={{ background: 'linear-gradient(135deg, #ec4899 0%, #d946ef 50%, #9333ea 100%)', boxShadow: '0 4px 16px rgba(236,72,153,0.25)' }}>
+                  style={{ background: 'linear-gradient(135deg, #EC4899 0%, #DC2626 100%)', boxShadow: '0 4px 16px rgba(236,72,153,0.30)' }}>
                   <span className="text-white">{s.n}</span>
                 </div>
                 <div className="flex-1 flex items-center min-h-[56px]">
@@ -545,33 +580,32 @@ export default function HomePage() {
 
           {/* Final CTA */}
           <motion.div {...up(0.4)} className="text-center">
-            {/* Tagline banner */}
             <div className="inline-block mb-8 px-5 py-3 rounded-2xl border border-white/8 text-center"
               style={{ background: 'rgba(255,255,255,0.04)' }}>
               <p className="text-xs sm:text-sm font-bold tracking-wide text-white/60">
-                <span className="text-pink-400">SmartzConnect</span>
+                <span className="text-[#EC4899]">SmartzConnect</span>
                 <span className="mx-2 text-white/25">—</span>
-                Connecting People.
-                <span className="text-fuchsia-400 mx-1">Building Relationships.</span>
-                Creating Opportunities.
+                One Platform.
+                <span className="text-[#D4AF37] mx-1">Endless Connections.</span>
+                Built in Liberia for the World.
               </p>
             </div>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link to="/register"
-                className="inline-flex items-center gap-2.5 px-10 py-4 rounded-2xl font-black text-base text-white shadow-2xl hover:opacity-90 hover:scale-105 active:scale-100 transition-all ml-[10px] mr-[10px]"
-                style={{ background: 'linear-gradient(135deg, #ec4899 0%, #d946ef 50%, #9333ea 100%)', boxShadow: '0 8px 40px rgba(236,72,153,0.4)' }}>
+                className="inline-flex items-center gap-2.5 px-10 py-4 rounded-2xl font-black text-base text-white shadow-2xl hover:opacity-90 hover:scale-105 active:scale-100 transition-all"
+                style={{ background: 'linear-gradient(135deg, #EC4899 0%, #DC2626 100%)', boxShadow: '0 8px 40px rgba(236,72,153,0.40)' }}>
                 <UserPlus className="w-5 h-5" />
                 Create Your Free Account
               </Link>
               <Link to="/login"
-                className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl font-bold text-sm text-white/70 border border-white/10 hover:border-white/20 hover:text-white transition-all border-t-[#fff] border-r-[#fff] border-b-[#fff] border-l-[#fff]"
+                className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl font-bold text-sm text-white/70 border border-white/15 hover:border-white/25 hover:text-white transition-all"
                 style={{ background: 'rgba(255,255,255,0.04)' }}>
                 Already a member? Sign In
               </Link>
             </div>
             <p className="mt-5 text-xs text-white/30">
-              Free to join · No credit card required · Upgrade anytime
+              Free to join · No credit card required · Mobile Money accepted · Upgrade anytime
             </p>
           </motion.div>
         </div>

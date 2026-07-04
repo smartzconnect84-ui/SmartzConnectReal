@@ -17,7 +17,7 @@ interface Slide {
 const slides: Slide[] = [
   {
     badge: 'SMARTZSOCIAL',
-    badgeColor: 'from-violet-500 to-purple-600',
+    badgeColor: 'from-[#EC4899] to-[#DC2626]',
     headlineWhite: 'One feed.',
     headlinePurple: 'Every',
     headlineOrange: 'friend.',
@@ -27,7 +27,7 @@ const slides: Slide[] = [
   },
   {
     badge: 'SMARTZDATING',
-    badgeColor: 'from-pink-500 to-rose-600',
+    badgeColor: 'from-[#DC2626] to-[#EC4899]',
     headlineWhite: 'One match.',
     headlinePurple: 'Every',
     headlineOrange: 'feeling.',
@@ -37,7 +37,7 @@ const slides: Slide[] = [
   },
   {
     badge: 'SMARTZTV',
-    badgeColor: 'from-purple-500 to-violet-600',
+    badgeColor: 'from-[#EC4899] to-rose-700',
     headlineWhite: 'Go live.',
     headlinePurple: 'Get',
     headlineOrange: 'paid.',
@@ -47,7 +47,7 @@ const slides: Slide[] = [
   },
   {
     badge: 'SMARTZRIDE',
-    badgeColor: 'from-emerald-500 to-teal-600',
+    badgeColor: 'from-rose-700 to-[#DC2626]',
     headlineWhite: 'Book a ride.',
     headlinePurple: 'In',
     headlineOrange: 'seconds.',
@@ -57,7 +57,7 @@ const slides: Slide[] = [
   },
   {
     badge: 'SMARTZMARKET',
-    badgeColor: 'from-amber-500 to-orange-600',
+    badgeColor: 'from-[#DC2626] to-[#EC4899]',
     headlineWhite: 'Buy & sell.',
     headlinePurple: 'Every',
     headlineOrange: 'thing.',
@@ -67,7 +67,7 @@ const slides: Slide[] = [
   },
   {
     badge: 'SMARTZDELIVERY',
-    badgeColor: 'from-blue-500 to-cyan-600',
+    badgeColor: 'from-[#EC4899] to-[#DC2626]',
     headlineWhite: 'Deliver fast.',
     headlinePurple: 'Earn',
     headlineOrange: 'more.',
@@ -77,13 +77,23 @@ const slides: Slide[] = [
   },
   {
     badge: 'SMARTZADS',
-    badgeColor: 'from-pink-500 to-fuchsia-600',
+    badgeColor: 'from-[#DC2626] to-[#EC4899]',
     headlineWhite: 'Reach millions.',
     headlinePurple: 'In',
     headlineOrange: 'stantly.',
-    sub: 'Run powerful ad campaigns targeted to Africa\'s most engaged digital community.',
+    sub: "Run powerful ad campaigns targeted to Africa's most engaged digital community.",
     image: '/hero-networking.jpg',
     objectPosition: 'center 30%',
+  },
+  {
+    badge: 'ONE PLATFORM',
+    badgeColor: 'from-[#D4AF37] to-[#EC4899]',
+    headlineWhite: 'Endless',
+    headlinePurple: 'Connections.',
+    headlineOrange: 'Built for the World.',
+    sub: 'One identity. Eight super-products. Built in Liberia — for Africa and the world.',
+    image: '/hero-date.jpg',
+    objectPosition: 'center 25%',
   },
 ]
 
@@ -204,7 +214,8 @@ export default function Hero() {
           >
             <Link
               to="/register"
-              className="inline-flex items-center gap-2 px-6 sm:px-8 py-3 sm:py-3.5 rounded-xl bg-gradient-to-r from-purple-600 to-purple-500 text-white font-bold text-sm sm:text-base shadow-xl shadow-purple-600/30 hover:shadow-purple-600/50 hover:from-purple-500 hover:to-purple-400 hover:scale-105 transition-all border-t-[#FF0000] border-r-[#FF0000] border-b-[#FF0000] border-l-[#FF0000]"
+              className="inline-flex items-center gap-2 px-6 sm:px-8 py-3 sm:py-3.5 rounded-xl text-white font-bold text-sm sm:text-base hover:scale-105 transition-all"
+              style={{ background: 'linear-gradient(135deg, #EC4899 0%, #DC2626 100%)', boxShadow: '0 8px 28px rgba(236,72,153,0.40)' }}
             >
               Join Now! <ArrowRight className="w-4 h-4" />
             </Link>

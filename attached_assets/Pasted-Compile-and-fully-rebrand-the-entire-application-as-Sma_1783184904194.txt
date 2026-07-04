@@ -1,0 +1,215 @@
+Compile and fully rebrand the entire application as **SmartzConnect**, ensuring every page, section, component, and user experience follows one consistent premium brand identity.
+
+## Brand Identity
+
+**SmartzConnect**
+**One Platform. Endless Connections.**
+**Built in Liberia for the World.**
+
+SmartzConnect is an international super app that brings together dating, social networking, professional networking, transportation, delivery, marketplace, advertising, and video entertainment into one secure ecosystem.
+
+---
+
+## Brand Colors
+
+Use only the official SmartzConnect brand palette throughout the application.
+
+Primary Colors
+- Pink (#EC4899)
+- Red (#DC2626)
+- Gold (#D4AF37)
+- Black (#000000)
+- White (#FFFFFF)
+
+Guidelines
+- Pink: Primary actions, highlights, gradients, icons, links, badges.
+- Red: Important actions, notifications, alerts, promotional sections.
+- Gold: Premium features, achievements, verification, success accents.
+- Black: Headers, navigation, footer, dark backgrounds, typography.
+- White: Backgrounds, cards, forms, spacing, readability.
+
+Create elegant gradients using Pink → Red and Black → Gold where appropriate.
+
+---
+
+## Branding Requirements
+
+Replace every occurrence of any previous branding with **SmartzConnect**.
+
+Update:
+- Logo usage
+- App name
+- Browser title
+- Meta title
+- Meta description
+- SEO keywords
+- Open Graph data
+- Social previews
+- Email templates
+- Notifications
+- Loading screens
+- Splash screen
+- Authentication pages
+- Dashboard
+- Footer
+- Navigation
+- Error pages
+- Empty states
+- Success messages
+- Admin panel
+- Business dashboard
+- Mobile layouts
+
+Ensure the branding is consistent everywhere.
+
+---
+
+## Homepage
+
+Keep all existing hero images, background artwork, layouts, animations, spacing, and visual structure.
+
+Replace only the content with premium SmartzConnect messaging.
+
+Highlight all eight services:
+
+❤️ SmartzDating
+- Smart Matching
+- Swipe & Match
+- Verified Profiles
+- Messaging
+- Voice & Video Calls
+- AI Recommendations
+
+🌍 SmartzConnect
+- Professional Networking
+- Careers
+- Companies
+- Business Connections
+- Communities
+- Events
+
+👥 SmartzSocial
+- Posts
+- Stories
+- Reels
+- Groups
+- Pages
+- Live Streaming
+- Messaging
+
+🚗 SmartzRide
+- Ride Booking
+- Driver Platform
+- Live Tracking
+- Scheduled Trips
+- Secure Payments
+
+📦 SmartzDelivery
+- Food Delivery
+- Grocery Delivery
+- Parcel Delivery
+- Courier Services
+- Live Tracking
+
+🛍 SmartzMarket
+- Buy & Sell
+- Business Stores
+- Digital Products
+- Secure Checkout
+
+📢 SmartzAds
+- Sponsored Ads
+- Campaign Management
+- Analytics
+- Audience Targeting
+
+📺 SmartzTV
+- Videos
+- Live Streaming
+- Creator Channels
+- Podcasts
+- Entertainment
+- Education
+
+---
+
+## UI/UX
+
+Apply the brand colors consistently across:
+
+- Navigation
+- Buttons
+- Cards
+- Icons
+- Forms
+- Inputs
+- Tables
+- Charts
+- Badges
+- Notifications
+- Modals
+- Sidebars
+- Dashboards
+- Menus
+- Footer
+- Mobile navigation
+- Loading indicators
+- Progress bars
+- Hover effects
+- Focus states
+- Animations
+
+Use premium shadows, rounded corners, glassmorphism where appropriate, smooth transitions, and subtle gradients.
+
+---
+
+## Typography
+
+Use modern fonts with a clear hierarchy.
+
+Maintain consistent spacing, alignment, and responsive typography across all screen sizes.
+
+---
+
+## Icons & Illustrations
+
+Use a consistent icon family throughout the application.
+
+Icons should follow the SmartzConnect color palette and visual identity.
+
+---
+
+## Accessibility
+
+Ensure:
+- WCAG-compliant contrast
+- Keyboard navigation
+- Screen-reader support
+- Responsive layouts
+- Touch-friendly controls
+
+---
+
+## Performance
+
+Optimize:
+- Images
+- Lazy loading
+- Code splitting
+- SEO
+- Accessibility
+- Core Web Vitals
+- Mobile performance
+
+---
+
+## Final Quality Checklist
+
+- No placeholder text remains.
+- No old branding remains.
+- Every page reflects the SmartzConnect identity.
+- All colors follow the official brand palette.
+- Hero images remain unchanged.
+- All copy is polished, engaging, and conversion-focused.
+- Responsive on desktop, tablet, and mobile.
+- Production-ready with a consistent, premium, world-class appearance.

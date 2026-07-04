@@ -9,11 +9,15 @@ export default {
     extend: {
       colors: {
         brand: {
-          // Primary — Lovely Pink
-          pink:    '#FF4D8D',
+          // Primary — SmartzConnect Pink
+          pink:    '#EC4899',
           rose:    '#FF2D78',
           blush:   '#FFB3D1',
-          // Secondary — Deep Purple
+          // Accent — SmartzConnect Red
+          red:     '#DC2626',
+          // Premium — SmartzConnect Gold
+          gold:    '#D4AF37',
+          // Secondary — Deep Purple (kept for app shell)
           purple:  '#9B5DE5',
           violet:  '#7C3AED',
           lavender:'#C4B5FD',
@@ -31,11 +35,13 @@ export default {
         display: ['Sora', 'Inter', 'sans-serif'],
       },
       backgroundImage: {
-        'love-gradient':  'linear-gradient(135deg, #FF4D8D 0%, #9B5DE5 100%)',
-        'love-gradient2': 'linear-gradient(135deg, #FF2D78 0%, #7C3AED 100%)',
-        'dark-gradient':  'linear-gradient(135deg, #0D0A14 0%, #130E1E 50%, #1C1530 100%)',
-        'hero-gradient':  'radial-gradient(ellipse at 60% 0%, rgba(255,77,141,0.18) 0%, transparent 55%), radial-gradient(ellipse at 0% 80%, rgba(155,93,229,0.12) 0%, transparent 50%)',
-        'card-gradient':  'linear-gradient(135deg, rgba(255,77,141,0.08) 0%, rgba(155,93,229,0.08) 100%)',
+        'love-gradient':   'linear-gradient(135deg, #FF4D8D 0%, #9B5DE5 100%)',
+        'love-gradient2':  'linear-gradient(135deg, #FF2D78 0%, #7C3AED 100%)',
+        'brand-gradient':  'linear-gradient(135deg, #EC4899 0%, #DC2626 100%)',
+        'gold-gradient':   'linear-gradient(135deg, #D4AF37 0%, #EC4899 100%)',
+        'dark-gradient':   'linear-gradient(135deg, #0D0A14 0%, #130E1E 50%, #1C1530 100%)',
+        'hero-gradient':   'radial-gradient(ellipse at 60% 0%, rgba(236,72,153,0.18) 0%, transparent 55%), radial-gradient(ellipse at 0% 80%, rgba(220,38,38,0.10) 0%, transparent 50%)',
+        'card-gradient':   'linear-gradient(135deg, rgba(236,72,153,0.08) 0%, rgba(220,38,38,0.08) 100%)',
       },
       animation: {
         'float':       'float 6s ease-in-out infinite',
