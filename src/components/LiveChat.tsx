@@ -163,7 +163,7 @@ export default function LiveChat() {
             style={windowStyle}
           >
             <div
-              className={`dark:bg-[#130E1E] bg-white border dark:border-white/8 border-pink-100 overflow-hidden flex flex-col ${isMobile ? 'rounded-t-3xl' : 'rounded-3xl'}`}
+              className={`dark:bg-[#130E1E] bg-white border dark:border-white/8 border-pink-100 overflow-hidden flex flex-col ${isMobile ? 'rounded-t-3xl' : 'rounded-3xl'} ml-[12px] mr-[12px] mt-[12px] mb-[12px] pl-[12px] pr-[12px] pt-[12px] pb-[12px]`}
               style={{ height: windowHeight }}
             >
               {/* Drag handle on mobile */}
@@ -217,9 +217,9 @@ export default function LiveChat() {
                           </div>
                         )}
                         <div className={`max-w-[85%] ${msg.isBot ? '' : 'items-end flex flex-col'}`}>
-                          <div className={`px-3 py-2.5 rounded-2xl text-xs leading-relaxed ${
+                          <div className={`px-3 py-2.5 rounded-2xl ${
                             msg.isBot
-                              ? 'dark:bg-white/8 bg-gray-100 dark:text-white text-gray-900 rounded-tl-sm'
+                              ? 'dark:bg-white/8 dark:text-white rounded-tl-sm text-[#000000] bg-[#ffff] border-t-[#FF1493] border-r-[#FF1493] border-b-[#FF1493] border-l-[#FF1493] border-t-[2px] border-r-[2px] border-b-[2px] border-l-[2px] text-[12px]'
                               : 'bg-love-gradient text-white rounded-tr-sm'
                           }`}>
                             {formatText(msg.text)}
@@ -271,7 +271,7 @@ export default function LiveChat() {
 
                   {/* Input */}
                   <div className="p-3 border-t dark:border-white/6 border-pink-100 flex-shrink-0" style={{ paddingBottom: isMobile ? 'max(12px, env(safe-area-inset-bottom))' : '12px' }}>
-                    <div className="flex items-center gap-2 dark:bg-white/5 bg-gray-50 rounded-xl border dark:border-white/8 border-gray-200 px-3 py-2">
+                    <div className="flex items-center gap-2 dark:bg-white/5 bg-gray-50 rounded-xl border dark:border-white/8 border-gray-200 px-3 py-2 pl-[12px] pr-[12px] ml-[12px] mr-[12px] mt-[0px] mb-[0px]">
                       <input
                         value={input}
                         onChange={e => setInput(e.target.value)}
