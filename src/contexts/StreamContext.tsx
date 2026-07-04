@@ -84,6 +84,16 @@ export function StreamProvider({ children }: { children: ReactNode }) {
         if (client) {
           setConnected(true)
 
+          // Update presence immediately on connect
+          supabase.from('profiles').update({ last_seen: new Date().toISOString() }).eq('id', user.id).then(() => {})
+
+          // Heartbeat: keep last_seen fresh every 30 s while tab is open
+          const heartbeatId = setInterval(() => {
+            if (!cancelled) {
+              supabase.from('profiles').update({ last_seen: new Date().toISOString() }).eq('id', user.id).then(() => {})
+            }
+          }, 30000)
+
           // Sync initial unread count
           const countResp = await client.getUnreadCount()
           if (!cancelled) setUnreadCount(countResp.total_unread_count ?? 0)
@@ -101,7 +111,10 @@ export function StreamProvider({ children }: { children: ReactNode }) {
             }
           }
           client.on(handleEvent)
-          unsubRef.current = () => client.off(handleEvent)
+          unsubRef.current = () => {
+            client.off(handleEvent)
+            clearInterval(heartbeatId)
+          }
         }
       } catch {
         // Graceful degradation — Stream is optional

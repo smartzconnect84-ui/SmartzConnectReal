@@ -21,7 +21,7 @@ export const LiveChatContext = createContext<LiveChatContextType>({
 export function LiveChatProvider({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false)
   const [dismissed, setDismissed] = useState(false)
-  const [unreadCount, setUnreadCount] = useState(1)
+  const [unreadCount, setUnreadCount] = useState(0)
   return (
     <LiveChatContext.Provider value={{ open, dismissed, setOpen, setDismissed, unreadCount, setUnreadCount }}>
       {children}

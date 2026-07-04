@@ -44,14 +44,16 @@ export default function GroupChatPage() {
   const [creating, setCreating] = useState(false)
   const [sending, setSending] = useState(false)
   const [showMembers, setShowMembers] = useState(false)
+  const [othersTyping, setOthersTyping] = useState<string[]>([])
   const [createForm, setCreateForm] = useState<CreateRoomForm>({
     name: '', topic: '', category: 'Dating', type: 'public', emoji: '💬'
   })
 
   const channelRef = useRef<Channel | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
+  const typingStopRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages, othersTyping])
 
   // Fetch group rooms from Supabase
   const fetchRooms = async () => {
@@ -61,7 +63,7 @@ export default function GroupChatPage() {
       .select('id, name, description, category, type, emoji, member_count, created_at, stream_channel_id')
       .order('member_count', { ascending: false })
       .limit(40)
-    setRooms((data || []).map((r: any, i: number) => ({
+    setRooms((data || []).map((r: any) => ({
       id: String(r.id),
       name: r.name || 'Group',
       emoji: r.emoji || categoryEmojis[r.category] || '💬',
@@ -80,8 +82,62 @@ export default function GroupChatPage() {
 
   useEffect(() => { fetchRooms() }, [])
 
+  // Realtime: new rooms appear instantly in the list
+  useEffect(() => {
+    const sub = supabase
+      .channel('group_rooms:realtime')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'group_rooms',
+      }, (payload) => {
+        const r = payload.new as any
+        const newRoom: Room = {
+          id: String(r.id),
+          name: r.name || 'Group',
+          emoji: r.emoji || categoryEmojis[r.category] || '💬',
+          topic: r.description || '',
+          members: r.member_count || 0,
+          online: 0,
+          lastMsg: '',
+          lastTime: new Date(r.created_at).toLocaleDateString(),
+          unread: 0,
+          type: r.type === 'private' ? 'private' : 'public',
+          category: r.category || 'All',
+          streamChannelId: r.stream_channel_id,
+        }
+        setRooms(prev => {
+          if (prev.some(room => room.id === newRoom.id)) return prev
+          return [newRoom, ...prev]
+        })
+      })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'group_rooms',
+      }, (payload) => {
+        const r = payload.new as any
+        setRooms(prev => prev.map(room =>
+          room.id === String(r.id)
+            ? { ...room, members: r.member_count || room.members, name: r.name || room.name }
+            : room
+        ))
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(sub) }
+  }, [])
+
   // Open a group channel in GetStream
   const openRoom = async (room: Room) => {
+    // Cleanup previous channel event listeners
+    if (channelRef.current) {
+      channelRef.current.off('message.new')
+      channelRef.current.off('typing.start')
+      channelRef.current.off('typing.stop')
+    }
+    setOthersTyping([])
+
     setActiveRoom(room)
     setMessages([])
     if (!connected || !user?.id) return
@@ -95,6 +151,10 @@ export default function GroupChatPage() {
       } as any)
       channelRef.current = chan
       const state = await chan.watch()
+
+      // Mark as read on open
+      chan.markRead().catch(() => {})
+
       setMessages((state.messages || []).map((m: any) => ({
         id: m.id,
         author: m.user?.name || m.user?.id?.slice(0, 8) || 'User',
@@ -119,17 +179,50 @@ export default function GroupChatPage() {
             mine: false, role: 'member',
           }]
         })
+        // Mark as read as messages arrive
+        chan.markRead().catch(() => {})
+        // Update room's unread count in list
+        setRooms(prev => prev.map(r =>
+          r.id === room.id ? { ...r, lastMsg: m.text || '', lastTime: 'now' } : r
+        ))
       })
+
+      chan.on('typing.start', (event: any) => {
+        if (event.user?.id === user.id) return
+        const name = event.user?.name || 'Someone'
+        setOthersTyping(prev => prev.includes(name) ? prev : [...prev, name])
+      })
+
+      chan.on('typing.stop', (event: any) => {
+        if (event.user?.id === user.id) return
+        const name = event.user?.name || 'Someone'
+        setOthersTyping(prev => prev.filter(n => n !== name))
+      })
+
     } catch (err) {
       console.error('Group channel error:', err)
     }
     setLoadingMsgs(false)
   }
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInput(e.target.value)
+    if (channelRef.current && connected) {
+      channelRef.current.keystroke().catch(() => {})
+      if (typingStopRef.current) clearTimeout(typingStopRef.current)
+      typingStopRef.current = setTimeout(() => {
+        channelRef.current?.stopTyping().catch(() => {})
+      }, 3000)
+    }
+  }
+
   const sendMsg = async () => {
     if (!input.trim()) return
     const text = input
     const clientId = `${user?.id?.slice(0, 8) || 'u'}-${Date.now()}`
+
+    if (typingStopRef.current) clearTimeout(typingStopRef.current)
+    channelRef.current?.stopTyping().catch(() => {})
 
     setMessages(prev => [...prev, {
       id: clientId, author: 'You',
@@ -173,13 +266,18 @@ export default function GroupChatPage() {
         type: createForm.type,
         category: createForm.category,
       }
-      setRooms(prev => [newRoom, ...prev])
+      // Realtime subscription will add to list, but also add immediately
+      setRooms(prev => prev.some(r => r.id === newRoom.id) ? prev : [newRoom, ...prev])
       setShowCreateModal(false)
       setCreateForm({ name: '', topic: '', category: 'Dating', type: 'public', emoji: '💬' })
       openRoom(newRoom)
     }
     setCreating(false)
   }
+
+  const typingLabel = othersTyping.length === 0 ? null
+    : othersTyping.length === 1 ? `${othersTyping[0]} is typing…`
+    : `${othersTyping.slice(0, 2).join(', ')} are typing…`
 
   const filtered = rooms.filter(r => {
     const matchSearch = r.name.toLowerCase().includes(search.toLowerCase()) || r.topic.toLowerCase().includes(search.toLowerCase())
@@ -255,7 +353,9 @@ export default function GroupChatPage() {
                       <span className="text-[10px] dark:text-gray-400 text-gray-400 flex-shrink-0 ml-2">{room.lastTime}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <p className="text-xs dark:text-gray-500 text-gray-500 truncate">{room.topic || `${room.members} members`}</p>
+                      <p className="text-xs dark:text-gray-500 text-gray-500 truncate">
+                        {room.lastMsg || room.topic || `${room.members} members`}
+                      </p>
                       {room.unread > 0 && (
                         <span className="w-5 h-5 rounded-full bg-brand-pink text-white text-[9px] font-black flex items-center justify-center flex-shrink-0 ml-1">{room.unread}</span>
                       )}
@@ -274,14 +374,14 @@ export default function GroupChatPage() {
           <>
             {/* Chat header */}
             <div className="flex items-center gap-3 px-4 py-3.5 dark:bg-white bg-white border-b dark:border-pink-200 border-gray-100 flex-shrink-0">
-              <button onClick={() => setActiveRoom(null)} className="lg:hidden w-8 h-8 rounded-lg dark:bg-pink-100 bg-gray-100 flex items-center justify-center">
+              <button onClick={() => { setActiveRoom(null); setOthersTyping([]) }} className="lg:hidden w-8 h-8 rounded-lg dark:bg-pink-100 bg-gray-100 flex items-center justify-center">
                 <X className="w-4 h-4 dark:text-gray-700 text-gray-600" />
               </button>
               <div className="w-10 h-10 rounded-2xl dark:bg-pink-100 bg-gray-100 flex items-center justify-center text-xl">{activeRoom.emoji}</div>
               <div className="flex-1">
                 <p className="font-bold dark:text-gray-900 text-gray-900">{activeRoom.name}</p>
                 <p className="text-xs dark:text-gray-500 text-gray-500">
-                  {activeRoom.members > 0 ? `${activeRoom.members.toLocaleString()} members` : activeRoom.topic}
+                  {typingLabel ?? (activeRoom.members > 0 ? `${activeRoom.members.toLocaleString()} members` : activeRoom.topic)}
                 </p>
               </div>
               <button onClick={() => setShowMembers(!showMembers)} className="w-8 h-8 rounded-xl dark:bg-pink-100 bg-gray-100 flex items-center justify-center hover:text-brand-pink transition-colors">
@@ -329,6 +429,25 @@ export default function GroupChatPage() {
                   </div>
                 ))
               )}
+
+              {/* Typing indicator */}
+              <AnimatePresence>
+                {othersTyping.length > 0 && (
+                  <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }}
+                    className="flex justify-start gap-2">
+                    <div className="w-8 h-8 rounded-full dark:bg-pink-100 bg-gray-100 flex items-center justify-center text-sm flex-shrink-0">✍️</div>
+                    <div className="dark:bg-white dark:border dark:border-pink-200 bg-gray-100 rounded-2xl rounded-bl-sm px-4 py-2.5 dark:shadow-sm">
+                      <div className="flex items-center gap-1">
+                        {[0, 0.15, 0.3].map((delay, i) => (
+                          <div key={i} className="w-2 h-2 rounded-full bg-pink-400"
+                            style={{ animation: `bounce 1s ${delay}s infinite` }} />
+                        ))}
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
               <div ref={bottomRef} />
             </div>
 
@@ -336,7 +455,7 @@ export default function GroupChatPage() {
             <div className="px-3 py-3 dark:bg-white bg-white border-t dark:border-pink-200 border-gray-100 flex-shrink-0">
               <div className="flex items-center gap-2 dark:bg-pink-50 dark:border dark:border-pink-200 bg-gray-100 border border-transparent rounded-2xl px-3 py-2 focus-within:dark:border-pink-400">
                 <span className="text-lg cursor-default">😊</span>
-                <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && sendMsg()}
+                <input value={input} onChange={handleInputChange} onKeyDown={e => e.key === 'Enter' && sendMsg()}
                   placeholder="Message the group…"
                   className="flex-1 bg-transparent text-sm dark:text-gray-900 text-gray-900 placeholder:dark:text-gray-400 placeholder:text-gray-400 focus:outline-none" />
                 <button onClick={() => {}} className="dark:text-gray-400 text-gray-400 hover:text-brand-pink transition-colors"><Mic className="w-4 h-4" /></button>

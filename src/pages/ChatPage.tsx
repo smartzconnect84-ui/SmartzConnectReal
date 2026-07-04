@@ -62,16 +62,18 @@ export default function ChatPage() {
   const [showReport, setShowReport] = useState(false)
   const [showMenu, setShowMenu] = useState(false)
   const [voiceToast, setVoiceToast] = useState(false)
+  const [otherTyping, setOtherTyping] = useState(false)
 
   const bottomRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const channelRef = useRef<Channel | null>(null)
+  const typingStopRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+  }, [messages, otherTyping])
 
-  // Load participant profile for display
+  // Load participant profile — also subscribe to realtime presence updates
   useEffect(() => {
     if (!id) return
     supabase
@@ -91,6 +93,25 @@ export default function ChatPage() {
           online,
         })
       })
+
+    // Subscribe to realtime presence updates for this participant
+    const presenceSub = supabase
+      .channel(`presence:${id}`)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'profiles',
+        filter: `id=eq.${id}`,
+      }, (payload) => {
+        const d = payload.new as any
+        const online = d.last_seen
+          ? (Date.now() - new Date(d.last_seen).getTime()) < 300000
+          : false
+        setParticipant(prev => prev ? { ...prev, online } : prev)
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(presenceSub) }
   }, [id])
 
   // Connection timeout — if GetStream doesn't connect in 10 s, stop the spinner
@@ -103,7 +124,7 @@ export default function ChatPage() {
     return () => clearTimeout(t)
   }, [connected])
 
-  // GetStream channel: watch + realtime
+  // GetStream channel: watch + realtime messaging + typing + read receipts
   useEffect(() => {
     if (!connected || !user?.id || !id) return
 
@@ -116,6 +137,9 @@ export default function ChatPage() {
         const state = await channel.watch()
         if (cancelled) return
         setMessages((state.messages || []).map(m => mapStreamMessage(m, user.id!)))
+
+        // Mark channel as read immediately on open
+        channel.markRead().catch(() => {})
       } catch (err) {
         console.error('Stream channel init:', err)
       } finally {
@@ -131,6 +155,8 @@ export default function ChatPage() {
         if (prev.some(msg => msg.id === m.id)) return prev
         return [...prev, mapStreamMessage(m, user.id!)]
       })
+      // Mark as read when message arrives and we're in the chat
+      channel.markRead().catch(() => {})
     }
 
     const handleReaction = (event: any) => {
@@ -142,14 +168,37 @@ export default function ChatPage() {
       }
     }
 
+    const handleTypingStart = (event: any) => {
+      if (cancelled || event.user?.id === user.id) return
+      setOtherTyping(true)
+    }
+
+    const handleTypingStop = (event: any) => {
+      if (cancelled || event.user?.id === user.id) return
+      setOtherTyping(false)
+    }
+
+    const handleRead = (event: any) => {
+      if (cancelled || event.user?.id === user.id) return
+      // Other person read our messages — mark all mine as read
+      setMessages(prev => prev.map(m => m.mine ? { ...m, status: 'read' } : m))
+    }
+
     channel.on('message.new', handleNew)
     channel.on('reaction.new', handleReaction)
+    channel.on('typing.start', handleTypingStart)
+    channel.on('typing.stop', handleTypingStop)
+    channel.on('message.read', handleRead)
 
     return () => {
       cancelled = true
       channel.off('message.new', handleNew)
       channel.off('reaction.new', handleReaction)
+      channel.off('typing.start', handleTypingStart)
+      channel.off('typing.stop', handleTypingStop)
+      channel.off('message.read', handleRead)
       channelRef.current = null
+      setOtherTyping(false)
     }
   }, [connected, user?.id, id])
 
@@ -162,9 +211,25 @@ export default function ChatPage() {
     startCall({ roomId: makeRoomId(type), type, participantName: participant?.name || 'User', participantEmoji: participant?.emoji, participantAvatar: participant?.avatar_url })
   }
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInput(e.target.value)
+    if (channelRef.current && connected) {
+      channelRef.current.keystroke().catch(() => {})
+      // Auto-stop typing after 3 s of inactivity
+      if (typingStopRef.current) clearTimeout(typingStopRef.current)
+      typingStopRef.current = setTimeout(() => {
+        channelRef.current?.stopTyping().catch(() => {})
+      }, 3000)
+    }
+  }
+
   const send = useCallback(async () => {
     const text = input.trim()
     if (!text || !channelRef.current || !connected || !user?.id) return
+
+    // Stop typing indicator
+    if (typingStopRef.current) clearTimeout(typingStopRef.current)
+    channelRef.current.stopTyping().catch(() => {})
 
     const clientId = `${user.id.replace(/-/g, '').slice(0, 8)}-${Date.now()}`
     const optimistic: Message = {
@@ -214,8 +279,8 @@ export default function ChatPage() {
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-bold text-sm dark:text-gray-900 text-gray-900 truncate">{person?.name || 'Chat'}</p>
-          <p className={`text-[11px] font-medium ${connected ? 'text-pink-500' : 'text-gray-400'}`}>
-            {!connected ? (connectTimeout ? 'Offline — check connection' : 'Connecting…') : person?.online ? '● Active now' : 'Offline'}
+          <p className={`text-[11px] font-medium ${connected ? (person?.online ? 'text-emerald-500' : 'text-pink-500') : 'text-gray-400'}`}>
+            {!connected ? (connectTimeout ? 'Offline — check connection' : 'Connecting…') : otherTyping ? '✍️ typing…' : person?.online ? '● Active now' : 'Last seen recently'}
           </p>
         </div>
         <div className="flex gap-1.5">
@@ -343,6 +408,24 @@ export default function ChatPage() {
             </div>
           ))
         )}
+
+        {/* Typing indicator */}
+        <AnimatePresence>
+          {otherTyping && (
+            <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }}
+              className="flex justify-start">
+              <div className="dark:bg-white dark:border dark:border-pink-200 bg-gray-100 rounded-2xl rounded-bl-sm px-4 py-2.5 dark:shadow-sm">
+                <div className="flex items-center gap-1">
+                  {[0, 0.15, 0.3].map((delay, i) => (
+                    <div key={i} className="w-2 h-2 rounded-full bg-pink-400"
+                      style={{ animation: `bounce 1s ${delay}s infinite` }} />
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <div ref={bottomRef} />
       </div>
 
@@ -378,7 +461,7 @@ export default function ChatPage() {
         }} />
         <div className="flex items-center gap-2 dark:bg-pink-50 dark:border dark:border-pink-200 bg-gray-100 border border-transparent rounded-2xl px-3 py-2 focus-within:dark:border-pink-400">
           <button onClick={() => setShowEmoji(!showEmoji)} className="text-lg hover:scale-110 transition-transform">😊</button>
-          <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && !e.shiftKey && send()}
+          <input value={input} onChange={handleInputChange} onKeyDown={e => e.key === 'Enter' && !e.shiftKey && send()}
             placeholder={connected ? 'Message…' : 'Connecting…'} disabled={!connected}
             className="flex-1 bg-transparent text-sm dark:text-gray-900 text-gray-900 placeholder:dark:text-gray-400 placeholder:text-gray-400 focus:outline-none disabled:opacity-50" />
           <div className="flex items-center gap-1">

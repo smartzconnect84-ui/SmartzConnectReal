@@ -588,6 +588,7 @@ export default function FeedPage() {
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [newPostsCount, setNewPostsCount] = useState(0)
   const { user } = useAuth()
 
   const fetchPosts = useCallback(async () => {
@@ -650,6 +651,59 @@ export default function FeedPage() {
 
   useEffect(() => { fetchPosts() }, [fetchPosts])
 
+  // Realtime: new posts from others + live like counts
+  useEffect(() => {
+    const postsSub = supabase
+      .channel('feed:realtime')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'posts',
+      }, (payload) => {
+        const p = payload.new as any
+        if (p.author_id !== user?.id && p.is_deleted !== true) {
+          setNewPostsCount(c => c + 1)
+        }
+      })
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'post_likes',
+      }, (payload) => {
+        const l = payload.new as any
+        if (l.user_id !== user?.id) {
+          setPosts(prev => prev.map(p =>
+            p.id === String(l.post_id) ? { ...p, likes: p.likes + 1 } : p
+          ))
+        }
+      })
+      .on('postgres_changes', {
+        event: 'DELETE',
+        schema: 'public',
+        table: 'post_likes',
+      }, (payload) => {
+        const l = payload.old as any
+        if (l.user_id !== user?.id) {
+          setPosts(prev => prev.map(p =>
+            p.id === String(l.post_id) && p.likes > 0 ? { ...p, likes: p.likes - 1 } : p
+          ))
+        }
+      })
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'post_comments',
+      }, (payload) => {
+        const c = payload.new as any
+        setPosts(prev => prev.map(p =>
+          p.id === String(c.post_id) ? { ...p, comments: p.comments + 1 } : p
+        ))
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(postsSub) }
+  }, [user?.id])
+
   const toggleLike = async (id: string) => {
     if (!user?.id) return
     const post = posts.find(p => p.id === id)
@@ -686,7 +740,23 @@ export default function FeedPage() {
           <StoriesBar user={user} />
 
           {/* Compose */}
-          <ComposeBox user={user} onPost={fetchPosts} />
+          <ComposeBox user={user} onPost={() => { setNewPostsCount(0); fetchPosts() }} />
+
+          {/* New posts banner */}
+          <AnimatePresence>
+            {newPostsCount > 0 && (
+              <motion.button
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                onClick={() => { setNewPostsCount(0); fetchPosts() }}
+                className="w-full flex items-center justify-center gap-2 py-2.5 mb-3 rounded-2xl bg-love-gradient text-white text-sm font-bold shadow-lg shadow-pink-500/30 hover:opacity-90 transition-opacity"
+              >
+                <RefreshCw className="w-4 h-4" />
+                {newPostsCount} new {newPostsCount === 1 ? 'post' : 'posts'} — tap to refresh
+              </motion.button>
+            )}
+          </AnimatePresence>
 
           {/* Loading skeletons */}
           {loading && (
