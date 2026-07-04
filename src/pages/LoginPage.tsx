@@ -62,7 +62,7 @@ export default function LoginPage() {
 
   return (
     <div
-      className="min-h-screen flex flex-col items-center justify-center px-4 py-10 relative overflow-hidden"
+      className="min-h-screen flex flex-col items-center justify-center px-4 py-10 relative overflow-hidden text-[#f2f0f5] bg-[Black]"
       style={{
         background: 'radial-gradient(ellipse 120% 100% at 75% 60%, #4a1a6b 0%, #2d1155 25%, #1a0a35 50%, #0d0520 75%, #080414 100%)',
       }}
@@ -230,7 +230,7 @@ export default function LoginPage() {
       >
         <div>
           <p className="text-xs font-bold text-amber-400">Staff member?</p>
-          <p className="text-xs text-white/45 mt-0.5">Use the secure Admin Control Center.</p>
+          <p className="text-xs text-white/45 mt-0.5">Use the Control Center</p>
         </div>
         <Link
           to="/admin/login"
