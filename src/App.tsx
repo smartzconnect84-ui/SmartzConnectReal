@@ -15,6 +15,7 @@ import AppShell from '@/layouts/AppShell'
 import AdminLayout from '@/layouts/AdminLayout'
 import ProtectedRoute from '@/components/ProtectedRoute'
 
+import PricingPage          from '@/pages/public/PricingPage'
 import HomePage from '@/pages/HomePage'
 import AboutPage from '@/pages/AboutPage'
 import LoginPage           from '@/pages/LoginPage'
@@ -104,6 +105,7 @@ export default function App() {
             <Routes>
               {/* Public */}
               <Route path="/"            element={<PublicLayout><HomePage /></PublicLayout>} />
+              <Route path="/pricing"     element={<PublicLayout><PricingPage /></PublicLayout>} />
               <Route path="/about"       element={<PublicLayout><AboutPage /></PublicLayout>} />
               <Route path="/privacy"     element={<PublicLayout><PrivacyPolicyPage /></PublicLayout>} />
               <Route path="/cookie-policy" element={<PublicLayout><CookiePolicyPage /></PublicLayout>} />
