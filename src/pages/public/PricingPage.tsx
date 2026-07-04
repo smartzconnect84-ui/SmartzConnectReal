@@ -66,73 +66,72 @@ type Plan = {
 
 const plans: Plan[] = [
   {
-    name: 'Free Forever', priceUSD: 0, icon: Heart,
+    name: 'Free', priceUSD: 0, icon: Heart,
     color: 'from-slate-500 to-gray-600',
     border: 'dark:border-white/10 border-gray-200',
     glowClass: '',
-    badge: null, period: 'forever', tagline: 'Start connecting with no strings attached',
+    badge: null, period: 'forever', tagline: 'Get the full SmartzConnect ecosystem — forever free to start',
     emoji: '🆓',
     features: [
-      { text: '10 swipe cards per day',          included: true },
-      { text: 'Create your profile',             included: true },
-      { text: 'Public social feed & posts',      included: true },
-      { text: 'Browse group chat rooms',         included: true },
-      { text: 'Marketplace browsing',            included: true },
-      { text: 'AI Support Chat',                 included: true },
-      { text: 'SmartzRide — book rides',         included: true },
-      { text: 'Unlimited swipes',                included: false },
-      { text: 'See who liked you',               included: false },
-      { text: 'SmartzTV streaming & upload',     included: false },
-      { text: 'Verified badge ✓',                included: false },
-      { text: 'Creator analytics',               included: false },
+      { text: 'Access all 7 super-products',         included: true },
+      { text: 'SmartzSocial — post & follow',        included: true },
+      { text: 'SmartzDating — 10 swipes/day',        included: true },
+      { text: 'SmartzRide — book rides',             included: true },
+      { text: 'SmartzMarket — browse & buy',         included: true },
+      { text: 'Basic GetStream chat',                included: true },
+      { text: 'Unlimited swipes',                    included: false },
+      { text: 'GetStream voice notes & presence',    included: false },
+      { text: 'Voice & video calls (LiveKit)',        included: false },
+      { text: 'Go Live — broadcasts & watch parties',included: false },
+      { text: 'Verified badge ✓',                    included: false },
+      { text: 'Creator analytics',                   included: false },
     ],
-    cta: 'Join Free', ctaStyle: 'dark:bg-white/8 bg-gray-100 dark:text-white text-gray-900 hover:dark:bg-white/14 hover:bg-gray-200',
+    cta: 'Get started →', ctaStyle: 'dark:bg-white/8 bg-gray-100 dark:text-white text-gray-900 hover:dark:bg-white/14 hover:bg-gray-200',
   },
   {
-    name: 'Connect', priceUSD: 5, icon: Zap,
+    name: 'Plus', priceUSD: 5, icon: Zap,
     color: 'from-pink-500 to-rose-600',
     border: 'border-pink-500/50',
     glowClass: 'shadow-2xl shadow-pink-500/20',
-    badge: 'Most Popular', period: 'per month', tagline: '50% of all features unlocked — perfect for growing',
+    badge: 'MOST POPULAR', period: 'per month', tagline: 'For active creators, daters and shoppers who want more',
     emoji: '⚡',
     features: [
-      { text: 'Unlimited swipes every day',      included: true, highlight: true },
-      { text: 'See exactly who liked you',       included: true, highlight: true },
-      { text: 'Priority in Discover feed',       included: true },
-      { text: 'SmartzTV — watch & upload',       included: true },
-      { text: 'Sell on Marketplace',             included: true },
-      { text: 'Private group chats',             included: true },
-      { text: 'Read receipts & typing',          included: true },
-      { text: 'Profile Boost (1×/week)',         included: true },
-      { text: 'Verified badge ✓',                included: false },
-      { text: 'Go Live on SmartzTV',             included: false },
-      { text: 'Advanced analytics dashboard',    included: false },
-      { text: 'Dedicated human support',         included: false },
+      { text: 'All 7 super-products: SmartzSocial, SmartzDating, SmartzRide, SmartzMarket, SmartzDelivery, SmartzTV, SmartzAds', included: true, highlight: true },
+      { text: 'Unlimited GetStream chat — DMs, groups, voice notes, typing, presence', included: true, highlight: true },
+      { text: 'Voice & video calls + group conferencing (LiveKit Cloud)', included: true },
+      { text: 'Go Live — broadcasts, watch parties, creator hub',        included: true },
+      { text: 'Unlimited swipes on SmartzDating',                        included: true },
+      { text: 'See who liked you',                                        included: true },
+      { text: 'SmartzMarket — sell & list products',                      included: true },
+      { text: 'Profile Boost (1×/week)',                                  included: true },
+      { text: 'Verified badge ✓',                                         included: false },
+      { text: 'Advanced analytics dashboard',                             included: false },
+      { text: 'Dedicated human support',                                  included: false },
     ],
-    cta: 'Go Connect ⚡', ctaStyle: 'bg-love-gradient text-white shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 hover:scale-[1.02]',
+    cta: 'Start Plus →', ctaStyle: 'bg-love-gradient text-white shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 hover:scale-[1.02]',
   },
   {
-    name: 'Elite', priceUSD: 10, icon: Crown,
+    name: 'Pro', priceUSD: 10, icon: Crown,
     color: 'from-amber-500 to-yellow-500',
     border: 'border-amber-500/50',
     glowClass: 'shadow-2xl shadow-amber-500/20',
-    badge: 'Fully Unlimited', period: 'per month', tagline: '100% unlimited — the complete SmartzConnect experience',
+    badge: 'FULLY UNLIMITED', period: 'per month', tagline: 'For vendors, drivers, broadcasters and businesses',
     emoji: '👑',
     features: [
-      { text: 'Everything in Connect plan',      included: true, highlight: true },
-      { text: 'Verified badge ✓ on profile',     included: true, highlight: true },
-      { text: 'Top of Discover feed always',     included: true },
-      { text: 'Go Live on SmartzTV',             included: true },
-      { text: 'Revenue share (creators)',        included: true },
-      { text: 'Unlimited Super Likes',           included: true },
-      { text: 'Custom profile themes',           included: true },
-      { text: 'Advanced analytics dashboard',    included: true },
-      { text: 'Exclusive Elite events access',   included: true },
-      { text: 'Priority ride booking',           included: true },
-      { text: 'Dedicated human support 24/7',    included: true },
-      { text: 'Early access to new features',    included: true },
+      { text: 'All 7 super-products: SmartzSocial, SmartzDating, SmartzRide, SmartzMarket, SmartzDelivery, SmartzTV, SmartzAds', included: true, highlight: true },
+      { text: 'Unlimited GetStream chat — DMs, groups, voice notes, typing, presence', included: true, highlight: true },
+      { text: 'Voice & video calls + group conferencing (LiveKit Cloud)', included: true },
+      { text: 'Go Live — broadcasts, watch parties, creator hub',        included: true },
+      { text: 'Verified badge ✓ on profile',                             included: true, highlight: true },
+      { text: 'Top of Discover feed always',                             included: true },
+      { text: 'Revenue share for creators',                              included: true },
+      { text: 'Unlimited Super Likes',                                   included: true },
+      { text: 'Advanced analytics dashboard',                            included: true },
+      { text: 'Dedicated human support 24/7',                           included: true },
+      { text: 'Priority ride & delivery booking',                        included: true },
+      { text: 'Early access to new features',                            included: true },
     ],
-    cta: 'Go Elite 👑', ctaStyle: 'bg-gradient-to-r from-amber-500 to-yellow-500 text-white shadow-lg shadow-amber-500/30 hover:shadow-amber-500/50 hover:scale-[1.02]',
+    cta: 'Go Pro →', ctaStyle: 'bg-gradient-to-r from-amber-500 to-yellow-500 text-white shadow-lg shadow-amber-500/30 hover:shadow-amber-500/50 hover:scale-[1.02]',
   },
 ]
 
@@ -162,8 +161,8 @@ const faqs = [
     a: 'Use our currency converter on this page to see prices in 25+ currencies. Payments are accepted in USD equivalent via Mobile Money.' },
   { q: 'Is the Free plan really free forever?',
     a: 'Yes! Free Forever means no credit card, no trial expiry — you keep your 10 swipes, social feed, and community rooms forever with zero cost.' },
-  { q: 'How is Connect different from Elite?',
-    a: 'Connect ($5) unlocks unlimited swipes, SmartzTV, and marketplace selling — 50% of all platform features. Elite ($10) adds everything in Connect plus your Verified badge, Go Live, revenue share, advanced analytics, dedicated human support, and full unlimited access to every feature.' },
+  { q: 'How is Plus different from Pro?',
+    a: 'Plus ($5) unlocks unlimited swipes, SmartzTV, voice & video calls, and marketplace selling across all 7 products. Pro ($10) adds everything in Plus — your Verified badge, Go Live, revenue share, advanced analytics, dedicated human support 24/7, and full unlimited access to every feature.' },
   { q: 'How long does payment verification take?',
     a: 'Our admin team verifies Mobile Money payments within 15 minutes during business hours (8 AM–10 PM WAT). After hours it may take up to 2 hours.' },
 ]
@@ -302,14 +301,15 @@ export default function PricingPage() {
           <motion.div initial={{ opacity: 0, y: 30 }} animate={heroIn ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.6 }}>
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-love-soft border border-pink-500/25 mb-5">
               <Crown className="w-4 h-4 text-brand-pink" />
-              <span className="text-sm font-semibold text-brand-pink">Simple, transparent pricing</span>
+              <span className="text-sm font-black tracking-widest text-brand-pink uppercase">Subscription</span>
             </div>
             <h1 className="font-display font-black text-4xl sm:text-5xl lg:text-6xl dark:text-white text-gray-900 mb-4 leading-tight">
-              Choose Your <span className="text-gradient-love">Perfect Plan</span>
+              One identity.{' '}
+              <span className="bg-gradient-to-r from-violet-400 via-pink-400 to-rose-400 bg-clip-text text-transparent">Seven products.</span>{' '}
+              <span className="bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">$5 or $10.</span>
             </h1>
             <p className="text-base sm:text-lg dark:text-gray-400 text-gray-600 max-w-2xl mx-auto mb-8 leading-relaxed">
-              Start free forever. Upgrade when you're ready. Pay with Mobile Money — no bank card needed.
-              Cancel anytime with zero penalties.
+              No hidden fees. Cancel anytime. Auto-converted to your local currency.
             </p>
 
             {/* Controls row */}
@@ -356,7 +356,7 @@ export default function PricingPage() {
                 <motion.div key={plan.name}
                   initial={{ opacity: 0, y: 40 }} animate={plansIn ? { opacity: 1, y: 0 } : {}}
                   transition={{ delay: i * 0.12, duration: 0.5 }}
-                  className={`relative dark:bg-[#130E1E] bg-white rounded-3xl p-6 lg:p-7 border-2 ${plan.border} flex flex-col ${plan.glowClass} ${plan.name === 'Connect' ? 'md:-mt-5 md:mb-5' : ''} hover:scale-[1.01] transition-all duration-300`}
+                  className={`relative dark:bg-[#130E1E] bg-white rounded-3xl p-6 lg:p-7 border-2 ${plan.border} flex flex-col ${plan.glowClass} ${plan.name === 'Plus' ? 'md:-mt-5 md:mb-5' : ''} hover:scale-[1.01] transition-all duration-300`}
                 >
                   {/* Badge */}
                   {plan.badge && (
@@ -488,7 +488,7 @@ export default function PricingPage() {
                   <p className="font-bold text-sm dark:text-white text-gray-900">How to pay with Mobile Money</p>
                 </div>
                 {[
-                  { step: '1', text: 'Pick a plan below and tap "Go Connect" or "Go Elite"' },
+                  { step: '1', text: 'Pick a plan below and tap "Start Plus" or "Go Pro"' },
                   { step: '2', text: 'Send the amount to our MTN or Orange Money number' },
                   { step: '3', text: 'Enter your Transaction ID in the app within 15 minutes' },
                   { step: '4', text: 'Admin verifies & your plan activates automatically ✅' },

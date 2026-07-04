@@ -25,10 +25,11 @@ const socialItems = [
 ]
 
 const mainLinks = [
-  { label: 'World Stage', href: '/world-stage' },
-  { label: 'Our Team',    href: '/team' },
-  { label: 'Pricing',     href: '/app/subscriptions' },
-  { label: 'Blog',        href: '/blog' },
+  { label: 'World Stage',    href: '/world-stage' },
+  { label: 'Our Team',       href: '/team' },
+  { label: 'Subscription',   href: '/pricing' },
+  { label: 'Blog',           href: '/blog' },
+  { label: 'About',          href: '/about' },
 ]
 
 interface DropdownMenuProps {

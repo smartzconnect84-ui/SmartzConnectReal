@@ -105,7 +105,8 @@ export default function App() {
             <Routes>
               {/* Public */}
               <Route path="/"            element={<PublicLayout><HomePage /></PublicLayout>} />
-              <Route path="/pricing"     element={<PublicLayout><PricingPage /></PublicLayout>} />
+              <Route path="/pricing"      element={<PublicLayout><PricingPage /></PublicLayout>} />
+              <Route path="/subscription" element={<PublicLayout><PricingPage /></PublicLayout>} />
               <Route path="/about"       element={<PublicLayout><AboutPage /></PublicLayout>} />
               <Route path="/privacy"     element={<PublicLayout><PrivacyPolicyPage /></PublicLayout>} />
               <Route path="/cookie-policy" element={<PublicLayout><CookiePolicyPage /></PublicLayout>} />
