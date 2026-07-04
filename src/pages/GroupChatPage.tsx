@@ -132,9 +132,12 @@ export default function GroupChatPage() {
   const openRoom = async (room: Room) => {
     // Cleanup previous channel event listeners
     if (channelRef.current) {
-      channelRef.current.off('message.new')
-      channelRef.current.off('typing.start')
-      channelRef.current.off('typing.stop')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      channelRef.current.off('message.new' as any)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      channelRef.current.off('typing.start' as any)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      channelRef.current.off('typing.stop' as any)
     }
     setOthersTyping([])
 

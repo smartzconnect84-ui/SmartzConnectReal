@@ -123,7 +123,7 @@ export default function AdminPaymentsPanel() {
           </div>
         ) : (
           filtered.map((payment, i) => {
-            const cfg = MOBILE_MONEY_CONFIG[payment.provider] ?? MOBILE_MONEY_CONFIG['mtn']
+            const cfg = MOBILE_MONEY_CONFIG[payment.provider as keyof typeof MOBILE_MONEY_CONFIG] ?? MOBILE_MONEY_CONFIG['mtn']
             const isPending = payment.status === 'pending'
             const isProcessing = processing === payment.id
 

@@ -43,13 +43,11 @@ publicDir = "dist"
 [userenv]
 
 [userenv.shared]
-VITE_SUPABASE_URL = "https://ufmuhwepyxzaldvcbipd.supabase.co"
-VITE_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVmbXVod2VweXh6YWxkdmNiaXBkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5NjgyNjAsImV4cCI6MjA5NTU0NDI2MH0.IsfvrR37yHihi-IkjeahECn-Tb72bpf72yAyJk5LfIw"
+VITE_SUPABASE_URL = "https://rcsbfosnupyxaukwykjw.supabase.co"
+VITE_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJjc2Jmb3NudXB5eGF1a3d5a2p3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3NTc0MTYsImV4cCI6MjA5ODMzMzQxNn0.sWBY66d6epz2j7yU6BX-Epi4g9Qa8hWR0m2YoPK1ijg"
 VITE_STREAM_API_KEY = "awspcvfkzuq7"
-
-[userenv.development]
-SUPABASE_DB_URL = "postgresql://postgres.ufmuhwepyxzaldvcbipd:Afrohope2021@aws-0-eu-west-1.pooler.supabase.com:6543/postgres"
-GITHUB_PAT = "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"
-VERCEL_TOKEN = "vcp_62towI0XoC7WQlBzZL2g14FttgyQlJuiXR9yYSzsLVHHdpGZWb4Zlzx5"
-SUPABASE_SERVICE_ROLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVmbXVod2VweXh6YWxkdmNiaXBkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3OTk2ODI2MCwiZXhwIjoyMDk1NTQ0MjYwfQ.j8OE2muSe5B_pAjvRDMJzY3BGyTIcd9VAIPlMVIHx5I"
-SUPABASE_PAT = "sbp_0571da62ce783a19726391d88b554a0a6ac1239f"
+VITE_LIVEKIT_WS_URL = "wss://smartzconnect-1x6zgpbq.livekit.cloud"
+VITE_ONESIGNAL_APP_ID = "2a4c4dfe-4c4a-40d4-af09-ae1befc42c2b"
+VITE_STREAM_APP_ID = "1630966"
+VITE_USER_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVmbXVod2VweXh6YWxkdmNiaXBkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5NjgyNjAsImV4cCI6MjA5NTU0NDI2MH0.IsfvrR37yHihi-IkjeahECn-Tb72bpf72yAyJk5LfIw"
+VITE_USER_SUPABASE_URL = "https://ufmuhwepyxzaldvcbipd.supabase.co"
