@@ -6,7 +6,7 @@
 
 @layer base {
   html {
-    font-size: 90%;
+    font-size: 100%;
   }
 
   :root {
@@ -73,6 +73,11 @@
 }
 
 @layer utilities {
+  /* ── App shell scoped at 90% (keeps compact app UI) ── */
+  .app-shell {
+    font-size: 90%;
+  }
+
   /* ── Love gradient text ── */
   .text-gradient-love {
     background: linear-gradient(135deg, #FF4D8D 0%, #9B5DE5 100%);

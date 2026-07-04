@@ -106,7 +106,7 @@ export default function AppShell() {
   }, [user?.id])
 
   return (
-    <div className="h-screen flex flex-col dark:bg-[#0A0710] bg-gray-50 overflow-hidden">
+    <div className="app-shell h-screen flex flex-col dark:bg-[#0A0710] bg-gray-50 overflow-hidden">
 
       {/* ── Full-width Top Nav ── */}
       <TopNavBar
@@ -141,7 +141,7 @@ export default function AppShell() {
                 <nav className="flex-1 px-3 py-2 overflow-y-auto">
                   {drawerSections.map(({ section, items }) => (
                     <div key={section}>
-                      <p className="text-[9px] font-black uppercase tracking-widest text-brand-pink px-3 pt-4 pb-1.5 first:pt-2">{section}</p>
+                      <p className="text-[10.5px] font-black uppercase tracking-widest text-brand-pink px-3 pt-4 pb-1.5 first:pt-2">{section}</p>
                       {items.map(item => {
                         const active = isActive(item.path)
                         const Icon = item.icon
@@ -157,9 +157,9 @@ export default function AppShell() {
                                 : 'dark:text-gray-400 text-gray-600 hover:dark:bg-white/5 hover:bg-pink-50 hover:text-brand-pink'
                             }`}>
                             <Icon className={`w-4 h-4 flex-shrink-0 ${!active && item.color ? item.color : ''}`} />
-                            <span className="text-sm font-semibold">{item.label}</span>
+                            <span className="text-[1rem] font-semibold">{item.label}</span>
                             {liveBadge && !active && (
-                              <span className="ml-auto text-[10px] font-black px-1.5 py-0.5 rounded-full bg-brand-pink text-white min-w-[18px] text-center">{liveBadge}</span>
+                              <span className="ml-auto text-[11.5px] font-black px-1.5 py-0.5 rounded-full bg-brand-pink text-white min-w-[18px] text-center">{liveBadge}</span>
                             )}
                           </Link>
                         )

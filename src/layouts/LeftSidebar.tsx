@@ -77,10 +77,10 @@ function NavRow({
           : 'dark:text-gray-400 text-gray-600 hover:dark:bg-white/5 hover:bg-pink-50 hover:text-brand-pink'
       }`}
     >
-      <Icon className={`w-[1.05rem] h-[1.05rem] flex-shrink-0 ${!active && item.color ? item.color : ''}`} />
-      <span className="text-sm font-semibold hidden lg:block truncate flex-1">{item.label}</span>
+      <Icon className={`w-[1.15rem] h-[1.15rem] flex-shrink-0 ${!active && item.color ? item.color : ''}`} />
+      <span className="text-[1rem] font-semibold hidden lg:block truncate flex-1">{item.label}</span>
       {liveBadge && !active && (
-        <span className="hidden lg:flex ml-auto text-[10px] font-black px-1.5 py-0.5 rounded-full bg-brand-pink text-white min-w-[18px] text-center">
+        <span className="hidden lg:flex ml-auto text-[11.5px] font-black px-1.5 py-0.5 rounded-full bg-brand-pink text-white min-w-[18px] text-center">
           {liveBadge}
         </span>
       )}
@@ -124,7 +124,7 @@ export default function LeftSidebar({ unreadMessages, unreadNotifs }: LeftSideba
       {/* Scrollable nav */}
       <nav className="flex-1 px-2 lg:px-3 py-4 overflow-y-auto space-y-0.5">
 
-        <p className="text-[9px] font-black uppercase tracking-widest text-brand-pink px-2 lg:px-3 mb-2 hidden lg:block">Main</p>
+        <p className="text-[10.5px] font-black uppercase tracking-widest text-brand-pink px-2 lg:px-3 mb-2 hidden lg:block">Main</p>
         {mainNav.map(item => {
           const badge =
             item.label === 'Messages'      && unreadMessages > 0 ? String(Math.min(unreadMessages, 99)) :
@@ -135,14 +135,14 @@ export default function LeftSidebar({ unreadMessages, unreadNotifs }: LeftSideba
 
         <div className="h-px dark:bg-white/5 bg-gray-100 my-3 mx-1" />
 
-        <p className="text-[9px] font-black uppercase tracking-widest text-brand-pink px-2 lg:px-3 mb-2 hidden lg:block">Calls</p>
+        <p className="text-[10.5px] font-black uppercase tracking-widest text-brand-pink px-2 lg:px-3 mb-2 hidden lg:block">Calls</p>
         {callsNav.map(item => (
           <NavRow key={item.path} item={item} active={isActive(item.path)} />
         ))}
 
         <div className="h-px dark:bg-white/5 bg-gray-100 my-3 mx-1" />
 
-        <p className="text-[9px] font-black uppercase tracking-widest text-brand-pink px-2 lg:px-3 mb-2 hidden lg:block">Explore</p>
+        <p className="text-[10.5px] font-black uppercase tracking-widest text-brand-pink px-2 lg:px-3 mb-2 hidden lg:block">Explore</p>
         {exploreNav.map(item => (
           <NavRow key={item.path} item={item} active={isActive(item.path)} />
         ))}
@@ -158,9 +158,9 @@ export default function LeftSidebar({ unreadMessages, unreadNotifs }: LeftSideba
           title={theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
           className="w-full flex items-center justify-center lg:justify-start gap-3 px-2 lg:px-3 py-2 rounded-xl dark:text-gray-400 text-gray-600 hover:dark:bg-white/5 hover:bg-gray-50 hover:text-brand-pink transition-all text-sm font-semibold">
           {theme === 'dark'
-            ? <Sun className="w-[1.05rem] h-[1.05rem] flex-shrink-0" />
-            : <Moon className="w-[1.05rem] h-[1.05rem] flex-shrink-0" />}
-          <span className="hidden lg:block">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+            ? <Sun className="w-[1.15rem] h-[1.15rem] flex-shrink-0" />
+            : <Moon className="w-[1.15rem] h-[1.15rem] flex-shrink-0" />}
+          <span className="hidden lg:block text-[1rem]">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
         </button>
 
         {/* User card — lg only */}
@@ -171,8 +171,8 @@ export default function LeftSidebar({ unreadMessages, unreadNotifs }: LeftSideba
               : displayName[0]?.toUpperCase()}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-bold dark:text-white text-gray-900 truncate">{displayName}</p>
-            <p className="text-[10px] dark:text-gray-500 text-gray-400 truncate">{user?.email}</p>
+            <p className="text-[0.84rem] font-bold dark:text-white text-gray-900 truncate">{displayName}</p>
+            <p className="text-[11.5px] dark:text-gray-500 text-gray-400 truncate">{user?.email}</p>
           </div>
           <button onClick={signOut} title="Sign Out"
             className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-red-500/10 hover:text-red-400 dark:text-gray-500 text-gray-400 transition-colors flex-shrink-0">

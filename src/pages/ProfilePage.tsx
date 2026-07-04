@@ -62,6 +62,7 @@ export default function ProfilePage() {
   const [isPremium, setIsPremium] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState(false)
   const [signOutConfirm, setSignOutConfirm] = useState(false)
+  const [openSetting, setOpenSetting] = useState<string | null>(null)
   const avatarInputRef = useRef<HTMLInputElement>(null)
   const coverInputRef = useRef<HTMLInputElement>(null)
   const photoInputRef = useRef<HTMLInputElement>(null)
@@ -548,19 +549,133 @@ export default function ProfilePage() {
 
         {/* ── SETTINGS TAB ── */}
         {activeTab === 'settings' && (
-          <div className="p-4 sm:p-6 space-y-3">
+          <div className="p-4 sm:p-6 space-y-2">
             {settingsItems.map((item, i) => (
-              <motion.button key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
-                className="w-full flex items-center gap-3 p-4 dark:bg-[#130E1E] bg-white rounded-2xl border dark:border-white/6 border-gray-100 hover:border-brand-pink/30 hover:shadow-md transition-all group text-left">
-                <div className="w-10 h-10 rounded-xl dark:bg-white/5 bg-gray-100 flex items-center justify-center flex-shrink-0 group-hover:bg-love-soft transition-colors">
-                  <item.icon className={`w-4 h-4 ${item.color}`} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold dark:text-white text-gray-900">{item.label}</p>
-                  <p className="text-xs dark:text-gray-400 text-gray-500">{item.desc}</p>
-                </div>
-                <ChevronRight className="w-4 h-4 dark:text-gray-500 text-gray-400 group-hover:text-brand-pink transition-colors flex-shrink-0" />
-              </motion.button>
+              <motion.div key={item.key} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
+                className="dark:bg-[#130E1E] bg-white rounded-2xl border dark:border-white/6 border-gray-100 overflow-hidden">
+                <button
+                  onClick={() => setOpenSetting(openSetting === item.key ? null : item.key)}
+                  className="w-full flex items-center gap-3 p-4 hover:border-brand-pink/30 hover:shadow-md transition-all group text-left">
+                  <div className="w-10 h-10 rounded-xl dark:bg-white/5 bg-gray-100 flex items-center justify-center flex-shrink-0 group-hover:bg-love-soft transition-colors">
+                    <item.icon className={`w-4 h-4 ${item.color}`} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold dark:text-white text-gray-900">{item.label}</p>
+                    <p className="text-xs dark:text-gray-400 text-gray-500">{item.desc}</p>
+                  </div>
+                  <ChevronRight className={`w-4 h-4 dark:text-gray-500 text-gray-400 group-hover:text-brand-pink transition-all flex-shrink-0 ${openSetting === item.key ? 'rotate-90 text-brand-pink' : ''}`} />
+                </button>
+
+                {openSetting === item.key && (
+                  <div className="px-4 pb-4 border-t dark:border-white/5 border-gray-100 pt-3 space-y-3">
+                    {item.key === 'notifications' && (
+                      <>
+                        {[
+                          { label: 'New Matches',        desc: 'Alert when someone likes you back' },
+                          { label: 'New Messages',       desc: 'Alert for direct messages' },
+                          { label: 'Super Likes',        desc: 'Alert when someone super-likes you' },
+                          { label: 'Profile Views',      desc: 'Weekly summary of profile visits' },
+                          { label: 'Promotions & News',  desc: 'Platform updates and offers' },
+                        ].map((n, j) => (
+                          <div key={j} className="flex items-center justify-between">
+                            <div>
+                              <p className="text-xs font-semibold dark:text-white text-gray-900">{n.label}</p>
+                              <p className="text-[10px] dark:text-gray-500 text-gray-400">{n.desc}</p>
+                            </div>
+                            <div className="w-10 h-6 rounded-full bg-brand-pink/20 border border-brand-pink/30 relative cursor-pointer flex items-center px-0.5">
+                              <div className="w-4 h-4 rounded-full bg-brand-pink shadow ml-auto" />
+                            </div>
+                          </div>
+                        ))}
+                      </>
+                    )}
+                    {item.key === 'privacy' && (
+                      <>
+                        {[
+                          { label: 'Show my distance',      desc: 'Let others see how far you are' },
+                          { label: 'Show online status',    desc: 'Let matches see when you\'re active' },
+                          { label: 'Allow profile shares',  desc: 'Let others share your profile' },
+                          { label: 'Read receipts',         desc: 'Show when you\'ve read messages' },
+                          { label: 'Appear in Search',      desc: 'Include your profile in Discover' },
+                        ].map((n, j) => (
+                          <div key={j} className="flex items-center justify-between">
+                            <div>
+                              <p className="text-xs font-semibold dark:text-white text-gray-900">{n.label}</p>
+                              <p className="text-[10px] dark:text-gray-500 text-gray-400">{n.desc}</p>
+                            </div>
+                            <div className="w-10 h-6 rounded-full bg-emerald-500/20 border border-emerald-500/30 relative cursor-pointer flex items-center px-0.5">
+                              <div className="w-4 h-4 rounded-full bg-emerald-500 shadow ml-auto" />
+                            </div>
+                          </div>
+                        ))}
+                      </>
+                    )}
+                    {item.key === 'verification' && (
+                      <div className="space-y-3">
+                        <div className={`flex items-center gap-3 p-3 rounded-xl ${isVerified ? 'bg-blue-500/10 border border-blue-500/20' : 'dark:bg-white/4 bg-gray-50 border dark:border-white/6 border-gray-200'}`}>
+                          <Shield className={`w-8 h-8 flex-shrink-0 ${isVerified ? 'text-blue-400' : 'dark:text-gray-500 text-gray-400'}`} />
+                          <div>
+                            <p className="text-sm font-bold dark:text-white text-gray-900">{isVerified ? '✓ Verified Account' : 'Not Yet Verified'}</p>
+                            <p className="text-xs dark:text-gray-400 text-gray-500">{isVerified ? 'Your profile has a verified badge' : 'Get a verified badge with Elite plan'}</p>
+                          </div>
+                        </div>
+                        {!isVerified && (
+                          <div className="space-y-2">
+                            <p className="text-xs dark:text-gray-400 text-gray-600 leading-relaxed">Verification requires government-issued ID + selfie. Available on the Elite plan.</p>
+                            <button className="w-full py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold shadow-lg">
+                              Upgrade to Elite for Verification
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {item.key === 'subscription' && (
+                      <div className="space-y-3">
+                        <div className={`p-3 rounded-xl ${isPremium ? 'bg-amber-500/10 border border-amber-500/20' : 'dark:bg-white/4 bg-gray-50 border dark:border-white/6 border-gray-200'}`}>
+                          <div className="flex items-center gap-2 mb-1">
+                            <Crown className={`w-4 h-4 ${isPremium ? 'text-amber-400' : 'dark:text-gray-500 text-gray-400'}`} />
+                            <p className="text-sm font-bold dark:text-white text-gray-900">{isPremium ? 'Elite Plan Active' : 'Free Plan'}</p>
+                          </div>
+                          <p className="text-xs dark:text-gray-400 text-gray-500">{isPremium ? 'Full unlimited access to all features' : 'Upgrade for unlimited swipes, matches & more'}</p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button className="py-2.5 rounded-xl bg-love-gradient text-white text-xs font-bold shadow-md">Go Connect — $5/mo</button>
+                          <button className="py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-bold shadow-md">Go Elite — $10/mo</button>
+                        </div>
+                        {isPremium && (
+                          <button className="w-full py-2 rounded-xl dark:bg-white/5 bg-gray-100 text-xs dark:text-gray-400 text-gray-600 font-semibold">Cancel Subscription</button>
+                        )}
+                      </div>
+                    )}
+                    {item.key === 'account' && (
+                      <div className="space-y-3">
+                        {[
+                          { label: 'Email Address',  value: user?.email ?? '—', editable: false },
+                          { label: 'Display Name',   value: form.full_name || '—', editable: true },
+                          { label: 'Username',       value: `@${user?.email?.split('@')[0] ?? 'user'}`, editable: false },
+                        ].map((f, j) => (
+                          <div key={j} className="flex items-center justify-between py-2 border-b dark:border-white/5 border-gray-100 last:border-0">
+                            <div>
+                              <p className="text-[10px] dark:text-gray-500 text-gray-400">{f.label}</p>
+                              <p className="text-xs font-semibold dark:text-white text-gray-900 truncate max-w-[160px]">{f.value}</p>
+                            </div>
+                            {f.editable && (
+                              <button onClick={() => { setOpenSetting(null); setActiveTab('profile'); setEditing(true) }}
+                                className="text-[10px] font-bold text-brand-pink hover:underline">Edit</button>
+                            )}
+                          </div>
+                        ))}
+                        <button className="w-full py-2.5 rounded-xl dark:bg-white/5 bg-gray-100 text-xs font-semibold dark:text-gray-300 text-gray-700">
+                          Change Password
+                        </button>
+                        <button className="w-full py-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs font-semibold text-blue-500">
+                          Linked Accounts (Google, Apple)
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </motion.div>
             ))}
 
             {/* Account info */}

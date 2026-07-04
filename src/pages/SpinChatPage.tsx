@@ -5,14 +5,6 @@ import { useLiveKitCall } from '@/contexts/LiveKitCallContext'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 
-const fallbackProfiles = [
-  { name: 'Amara K.',   age: 24, emoji: '👩🏾', country: 'Sierra Leone', flag: '🇸🇱', interests: ['Music', 'Travel', 'Food'],    bio: 'Love exploring new cultures and meeting amazing people! 🌍', online: true,  avatar_url: null },
-  { name: 'Fatima D.',  age: 26, emoji: '👩🏽', country: 'Senegal',      flag: '🇸🇳', interests: ['Art', 'Dance', 'Fashion'],    bio: 'Artist by day, dancer by night 💃 Looking for genuine connections', online: true,  avatar_url: null },
-  { name: 'Grace K.',   age: 22, emoji: '👩🏿', country: 'Liberia',      flag: '🇱🇷', interests: ['Movies', 'Cooking', 'Books'], bio: 'Foodie and movie buff 🎬 Let\'s talk about everything!', online: false, avatar_url: null },
-  { name: 'Nadia M.',   age: 28, emoji: '👩🏾', country: 'Ghana',        flag: '🇬🇭', interests: ['Music', 'Fitness', 'Tech'],   bio: 'Tech girl who loves Afrobeats 🎵 Always up for a good chat', online: true,  avatar_url: null },
-  { name: 'Aisha T.',   age: 23, emoji: '👩🏽', country: 'Guinea',       flag: '🇬🇳', interests: ['Travel', 'Books', 'Nature'],  bio: 'Wanderlust soul 🌿 Reading books and exploring the world', online: true,  avatar_url: null },
-]
-
 const defaultEmojis = ['👩🏾', '👨🏿', '👩🏽', '👨🏾', '👩🏿', '👨🏽']
 const segments = ['💕', '🔥', '⭐', '💎', '🎯', '✨', '🌟', '💫', '🎪', '🎭', '🎨', '🎵']
 const SEGMENT_COUNT = segments.length
@@ -30,7 +22,7 @@ export default function SpinChatPage() {
   const [messages, setMessages] = useState<{ text: string; mine: boolean; time: string }[]>([])
   const [input, setInput] = useState('')
   const [anonymous, setAnonymous] = useState(false)
-  const [poolProfiles, setPoolProfiles] = useState<SpinProfile[]>(fallbackProfiles)
+  const [poolProfiles, setPoolProfiles] = useState<SpinProfile[]>([])
   const [dbConnected, setDbConnected] = useState(false)
   const [connectSaving, setConnectSaving] = useState(false)
   const [connectDone, setConnectDone] = useState(false)
@@ -90,6 +82,10 @@ export default function SpinChatPage() {
     setRotation(totalDeg)
     await controls.start({ rotate: totalDeg, transition: { duration: 3 + Math.random() * 2, ease: [0.17, 0.67, 0.12, 0.99] as any } })
     const pool = poolProfiles.filter(p => p.online || true)
+    if (pool.length === 0) {
+      setPhase('idle')
+      return
+    }
     const profile = pool[Math.floor(Math.random() * pool.length)]
     setCurrentProfile(profile)
     setSpinCount(c => c + 1)
@@ -163,7 +159,14 @@ export default function SpinChatPage() {
           {/* ── Idle / Spin Phase ── */}
           {(phase === 'idle' || phase === 'spinning' || phase === 'skipped') && (
             <motion.div key="spin-screen" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="h-full flex flex-col items-center justify-center px-4 py-6 gap-6 sm:gap-8">
+              className="h-full flex flex-col items-center justify-center px-4 py-6 gap-5 sm:gap-8">
+
+              {!dbConnected && poolProfiles.length === 0 && phase === 'idle' && (
+                <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-fuchsia-500/10 border border-fuchsia-500/20 text-xs text-fuchsia-400 font-semibold">
+                  <span className="w-2 h-2 rounded-full bg-fuchsia-400 animate-pulse" />
+                  Waiting for live users — connect your Supabase to enable Spin & Chat
+                </div>
+              )}
 
               {/* Spin wheel */}
               <div className="relative flex items-center justify-center">

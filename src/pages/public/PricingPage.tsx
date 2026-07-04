@@ -79,7 +79,7 @@ const plans: Plan[] = [
       { text: 'Browse group chat rooms',         included: true },
       { text: 'Marketplace browsing',            included: true },
       { text: 'AI Support Chat',                 included: true },
-      { text: 'SmartzRide (book rides)',         included: true },
+      { text: 'SmartzRide — book rides',         included: true },
       { text: 'Unlimited swipes',                included: false },
       { text: 'See who liked you',               included: false },
       { text: 'SmartzTV streaming & upload',     included: false },
@@ -89,12 +89,12 @@ const plans: Plan[] = [
     cta: 'Join Free', ctaStyle: 'dark:bg-white/8 bg-gray-100 dark:text-white text-gray-900 hover:dark:bg-white/14 hover:bg-gray-200',
   },
   {
-    name: 'Premium', priceUSD: 5, icon: Zap,
+    name: 'Connect', priceUSD: 5, icon: Zap,
     color: 'from-pink-500 to-rose-600',
     border: 'border-pink-500/50',
     glowClass: 'shadow-2xl shadow-pink-500/20',
-    badge: 'Most Popular', period: 'per month', tagline: 'Unlock the full dating & social experience',
-    emoji: '💕',
+    badge: 'Most Popular', period: 'per month', tagline: '50% of all features unlocked — perfect for growing',
+    emoji: '⚡',
     features: [
       { text: 'Unlimited swipes every day',      included: true, highlight: true },
       { text: 'See exactly who liked you',       included: true, highlight: true },
@@ -109,17 +109,17 @@ const plans: Plan[] = [
       { text: 'Advanced analytics dashboard',    included: false },
       { text: 'Dedicated human support',         included: false },
     ],
-    cta: 'Go Premium 💕', ctaStyle: 'bg-love-gradient text-white shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 hover:scale-[1.02]',
+    cta: 'Go Connect ⚡', ctaStyle: 'bg-love-gradient text-white shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 hover:scale-[1.02]',
   },
   {
-    name: 'VIP', priceUSD: 10, icon: Crown,
+    name: 'Elite', priceUSD: 10, icon: Crown,
     color: 'from-amber-500 to-yellow-500',
     border: 'border-amber-500/50',
     glowClass: 'shadow-2xl shadow-amber-500/20',
-    badge: 'Best Value', period: 'per month', tagline: 'The complete creator & power-user suite',
+    badge: 'Fully Unlimited', period: 'per month', tagline: '100% unlimited — the complete SmartzConnect experience',
     emoji: '👑',
     features: [
-      { text: 'Everything in Premium',           included: true, highlight: true },
+      { text: 'Everything in Connect plan',      included: true, highlight: true },
       { text: 'Verified badge ✓ on profile',     included: true, highlight: true },
       { text: 'Top of Discover feed always',     included: true },
       { text: 'Go Live on SmartzTV',             included: true },
@@ -127,29 +127,29 @@ const plans: Plan[] = [
       { text: 'Unlimited Super Likes',           included: true },
       { text: 'Custom profile themes',           included: true },
       { text: 'Advanced analytics dashboard',    included: true },
-      { text: 'Exclusive VIP events access',     included: true },
+      { text: 'Exclusive Elite events access',   included: true },
       { text: 'Priority ride booking',           included: true },
       { text: 'Dedicated human support 24/7',    included: true },
       { text: 'Early access to new features',    included: true },
     ],
-    cta: 'Go VIP 👑', ctaStyle: 'bg-gradient-to-r from-amber-500 to-yellow-500 text-white shadow-lg shadow-amber-500/30 hover:shadow-amber-500/50 hover:scale-[1.02]',
+    cta: 'Go Elite 👑', ctaStyle: 'bg-gradient-to-r from-amber-500 to-yellow-500 text-white shadow-lg shadow-amber-500/30 hover:shadow-amber-500/50 hover:scale-[1.02]',
   },
 ]
 
 /* ─────────────── Feature comparison (icon rows) ─────────────── */
 const featureRows = [
-  { icon: Heart,        label: 'Daily Swipe Cards',       free: '10/day', premium: <Infinity className="w-4 h-4 text-emerald-400" />, vip: <Infinity className="w-4 h-4 text-emerald-400" /> },
-  { icon: Sparkles,     label: 'See Who Liked You',       free: false,    premium: true,  vip: true },
-  { icon: Star,         label: 'Discover Priority',       free: false,    premium: true,  vip: '🔝 Top' },
-  { icon: Play,         label: 'SmartzTV Streaming',      free: 'Watch',  premium: true,  vip: true },
-  { icon: Radio,        label: 'Go Live',                 free: false,    premium: false, vip: true },
-  { icon: ShoppingBag,  label: 'Marketplace Seller',      free: false,    premium: true,  vip: true },
-  { icon: MessageCircle,label: 'Group Chat Rooms',        free: 'Browse', premium: true,  vip: true },
-  { icon: Users,        label: 'Private Groups',          free: false,    premium: true,  vip: true },
-  { icon: ShieldCheck,  label: 'Verified Badge ✓',        free: false,    premium: false, vip: true },
-  { icon: Globe,        label: 'Creator Revenue Share',   free: false,    premium: false, vip: true },
-  { icon: Car,          label: 'SmartzRide Priority',     free: false,    premium: false, vip: true },
-  { icon: Smartphone,   label: 'Analytics Dashboard',     free: false,    premium: false, vip: true },
+  { icon: Heart,        label: 'Daily Swipe Cards',       free: '10/day', connect: <Infinity className="w-4 h-4 text-emerald-400" />, elite: <Infinity className="w-4 h-4 text-emerald-400" /> },
+  { icon: Sparkles,     label: 'See Who Liked You',       free: false,    connect: true,  elite: true },
+  { icon: Star,         label: 'Discover Priority',       free: false,    connect: true,  elite: '🔝 Top' },
+  { icon: Play,         label: 'SmartzTV Streaming',      free: 'Watch',  connect: true,  elite: true },
+  { icon: Radio,        label: 'Go Live',                 free: false,    connect: false, elite: true },
+  { icon: ShoppingBag,  label: 'Marketplace Seller',      free: false,    connect: true,  elite: true },
+  { icon: MessageCircle,label: 'Group Chat Rooms',        free: 'Browse', connect: true,  elite: true },
+  { icon: Users,        label: 'Private Groups',          free: false,    connect: true,  elite: true },
+  { icon: ShieldCheck,  label: 'Verified Badge ✓',        free: false,    connect: false, elite: true },
+  { icon: Globe,        label: 'Creator Revenue Share',   free: false,    connect: false, elite: true },
+  { icon: Car,          label: 'SmartzRide Priority',     free: false,    connect: false, elite: true },
+  { icon: Smartphone,   label: 'Analytics Dashboard',     free: false,    connect: false, elite: true },
 ]
 
 /* ─────────────── FAQ ─────────────── */
@@ -162,8 +162,8 @@ const faqs = [
     a: 'Use our currency converter on this page to see prices in 25+ currencies. Payments are accepted in USD equivalent via Mobile Money.' },
   { q: 'Is the Free plan really free forever?',
     a: 'Yes! Free Forever means no credit card, no trial expiry — you keep your 10 swipes, social feed, and community rooms forever with zero cost.' },
-  { q: 'How is Premium different from VIP?',
-    a: 'Premium ($5) unlocks unlimited swipes, SmartzTV, and marketplace selling. VIP ($10) adds everything in Premium plus your Verified badge, Go Live, revenue share, advanced analytics, and dedicated human support.' },
+  { q: 'How is Connect different from Elite?',
+    a: 'Connect ($5) unlocks unlimited swipes, SmartzTV, and marketplace selling — 50% of all platform features. Elite ($10) adds everything in Connect plus your Verified badge, Go Live, revenue share, advanced analytics, dedicated human support, and full unlimited access to every feature.' },
   { q: 'How long does payment verification take?',
     a: 'Our admin team verifies Mobile Money payments within 15 minutes during business hours (8 AM–10 PM WAT). After hours it may take up to 2 hours.' },
 ]
@@ -356,7 +356,7 @@ export default function PricingPage() {
                 <motion.div key={plan.name}
                   initial={{ opacity: 0, y: 40 }} animate={plansIn ? { opacity: 1, y: 0 } : {}}
                   transition={{ delay: i * 0.12, duration: 0.5 }}
-                  className={`relative dark:bg-[#130E1E] bg-white rounded-3xl p-6 lg:p-7 border-2 ${plan.border} flex flex-col ${plan.glowClass} ${plan.name === 'Premium' ? 'md:-mt-5 md:mb-5' : ''} hover:scale-[1.01] transition-all duration-300`}
+                  className={`relative dark:bg-[#130E1E] bg-white rounded-3xl p-6 lg:p-7 border-2 ${plan.border} flex flex-col ${plan.glowClass} ${plan.name === 'Connect' ? 'md:-mt-5 md:mb-5' : ''} hover:scale-[1.01] transition-all duration-300`}
                 >
                   {/* Badge */}
                   {plan.badge && (
@@ -440,7 +440,7 @@ export default function PricingPage() {
                     <RowIcon className="w-3.5 h-3.5 dark:text-gray-500 text-gray-400 flex-shrink-0" />
                     <span className="text-xs dark:text-gray-300 text-gray-700">{row.label}</span>
                   </div>
-                  {[row.free, row.premium, row.vip].map((val, j) => (
+                  {[row.free, row.connect, row.elite].map((val, j) => (
                     <div key={j} className="p-4 border-l dark:border-white/4 border-gray-100 flex items-center justify-center">
                       <CellVal val={val} />
                     </div>
@@ -488,7 +488,7 @@ export default function PricingPage() {
                   <p className="font-bold text-sm dark:text-white text-gray-900">How to pay with Mobile Money</p>
                 </div>
                 {[
-                  { step: '1', text: 'Pick a plan below and tap "Go Premium" or "Go VIP"' },
+                  { step: '1', text: 'Pick a plan below and tap "Go Connect" or "Go Elite"' },
                   { step: '2', text: 'Send the amount to our MTN or Orange Money number' },
                   { step: '3', text: 'Enter your Transaction ID in the app within 15 minutes' },
                   { step: '4', text: 'Admin verifies & your plan activates automatically ✅' },
