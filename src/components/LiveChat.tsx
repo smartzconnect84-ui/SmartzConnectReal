@@ -196,14 +196,38 @@ export default function LiveChat() {
   }])
   const [input, setInput] = useState('')
   const [typing, setTyping] = useState(false)
-  const [position, setPosition] = useState({ x: 0, y: 0 })
-  const [dragging, setDragging] = useState(false)
   const [teaserVisible, setTeaserVisible] = useState(true)
   const [isMobile, setIsMobile] = useState(false)
   const [copied, setCopied] = useState(false)
-  const dragStart = useRef({ x: 0, y: 0, px: 0, py: 0 })
+
+  // Bubble drag state — stores the bubble's top-left corner in viewport coords
+  const BUBBLE_SIZE = 52
+  const defaultBubblePos = () => ({
+    x: window.innerWidth - BUBBLE_SIZE - 16,
+    y: window.innerHeight - BUBBLE_SIZE - (window.innerWidth < 768 ? 88 : 24),
+  })
+  const [bubblePos, setBubblePos] = useState({ x: -1, y: -1 }) // -1 = lazy init
+  const bubbleDrag = useRef({ active: false, didDrag: false, sx: 0, sy: 0, spx: 0, spy: 0 })
+
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+
+  // Init + keep bubble in bounds on resize
+  useEffect(() => {
+    const init = () => {
+      setBubblePos(prev => {
+        const def = defaultBubblePos()
+        if (prev.x === -1) return def
+        return {
+          x: Math.max(0, Math.min(window.innerWidth  - BUBBLE_SIZE, prev.x)),
+          y: Math.max(0, Math.min(window.innerHeight - BUBBLE_SIZE, prev.y)),
+        }
+      })
+    }
+    init()
+    window.addEventListener('resize', init, { passive: true })
+    return () => window.removeEventListener('resize', init)
+  }, [])
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768)
@@ -216,6 +240,70 @@ export default function LiveChat() {
   useEffect(() => {
     if (open) { setTeaserVisible(false); setUnreadCount(0); setTimeout(() => inputRef.current?.focus(), 400) }
   }, [open])
+
+  // ── Bubble drag: mouse ──
+  const onBubbleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault()
+    const d = bubbleDrag.current
+    d.active = true; d.didDrag = false
+    d.sx = e.clientX; d.sy = e.clientY
+    d.spx = bubblePos.x; d.spy = bubblePos.y
+  }
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      const d = bubbleDrag.current
+      if (!d.active) return
+      const dx = e.clientX - d.sx, dy = e.clientY - d.sy
+      if (Math.abs(dx) > 4 || Math.abs(dy) > 4) d.didDrag = true
+      setBubblePos({
+        x: Math.max(0, Math.min(window.innerWidth  - BUBBLE_SIZE, d.spx + dx)),
+        y: Math.max(0, Math.min(window.innerHeight - BUBBLE_SIZE, d.spy + dy)),
+      })
+    }
+    const onUp = () => {
+      const d = bubbleDrag.current
+      if (d.active && !d.didDrag) {
+        setOpen(o => !o); setTeaserVisible(false); setUnreadCount(0)
+      }
+      d.active = false
+    }
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+    return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp) }
+  }, [])
+
+  // ── Bubble drag: touch ──
+  const onBubbleTouchStart = (e: React.TouchEvent) => {
+    const t = e.touches[0]
+    const d = bubbleDrag.current
+    d.active = true; d.didDrag = false
+    d.sx = t.clientX; d.sy = t.clientY
+    d.spx = bubblePos.x; d.spy = bubblePos.y
+  }
+  useEffect(() => {
+    const onMove = (e: TouchEvent) => {
+      const d = bubbleDrag.current
+      if (!d.active) return
+      e.preventDefault()
+      const t = e.touches[0]
+      const dx = t.clientX - d.sx, dy = t.clientY - d.sy
+      if (Math.abs(dx) > 6 || Math.abs(dy) > 6) d.didDrag = true
+      setBubblePos({
+        x: Math.max(0, Math.min(window.innerWidth  - BUBBLE_SIZE, d.spx + dx)),
+        y: Math.max(0, Math.min(window.innerHeight - BUBBLE_SIZE, d.spy + dy)),
+      })
+    }
+    const onEnd = () => {
+      const d = bubbleDrag.current
+      if (d.active && !d.didDrag) {
+        setOpen(o => !o); setTeaserVisible(false); setUnreadCount(0)
+      }
+      d.active = false
+    }
+    window.addEventListener('touchmove', onMove, { passive: false })
+    window.addEventListener('touchend', onEnd)
+    return () => { window.removeEventListener('touchmove', onMove); window.removeEventListener('touchend', onEnd) }
+  }, [])
 
   const sendMessage = (text: string) => {
     if (!text.trim()) return
