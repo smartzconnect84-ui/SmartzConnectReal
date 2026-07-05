@@ -64,12 +64,22 @@ export const profiles = pgTable("profiles", {
   isVip: boolean("is_vip").default(false),
   isPremium: boolean("is_premium").default(false),
   isOnline: boolean("is_online").default(false),
+  isActive: boolean("is_active").default(true),
+  isBanned: boolean("is_banned").default(false),
   lastSeen: timestamp("last_seen"),
   languagePref: text("language_pref").default("en"),
   subscriptionTier: text("subscription_tier").default("free"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
+
+// ─── Saved posts ─────────────────────────────────────────────────────────────
+export const postSaves = pgTable("post_saves", {
+  id: serial("id").primaryKey(),
+  postId: integer("post_id").notNull().references(() => posts.id, { onDelete: "cascade" }),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (t) => [uniqueIndex("post_saves_post_user_idx").on(t.postId, t.userId)]);
 
 // ─── Dating: likes / swipes / matches ────────────────────────────────────────
 export const likes = pgTable("likes", {
@@ -402,6 +412,169 @@ export const worldstageSpotlights = pgTable("worldstage_spotlights", {
   quote: text("quote"),
   avatarEmoji: text("avatar_emoji").default("\u2B50"),
   wins: integer("wins").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// ─── Reports & moderation ────────────────────────────────────────────────────
+export const userReports = pgTable("user_reports", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  reporterId: varchar("reporter_id").references(() => users.id, { onDelete: "set null" }),
+  reportedId: varchar("reported_id").references(() => users.id, { onDelete: "set null" }),
+  reason: text("reason"),
+  details: text("details"),
+  status: text("status").default("open"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const userBlocks = pgTable("user_blocks", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  blockerId: varchar("blocker_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  blockedId: varchar("blocked_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (t) => [uniqueIndex("user_blocks_blocker_blocked_idx").on(t.blockerId, t.blockedId)]);
+
+export const mobileMoneyPayments = pgTable("mobile_money_payments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "set null" }),
+  provider: text("provider"),
+  phoneNumber: text("phone_number"),
+  amount: text("amount"),
+  currency: text("currency").default("USD"),
+  purpose: text("purpose"),
+  status: text("status").default("pending"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const reports = pgTable("reports", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  reporterId: varchar("reporter_id").references(() => users.id, { onDelete: "set null" }),
+  targetUserId: varchar("target_user_id").references(() => users.id, { onDelete: "set null" }),
+  entityType: text("entity_type"),
+  entityId: text("entity_id"),
+  reason: text("reason"),
+  status: text("status").default("open"),
+  adminNote: text("admin_note"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const auditLogs = pgTable("audit_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "set null" }),
+  action: text("action").notNull(),
+  meta: jsonb("meta").default({}),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// ─── Admin / team management ─────────────────────────────────────────────────
+export const teamMembers = pgTable("team_members", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  fullName: text("full_name").notNull(),
+  role: text("role").default("staff"),
+  email: text("email"),
+  avatarUrl: text("avatar_url"),
+  displayOrder: integer("display_order").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const adminUsers = pgTable("admin_users", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "cascade" }),
+  fullName: text("full_name"),
+  email: text("email"),
+  role: text("role").default("moderator"),
+  status: text("status").default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const safetyRules = pgTable("safety_rules", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: text("title").notNull(),
+  body: text("body"),
+  active: boolean("active").default(true),
+  orderNum: integer("order_num").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const featurePermissions = pgTable("feature_permissions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  enabled: boolean("enabled").default(true),
+  description: text("description"),
+});
+
+export const adCampaigns = pgTable("ad_campaigns", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: text("title").notNull(),
+  imageUrl: text("image_url"),
+  targetUrl: text("target_url"),
+  status: text("status").default("active"),
+  impressions: integer("impressions").default(0),
+  clicks: integer("clicks").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const broadcastMessages = pgTable("broadcast_messages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: text("title"),
+  body: text("body").notNull(),
+  sentBy: varchar("sent_by").references(() => users.id, { onDelete: "set null" }),
+  sentAt: timestamp("sent_at").defaultNow(),
+});
+
+export const blogPosts = pgTable("blog_posts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: text("title").notNull(),
+  slug: text("slug").notNull().unique(),
+  excerpt: text("excerpt"),
+  content: text("content"),
+  coverImageUrl: text("cover_image_url"),
+  authorId: varchar("author_id").references(() => users.id, { onDelete: "set null" }),
+  status: text("status").default("draft"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// ─── Rides ───────────────────────────────────────────────────────────────────
+export const drivers = pgTable("drivers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "cascade" }),
+  vehicle: text("vehicle"),
+  licensePlate: text("license_plate"),
+  isVerified: boolean("is_verified").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const rideRequests = pgTable("ride_requests", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  riderId: varchar("rider_id").references(() => users.id, { onDelete: "cascade" }),
+  driverId: varchar("driver_id").references(() => drivers.id, { onDelete: "set null" }),
+  pickup: text("pickup"),
+  dropoff: text("dropoff"),
+  status: text("status").default("pending"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// ─── Subscriptions (admin-facing alias table) ───────────────────────────────
+export const userSubscriptions = pgTable("user_subscriptions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  planId: varchar("plan_id").references(() => subscriptionPlans.id),
+  status: text("status").default("active"),
+  isActive: boolean("is_active").default(true),
+  amountUsd: text("amount_usd").default("0"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// ─── Livestreams (public marketing / TV page) ───────────────────────────────
+export const livestreams = pgTable("livestreams", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  hostId: varchar("host_id").references(() => users.id, { onDelete: "cascade" }),
+  title: text("title"),
+  category: text("category"),
+  thumbnailUrl: text("thumbnail_url"),
+  status: text("status").default("scheduled"),
+  moderationStatus: text("moderation_status").default("approved"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

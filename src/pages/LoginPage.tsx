@@ -1,64 +1,10 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { Eye, EyeOff, Loader2 } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 
 const logoImg = '/logo.png'
 
-/* Google "G" coloured SVG icon */
-function GoogleIcon() {
-  return (
-    <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.36-8.16 2.36-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-      <path fill="none" d="M0 0h48v48H0z"/>
-    </svg>
-  )
-}
-
 export default function LoginPage() {
-  const navigate = useNavigate()
-  const { signIn, signInWithGoogle } = useAuth()
-
-  const [email, setEmail]         = useState('')
-  const [password, setPassword]   = useState('')
-  const [showPw, setShowPw]       = useState(false)
-  const [rememberMe, setRememberMe] = useState(true)
-  const [loading, setLoading]     = useState(false)
-  const [googleLoading, setGoogleLoading] = useState(false)
-  const [error, setError]         = useState('')
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-    setLoading(true)
-    try {
-      await signIn(email, password)
-      navigate('/app/feed', { replace: true })
-    } catch (err: any) {
-      if (err.message === 'EMAIL_NOT_VERIFIED') {
-        navigate('/verify-email', { state: { email }, replace: true })
-      } else {
-        setError(err.message || 'Invalid email or password. Please try again.')
-      }
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleGoogle = async () => {
-    setError('')
-    setGoogleLoading(true)
-    try {
-      await signInWithGoogle()
-      // OAuth redirects away; no navigation needed here
-    } catch (err: any) {
-      setError(err.message || 'Google sign-in failed. Please try again.')
-      setGoogleLoading(false)
-    }
-  }
+  const { signIn } = useAuth()
 
   return (
     <div
@@ -97,126 +43,21 @@ export default function LoginPage() {
         <h1 className="font-display font-black text-2xl text-white mb-1">Welcome back</h1>
         <p className="text-sm text-white/50 mb-6">Sign in to access your dashboard.</p>
 
-        {/* Error */}
-        {error && (
-          <div className="mb-5 px-4 py-3 rounded-xl bg-red-500/15 border border-red-500/25 text-red-300 text-sm">
-            {error}
-          </div>
-        )}
-
-        {/* Google button */}
+        {/* Sign in button */}
         <button
           type="button"
-          onClick={handleGoogle}
-          disabled={googleLoading || loading}
-          className="w-full flex items-center justify-center gap-3 py-3 rounded-xl bg-white text-gray-800 font-semibold text-sm hover:bg-gray-50 active:scale-[0.99] transition-all shadow-sm disabled:opacity-60 disabled:cursor-not-allowed mb-5"
+          onClick={signIn}
+          className="w-full py-3 rounded-full font-bold text-sm text-white flex items-center justify-center gap-2 transition-all hover:opacity-90 active:scale-[0.99]"
+          style={{
+            background: 'linear-gradient(135deg, #9333ea 0%, #c026d3 50%, #e11d48 100%)',
+            boxShadow: '0 4px 24px rgba(147,51,234,0.35)',
+          }}
         >
-          {googleLoading
-            ? <Loader2 className="w-5 h-5 animate-spin text-gray-500" />
-            : <GoogleIcon />
-          }
-          Continue with Google
+          Sign in
         </button>
 
-        {/* OR divider */}
-        <div className="flex items-center gap-3 mb-5">
-          <div className="flex-1 h-px bg-white/10" />
-          <span className="text-xs text-white/35 font-medium">OR</span>
-          <div className="flex-1 h-px bg-white/10" />
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-3.5">
-          {/* Email */}
-          <input
-            type="email"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            required
-            placeholder="Email"
-            autoComplete="email"
-            className="w-full px-4 py-3 rounded-xl text-sm text-white placeholder:text-white/35 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all"
-            style={{
-              background: 'rgba(255,255,255,0.08)',
-              border: '1px solid rgba(255,255,255,0.12)',
-            }}
-          />
-
-          {/* Password */}
-          <div className="relative">
-            <input
-              type={showPw ? 'text' : 'password'}
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              required
-              placeholder="Password"
-              autoComplete="current-password"
-              className="w-full px-4 py-3 pr-11 rounded-xl text-sm text-white placeholder:text-white/35 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all"
-              style={{
-                background: 'rgba(255,255,255,0.08)',
-                border: '1px solid rgba(255,255,255,0.12)',
-              }}
-            />
-            <button
-              type="button"
-              onClick={() => setShowPw(!showPw)}
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70 transition-colors"
-              aria-label={showPw ? 'Hide password' : 'Show password'}
-            >
-              {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </button>
-          </div>
-
-          {/* Remember me + Forgot password */}
-          <div className="flex items-center justify-between pt-0.5">
-            <label className="flex items-center gap-2 cursor-pointer select-none group">
-              <button
-                type="button"
-                role="checkbox"
-                aria-checked={rememberMe}
-                onClick={() => setRememberMe(!rememberMe)}
-                className={`w-4.5 h-4.5 rounded flex items-center justify-center flex-shrink-0 transition-all ${
-                  rememberMe
-                    ? 'bg-blue-500 border-blue-500'
-                    : 'border border-white/25 bg-transparent'
-                }`}
-                style={rememberMe ? { border: '1.5px solid #3b82f6' } : { border: '1.5px solid rgba(255,255,255,0.25)' }}
-              >
-                {rememberMe && (
-                  <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 10 10" fill="none">
-                    <path d="M1.5 5L4 7.5L8.5 2.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                )}
-              </button>
-              <span className="text-xs text-white/60">Remember me</span>
-            </label>
-            <Link to="/forgot-password" className="text-xs text-white/60 hover:text-white transition-colors">
-              Forgot password?
-            </Link>
-          </div>
-
-          {/* Sign in button */}
-          <button
-            type="submit"
-            disabled={loading || googleLoading}
-            className="w-full py-3 rounded-full font-bold text-sm text-white flex items-center justify-center gap-2 transition-all hover:opacity-90 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed mt-1"
-            style={{
-              background: 'linear-gradient(135deg, #9333ea 0%, #c026d3 50%, #e11d48 100%)',
-              boxShadow: '0 4px 24px rgba(147,51,234,0.35)',
-            }}
-          >
-            {loading
-              ? <><Loader2 className="w-4 h-4 animate-spin" /> Signing in…</>
-              : 'Sign in'
-            }
-          </button>
-        </form>
-
-        {/* Create account */}
         <p className="text-center text-sm text-white/50 mt-5">
-          New here?{' '}
-          <Link to="/register" className="text-white font-semibold hover:underline">
-            Create an account
-          </Link>
+          New here? Signing in will create your account automatically.
         </p>
       </div>
 

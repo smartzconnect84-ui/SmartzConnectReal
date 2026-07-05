@@ -24,7 +24,6 @@ export const StreamContext = createContext<StreamContextType>({
 const STREAM_API_KEY = import.meta.env.VITE_STREAM_API_KEY as string
 
 async function fetchStreamToken(userId: string, accessToken: string): Promise<string | undefined> {
-  if (!import.meta.env.VITE_SUPABASE_URL) return undefined
   try {
     const { data, error } = await supabase.functions.invoke('stream-token', {
       body: { userId },
