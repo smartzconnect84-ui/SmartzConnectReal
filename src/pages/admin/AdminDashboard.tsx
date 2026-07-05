@@ -1,11 +1,151 @@
 import { useState, useEffect, useCallback } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   Users, DollarSign, Car, AlertTriangle,
   Heart, ShoppingBag, Tv, UserCheck, Clock, ArrowRight, RefreshCw,
-  Database
+  Database, Copy, ClipboardCheck, ExternalLink, ChevronDown, ChevronUp, Eye, EyeOff,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+
+/* ── Vercel env vars panel ── */
+const VERCEL_VARS = [
+  { key: 'VITE_SUPABASE_URL',        label: 'Supabase URL',         service: 'Supabase' },
+  { key: 'VITE_SUPABASE_ANON_KEY',   label: 'Supabase Anon Key',    service: 'Supabase' },
+  { key: 'VITE_STREAM_API_KEY',      label: 'Stream API Key',       service: 'GetStream' },
+  { key: 'VITE_STREAM_APP_ID',       label: 'Stream App ID',        service: 'GetStream' },
+  { key: 'VITE_LIVEKIT_WS_URL',      label: 'LiveKit WS URL',       service: 'LiveKit' },
+  { key: 'VITE_ONESIGNAL_APP_ID',    label: 'OneSignal App ID',     service: 'OneSignal' },
+] as const
+
+function VercelEnvPanel() {
+  const [open, setOpen] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const [reveal, setReveal] = useState(false)
+
+  const values = VERCEL_VARS.map(v => ({
+    ...v,
+    value: (import.meta.env[v.key] as string) || '',
+  }))
+
+  const allSet = values.every(v => v.value)
+
+  const handleCopyAll = () => {
+    const text = values.map(v => `${v.key}=${v.value}`).join('\n')
+    navigator.clipboard.writeText(text).catch(() => {})
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  const maskVal = (val: string) => {
+    if (!val) return '⚠ not set'
+    if (reveal) return val
+    return val.slice(0, 8) + '•'.repeat(Math.min(val.length - 8, 24))
+  }
+
+  return (
+    <div className="dark:bg-[#130E1E] bg-white rounded-2xl border dark:border-white/6 border-gray-200 overflow-hidden">
+      {/* Header row */}
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between px-5 py-4 hover:dark:bg-white/2 hover:bg-gray-50 transition-colors"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-md">
+            <ExternalLink className="w-4 h-4 text-white" />
+          </div>
+          <div className="text-left">
+            <p className="text-sm font-bold dark:text-white text-gray-900">Vercel Environment Variables</p>
+            <p className="text-[11px] dark:text-gray-400 text-gray-500">
+              {allSet ? '6 / 6 keys configured ✓' : `${values.filter(v => v.value).length} / 6 keys set — some missing`}
+            </p>
+          </div>
+          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ml-1 ${allSet ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-amber-500/10 text-amber-500 border-amber-500/20'}`}>
+            {allSet ? 'All Set' : 'Incomplete'}
+          </span>
+        </div>
+        {open ? <ChevronUp className="w-4 h-4 dark:text-gray-400 text-gray-500" /> : <ChevronDown className="w-4 h-4 dark:text-gray-400 text-gray-500" />}
+      </button>
+
+      {/* Expandable body */}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.22 }}
+            className="overflow-hidden"
+          >
+            <div className="px-5 pb-5 border-t dark:border-white/6 border-gray-100 pt-4 space-y-3">
+
+              {/* Action row */}
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-[11px] dark:text-gray-400 text-gray-500">
+                  Copy these into <span className="font-mono dark:bg-white/8 bg-gray-100 px-1 rounded">Vercel → Project → Settings → Environment Variables</span>
+                </p>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setReveal(r => !r)}
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] dark:bg-white/5 bg-gray-100 dark:text-gray-400 text-gray-500 hover:text-brand-pink transition-colors border dark:border-white/8 border-gray-200"
+                  >
+                    {reveal ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                    {reveal ? 'Hide' : 'Reveal'}
+                  </button>
+                  <button
+                    onClick={handleCopyAll}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold border transition-all ${
+                      copied
+                        ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500'
+                        : 'bg-brand-pink/10 border-brand-pink/20 text-brand-pink hover:bg-brand-pink/20'
+                    }`}
+                  >
+                    {copied ? <ClipboardCheck className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                    {copied ? 'Copied!' : 'Copy All (.env format)'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Var rows */}
+              <div className="space-y-2">
+                {values.map(v => (
+                  <div key={v.key} className="flex items-center gap-3 p-3 rounded-xl dark:bg-white/3 bg-gray-50 border dark:border-white/5 border-gray-100">
+                    <span className={`w-2 h-2 rounded-full flex-shrink-0 ${v.value ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'}`} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[11px] font-mono font-bold dark:text-gray-300 text-gray-700">{v.key}</p>
+                      <p className="text-[10px] dark:text-gray-600 text-gray-400">{v.service} · {v.label}</p>
+                    </div>
+                    <p className={`text-[11px] font-mono truncate max-w-[200px] ${v.value ? 'dark:text-gray-400 text-gray-500' : 'text-amber-500 font-semibold'}`}>
+                      {maskVal(v.value)}
+                    </p>
+                    <button
+                      onClick={() => navigator.clipboard.writeText(v.value).catch(() => {})}
+                      disabled={!v.value}
+                      title="Copy value"
+                      className="w-6 h-6 rounded-lg flex items-center justify-center dark:bg-white/5 bg-gray-200 hover:text-brand-pink transition-colors disabled:opacity-30 flex-shrink-0"
+                    >
+                      <Copy className="w-3 h-3 dark:text-gray-400 text-gray-500" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              {/* Supabase secrets note */}
+              <div className="mt-3 p-3 rounded-xl bg-indigo-500/8 border border-indigo-500/15">
+                <p className="text-[11px] text-indigo-400 font-semibold mb-1">Edge Function secrets (not for Vercel)</p>
+                <p className="text-[10px] dark:text-indigo-400/70 text-indigo-600/70 leading-relaxed">
+                  Server-side keys (STREAM_API_SECRET, LIVEKIT_API_KEY/SECRET, SUFY_*, ONESIGNAL_REST_API_KEY, RESEND_API_KEY, SUPABASE_SERVICE_ROLE_KEY, CRON_SECRET) must be added in{' '}
+                  <a href="https://supabase.com/dashboard" target="_blank" rel="noopener noreferrer" className="underline hover:text-indigo-300">
+                    Supabase → Edge Functions → Manage secrets
+                  </a>.
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
 
 interface DashStats {
   totalUsers: number
@@ -181,6 +321,9 @@ export default function AdminDashboard() {
           </div>
         </div>
       )}
+
+      {/* Vercel env vars panel */}
+      <VercelEnvPanel />
 
       {/* KPI Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
