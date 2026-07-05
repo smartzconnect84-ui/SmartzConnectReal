@@ -14,6 +14,7 @@ import CookieBanner from '@/components/CookieBanner'
 import AppShell from '@/layouts/AppShell'
 import AdminLayout from '@/layouts/AdminLayout'
 import ProtectedRoute from '@/components/ProtectedRoute'
+import AdminRoute from '@/components/AdminRoute'
 
 import PricingPage          from '@/pages/public/PricingPage'
 import HomePage from '@/pages/HomePage'
@@ -43,6 +44,7 @@ import SmartzTVPage        from '@/pages/SmartzTVPage'
 import RidePage            from '@/pages/RidePage'
 import SubscriptionsPage   from '@/pages/SubscriptionsPage'
 import FriendsPage         from '@/pages/FriendsPage'
+import CallsPage           from '@/pages/CallsPage'
 
 import SmartzTVPublicPage  from '@/pages/public/SmartzTVPage'
 import SmartzRidePage      from '@/pages/public/SmartzRidePage'
@@ -154,13 +156,16 @@ export default function App() {
                 <Route path="subscriptions" element={<SubscriptionsPage />} />
                 <Route path="profile"       element={<ProfilePage />} />
                 <Route path="friends"       element={<FriendsPage />} />
+                <Route path="calls"         element={<CallsPage />} />
+                <Route path="calls/video"   element={<CallsPage defaultMode="video" />} />
+                <Route path="calls/audio"   element={<CallsPage defaultMode="audio" />} />
               </Route>
 
-              {/* Admin Panel */}
+              {/* Admin Panel — role-gated: only admin/superadmin/ceo/moderator/support */}
               <Route path="/admin" element={
-                <ProtectedRoute>
+                <AdminRoute>
                   <AdminLayout />
-                </ProtectedRoute>
+                </AdminRoute>
               }>
                 <Route index                element={<AdminDashboard />} />
                 <Route path="users"         element={<AdminUsers />} />

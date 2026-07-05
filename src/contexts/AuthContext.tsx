@@ -8,6 +8,8 @@ interface AuthContextType {
   session: Session | null
   loading: boolean
   emailVerified: boolean
+  role: string
+  isAdmin: boolean
   signIn: (email: string, password: string) => Promise<void>
   signUp: (email: string, password: string, name?: string) => Promise<void>
   signOut: () => Promise<void>
@@ -19,11 +21,23 @@ interface AuthContextType {
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
+const ADMIN_ROLES = ['admin', 'superadmin', 'ceo', 'moderator', 'support']
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser]               = useState<User | null>(null)
   const [session, setSession]         = useState<Session | null>(null)
   const [loading, setLoading]         = useState(true)
   const [emailVerified, setEmailVerified] = useState(false)
+  const [role, setRole]               = useState<string>('user')
+
+  const fetchRole = async (userId: string) => {
+    const { data } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', userId)
+      .single()
+    setRole(data?.role ?? 'user')
+  }
 
   useEffect(() => {
     // Get initial session
@@ -31,6 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(session)
       setUser(session?.user ?? null)
       setEmailVerified(!!session?.user?.email_confirmed_at)
+      if (session?.user?.id) fetchRole(session.user.id)
       setLoading(false)
     })
 
@@ -41,20 +56,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setEmailVerified(!!session?.user?.email_confirmed_at)
       setLoading(false)
 
-      // Handle specific events — navigation is done in the pages themselves
-      // but we expose the event via a custom DOM event for App.tsx to catch
       if (event === 'SIGNED_IN') {
+        if (session?.user?.id) {
+          fetchRole(session.user.id)
+          linkOneSignalUser(session.user.id)
+        }
         window.dispatchEvent(new CustomEvent('supabase:signed_in', { detail: { session } }))
-        if (session?.user?.id) linkOneSignalUser(session.user.id)
       }
       if (event === 'PASSWORD_RECOVERY') {
-        // User clicked the reset link in their email — redirect to set new password
         window.dispatchEvent(new CustomEvent('supabase:password_recovery', { detail: { session } }))
       }
       if (event === 'USER_UPDATED') {
         window.dispatchEvent(new CustomEvent('supabase:user_updated', { detail: { session } }))
       }
       if (event === 'SIGNED_OUT') {
+        setRole('user')
         window.dispatchEvent(new CustomEvent('supabase:signed_out'))
         unlinkOneSignalUser()
       }
@@ -122,9 +138,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw error
   }
 
+  const isAdmin = ADMIN_ROLES.includes(role)
+
   return (
     <AuthContext.Provider value={{
-      user, session, loading, emailVerified,
+      user, session, loading, emailVerified, role, isAdmin,
       signIn, signUp, signOut, resetPassword, updatePassword, resendVerification,
       signInWithGoogle,
     }}>
