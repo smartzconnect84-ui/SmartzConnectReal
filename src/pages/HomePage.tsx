@@ -164,7 +164,7 @@ function Badge({ icon: Icon, label, gold, className = 'mb-5' }: { icon: React.El
 /* ── section heading ── */
 function Heading({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return (
-    <h2 className={`font-display font-black sm:text-4xl lg:text-5xl text-white mb-4 text-[20px] ${className}`}>
+    <h2 className={`font-display font-black sm:text-[2.6rem] lg:text-[3.45rem] text-white mb-4 text-[23px] text-center ${className}`}>
       {children}
     </h2>
   )
@@ -173,7 +173,7 @@ function Heading({ children, className = '' }: { children: React.ReactNode; clas
 /* ── feature pill ── */
 function Pill({ label }: { label: string }) {
   return (
-    <li className="flex items-center gap-2.5 text-sm text-white/75">
+    <li className="flex items-center gap-2.5 text-[17px] text-white/75">
       <span className="w-1.5 h-1.5 rounded-full bg-[#EC4899] flex-shrink-0" />
       {label}
     </li>
@@ -231,7 +231,7 @@ export default function HomePage() {
                   style={{ background: 'rgba(255,255,255,0.03)' }}>
                   <div className={`absolute inset-0 opacity-10 bg-gradient-to-br ${s.grd}`} />
                   <p className={`font-display font-black text-sm sm:text-base bg-gradient-to-r ${s.grd} bg-clip-text text-transparent mb-1 relative`}>{s.val}</p>
-                  <p className="text-xs text-white/50 relative">{s.sub}</p>
+                  <p className="text-sm text-white/50 relative">{s.sub}</p>
                 </div>
               ))}
             </motion.div>
@@ -296,7 +296,7 @@ export default function HomePage() {
                   <span className="text-2xl flex-shrink-0 mt-0.5">{p.icon}</span>
                   <div>
                     <p className="font-bold text-white text-sm sm:text-base mb-1">{p.title}</p>
-                    <p className="sm:text-sm text-white/50 text-[12px]">{p.desc}</p>
+                    <p className="sm:text-[17px] text-white/50 text-[14px]">{p.desc}</p>
                   </div>
                 </motion.div>
               ))}
@@ -360,11 +360,11 @@ export default function HomePage() {
                     <span className="text-lg">{s.emoji}</span>
                     <h3 className="font-display font-black text-sm sm:text-base text-white leading-tight">{s.name}</h3>
                   </div>
-                  <p className="text-white/50 text-[12px] sm:text-sm mb-3 leading-relaxed">{s.desc}</p>
+                  <p className="text-white/50 text-[14px] sm:text-[17px] mb-3 leading-relaxed">{s.desc}</p>
                   {/* Sub-features */}
                   <ul className="space-y-1">
                     {s.features.map(f => (
-                      <li key={f} className="flex items-center gap-1.5 text-[11px] text-white/40">
+                      <li key={f} className="flex items-center gap-1.5 text-[13px] text-white/40">
                         <span className="w-1 h-1 rounded-full bg-[#EC4899]/60 flex-shrink-0" />
                         {f}
                       </li>
@@ -409,7 +409,7 @@ export default function HomePage() {
                     <Icon className="w-5 h-5 text-[#EC4899]" />
                   </div>
                   <h3 className="font-display font-bold text-white text-sm sm:text-base mb-2">{v.title}</h3>
-                  <p className="sm:text-sm text-white/50 text-[12px]">{v.desc}</p>
+                  <p className="sm:text-[17px] text-white/50 text-[14px]">{v.desc}</p>
                 </motion.div>
               )
             })}
@@ -429,7 +429,7 @@ export default function HomePage() {
             {/* Text */}
             <motion.div {...up()}>
               <Badge icon={CheckCircle} label="Why Choose Us?" className="mb-5" />
-              <Heading className="text-left">
+              <Heading>
                 More Than Just{' '}
                 <span style={{ background: 'linear-gradient(135deg, #EC4899 0%, #DC2626 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
                   An App
@@ -459,7 +459,7 @@ export default function HomePage() {
                       style={{ background: 'linear-gradient(135deg, #EC4899 0%, #DC2626 100%)', boxShadow: '0 4px 12px rgba(236,72,153,0.25)' }}>
                       <CheckCircle className="w-3.5 h-3.5 text-white" />
                     </div>
-                    <span className="text-sm text-white/70 leading-relaxed">{item}</span>
+                    <span className="text-[17px] text-white/70 leading-relaxed">{item}</span>
                   </motion.li>
                 ))}
               </ul>
@@ -572,7 +572,7 @@ export default function HomePage() {
                   <span className="text-white">{s.n}</span>
                 </div>
                 <div className="flex-1 flex items-center min-h-[56px]">
-                  <p className="text-sm sm:text-base text-white/75 leading-relaxed">{s.label}</p>
+                  <p className="text-[17px] sm:text-[19px] text-white/75 leading-relaxed">{s.label}</p>
                 </div>
               </motion.div>
             ))}
@@ -604,7 +604,7 @@ export default function HomePage() {
                 Already a member? Sign In
               </Link>
             </div>
-            <p className="mt-5 text-xs text-white/30">
+            <p className="mt-5 text-sm text-white/30">
               Free to join · No credit card required · Mobile Money accepted · Upgrade anytime
             </p>
           </motion.div>

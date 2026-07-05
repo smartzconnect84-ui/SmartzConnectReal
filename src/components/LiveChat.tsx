@@ -448,7 +448,7 @@ export default function LiveChat() {
         onClick={() => { setOpen(!open); setTeaserVisible(false); setUnreadCount(0) }}
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.95 }}
-        className="fixed bottom-20 right-4 md:bottom-6 md:right-6 z-[9997] w-14 h-14 rounded-full bg-love-gradient shadow-2xl shadow-pink-500/40 flex items-center justify-center"
+        className="fixed bottom-20 right-4 md:bottom-6 md:right-6 z-[9997] w-[45px] h-[45px] rounded-full bg-love-gradient shadow-2xl shadow-pink-500/40 flex items-center justify-center"
         title="Open support chat"
       >
         {!open && unreadCount > 0 && (
@@ -459,10 +459,10 @@ export default function LiveChat() {
         <AnimatePresence mode="wait">
           {open
             ? <motion.div key="close" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }}>
-                <X className="w-6 h-6 text-white" />
+                <X className="w-5 h-5 text-white" />
               </motion.div>
             : <motion.div key="open" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }}>
-                <MessageCircle className="w-6 h-6 text-white" />
+                <MessageCircle className="w-5 h-5 text-white" />
               </motion.div>
           }
         </AnimatePresence>
