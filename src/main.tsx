@@ -8,3 +8,11 @@ createRoot(document.getElementById('root')!).render(
     <App />
   </StrictMode>,
 )
+
+// Remove the native HTML splash screen once React has mounted
+const splash = document.getElementById('native-splash')
+if (splash) {
+  splash.style.transition = 'opacity 0.4s ease'
+  splash.style.opacity = '0'
+  setTimeout(() => splash.remove(), 420)
+}

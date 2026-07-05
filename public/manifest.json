@@ -4,21 +4,27 @@
     "description": "Africa's premier social networking, dating, community, entertainment, marketplace, and ride-hailing platform.",
     "start_url": "/",
     "display": "standalone",
-    "background_color": "#0A0A0F",
+    "background_color": "#0D0A14",
     "theme_color": "#EC4899",
     "orientation": "portrait-primary",
     "icons": [
         {
-            "src": "/favicon.png",
+            "src": "/pwa-logo.png",
             "sizes": "192x192",
             "type": "image/png",
-            "purpose": "any maskable"
+            "purpose": "any"
         },
         {
-            "src": "/favicon.png",
+            "src": "/pwa-logo.png",
             "sizes": "512x512",
             "type": "image/png",
-            "purpose": "any maskable"
+            "purpose": "any"
+        },
+        {
+            "src": "/pwa-logo.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
         }
     ],
     "categories": [

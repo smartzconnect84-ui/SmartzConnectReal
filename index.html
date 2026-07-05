@@ -2,8 +2,8 @@
 <html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/favicon.png" />
-    <link rel="apple-touch-icon" href="/favicon.png" />
+    <link rel="icon" type="image/png" href="/pwa-logo.png" />
+    <link rel="apple-touch-icon" href="/pwa-logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <!-- SEO -->
@@ -39,6 +39,35 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   </head>
   <body>
+    <!-- Native splash shown before React hydrates — removed by React on mount -->
+    <div id="native-splash" style="
+      position:fixed;inset:0;z-index:9999;
+      background:#0D0A14;
+      display:flex;flex-direction:column;
+      align-items:center;justify-content:center;gap:24px;
+    ">
+      <div style="position:relative;width:120px;height:120px;display:flex;align-items:center;justify-content:center;">
+        <svg style="position:absolute;animation:sc-spin 1.4s linear infinite;" width="120" height="120" viewBox="0 0 120 120" fill="none">
+          <defs>
+            <linearGradient id="sg" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#EC4899" stop-opacity="0"/>
+              <stop offset="40%" stop-color="#EC4899" stop-opacity="0.6"/>
+              <stop offset="100%" stop-color="#A855F7" stop-opacity="1"/>
+            </linearGradient>
+          </defs>
+          <circle cx="60" cy="60" r="54" stroke="url(#sg)" stroke-width="4" stroke-linecap="round" stroke-dasharray="220 120"/>
+        </svg>
+        <svg style="position:absolute;animation:sc-spin 2.2s linear infinite reverse;" width="136" height="136" viewBox="0 0 136 136" fill="none">
+          <circle cx="68" cy="68" r="62" stroke="#EC489930" stroke-width="2" stroke-linecap="round" stroke-dasharray="60 330"/>
+        </svg>
+        <img src="/pwa-logo.png" alt="SmartzConnect" style="width:80px;height:80px;object-fit:contain;border-radius:16px;filter:drop-shadow(0 0 16px rgba(236,72,153,0.45));"/>
+      </div>
+      <p style="color:#6b7280;font-size:13px;font-family:system-ui,sans-serif;letter-spacing:0.05em;">Loading SmartzConnect…</p>
+    </div>
+    <style>
+      @keyframes sc-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    </style>
+
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
