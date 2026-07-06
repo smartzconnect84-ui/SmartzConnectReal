@@ -16,10 +16,13 @@ serve(async (req) => {
       return jsonResponse({ error: 'LiveKit not configured' }, 500)
     }
 
-    const { room, name } = await req.json().catch(() => ({ room: null, name: null }))
+    const { room, name, publish } = await req.json().catch(() => ({ room: null, name: null, publish: null }))
     if (!room) {
       return jsonResponse({ error: 'room is required' }, 400)
     }
+
+    // Callers that explicitly pass publish:false (e.g. stream viewers) get subscribe-only tokens
+    const canPublish = publish !== false
 
     const { now, exp } = nowAndExpiry(60 * 60 * 6) // 6 hours
 
@@ -33,9 +36,9 @@ serve(async (req) => {
       video: {
         room,
         roomJoin: true,
-        canPublish: true,
+        canPublish,
         canSubscribe: true,
-        canPublishData: true,
+        canPublishData: canPublish,
       },
     }
 

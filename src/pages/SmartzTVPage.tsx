@@ -1,8 +1,22 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Play, Heart, Eye, Search, Flame, TrendingUp, Radio, Gift, X, Tv, Crown, Zap, Shield, RefreshCw, Plus } from 'lucide-react'
+import { Play, Heart, Eye, Search, Flame, TrendingUp, Radio, Gift, X, Tv, Crown, Zap, Shield, RefreshCw, Plus, Mic, MicOff, Video, VideoOff, PhoneOff, Users } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
+import { Room, RoomEvent, Track, type LocalParticipant, type RemoteParticipant } from 'livekit-client'
+
+/** Render all video tracks from a participant into a div */
+function attachTrack(participant: LocalParticipant | RemoteParticipant, el: HTMLDivElement | null) {
+  if (!el) return
+  el.innerHTML = ''
+  participant.videoTrackPublications.forEach(pub => {
+    if (pub.track && pub.kind === Track.Kind.Video) {
+      const v = pub.track.attach()
+      v.className = 'w-full h-full object-cover'
+      el.appendChild(v)
+    }
+  })
+}
 
 const categories = ['All', 'Live', 'Music', 'Comedy', 'Tech', 'Fashion', 'Sports', 'Food', 'Education']
 
@@ -22,6 +36,139 @@ interface Stream {
   thumbnail_url?: string
 }
 
+// ── Broadcaster component ─────────────────────────────────────────────────
+interface BroadcastData { streamId: string; title: string }
+
+function SmartzTVBroadcaster({ data, onEnd }: { data: BroadcastData; onEnd: () => void }) {
+  const localVideoRef = useRef<HTMLDivElement>(null)
+  const roomRef = useRef<Room | null>(null)
+  const [connected, setConnected] = useState(false)
+  const [muted, setMuted] = useState(false)
+  const [cameraOff, setCameraOff] = useState(false)
+  const [viewers, setViewers] = useState(0)
+  const [duration, setDuration] = useState(0)
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const [lkError, setLkError] = useState('')
+
+  useEffect(() => {
+    let disposed = false
+    const room = new Room({ adaptiveStream: true, dynacast: true })
+    roomRef.current = room
+
+    const connect = async () => {
+      try {
+        const { data: tkData, error } = await supabase.functions.invoke('livekit-token', {
+          body: { room: `smartz-tv-${data.streamId}`, name: 'Broadcaster' },
+        })
+        if (error || !tkData?.token || !tkData?.wsUrl) throw new Error('LiveKit token unavailable — check server config')
+        if (disposed) return
+        await room.connect(tkData.wsUrl, tkData.token)
+        if (disposed) { room.disconnect(); return }
+        await room.localParticipant.setCameraEnabled(true)
+        await room.localParticipant.setMicrophoneEnabled(true)
+        attachTrack(room.localParticipant, localVideoRef.current)
+        setConnected(true)
+        setViewers(room.remoteParticipants.size)
+        timerRef.current = setInterval(() => setDuration(d => d + 1), 1000)
+        room.on(RoomEvent.LocalTrackPublished, () => attachTrack(room.localParticipant, localVideoRef.current))
+        room.on(RoomEvent.ParticipantConnected, () => setViewers(room.remoteParticipants.size))
+        room.on(RoomEvent.ParticipantDisconnected, () => setViewers(room.remoteParticipants.size))
+      } catch (err: any) {
+        if (!disposed) setLkError(err?.message || 'Could not start broadcast')
+      }
+    }
+    connect()
+    return () => {
+      disposed = true
+      if (timerRef.current) clearInterval(timerRef.current)
+      room.disconnect()
+      roomRef.current = null
+    }
+  }, [data.streamId])
+
+  const handleEnd = useCallback(async () => {
+    roomRef.current?.disconnect()
+    await supabase.from('livestreams').update({ status: 'ended' }).eq('id', data.streamId)
+    onEnd()
+  }, [data.streamId, onEnd])
+
+  const toggleMute = useCallback(async () => {
+    const r = roomRef.current; if (!r) return
+    const next = !muted
+    await r.localParticipant.setMicrophoneEnabled(!next)
+    setMuted(next)
+  }, [muted])
+
+  const toggleCamera = useCallback(async () => {
+    const r = roomRef.current; if (!r) return
+    const next = !cameraOff
+    await r.localParticipant.setCameraEnabled(!next)
+    setCameraOff(next)
+    attachTrack(r.localParticipant, localVideoRef.current)
+  }, [cameraOff])
+
+  const fmt = (s: number) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 bg-black flex flex-col">
+      {/* Live camera */}
+      <div className="flex-1 relative bg-black overflow-hidden">
+        <div ref={localVideoRef} className="absolute inset-0 [&>video]:w-full [&>video]:h-full [&>video]:object-cover" />
+
+        {!connected && !lkError && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/80">
+            <div className="w-10 h-10 rounded-full border-2 border-red-500/30 border-t-red-500 animate-spin" />
+            <p className="text-sm text-white/60">Starting your broadcast…</p>
+          </div>
+        )}
+        {lkError && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/80 px-6 text-center">
+            <p className="text-red-400 font-semibold">⚠️ Broadcast error</p>
+            <p className="text-sm text-white/50">{lkError}</p>
+            <button onClick={handleEnd} className="mt-2 px-6 py-2.5 rounded-2xl bg-red-500/20 text-red-400 border border-red-500/30 text-sm font-semibold">End Stream</button>
+          </div>
+        )}
+
+        {/* Top HUD */}
+        <div className="absolute top-0 left-0 right-0 flex items-center justify-between p-4 bg-gradient-to-b from-black/60 to-transparent">
+          <div className="flex items-center gap-2">
+            <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-500 text-white text-xs font-black">
+              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> LIVE
+            </span>
+            <span className="px-3 py-1 rounded-full bg-black/50 text-white text-xs font-semibold backdrop-blur-sm">{fmt(duration)}</span>
+          </div>
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/50 text-white text-xs backdrop-blur-sm">
+            <Users className="w-3.5 h-3.5" /> {viewers}
+          </div>
+        </div>
+
+        {/* Title */}
+        <div className="absolute bottom-20 left-4 right-4">
+          <p className="text-white font-bold text-sm drop-shadow-lg truncate">{data.title}</p>
+        </div>
+      </div>
+
+      {/* Controls */}
+      <div className="flex items-center justify-center gap-4 px-6 py-5 bg-[#0A0710] flex-shrink-0">
+        <button onClick={toggleMute} disabled={!connected}
+          className={`w-14 h-14 rounded-full flex items-center justify-center transition-all disabled:opacity-40 ${muted ? 'bg-red-500 shadow-lg shadow-red-500/30' : 'bg-white/10 hover:bg-white/20'}`}>
+          {muted ? <MicOff className="w-5 h-5 text-white" /> : <Mic className="w-5 h-5 text-white" />}
+        </button>
+        <button onClick={handleEnd}
+          className="w-16 h-16 rounded-full bg-red-500 flex items-center justify-center shadow-2xl shadow-red-500/40 hover:bg-red-600 transition-colors hover:scale-105 active:scale-95">
+          <PhoneOff className="w-6 h-6 text-white" />
+        </button>
+        <button onClick={toggleCamera} disabled={!connected}
+          className={`w-14 h-14 rounded-full flex items-center justify-center transition-all disabled:opacity-40 ${cameraOff ? 'bg-red-500 shadow-lg shadow-red-500/30' : 'bg-white/10 hover:bg-white/20'}`}>
+          {cameraOff ? <VideoOff className="w-5 h-5 text-white" /> : <Video className="w-5 h-5 text-white" />}
+        </button>
+      </div>
+    </motion.div>
+  )
+}
+
+// ── Stream viewer modal ───────────────────────────────────────────────────
 function StreamModal({ stream, onClose }: { stream: Stream; onClose: () => void }) {
   const { user } = useAuth()
   const [gifted, setGifted] = useState<string | null>(null)
@@ -29,6 +176,57 @@ function StreamModal({ stream, onClose }: { stream: Stream; onClose: () => void 
   const [comment, setComment] = useState('')
   const [comments, setComments] = useState<{ id?: number; user: string; text: string; time: string }[]>([])
   const [commentsLoading, setCommentsLoading] = useState(true)
+  // LiveKit viewer
+  const liveVideoRef = useRef<HTMLDivElement>(null)
+  const viewerRoomRef = useRef<Room | null>(null)
+  const [liveVideoReady, setLiveVideoReady] = useState(false)
+
+  useEffect(() => {
+    if (!stream.live) return
+    let disposed = false
+    const room = new Room({ adaptiveStream: true })
+    viewerRoomRef.current = room
+
+    const connect = async () => {
+      try {
+        // Viewers get subscribe-only tokens — no publish rights
+        const { data, error } = await supabase.functions.invoke('livekit-token', {
+          body: { room: `smartz-tv-${stream.id}`, publish: false },
+        })
+        if (error || !data?.token || !data?.wsUrl) return
+        if (disposed) return
+        await room.connect(data.wsUrl, data.token)
+        if (disposed) { room.disconnect(); return }
+        // Viewer: render remote tracks only; clear ready when no tracks remain
+        const renderRemote = () => {
+          if (liveVideoRef.current) {
+            liveVideoRef.current.innerHTML = ''
+            let rendered = 0
+            room.remoteParticipants.forEach(p => {
+              p.videoTrackPublications.forEach(pub => {
+                if (pub.track && pub.kind === Track.Kind.Video) {
+                  const v = pub.track.attach()
+                  v.className = 'w-full h-full object-cover'
+                  liveVideoRef.current!.appendChild(v)
+                  rendered++
+                }
+              })
+            })
+            setLiveVideoReady(rendered > 0)
+          }
+        }
+        renderRemote()
+        room.on(RoomEvent.TrackSubscribed, renderRemote)
+        room.on(RoomEvent.TrackUnsubscribed, renderRemote)
+      } catch { /* LiveKit not configured — fall back to static thumbnail */ }
+    }
+    connect()
+    return () => {
+      disposed = true
+      room.disconnect()
+      viewerRoomRef.current = null
+    }
+  }, [stream.id, stream.live])
 
   // Load existing comments from DB
   useEffect(() => {
@@ -105,9 +303,25 @@ function StreamModal({ stream, onClose }: { stream: Stream; onClose: () => void 
 
         {/* Stream view */}
         <div className="relative h-56 sm:h-64 bg-gradient-to-br from-pink-900/50 to-purple-900/50 flex items-center justify-center flex-shrink-0">
+          {/* Static fallback (thumbnail / emoji) */}
           {stream.thumbnail_url
             ? <img src={stream.thumbnail_url} alt={stream.title} className="w-full h-full object-cover absolute inset-0" />
             : <div className="text-8xl">{stream.emoji}</div>}
+
+          {/* LiveKit viewer: overlays the thumbnail when a live video track arrives */}
+          {stream.live && (
+            <div
+              ref={liveVideoRef}
+              className={`absolute inset-0 [&>video]:w-full [&>video]:h-full [&>video]:object-cover transition-opacity ${liveVideoReady ? 'opacity-100' : 'opacity-0'}`}
+            />
+          )}
+          {/* Connecting indicator while waiting for live track */}
+          {stream.live && !liveVideoReady && (
+            <div className="absolute bottom-14 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/60 backdrop-blur-sm">
+              <div className="w-3 h-3 rounded-full border border-white/30 border-t-white animate-spin" />
+              <span className="text-[10px] text-white/70">Connecting to stream…</span>
+            </div>
+          )}
 
           <div className="absolute top-4 left-4 right-4 flex items-start justify-between">
             <div className="flex items-center gap-2">
@@ -193,6 +407,7 @@ export default function SmartzTVPage() {
   const [liveTitle, setLiveTitle] = useState('')
   const [liveCategory, setLiveCategory] = useState('Music')
   const [goingLive, setGoingLive] = useState(false)
+  const [broadcastData, setBroadcastData] = useState<BroadcastData | null>(null)
 
   const fetchStreams = async () => {
     setLoading(true)
@@ -232,15 +447,22 @@ export default function SmartzTVPage() {
   const handleGoLive = async () => {
     if (!liveTitle.trim() || !user?.id) return
     setGoingLive(true)
-    const { error } = await supabase.from('livestreams').insert({
-      title: liveTitle,
+    const title = liveTitle.trim()
+    const { data: row, error } = await supabase.from('livestreams').insert({
+      title,
       category: liveCategory,
       streamer_id: user.id,
       status: 'live',
       view_count: 0,
       like_count: 0,
-    })
-    if (!error) { setShowGoLiveModal(false); setLiveTitle(''); fetchStreams() }
+    }).select('id').single()
+
+    if (!error && row?.id) {
+      setShowGoLiveModal(false)
+      setLiveTitle('')
+      fetchStreams()
+      setBroadcastData({ streamId: String(row.id), title })
+    }
     setGoingLive(false)
   }
 
@@ -253,7 +475,17 @@ export default function SmartzTVPage() {
   const liveCount = streams.filter(s => s.live).length
 
   return (
-    <div className="h-full overflow-y-auto dark:bg-[#0A0710] bg-gray-50 pb-4">
+    <div className="h-full overflow-y-auto dark:bg-[#0A0710] bg-gray-50 pb-4 relative">
+      {/* Live broadcaster overlay */}
+      <AnimatePresence>
+        {broadcastData && (
+          <SmartzTVBroadcaster
+            data={broadcastData}
+            onEnd={() => { setBroadcastData(null); fetchStreams() }}
+          />
+        )}
+      </AnimatePresence>
+
       {/* Header */}
       <div className="px-4 sm:px-6 py-4 dark:bg-[#0D0A14] bg-white border-b dark:border-purple-900/20 border-gray-100">
         <div className="flex items-center justify-between mb-4">

@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useContext } from 'react'
 import { motion, AnimatePresence, useAnimation } from 'framer-motion'
-import { Zap, RefreshCw, Heart, X, MessageCircle, Shield, Globe, Sparkles, Send, Phone, Video, Database, CheckCircle2 } from 'lucide-react'
+import { Zap, RefreshCw, Heart, X, MessageCircle, Shield, Globe, Sparkles, Send, Phone, Video, Database, CheckCircle2, Radio } from 'lucide-react'
 import { useLiveKitCall } from '@/contexts/LiveKitCallContext'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
+import { StreamContext } from '@/contexts/StreamContext'
+import { getOrCreateDirectChannel } from '@/lib/stream'
 
 const defaultEmojis = ['👩🏾', '👨🏿', '👩🏽', '👨🏾', '👩🏿', '👨🏽']
 
@@ -55,8 +57,12 @@ export default function SpinChatPage() {
   const [dbConnected, setDbConnected] = useState(false)
   const [connectSaving, setConnectSaving] = useState(false)
   const [connectDone, setConnectDone] = useState(false)
+  const [chatMode, setChatMode] = useState<'idle' | 'connecting' | 'live' | 'demo'>('idle')
   const controls = useAnimation()
   const { startCall } = useLiveKitCall()
+  const { connected: streamConnected } = useContext(StreamContext)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const channelRef = useRef<any>(null)
 
   useEffect(() => {
     const fetchPool = async () => {
@@ -103,7 +109,76 @@ export default function SpinChatPage() {
     })
   }
 
+  // Set up a real Stream Chat channel when a match is made
+  useEffect(() => {
+    if (phase !== 'matched' || !currentProfile || !user) return
+    if (!streamConnected) { setChatMode('demo'); return }
+
+    let cancelled = false
+    // Track the channel created in this effect run so cleanup can target it specifically
+    let effectChannel: any = null
+    setChatMode('connecting')
+
+    const setup = async () => {
+      try {
+        const channel = getOrCreateDirectChannel(user.id, currentProfile.id)
+        await channel.watch()
+        if (cancelled) {
+          channel.stopWatching().catch(() => {})
+          return
+        }
+        effectChannel = channel
+        channelRef.current = channel
+
+        // Load any existing message history
+        const history = channel.state.messages.slice(-30).map((m: any) => ({
+          text: m.text || '',
+          mine: m.user?.id === user.id,
+          time: new Date(m.created_at as string).toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' }),
+        }))
+        if (history.length > 0) setMessages(history)
+
+        // Listen for new messages from the other person
+        channel.on('message.new', (event: any) => {
+          if (!event.message || event.message.user?.id === user.id) return
+          setMessages(prev => [...prev, {
+            text: event.message!.text || '',
+            mine: false,
+            time: new Date(event.message!.created_at as string).toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' }),
+          }])
+        })
+
+        if (!cancelled) setChatMode('live')
+      } catch {
+        if (!cancelled) setChatMode('demo')
+      }
+    }
+
+    setup()
+    return () => {
+      cancelled = true
+      // Tear down whichever channel this effect created
+      if (effectChannel) {
+        effectChannel.off()
+        effectChannel.stopWatching().catch(() => {})
+        if (channelRef.current === effectChannel) channelRef.current = null
+      }
+    }
+  }, [phase, currentProfile?.id, user?.id, streamConnected])
+
+  // Cleanup channel on unmount
+  useEffect(() => {
+    return () => {
+      channelRef.current?.stopWatching?.()
+      channelRef.current = null
+    }
+  }, [])
+
   const spin = async () => {
+    // Clean up previous channel
+    channelRef.current?.stopWatching?.()
+    channelRef.current = null
+    setChatMode('idle')
     setPhase('spinning')
     setConnectDone(false)
     const spins = 5 + Math.random() * 5
@@ -112,10 +187,7 @@ export default function SpinChatPage() {
     setRotation(totalDeg)
     await controls.start({ rotate: totalDeg, transition: { duration: 3 + Math.random() * 2, ease: [0.17, 0.67, 0.12, 0.99] as any } })
     const pool = poolProfiles.filter(p => p.online || true)
-    if (pool.length === 0) {
-      setPhase('idle')
-      return
-    }
+    if (pool.length === 0) { setPhase('idle'); return }
     const profile = pool[Math.floor(Math.random() * pool.length)]
     setCurrentProfile(profile)
     setSpinCount(c => c + 1)
@@ -123,20 +195,36 @@ export default function SpinChatPage() {
     setPhase('matched')
   }
 
-  const sendMsg = () => {
-    if (!input.trim()) return
+  const sendMsg = async () => {
+    if (!input.trim() || chatMode === 'connecting') return
+    const text = input.trim()
     const now = new Date().toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' })
-    setMessages(prev => [...prev, { text: input, mine: true, time: now }])
     setInput('')
-    // Simulate reply from match while real Stream Chat integration is pending
-    const delay = 1000 + Math.random() * 1500
-    setTimeout(() => {
-      const reply = BOT_REPLIES[Math.floor(Math.random() * BOT_REPLIES.length)]
-      setMessages(prev => [...prev, { text: reply, mine: false, time: new Date().toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' }) }])
-    }, delay)
+
+    if (chatMode === 'live' && channelRef.current) {
+      // Optimistic: add locally, event will handle incoming from other user
+      setMessages(prev => [...prev, { text, mine: true, time: now }])
+      try { await channelRef.current.sendMessage({ text }) } catch { /* optimistic already shown */ }
+    } else {
+      // Demo / bot mode fallback
+      setMessages(prev => [...prev, { text, mine: true, time: now }])
+      const delay = 1000 + Math.random() * 1500
+      setTimeout(() => {
+        const reply = BOT_REPLIES[Math.floor(Math.random() * BOT_REPLIES.length)]
+        setMessages(prev => [...prev, { text: reply, mine: false, time: new Date().toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' }) }])
+      }, delay)
+    }
   }
 
-  const reset = () => { setPhase('idle'); setCurrentProfile(null); setMessages([]); setConnectDone(false) }
+  const reset = () => {
+    channelRef.current?.stopWatching?.()
+    channelRef.current = null
+    setChatMode('idle')
+    setPhase('idle')
+    setCurrentProfile(null)
+    setMessages([])
+    setConnectDone(false)
+  }
 
   const handleConnect = async () => {
     if (!user || !currentProfile || connectSaving || connectDone) return
@@ -323,9 +411,25 @@ export default function SpinChatPage() {
               {/* Chat section */}
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
                 className="w-full max-w-sm flex-1 flex flex-col dark:bg-[#130E1E] bg-white rounded-2xl border dark:border-white/8 border-gray-100 overflow-hidden min-h-[240px]">
-                <div className="flex items-center gap-2 px-4 py-3 border-b dark:border-white/5 border-gray-100">
-                  <MessageCircle className="w-4 h-4 text-fuchsia-500" />
-                  <span className="text-sm font-semibold dark:text-white text-gray-900">Chat</span>
+                <div className="flex items-center justify-between px-4 py-3 border-b dark:border-white/5 border-gray-100">
+                  <div className="flex items-center gap-2">
+                    <MessageCircle className="w-4 h-4 text-fuchsia-500" />
+                    <span className="text-sm font-semibold dark:text-white text-gray-900">Chat</span>
+                  </div>
+                  {/* Chat mode badge */}
+                  {chatMode === 'live' && (
+                    <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 text-[10px] font-bold">
+                      <Radio className="w-2.5 h-2.5" /> Live
+                    </span>
+                  )}
+                  {chatMode === 'connecting' && (
+                    <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-fuchsia-500/10 text-fuchsia-400 text-[10px] font-semibold">
+                      <RefreshCw className="w-2.5 h-2.5 animate-spin" /> Connecting…
+                    </span>
+                  )}
+                  {chatMode === 'demo' && (
+                    <span className="px-2 py-0.5 rounded-full bg-white/5 text-gray-500 text-[10px] font-semibold">Demo</span>
+                  )}
                 </div>
                 <div className="flex-1 overflow-y-auto p-3 space-y-2">
                   {messages.map((m, i) => (
@@ -338,9 +442,15 @@ export default function SpinChatPage() {
                   ))}
                 </div>
                 <div className="px-3 py-2.5 border-t dark:border-white/5 border-gray-100 flex items-center gap-2">
-                  <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && sendMsg()}
-                    placeholder="Say hello..." className="flex-1 bg-transparent text-xs dark:text-white text-gray-900 placeholder:text-gray-400 focus:outline-none" />
-                  <button onClick={sendMsg} disabled={!input.trim()} className="w-7 h-7 rounded-lg bg-love-gradient flex items-center justify-center disabled:opacity-40">
+                  <input
+                    value={input}
+                    onChange={e => setInput(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && void sendMsg()}
+                    disabled={chatMode === 'connecting'}
+                    placeholder={chatMode === 'connecting' ? 'Connecting to chat…' : 'Say hello...'}
+                    className="flex-1 bg-transparent text-xs dark:text-white text-gray-900 placeholder:text-gray-400 focus:outline-none disabled:opacity-50"
+                  />
+                  <button onClick={() => void sendMsg()} disabled={!input.trim() || chatMode === 'connecting'} className="w-7 h-7 rounded-lg bg-love-gradient flex items-center justify-center disabled:opacity-40">
                     <Send className="w-3 h-3 text-white" />
                   </button>
                 </div>
