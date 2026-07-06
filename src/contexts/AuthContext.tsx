@@ -11,7 +11,7 @@ interface AuthContextType {
   role: string
   isAdmin: boolean
   signIn: (email: string, password: string) => Promise<void>
-  signUp: (email: string, password: string, name?: string) => Promise<void>
+  signUp: (email: string, password: string, name?: string) => Promise<{ needsVerification: boolean }>
   signOut: () => Promise<void>
   resetPassword: (email: string) => Promise<void>
   updatePassword: (newPassword: string) => Promise<void>
@@ -85,7 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const signUp = async (email: string, password: string, name?: string) => {
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -93,8 +93,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
     })
-    if (error) throw error
-    // After signUp, user must verify email — no session yet
+    if (error) {
+      // Normalize Supabase errors — they can lack a .message entirely
+      throw new Error(
+        typeof error.message === 'string' && error.message
+          ? error.message
+          : (error as any).code
+          ? `Sign up error: ${(error as any).code}`
+          : 'Sign up failed. Please try again.'
+      )
+    }
+
+    // If Supabase returned a session immediately (email confirmation disabled),
+    // the user is already logged in — nothing more to do.
+    if (data.session) return { needsVerification: false }
+
+    // Email confirmation required — attempt an immediate sign-in anyway.
+    // This works because the code-level EMAIL_NOT_VERIFIED gate was removed.
+    const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password })
+    if (!signInErr) return { needsVerification: false }
+
+    // Supabase enforces confirmation at the API level — user must verify first.
+    return { needsVerification: true }
   }
 
   const signOut = async () => {

@@ -71,10 +71,18 @@ export default function RegisterPage() {
     setError('')
     setLoading(true)
     try {
-      await signUp(email, password, name)
-      navigate('/verify-email', { state: { email }, replace: true })
+      const result = await signUp(email, password, name)
+      if (result.needsVerification) {
+        navigate('/verify-email', { state: { email }, replace: true })
+      } else {
+        navigate('/app/feed', { replace: true })
+      }
     } catch (err: any) {
-      setError(err.message || 'Registration failed. Please try again.')
+      setError(
+        typeof err.message === 'string' && err.message
+          ? err.message
+          : 'Registration failed. Please try again.'
+      )
       setStep(1)
     } finally {
       setLoading(false)
