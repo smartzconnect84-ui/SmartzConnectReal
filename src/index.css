@@ -170,4 +170,11 @@
   .glow-purple {
     box-shadow: 0 0 30px rgba(155, 93, 229, 0.25);
   }
+
+  /* ── Public site font-size floor ── */
+  .public-site .text-xs  { font-size: 0.9375rem !important; line-height: 1.5rem !important; }
+  .public-site .text-sm  { font-size: 0.9375rem !important; line-height: 1.5rem !important; }
+  .public-site .text-base { font-size: 1.0625rem !important; line-height: 1.65rem !important; }
+  .public-site p,
+  .public-site .lead      { font-size: 1.0625rem !important; line-height: 1.65rem !important; }
 }

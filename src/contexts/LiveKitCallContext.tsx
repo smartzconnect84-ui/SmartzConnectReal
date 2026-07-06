@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react'
 import type { ReactNode } from 'react'
 import { supabase } from '@/lib/supabase'
-import { useAuth } from '@/hooks/useAuth'
+import { AuthContext } from '@/contexts/AuthContext'
 
 export type CallType = 'video' | 'audio'
 
@@ -41,7 +41,7 @@ interface LiveKitCallContextValue {
 const LiveKitCallContext = createContext<LiveKitCallContextValue | null>(null)
 
 export function LiveKitCallProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth()
+  const { user } = useContext(AuthContext) ?? {}
   const [activeCall, setActiveCall] = useState<ActiveCall | null>(null)
   const [incomingCall, setIncomingCall] = useState<IncomingCallData | null>(null)
   const [callDeclined, setCallDeclined] = useState(false)

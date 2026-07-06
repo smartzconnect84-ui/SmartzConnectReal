@@ -94,13 +94,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
     })
     if (error) {
-      throw new Error(
-        typeof error.message === 'string' && error.message
-          ? error.message
-          : (error as any).code
-          ? `Sign up error: ${(error as any).code}`
-          : 'Sign up failed. Please try again.'
-      )
+      const msg = (() => {
+        const raw = typeof error.message === 'string' ? error.message.trim() : ''
+        if (raw) {
+          if (/email.*signup.*disabled|signup.*disabled/i.test(raw))
+            return 'New account registration is currently disabled. Please contact support or try again later.'
+          if (/email.*not.*confirmed/i.test(raw))
+            return 'Please confirm your email address before signing in.'
+          if (/already.*registered|user.*already.*exists/i.test(raw))
+            return 'An account with this email already exists. Try signing in instead.'
+          return raw
+        }
+        const code = (error as any).code || (error as any).error_code || ''
+        if (code === 'email_address_not_authorized') return 'This email address is not authorized to sign up.'
+        if (code) return `Sign-up failed (${String(code).replace(/_/g, ' ')}).`
+        return 'Sign up failed. Please try again.'
+      })()
+      throw new Error(msg)
     }
 
     // If Supabase returned a session immediately (email confirmation is OFF in the project),

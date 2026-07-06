@@ -78,11 +78,13 @@ export default function RegisterPage() {
         navigate('/app/feed', { replace: true })
       }
     } catch (err: any) {
-      setError(
-        typeof err.message === 'string' && err.message
-          ? err.message
+      const msg =
+        typeof err?.message === 'string' && err.message.trim()
+          ? err.message.trim()
+          : typeof err === 'string' && err
+          ? err
           : 'Registration failed. Please try again.'
-      )
+      setError(msg)
       setStep(1)
     } finally {
       setLoading(false)

@@ -79,8 +79,10 @@ function PublicLayout({ children, showFooter = true }: { children: React.ReactNo
   return (
     <>
       <Navbar />
-      {children}
-      {showFooter && <Footer />}
+      <div className="public-site">
+        {children}
+        {showFooter && <Footer />}
+      </div>
     </>
   )
 }
