@@ -9,3 +9,4 @@
 - [Completed unfinished tasks](completed-unfinished.md) — EmojiPicker, TurnstileWidget, invoice download added; GitHub push now uses gitPush() callback (not git CLI — auth fails).
 - [Voice notes implementation](voice-notes.md) — MediaRecorder → Supabase 'voice-messages' bucket (public) → Stream attachment. Both ChatPage and GroupChatPage implemented with unmount cleanup.
 - [Call signaling state machine](call-signaling.md) — Full call system via call_notifications realtime; clear outgoingNotifIdRef on accepted to prevent 60s timer closing active calls.
+- [Production deployment](production-deployment.md) — edge functions use --use-api flag; DB on port 5432 (not 6543); admin_users.id = profile UUID; SUFY region needs confirmation.
