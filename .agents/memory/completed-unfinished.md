@@ -21,5 +21,11 @@ The Vercel project (prj_SgfcXAUIfkcosqdz3sy2YtDtyAXm) is already configured with
 
 ## Still remaining (not implemented)
 - Language translator (needs external API key)
-- AI-powered spin matching (follow-up task #4)
-- Voice notes (placeholder toast only)
+- AI-powered spin matching / real Stream Chat for Spin (follow-up task)
+- SmartzTV real video streaming via LiveKit (follow-up task)
+
+## Completed in second pass
+- **Turnstile wiring** — `TurnstileWidget` now renders in `LoginPage` and `RegisterPage` (step 1 only). Gated by `VITE_TURNSTILE_SITE_KEY`; zero impact if unset. Dark-mode theme auto-detected from `document.documentElement.classList.contains('dark')`.
+- **SpinChatPage swiped_id fix** — `SpinProfile` interface now includes `id: string`; DB upsert uses `currentProfile.id` (was broken using `currentProfile.name`). Bot replies expanded to 15 varied entries with random delay 1–2.5s.
+- **SmartzTV StreamModal** — comments load from `stream_comments` table on open, new comments insert to DB with optimistic local update. Gift send inserts to `stream_gifts` table, then tries `increment_gift_count` RPC with fallback to direct `livestreams` update.
+- **LiveKitCallContext build fix** — `.select('id', { count: 'exact', head: true })` (invalid TS signature) replaced with `.select('id')` checking `data.length`.

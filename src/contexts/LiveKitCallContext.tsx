@@ -212,13 +212,13 @@ export function LiveKitCallProvider({ children }: { children: ReactNode }) {
   // ── acceptCall — callee side ──────────────────────────────────────────────
   const acceptCall = useCallback(async () => {
     if (!incomingCall) return
-    const { count } = await supabase.from('call_notifications')
+    const { data: updated } = await supabase.from('call_notifications')
       .update({ status: 'accepted' })
       .eq('id', incomingCall.notificationId)
       .eq('status', 'pending')
-      .select('id', { count: 'exact', head: true })
+      .select('id')
     // If zero rows updated, caller already cancelled — bail
-    if ((count ?? 0) === 0) { setIncomingCall(null); return }
+    if (!updated || updated.length === 0) { setIncomingCall(null); return }
 
     const snap = incomingCall
     setIncomingCall(null)

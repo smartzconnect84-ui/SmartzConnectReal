@@ -33,7 +33,7 @@ export default function TurnstileWidget({ onToken, onError, className }: Turnsti
         sitekey: SITE_KEY,
         callback: (token: string) => onToken(token),
         'error-callback': () => onError?.(),
-        theme: 'light',
+        theme: document.documentElement.classList.contains('dark') ? 'dark' : 'light',
         size: 'normal',
       })
     }

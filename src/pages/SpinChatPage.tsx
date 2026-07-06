@@ -6,11 +6,30 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 
 const defaultEmojis = ['👩🏾', '👨🏿', '👩🏽', '👨🏾', '👩🏿', '👨🏽']
+
+const BOT_REPLIES = [
+  "That's awesome! Tell me more 😊",
+  "Haha, I love that! 😂",
+  "Where are you from? 🌍",
+  "Really? I've always wanted to try that!",
+  "You seem really interesting 💕",
+  "Oh wow, same here! What a coincidence 🔥",
+  "That's such a cool perspective 👀",
+  "I totally get what you mean 😌",
+  "No way! That's wild 😲",
+  "You have great taste! ✨",
+  "Tell me your favourite thing about where you live 🌟",
+  "That made me smile 😄",
+  "I think we'd get along great!",
+  "What do you like to do on weekends?",
+  "Africa is so beautiful 💫",
+]
 const segments = ['💕', '🔥', '⭐', '💎', '🎯', '✨', '🌟', '💫', '🎪', '🎭', '🎨', '🎵']
 const SEGMENT_COUNT = segments.length
 const SEGMENT_ANGLE = 360 / SEGMENT_COUNT
 
 interface SpinProfile {
+  id: string
   name: string
   age: number
   emoji: string
@@ -53,6 +72,7 @@ export default function SpinChatPage() {
           const dob = p.date_of_birth ? new Date(p.date_of_birth) : null
           const age = dob ? Math.floor((Date.now() - dob.getTime()) / (365.25 * 24 * 3600 * 1000)) : 22 + i
           return {
+            id: p.id,
             name: p.full_name || 'Anonymous',
             age,
             emoji: defaultEmojis[i % defaultEmojis.length],
@@ -105,12 +125,15 @@ export default function SpinChatPage() {
 
   const sendMsg = () => {
     if (!input.trim()) return
-    setMessages(prev => [...prev, { text: input, mine: true, time: new Date().toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' }) }])
+    const now = new Date().toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' })
+    setMessages(prev => [...prev, { text: input, mine: true, time: now }])
     setInput('')
+    // Simulate reply from match while real Stream Chat integration is pending
+    const delay = 1000 + Math.random() * 1500
     setTimeout(() => {
-      const replies = ["That's so interesting! Tell me more 😊", "Haha yes! I totally agree 😂", "Where are you from? 🌍", "You seem really cool! 💕", "I love that! We have so much in common 🔥"]
-      setMessages(prev => [...prev, { text: replies[Math.floor(Math.random() * replies.length)], mine: false, time: new Date().toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' }) }])
-    }, 1500)
+      const reply = BOT_REPLIES[Math.floor(Math.random() * BOT_REPLIES.length)]
+      setMessages(prev => [...prev, { text: reply, mine: false, time: new Date().toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' }) }])
+    }, delay)
   }
 
   const reset = () => { setPhase('idle'); setCurrentProfile(null); setMessages([]); setConnectDone(false) }
@@ -122,7 +145,7 @@ export default function SpinChatPage() {
       // Save as a like/swipe in DB so it can become a match
       await supabase.from('swipes').upsert({
         swiper_id: user.id,
-        swiped_id: currentProfile.name, // fallback uses name; real DB profiles have id
+        swiped_id: currentProfile.id,
         action: 'like',
         source: 'spin_chat',
       }, { onConflict: 'swiper_id,swiped_id' })

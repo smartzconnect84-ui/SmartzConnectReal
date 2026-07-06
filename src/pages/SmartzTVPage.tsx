@@ -23,14 +23,76 @@ interface Stream {
 }
 
 function StreamModal({ stream, onClose }: { stream: Stream; onClose: () => void }) {
+  const { user } = useAuth()
   const [gifted, setGifted] = useState<string | null>(null)
+  const [giftSending, setGiftSending] = useState(false)
   const [comment, setComment] = useState('')
-  const [comments, setComments] = useState<{ user: string; text: string; time: string }[]>([])
+  const [comments, setComments] = useState<{ id?: number; user: string; text: string; time: string }[]>([])
+  const [commentsLoading, setCommentsLoading] = useState(true)
 
-  const sendComment = () => {
-    if (!comment.trim()) return
-    setComments(prev => [...prev, { user: '🧑🏾', text: comment, time: 'now' }])
+  // Load existing comments from DB
+  useEffect(() => {
+    const load = async () => {
+      setCommentsLoading(true)
+      const { data } = await supabase
+        .from('stream_comments')
+        .select('id, content, created_at, profiles:user_id(full_name, avatar_url)')
+        .eq('stream_id', stream.id)
+        .eq('is_deleted', false)
+        .order('created_at', { ascending: true })
+        .limit(50)
+      if (data) {
+        setComments(data.map((c: any) => ({
+          id: c.id,
+          user: c.profiles?.full_name?.[0] ? c.profiles.full_name.split(' ')[0] : '🧑🏾',
+          text: c.content,
+          time: new Date(c.created_at).toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' }),
+        })))
+      }
+      setCommentsLoading(false)
+    }
+    load()
+  }, [stream.id])
+
+  const sendComment = async () => {
+    if (!comment.trim() || !user) return
+    const text = comment.trim()
     setComment('')
+    const optimistic = { user: user.email?.split('@')[0] || '🧑🏾', text, time: 'now' }
+    setComments(prev => [...prev, optimistic])
+    const { error } = await supabase.from('stream_comments').insert({
+      stream_id: stream.id,
+      user_id: user.id,
+      content: text,
+    })
+    if (error) {
+      // If FK fails (stream not in streams table), keep the optimistic local entry
+    }
+  }
+
+  const sendGift = async (gift: typeof giftItems[0]) => {
+    if (!user || giftSending) return
+    setGifted(gift.name)
+    setGiftSending(true)
+    try {
+      await supabase.from('stream_gifts').insert({
+        stream_id: stream.id,
+        sender_id: user.id,
+        gift_type: gift.name,
+        gift_emoji: gift.emoji,
+        coins_cost: gift.price,
+      })
+      // Try RPC first; fall back to direct update if RPC doesn't exist
+      const { error: rpcErr } = await supabase.rpc('increment_gift_count', { stream_row_id: stream.id })
+      if (rpcErr) {
+        await supabase.from('livestreams')
+          .update({ gift_count: (stream.gifts || 0) + 1 })
+          .eq('id', stream.id)
+      }
+    } catch {
+      // Silently continue — gift UI feedback already shown
+    }
+    setGiftSending(false)
   }
 
   return (
@@ -78,8 +140,8 @@ function StreamModal({ stream, onClose }: { stream: Stream; onClose: () => void 
             <p className="text-[11px] dark:text-pink-300/60 text-gray-400 font-semibold mb-2">Send a gift</p>
             <div className="grid grid-cols-6 gap-2">
               {giftItems.map(g => (
-                <button key={g.name} onClick={() => setGifted(g.name)}
-                  className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${gifted === g.name ? 'dark:bg-purple-800/30 bg-purple-100 ring-1 ring-brand-pink' : 'dark:bg-white/5 bg-gray-100 hover:dark:bg-white/8'}`}>
+                <button key={g.name} onClick={() => sendGift(g)} disabled={!user || giftSending}
+                  className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all disabled:opacity-50 ${gifted === g.name ? 'dark:bg-purple-800/30 bg-purple-100 ring-1 ring-brand-pink' : 'dark:bg-white/5 bg-gray-100 hover:dark:bg-white/8'}`}>
                   <span className="text-xl">{g.emoji}</span>
                   <span className={`text-[9px] font-bold ${g.color}`}>{g.price}</span>
                 </button>
@@ -91,14 +153,16 @@ function StreamModal({ stream, onClose }: { stream: Stream; onClose: () => void 
           <div>
             <p className="text-[11px] dark:text-pink-300/60 text-gray-400 font-semibold mb-2">Live comments</p>
             <div className="space-y-2 max-h-32 overflow-y-auto">
-              {comments.length === 0 ? (
+              {commentsLoading ? (
+                <p className="text-xs dark:text-purple-400/50 text-gray-400 italic">Loading comments…</p>
+              ) : comments.length === 0 ? (
                 <p className="text-xs dark:text-purple-400/50 text-gray-400 italic">Be the first to comment!</p>
               ) : (
                 comments.map((c, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <span>{c.user}</span>
-                    <p className="text-xs dark:text-pink-50 text-gray-900">{c.text}</p>
-                    <span className="text-[10px] dark:text-purple-400/40 text-gray-400 ml-auto">{c.time}</span>
+                  <div key={c.id ?? i} className="flex items-center gap-2">
+                    <span className="text-sm font-semibold dark:text-purple-300 text-gray-700 shrink-0">{c.user}</span>
+                    <p className="text-xs dark:text-pink-50 text-gray-900 flex-1 min-w-0 truncate">{c.text}</p>
+                    <span className="text-[10px] dark:text-purple-400/40 text-gray-400 shrink-0">{c.time}</span>
                   </div>
                 ))
               )}

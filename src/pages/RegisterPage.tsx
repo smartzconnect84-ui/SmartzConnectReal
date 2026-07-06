@@ -4,6 +4,9 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Loader2, Check, Globe, ArrowLeft } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { AuthInput, AuthError, AuthLabel } from '@/components/auth/AuthLayout'
+import TurnstileWidget from '@/components/TurnstileWidget'
+
+const TURNSTILE_ENABLED = !!import.meta.env.VITE_TURNSTILE_SITE_KEY
 
 const logoImg = '/logo.png'
 
@@ -62,6 +65,7 @@ export default function RegisterPage() {
   const [loading, setLoading]   = useState(false)
   const [error, setError]       = useState('')
   const [agreed, setAgreed]     = useState(false)
+  const [turnstileToken, setTurnstileToken] = useState('')
 
   const pwStrength = passwordStrength(password)
 
@@ -299,6 +303,16 @@ export default function RegisterPage() {
                             <Link to="/privacy" className="text-purple-400 hover:underline font-medium">Privacy Policy</Link>
                           </span>
                         </label>
+
+                        {/* Turnstile CAPTCHA (only shown when site key is configured) */}
+                        {TURNSTILE_ENABLED && (
+                          <div className="flex justify-center pt-1">
+                            <TurnstileWidget
+                              onToken={setTurnstileToken}
+                              onError={() => setTurnstileToken('')}
+                            />
+                          </div>
+                        )}
                       </>
                     )}
 
@@ -356,7 +370,7 @@ export default function RegisterPage() {
                     {/* Submit */}
                     <button
                       type="submit"
-                      disabled={loading || (step === 1 && !agreed)}
+                      disabled={loading || (step === 1 && (!agreed || (TURNSTILE_ENABLED && !turnstileToken)))}
                       className="w-full py-3.5 rounded-xl bg-gradient-to-r from-purple-600 to-purple-500 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-purple-600/25 hover:shadow-purple-600/40 hover:from-purple-500 hover:to-purple-400 hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:shadow-none mt-1"
                     >
                       {loading

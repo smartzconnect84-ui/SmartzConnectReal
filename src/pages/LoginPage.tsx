@@ -2,6 +2,9 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
+import TurnstileWidget from '@/components/TurnstileWidget'
+
+const TURNSTILE_ENABLED = !!import.meta.env.VITE_TURNSTILE_SITE_KEY
 
 const logoImg = '/logo.png'
 
@@ -29,6 +32,7 @@ export default function LoginPage() {
   const [loading, setLoading]     = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
   const [error, setError]         = useState('')
+  const [turnstileToken, setTurnstileToken] = useState('')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -190,10 +194,20 @@ export default function LoginPage() {
             </Link>
           </div>
 
+          {/* Turnstile CAPTCHA (only shown when site key is configured) */}
+          {TURNSTILE_ENABLED && (
+            <div className="flex justify-center pt-1">
+              <TurnstileWidget
+                onToken={setTurnstileToken}
+                onError={() => setTurnstileToken('')}
+              />
+            </div>
+          )}
+
           {/* Sign in button */}
           <button
             type="submit"
-            disabled={loading || googleLoading}
+            disabled={loading || googleLoading || (TURNSTILE_ENABLED && !turnstileToken)}
             className="w-full py-3 rounded-full font-bold text-sm text-white flex items-center justify-center gap-2 transition-all hover:opacity-90 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed mt-1"
             style={{
               background: 'linear-gradient(135deg, #9333ea 0%, #c026d3 50%, #e11d48 100%)',
