@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Image, Video, Send, Heart, MessageCircle, Share2, MoreHorizontal,
   Bookmark, TrendingUp, RefreshCw, MapPin, Plus, Smile,
-  Users, Calendar, Gift, ChevronRight, Wifi, Camera, X
+  Users, Calendar, Gift, ChevronRight, Wifi, Camera, X, PartyPopper
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { uploadToSufy } from '@/lib/sufy'
@@ -586,6 +586,18 @@ export default function FeedPage() {
   const [error, setError] = useState<string | null>(null)
   const [newPostsCount, setNewPostsCount] = useState(0)
   const { user } = useAuth()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [showWelcome, setShowWelcome] = useState(searchParams.get('welcome') === '1')
+
+  useEffect(() => {
+    if (showWelcome) {
+      const params = new URLSearchParams(searchParams)
+      params.delete('welcome')
+      setSearchParams(params, { replace: true })
+      const t = setTimeout(() => setShowWelcome(false), 6000)
+      return () => clearTimeout(t)
+    }
+  }, [showWelcome])
 
   const fetchPosts = useCallback(async () => {
     setLoading(true)
@@ -731,6 +743,33 @@ export default function FeedPage() {
       {/* Feed column */}
       <div className="flex-1 overflow-y-auto pb-4">
         <div className="max-w-xl mx-auto px-3 pt-4">
+
+          {/* Welcome banner (post email confirmation) */}
+          <AnimatePresence>
+            {showWelcome && (
+              <motion.div
+                initial={{ opacity: 0, y: -12, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -12, scale: 0.98 }}
+                className="w-full flex items-center gap-3 p-4 mb-3 rounded-2xl bg-love-gradient text-white shadow-lg shadow-pink-500/30"
+              >
+                <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
+                  <PartyPopper className="w-5 h-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-sm leading-tight">Welcome to SmartzConnect! 🎉</p>
+                  <p className="text-xs text-white/85 leading-tight mt-0.5">Your email is confirmed — your account is fully active.</p>
+                </div>
+                <button
+                  onClick={() => setShowWelcome(false)}
+                  className="p-1.5 rounded-lg hover:bg-white/10 transition-colors flex-shrink-0"
+                  aria-label="Dismiss"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Stories */}
           <StoriesBar user={user} />

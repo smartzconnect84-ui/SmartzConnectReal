@@ -22,6 +22,7 @@ description: SmartzConnect Supabase schema versioning — which addendum covers 
 - `marketplace_items.title` — NOT `name`. Column is `title`.
 - `marketplace_items.is_active` — NOT `status`. Use `.eq('is_active', true)` for filtering active listings.
 - `marketplace_items.stock_qty` — NOT `in_stock`. Integer column; check `> 0` for availability. No `rating`/`review_count` columns exist.
+- `public.users` was missing an `updated_at` column while two BEFORE UPDATE triggers (`trg_updated_at`, `trg_users_updated_at` → `set_updated_at()`) reference `NEW.updated_at` — broke every signup with a 500 "Database error saving new user" via the `handle_new_user()` ON CONFLICT DO UPDATE path. Fixed by adding the column. When a Supabase signup/insert 500s with a vague client error, check GoTrue's `auth_logs` (via Management API `analytics/endpoints/logs.all`) for the real Postgres error — the client-side message is often just `{}`/"unexpected_failure".
 
 ## Live DB state (as of July 6, 2026)
 - Direct Postgres (port 6543, pooler) IS reachable from Replit via `psql`/`pg_dump` — earlier note about port 5432 being blocked was stale/incorrect (or was fixed). Verify connectivity directly before assuming Management API is required.
