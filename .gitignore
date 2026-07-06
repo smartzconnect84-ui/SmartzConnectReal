@@ -37,3 +37,4 @@ dist-ssr
 supabase/.temp/
 .vercel
 .env*
+package-lock.json

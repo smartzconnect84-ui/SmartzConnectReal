@@ -1,5 +1,5 @@
 {
-  "installCommand": "npm install",
+  "installCommand": "npm install -g pnpm && pnpm install",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": "vite",

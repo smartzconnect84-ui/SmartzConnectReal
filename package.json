@@ -2,8 +2,12 @@
   "name": "smartzconnect",
   "version": "0.0.0",
   "type": "module",
+  "packageManager": "pnpm@10.34.4",
   "engines": {
     "node": "20.x"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild", "stream-chat"]
   },
   "scripts": {
     "dev": "vite",
