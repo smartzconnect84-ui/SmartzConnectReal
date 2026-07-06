@@ -5,10 +5,22 @@ import CurrencyConverter from '@/components/CurrencyConverter'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 
+function escHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')
+}
+
 function downloadInvoice(plan: { name: string; price: number; period: string }, txId: string, method: string, userName: string) {
   const now = new Date()
-  const invoiceNumber = `INV-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${txId.slice(-6).toUpperCase()}`
+  // Strip non-alphanumeric chars from txId for the filename to prevent path traversal
+  const safeTxId    = txId.replace(/[^a-zA-Z0-9]/g, '').slice(-6).toUpperCase() || 'XXXXXX'
+  const invoiceNumber = `INV-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${safeTxId}`
   const dateStr = now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+  // Escape all user-controlled values before HTML interpolation
+  const eTxId   = escHtml(txId)
+  const eMethod = escHtml(method)
+  const eUser   = escHtml(userName)
+  const ePlan   = escHtml(plan.name)
+  const ePeriod = escHtml(plan.period)
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -43,28 +55,28 @@ function downloadInvoice(plan: { name: string; price: number; period: string }, 
     </div>
     <div class="inv-label">
       <strong>INVOICE</strong>
-      ${invoiceNumber}
+      ${escHtml(invoiceNumber)}
     </div>
   </div>
   <hr />
   <div class="section">
     <h3>Bill To</h3>
-    <div class="row"><span>Customer</span><span>${userName || 'SmartzConnect User'}</span></div>
-    <div class="row"><span>Date Issued</span><span>${dateStr}</span></div>
+    <div class="row"><span>Customer</span><span>${eUser || 'SmartzConnect User'}</span></div>
+    <div class="row"><span>Date Issued</span><span>${escHtml(dateStr)}</span></div>
   </div>
   <div class="section">
     <h3>Plan Details</h3>
-    <div class="badge">💎 ${plan.name} Plan</div>
-    <div class="row" style="margin-top:8px"><span>Plan</span><span>${plan.name}</span></div>
-    <div class="row"><span>Billing Period</span><span>${plan.period}</span></div>
-    <div class="row"><span>Payment Method</span><span>${method}</span></div>
-    <div class="row"><span>Transaction ID</span><span>${txId}</span></div>
+    <div class="badge">💎 ${ePlan} Plan</div>
+    <div class="row" style="margin-top:8px"><span>Plan</span><span>${ePlan}</span></div>
+    <div class="row"><span>Billing Period</span><span>${ePeriod}</span></div>
+    <div class="row"><span>Payment Method</span><span>${eMethod}</span></div>
+    <div class="row"><span>Transaction ID</span><span>${eTxId}</span></div>
   </div>
   <hr />
   <div class="section">
-    <div class="row"><span>Subtotal</span><span>${plan.price.toFixed(2)}</span></div>
+    <div class="row"><span>Subtotal</span><span>${escHtml(plan.price.toFixed(2))}</span></div>
     <div class="row"><span>Tax (0%)</span><span>$0.00</span></div>
-    <div class="total-row"><span>Total Paid</span><span>${plan.price.toFixed(2)}</span></div>
+    <div class="total-row"><span>Total Paid</span><span>${escHtml(plan.price.toFixed(2))}</span></div>
   </div>
   <hr />
   <div class="section" style="text-align:center;padding:16px 0">

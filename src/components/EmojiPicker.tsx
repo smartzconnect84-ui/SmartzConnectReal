@@ -94,11 +94,39 @@ export default function EmojiPicker({ onSelect, onClose }: EmojiPickerProps) {
   const [activeCategory, setActiveCategory] = useState(0)
   const [search, setSearch] = useState('')
 
-  const filteredEmojis = search.trim()
-    ? CATEGORIES.flatMap(c => c.emojis).filter(e => {
-        // Simple code-point based filter isn't great; just show all on any search char for UX
-        return true
-      }).slice(0, 60)
+  // Flat list of { emoji, keywords } for search
+  const EMOJI_KEYWORDS: Record<string, string> = {
+    '😊': 'smile happy', '😍': 'love heart eyes', '🥰': 'love adore', '😘': 'kiss', '😂': 'laugh cry funny',
+    '🤣': 'rofl laugh', '😭': 'cry sad sob', '😢': 'cry tear sad', '😅': 'sweat smile awkward',
+    '😆': 'laugh grin', '😁': 'beam grin', '😀': 'grinning happy', '🤩': 'star eyes excited',
+    '😎': 'cool sunglasses', '🥳': 'party celebrate', '🤗': 'hug', '😏': 'smirk', '😒': 'unamused',
+    '😤': 'triumph snort', '😠': 'angry', '😡': 'rage angry', '🤬': 'cursing angry', '😈': 'devil evil',
+    '🥺': 'pleading puppy eyes', '😔': 'pensive sad', '😟': 'worried', '😞': 'disappointed',
+    '❤️': 'heart love red', '🧡': 'heart orange', '💛': 'heart yellow', '💚': 'heart green',
+    '💙': 'heart blue', '💜': 'heart purple', '🖤': 'heart black', '💕': 'two hearts love',
+    '💞': 'revolving hearts', '💓': 'beating heart', '💗': 'growing heart', '💖': 'sparkling heart',
+    '💘': 'heart arrow love', '💝': 'heart ribbon', '💔': 'broken heart', '❤️‍🔥': 'heart fire passion',
+    '👍': 'thumbs up good ok', '👎': 'thumbs down bad', '👋': 'wave hello hi', '✌️': 'peace victory',
+    '🤞': 'crossed fingers luck', '👌': 'ok perfect', '🤝': 'handshake deal', '🙏': 'pray thanks please',
+    '👏': 'clap applause', '🙌': 'hands up celebrate', '💪': 'muscle strong flex',
+    '🔥': 'fire hot', '⭐': 'star', '✨': 'sparkles shine', '💫': 'dizzy star',
+    '🌸': 'cherry blossom flower', '🌺': 'hibiscus flower', '🌻': 'sunflower', '🌹': 'rose flower',
+    '🍕': 'pizza food', '🍔': 'burger food', '🎉': 'party celebrate tada', '🎊': 'confetti party',
+    '🚀': 'rocket launch', '✈️': 'plane travel fly', '🎵': 'music note', '🎶': 'musical notes',
+    '💯': 'hundred percent perfect ok', '✅': 'check done yes', '❌': 'cross no wrong',
+    '😱': 'scream shocked', '🤔': 'thinking hmm',
+  }
+
+  const q = search.trim().toLowerCase()
+  const filteredEmojis = q
+    ? (() => {
+        const all = CATEGORIES.flatMap(c => c.emojis)
+        // Priority 1: keyword match, Priority 2: category name match
+        const catMatches = CATEGORIES.filter(c => c.label.toLowerCase().includes(q)).flatMap(c => c.emojis)
+        const kwMatches  = all.filter(e => (EMOJI_KEYWORDS[e] || '').includes(q))
+        const combined   = [...new Set([...kwMatches, ...catMatches])]
+        return combined.length ? combined.slice(0, 60) : all.slice(0, 60)
+      })()
     : CATEGORIES[activeCategory].emojis
 
   return (
