@@ -4,5 +4,5 @@
 - [Responsive breakpoint strategy](responsive-strategy.md) — sm=640px for minor tweaks, md=768px for multi-column grids/tablet layout, lg=1024px for full sidebar and desktop layout.
 - [AppShell layout](appshell-layout.md) — icon-only sidebar on md (w-16), full sidebar on lg (w-60+), bottom nav md:hidden, mobile top bar md:hidden.
 - [Enhancement pass v1](enhancements-v1.md) — Global 90% font scale, hero mobile zoom, CEO static hardcode, flyers on Blog/Ads, file upload via Supabase storage, CurrencyConverter, ReportBlockModal, anonymous spin chat, admin sidebar reordered by importance, schema_v3.sql.
-- [Schema evolution](schema-evolution.md) — v3 covers core tables; v4 adds 25 production tables (social feed, group chat, swipes, stories, notifications, subscriptions, marketplace, rides, livestreams, worldstage). Always extend with a new vN file, never edit prior versions.
+- [Schema evolution](schema-evolution.md) — column mismatches, repo SQL vs. live-DB drift on hand-edited tables, and Postgres 17 vs pg_dump v16 version-mismatch workaround.
 - [Integration audit fixes](integration-audit.md) — Full audit of OneSignal/GetStream/Jitsi/Turnstile; key fixes applied in audit pass v1.
