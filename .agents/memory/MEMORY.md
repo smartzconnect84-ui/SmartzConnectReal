@@ -1,4 +1,4 @@
-- [Vercel BLOCKED from Replit](vercel-blocked.md) — CLI deploys always BLOCKED on hobby plan from cloud env; use GitHub integration or local machine instead.
+- [Vercel pnpm fix](vercel-pnpm-fix.md) — npm v10 "Exit handler never called" on Vercel; switch to pnpm with onlyBuiltDependencies for esbuild.
 - [Dev-only integrations](dev-integrations.md) — OneSignal is production-domain-only; Turnstile now guards only on VITE_TURNSTILE_SITE_KEY being set (hostname check removed — works on any domain including previews).
 - [ESLint config](eslint-config.md) — react-hooks/set-state-in-effect and purity turned off (false positives on async fetch patterns); no-unused-vars ignores _-prefixed vars; any/exhaustive-deps/static-components are warnings not errors; .local/** and supabase/** are ignored.
 - [Responsive breakpoint strategy](responsive-strategy.md) — sm=640px for minor tweaks, md=768px for multi-column grids/tablet layout, lg=1024px for full sidebar and desktop layout.
