@@ -25,11 +25,7 @@ export default function AdminLoginPage() {
       await signIn(email, password)
       navigate('/admin', { replace: true })
     } catch (err: any) {
-      if (err.message === 'EMAIL_NOT_VERIFIED') {
-        setError('Please verify your email before accessing the admin panel.')
-      } else {
-        setError(err.message || 'Invalid credentials. Please try again.')
-      }
+      setError(err.message || 'Invalid credentials. Please try again.')
     } finally {
       setLoading(false)
     }

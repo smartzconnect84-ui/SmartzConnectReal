@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  MessageCircle, X, Send, Minimize2, Maximize2, Phone,
-  ExternalLink, Bot, User, ChevronDown, Sparkles, Headphones,
+  MessageCircle, X, Send, Minimize2, Maximize2,
+  Bot, User, ChevronDown, Sparkles, Headphones,
   Copy, ThumbsUp, ThumbsDown,
 } from 'lucide-react'
 const logoImg = '/logo.png'
@@ -17,8 +17,7 @@ interface ChatMessage {
   liked?: boolean | null
 }
 
-const WHATSAPP_NUMBER = '231776679963'
-const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}`
+const SUPPORT_EMAIL = 'support@smartzconnect.com'
 
 /* ─── Knowledge base ─── */
 const botKnowledge: Record<string, string> = {
@@ -50,7 +49,7 @@ const botKnowledge: Record<string, string> = {
     `🛡️ **Safety & Trust:**\n\n• ✅ Profile verification badges\n• 🚨 One-tap report & block\n• 👮 Real-time content moderation\n• 🔒 Private data — never sold\n• 24/7 safety team on standby\n\nReport abuse: safety@smartzconnect.com`,
 
   'contact|support|help|email|phone|team|human|agent':
-    `📞 **Reach Our Team:**\n\n• 💬 **Live Support:** +231 776 679 963 (WhatsApp)\n• 📧 **Support:** support@smartzconnect.com\n• 💼 **Business:** business@smartzconnect.com\n• 🕐 **Hours:** 24/7 AI + Human agents Mon–Sat`,
+    `📞 **Reach Our Team:**\n\n• 📧 **Support:** support@smartzconnect.com\n• 💼 **Business:** business@smartzconnect.com\n• 📞 **Phone:** +231 776 679 963\n• 🕐 **Hours:** 24/7 AI + Human agents Mon–Sat`,
 
   'register|signup|join|account|create|start|begin|new':
     `🎉 **Join SmartzConnect Free!**\n\nSign up in under 60 seconds:\n1. Click **"Join Free"** on the homepage\n2. Enter your name, email & password\n3. Verify your email\n4. Complete your profile & start connecting! 💕`,
@@ -62,7 +61,7 @@ const botKnowledge: Record<string, string> = {
     `📱 **Install SmartzConnect:**\n\nWe're a **Progressive Web App (PWA)** — no app store needed!\n• Open in Chrome or Safari\n• Tap the install / Add to Home Screen prompt\n• Works offline with push notifications\n• Always up-to-date automatically`,
 
   'delete|cancel|deactivate|close|account':
-    `⚠️ **Manage Your Account:**\n\nYou can cancel your subscription anytime from **App → Subscriptions** with no penalty.\n\nTo delete your account, go to **Profile → Settings → Delete Account**.\n\nNeed help? Chat with us on WhatsApp.`,
+    `⚠️ **Manage Your Account:**\n\nYou can cancel your subscription anytime from **App → Subscriptions** with no penalty.\n\nTo delete your account, go to **Profile → Settings → Delete Account**.\n\nNeed help? Email us at support@smartzconnect.com.`,
 }
 
 function getBotResponse(input: string): { text: string; options?: string[] } {
@@ -73,7 +72,7 @@ function getBotResponse(input: string): { text: string; options?: string[] } {
     }
   }
   return {
-    text: `I appreciate your message! 😊 I didn't catch that specific topic, but I'm here to help.\n\nYou can also reach us directly:\n📱 **WhatsApp:** +231 776 679 963\n📧 **Email:** support@smartzconnect.com\n\nOr choose a topic below:`,
+    text: `I appreciate your message! 😊 I didn't catch that specific topic, but I'm here to help.\n\nYou can also reach us directly:\n📧 **Email:** support@smartzconnect.com\n📞 **Phone:** +231 776 679 963\n\nOr choose a topic below:`,
     options: ['💰 Pricing', '💕 Dating', '🛍️ Marketplace', '📺 SmartzTV', '🚗 Rides', '📞 Contact'],
   }
 }
@@ -425,7 +424,7 @@ export default function LiveChat() {
                       <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                       <span className="text-[10px] dark:text-gray-400 text-gray-500 font-medium">Typically replies in &lt;1 min</span>
                     </div>
-                    <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer"
+                    <a href={`mailto:${SUPPORT_EMAIL}`}
                       className="flex items-center gap-1 text-[10px] text-emerald-500 font-semibold hover:underline">
                       <Headphones className="w-3 h-3" /> Human agent
                     </a>
@@ -449,16 +448,6 @@ export default function LiveChat() {
                       </motion.div>
                     )}
                   </AnimatePresence>
-
-                  {/* ── WhatsApp CTA ── */}
-                  <div className="px-4 py-2 border-t dark:border-white/6 border-gray-200 dark:bg-[#0F0A1A] bg-white flex-shrink-0">
-                    <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer"
-                      className="flex items-center justify-center gap-2 w-full py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-semibold hover:bg-emerald-500/20 transition-colors">
-                      <Phone className="w-3.5 h-3.5" />
-                      Chat on WhatsApp · +231 776 679 963
-                      <ExternalLink className="w-3 h-3 opacity-60" />
-                    </a>
-                  </div>
 
                   {/* ── Input ── */}
                   <div className="p-3 border-t dark:border-white/6 border-gray-200 dark:bg-[#0F0A1A] bg-white flex-shrink-0"

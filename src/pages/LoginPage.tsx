@@ -38,11 +38,7 @@ export default function LoginPage() {
       await signIn(email, password)
       navigate('/app/feed', { replace: true })
     } catch (err: any) {
-      if (err.message === 'EMAIL_NOT_VERIFIED') {
-        navigate('/verify-email', { state: { email }, replace: true })
-      } else {
-        setError(err.message || 'Invalid email or password. Please try again.')
-      }
+      setError(err.message || 'Invalid email or password. Please try again.')
     } finally {
       setLoading(false)
     }
