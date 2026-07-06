@@ -101,7 +101,7 @@ function Bubble({ msg, onCopy, onFeedback, onOption }: {
     ))
 
   return (
-    <div className={`flex gap-2 group ${msg.isBot ? '' : 'flex-row-reverse'}`}>
+    <div className={`flex group pt-[0px] pb-[0px] mt-[0px] mb-[0px] gap-[5px] flex-row justify-center items-center pl-[0px] pr-[0px] ${msg.isBot ? '' : 'flex-row-reverse'}`}>
       {/* Avatar */}
       {msg.isBot
         ? <div className="w-7 h-7 rounded-full bg-love-gradient flex items-center justify-center flex-shrink-0 mt-1 shadow-md shadow-pink-500/20">
@@ -118,7 +118,7 @@ function Bubble({ msg, onCopy, onFeedback, onOption }: {
           onClick={() => msg.isBot && setShowActions(s => !s)}
           className={`px-3.5 py-2.5 rounded-2xl text-[13px] leading-relaxed cursor-default ${
             msg.isBot
-              ? 'dark:bg-white/8 bg-white border dark:border-white/8 border-gray-100 dark:text-gray-100 text-gray-800 rounded-tl-sm shadow-sm'
+              ? 'dark:bg-white/8 bg-white border dark:border-white/8 border-gray-100 dark:text-gray-100 rounded-tl-sm shadow-sm text-[#000]'
               : 'bg-love-gradient text-white rounded-tr-sm shadow-md shadow-pink-500/20'
           }`}
         >
@@ -431,7 +431,7 @@ export default function LiveChat() {
                   </div>
 
                   {/* ── Messages ── */}
-                  <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 dark:bg-[#0F0A1A] bg-gray-50">
+                  <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 dark:bg-[#0F0A1A] pt-[12px] pb-[12px] mt-[1px] mb-[1px] pl-[16px] pr-[16px] bg-[#0f0a1a]">
                     {messages.map(msg => (
                       <Bubble key={msg.id} msg={msg} onCopy={handleCopy} onFeedback={handleFeedback} onOption={sendMessage} />
                     ))}
@@ -459,7 +459,7 @@ export default function LiveChat() {
                         onChange={e => setInput(e.target.value)}
                         onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(input) } }}
                         placeholder="Ask anything about SmartzConnect…"
-                        className="flex-1 bg-transparent text-xs dark:text-white text-gray-900 placeholder:dark:text-gray-500 placeholder:text-gray-400 focus:outline-none"
+                        className="flex-1 text-xs dark:text-white text-gray-900 placeholder:dark:text-gray-500 placeholder:text-gray-400 focus:outline-none bg-[transparent]"
                       />
                       <motion.button
                         onClick={() => sendMessage(input)}
