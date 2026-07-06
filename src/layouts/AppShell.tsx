@@ -13,6 +13,7 @@ import { supabase } from '@/lib/supabase'
 import TopNavBar from '@/layouts/TopNavBar'
 import LeftSidebar from '@/layouts/LeftSidebar'
 import CreateModal from '@/components/CreateModal'
+import IncomingCall from '@/components/IncomingCall'
 
 // All nav sections for the mobile drawer
 const drawerSections = [
@@ -229,6 +230,9 @@ export default function AppShell() {
 
       {/* ── Floating Create Button ── */}
       <CreateModal />
+
+      {/* ── Global Incoming Call overlay ── */}
+      <IncomingCall />
     </div>
   )
 }

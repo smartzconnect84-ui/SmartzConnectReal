@@ -8,3 +8,4 @@
 - [Integration audit fixes](integration-audit.md) — Full audit of OneSignal/GetStream/Jitsi/Turnstile; key fixes applied in audit pass v1.
 - [Completed unfinished tasks](completed-unfinished.md) — EmojiPicker, TurnstileWidget, invoice download added; GitHub push now uses gitPush() callback (not git CLI — auth fails).
 - [Voice notes implementation](voice-notes.md) — MediaRecorder → Supabase 'voice-messages' bucket (public) → Stream attachment. Both ChatPage and GroupChatPage implemented with unmount cleanup.
+- [Call signaling state machine](call-signaling.md) — Full call system via call_notifications realtime; clear outgoingNotifIdRef on accepted to prevent 60s timer closing active calls.
