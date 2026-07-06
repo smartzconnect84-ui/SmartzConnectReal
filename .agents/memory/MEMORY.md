@@ -6,3 +6,4 @@
 - [Enhancement pass v1](enhancements-v1.md) — Global 90% font scale, hero mobile zoom, CEO static hardcode, flyers on Blog/Ads, file upload via Supabase storage, CurrencyConverter, ReportBlockModal, anonymous spin chat, admin sidebar reordered by importance, schema_v3.sql.
 - [Schema evolution](schema-evolution.md) — column mismatches, repo SQL vs. live-DB drift on hand-edited tables, and Postgres 17 vs pg_dump v16 version-mismatch workaround.
 - [Integration audit fixes](integration-audit.md) — Full audit of OneSignal/GetStream/Jitsi/Turnstile; key fixes applied in audit pass v1.
+- [Completed unfinished tasks](completed-unfinished.md) — EmojiPicker, TurnstileWidget, invoice download added; GitHub push now uses gitPush() callback (not git CLI — auth fails).
