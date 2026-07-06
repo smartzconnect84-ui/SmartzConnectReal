@@ -85,12 +85,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const signUp = async (email: string, password: string, name?: string) => {
+    // Only pass emailRedirectTo when on the production domain.
+    // In dev/preview the Replit origin is not in Supabase's allowed redirect list
+    // and will cause a "Redirect URL not allowed" rejection.
+    const isProd = !import.meta.env.DEV && window.location.hostname !== 'localhost'
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: { full_name: name || '' },
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        ...(isProd ? { emailRedirectTo: `${window.location.origin}/auth/callback` } : {}),
       },
     })
     if (error) {
@@ -99,6 +103,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (raw) {
           if (/email.*signup.*disabled|signup.*disabled/i.test(raw))
             return 'New account registration is currently disabled. Please contact support or try again later.'
+          if (/redirect.*not.*allowed|invalid.*redirect/i.test(raw))
+            return 'Sign-up failed due to a configuration issue. Please contact support.'
           if (/email.*not.*confirmed/i.test(raw))
             return 'Please confirm your email address before signing in.'
           if (/already.*registered|user.*already.*exists/i.test(raw))
