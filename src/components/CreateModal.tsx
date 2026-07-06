@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useMotionValue } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import {
   Plus, X, FileText, Image, Play, Radio, Users, Calendar,
@@ -452,6 +452,9 @@ export default function CreateModal() {
   const [open, setOpen] = useState(false)
   const [activeModal, setActiveModal] = useState<ActiveModal>(null)
   const [activeStory, setActiveStory] = useState(false)
+  const dragX = useMotionValue(0)
+  const dragY = useMotionValue(0)
+  const didDragRef = useRef(false)
 
   const handleOption = (action: string) => {
     setOpen(false)
@@ -469,36 +472,37 @@ export default function CreateModal() {
 
   return (
     <>
-      {/* Floating Action Button */}
-      <motion.button
-        onClick={() => setOpen(o => !o)}
-        whileHover={{ scale: 1.06 }}
-        whileTap={{ scale: 0.95 }}
-        className="fixed bottom-20 md:bottom-6 right-4 md:right-6 z-30 w-14 h-14 rounded-2xl bg-love-gradient text-white shadow-xl shadow-pink-500/30 flex items-center justify-center"
-        aria-label="Open create menu"
-        aria-haspopup="dialog"
-        aria-expanded={open}
-      >
-        <motion.div animate={{ rotate: open ? 45 : 0 }} transition={{ duration: 0.2 }}>
-          <Plus className="w-6 h-6" />
-        </motion.div>
-      </motion.button>
-
-      {/* Create Menu */}
+      {/* Backdrop — outside draggable group so it stays full-screen */}
       <AnimatePresence>
         {open && (
-          <>
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            onClick={() => setOpen(false)}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Draggable group: button + menu move together */}
+      <motion.div
+        drag
+        dragMomentum={false}
+        dragElastic={0}
+        style={{ x: dragX, y: dragY }}
+        onDragStart={() => { didDragRef.current = false }}
+        onDrag={() => { didDragRef.current = true }}
+        onDragEnd={() => { setTimeout(() => { didDragRef.current = false }, 50) }}
+        className="fixed bottom-20 md:bottom-6 right-4 md:right-6 z-50 touch-none select-none"
+      >
+        {/* Create Menu — anchored above the button */}
+        <AnimatePresence>
+          {open && (
             <motion.div
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              onClick={() => setOpen(false)}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              initial={{ opacity: 0, scale: 0.95, y: 8 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              exit={{ opacity: 0, scale: 0.95, y: 8 }}
               transition={{ type: 'spring', stiffness: 320, damping: 28 }}
-              className="fixed inset-x-4 bottom-24 md:inset-auto md:bottom-24 md:right-6 md:w-80 z-50 dark:bg-[#130E1E] bg-white rounded-2xl border dark:border-white/8 border-gray-200 shadow-2xl shadow-black/40 overflow-hidden"
+              className="absolute bottom-full right-0 mb-2 w-72 dark:bg-[#130E1E] bg-white rounded-2xl border dark:border-white/8 border-gray-200 shadow-2xl shadow-black/40 overflow-hidden"
               role="dialog" aria-modal="true" aria-label="Create new content"
             >
               <div className="flex items-center justify-between px-4 py-3 border-b dark:border-white/6 border-gray-100">
@@ -545,9 +549,28 @@ export default function CreateModal() {
                 </p>
               </div>
             </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>
+
+        {/* FAB — 44px touch target, 32px visual */}
+        <button
+          onClick={() => { if (!didDragRef.current) setOpen(o => !o) }}
+          className="w-11 h-11 flex items-center justify-center cursor-grab active:cursor-grabbing"
+          aria-label="Open create menu"
+          aria-haspopup="dialog"
+          aria-expanded={open}
+        >
+          <motion.div
+            whileHover={{ scale: 1.12 }}
+            whileTap={{ scale: 0.92 }}
+            animate={{ rotate: open ? 45 : 0 }}
+            transition={{ duration: 0.2 }}
+            className="w-8 h-8 rounded-xl bg-love-gradient shadow-lg shadow-pink-500/40 flex items-center justify-center"
+          >
+            <Plus className="w-4 h-4 text-white" />
+          </motion.div>
+        </button>
+      </motion.div>
 
       {/* Sub-Modals */}
       <AnimatePresence>
