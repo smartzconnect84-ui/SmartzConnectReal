@@ -191,10 +191,10 @@ export default function RegisterPage() {
                     <Check className="w-10 h-10 text-white" />
                   </motion.div>
                   <h2 className="font-display font-black text-2xl text-white mb-2">
-                    Account created! 🎉
+                    Welcome aboard! 🎉
                   </h2>
                   <p className="text-white/50 text-sm">
-                    Check your email to verify your account.
+                    Your account is ready. Taking you in…
                   </p>
                   <div className="mt-5 flex justify-center">
                     <Loader2 className="w-5 h-5 text-purple-400 animate-spin" />
@@ -345,7 +345,7 @@ export default function RegisterPage() {
                         {/* Info banner */}
                         <div className="p-4 rounded-2xl bg-purple-500/[0.08] border border-purple-500/20">
                           <p className="text-xs text-white/60 leading-relaxed">
-                            🎉 Almost there! After signing up, we'll send you a confirmation email. Click the link to activate your account.
+                            🎉 Almost there! Your account will be ready instantly — no email confirmation required.
                           </p>
                         </div>
                       </>

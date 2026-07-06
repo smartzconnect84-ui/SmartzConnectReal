@@ -94,7 +94,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
     })
     if (error) {
-      // Normalize Supabase errors — they can lack a .message entirely
       throw new Error(
         typeof error.message === 'string' && error.message
           ? error.message
@@ -104,16 +103,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       )
     }
 
-    // If Supabase returned a session immediately (email confirmation disabled),
-    // the user is already logged in — nothing more to do.
+    // If Supabase returned a session immediately (email confirmation already disabled),
+    // the user is already logged in.
     if (data.session) return { needsVerification: false }
 
-    // Email confirmation required — attempt an immediate sign-in anyway.
-    // This works because the code-level EMAIL_NOT_VERIFIED gate was removed.
+    // Auto-confirm the email via edge function so users never have to verify.
+    if (data.user?.id) {
+      try {
+        await supabase.functions.invoke('confirm-email', {
+          body: { userId: data.user.id },
+        })
+      } catch {
+        // Non-fatal — fall through to password sign-in attempt
+      }
+    }
+
+    // Now sign in with the (now-confirmed) credentials.
     const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password })
     if (!signInErr) return { needsVerification: false }
 
-    // Supabase enforces confirmation at the API level — user must verify first.
+    // Edge function not yet deployed or confirmation failed — user must verify.
     return { needsVerification: true }
   }
 
