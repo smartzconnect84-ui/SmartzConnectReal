@@ -1,7 +1,10 @@
 import { useRef } from 'react'
 import { motion, useInView } from 'framer-motion'
 import { Link } from 'react-router-dom'
-import { Tv, Play, Users, Gift, TrendingUp, Mic, Video, Crown, Zap, Globe } from 'lucide-react'
+import {
+  Tv, Play, Users, Gift, TrendingUp, Mic, Video, Crown, Zap, Globe,
+  Radio, Star, Signal, Clapperboard,
+} from 'lucide-react'
 
 const features = [
   { icon: Video,      title: 'Go Live Instantly',     desc: 'Stream to thousands of viewers across Africa with one tap. No equipment needed — just your phone.',  color: 'from-violet-500 to-purple-600' },
@@ -14,43 +17,69 @@ const features = [
 
 export default function SmartzTVPage() {
   const ref = useRef(null)
+  const heroRef = useRef(null)
   const inView = useInView(ref, { once: true, margin: '-80px' })
+  const heroIn = useInView(heroRef, { once: true })
 
   return (
     <div className="dark:bg-[#080510] bg-gray-50 min-h-screen">
 
-      {/* Hero */}
-      <section className="relative overflow-hidden">
-        <div className="relative h-72 sm:h-96 lg:h-[500px] bg-gradient-to-br from-[#0e0720] via-[#120828] to-[#160a2e]">
+      {/* ── Hero ── */}
+      <section className="relative overflow-hidden" ref={heroRef}>
+        <div className="relative h-[460px] sm:h-[540px] lg:h-[620px] bg-gradient-to-br from-[#0e0720] via-[#120828] to-[#160a2e]">
+          {/* Decorative blobs */}
           <div className="absolute inset-0 pointer-events-none">
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-violet-600/25 blur-3xl" />
             <div className="absolute top-8 right-16 w-56 h-56 rounded-full bg-purple-500/20 blur-3xl" />
             <div className="absolute bottom-8 left-16 w-44 h-44 rounded-full bg-pink-500/15 blur-2xl" />
           </div>
+
+          {/* Floating icon decorations */}
+          <div className="absolute inset-0 pointer-events-none overflow-hidden">
+            <div className="absolute top-12 left-[8%] opacity-20 rotate-[-12deg]">
+              <Tv className="w-16 h-16 text-violet-300" />
+            </div>
+            <div className="absolute top-20 right-[9%] opacity-15 rotate-[10deg]">
+              <Radio className="w-12 h-12 text-purple-300" />
+            </div>
+            <div className="absolute bottom-16 left-[14%] opacity-15 rotate-[6deg]">
+              <Clapperboard className="w-14 h-14 text-violet-200" />
+            </div>
+            <div className="absolute bottom-20 right-[7%] opacity-20 rotate-[-8deg]">
+              <Signal className="w-10 h-10 text-pink-200" />
+            </div>
+            <div className="absolute top-1/2 right-[22%] opacity-10">
+              <Star className="w-20 h-20 text-purple-300" />
+            </div>
+          </div>
+
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-violet-500/20 backdrop-blur-sm border border-violet-400/35 mb-5">
-              <Tv className="w-4 h-4 text-violet-300" />
-              <span className="text-sm font-semibold text-violet-200">SmartzConnect TV</span>
-            </div>
-            <h1 className="font-display font-black text-4xl sm:text-5xl lg:text-6xl text-white leading-tight mb-4">
-              Africa's Live<br /><span className="text-pink-300">Streaming</span><br />Platform
-            </h1>
-            <p className="text-lg text-white/80 mb-7 max-w-lg">
-              Go live, build your audience, and earn real money from your passion. SmartzTV is where African creators become stars.
-            </p>
-            <div className="flex flex-wrap gap-3 justify-center">
-              <Link to="/register" className="btn-love px-7 py-3.5 rounded-2xl text-sm font-bold inline-flex items-center gap-2">
-                <Play className="w-4 h-4" fill="white" /> Start Streaming Free
-              </Link>
-              <Link to="/register" className="px-7 py-3.5 rounded-2xl bg-white/12 backdrop-blur-sm border border-white/20 text-white text-sm font-semibold hover:bg-white/22 transition-all inline-flex items-center gap-2">
-                <Globe className="w-4 h-4" /> Watch Live Now
-              </Link>
-            </div>
+            <motion.div initial={{ opacity: 0, y: 30 }} animate={heroIn ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.6 }}>
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-violet-500/20 backdrop-blur-sm border border-violet-400/35 mb-6">
+                <Tv className="w-4 h-4 text-violet-300" />
+                <span className="text-sm font-semibold text-violet-200">SmartzConnect TV</span>
+              </div>
+              <h1 className="font-display font-black text-4xl sm:text-5xl lg:text-6xl text-white leading-tight mb-8">
+                Africa's Live<br /><span className="text-pink-300">Streaming</span>{' '}Platform
+              </h1>
+
+              {/* Two main CTAs */}
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link to="/register"
+                  className="inline-flex items-center justify-center gap-2 px-9 py-4 rounded-2xl btn-love font-bold text-lg shadow-2xl shadow-pink-500/40 hover:scale-[1.04] transition-all">
+                  <Play className="w-5 h-5" fill="white" /> Start Streaming Free
+                </Link>
+                <Link to="/register"
+                  className="inline-flex items-center justify-center gap-2 px-9 py-4 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/30 text-white font-bold text-lg hover:bg-white/25 transition-all">
+                  <Globe className="w-5 h-5" /> Watch Live Now
+                </Link>
+              </div>
+            </motion.div>
           </div>
         </div>
       </section>
 
-      {/* Coming soon notice */}
+      {/* ── Coming soon notice ── */}
       <section className="py-10 dark:bg-[#0D0A14] bg-white border-y dark:border-white/5 border-gray-100">
         <div className="max-w-3xl mx-auto px-4 text-center">
           <div className="flex items-center justify-center gap-3 mb-3">
@@ -63,7 +92,7 @@ export default function SmartzTVPage() {
         </div>
       </section>
 
-      {/* Features */}
+      {/* ── Features ── */}
       <section ref={ref} className="py-16 sm:py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={inView ? { opacity: 1, y: 0 } : {}} className="text-center mb-12">
@@ -90,19 +119,32 @@ export default function SmartzTVPage() {
         </div>
       </section>
 
-      {/* CTA banner */}
+      {/* ── CTA banner ── */}
       <section className="py-16 sm:py-20 px-4">
         <div className="max-w-3xl mx-auto">
-          <div className="rounded-3xl overflow-hidden relative shadow-2xl">
-            <img src="/hero-scroll.jpg" alt="SmartzConnect" className="absolute inset-0 w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/80 to-violet-900/70" />
+          <div className="rounded-3xl overflow-hidden relative shadow-2xl bg-gradient-to-br from-[#0e0720] via-[#160830] to-[#200a40] border border-violet-500/20">
+            {/* Decorative icons */}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden">
+              <div className="absolute top-6 left-8 opacity-10"><Tv className="w-20 h-20 text-violet-300" /></div>
+              <div className="absolute bottom-6 right-8 opacity-10"><Crown className="w-20 h-20 text-pink-300" /></div>
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full bg-violet-600/20 blur-3xl" />
+            </div>
             <div className="relative p-10 text-center">
-              <div className="text-5xl mb-4">🎬</div>
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500 to-pink-600 flex items-center justify-center mx-auto mb-5 shadow-lg shadow-violet-500/40">
+                <Clapperboard className="w-8 h-8 text-white" />
+              </div>
               <h2 className="font-display font-black text-3xl text-white mb-3">Ready to Go Live?</h2>
-              <p className="text-white/80 mb-6">Join creators already earning on SmartzTV. It's free to start.</p>
-              <Link to="/register" className="btn-love px-8 py-4 rounded-2xl font-bold inline-flex items-center gap-2">
-                <Zap className="w-4 h-4" /> Become a Creator
-              </Link>
+              <p className="text-white/80 mb-7 max-w-lg mx-auto">Join creators already earning on SmartzTV. It's free to start.</p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link to="/register"
+                  className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl btn-love font-bold text-sm shadow-xl hover:scale-105 transition-all">
+                  <Zap className="w-4 h-4" /> Become a Creator
+                </Link>
+                <Link to="/register"
+                  className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-white/12 backdrop-blur-sm border border-white/25 text-white font-semibold hover:bg-white/22 transition-all text-sm">
+                  <Play className="w-4 h-4" fill="white" /> Watch Live Streams
+                </Link>
+              </div>
             </div>
           </div>
         </div>

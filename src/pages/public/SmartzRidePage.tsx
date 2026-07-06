@@ -3,8 +3,9 @@ import { motion, useInView } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import {
   Car, MapPin, Shield, Clock, Star, DollarSign,
-  Smartphone, Users, Zap, CheckCircle, ArrowRight,
+  Smartphone, Users, Zap, ArrowRight,
   Navigation, Wallet, BarChart3, Globe,
+  Route, Bike, Bus,
 } from 'lucide-react'
 
 const features = [
@@ -41,10 +42,10 @@ const features = [
 ]
 
 const rideTypes = [
-  { name: 'SmartzGo',   desc: 'Affordable everyday rides',  emoji: '🚗',  price: 'From $1.50', eta: '3 min',  color: 'from-emerald-500 to-teal-600' },
-  { name: 'SmartzPlus', desc: 'Comfortable premium rides',  emoji: '🚙',  price: 'From $3.00', eta: '5 min',  color: 'from-blue-500 to-indigo-600' },
-  { name: 'SmartzXL',   desc: 'Group rides up to 6 people', emoji: '🚐',  price: 'From $4.50', eta: '7 min',  color: 'from-amber-500 to-orange-600' },
-  { name: 'SmartzMoto', desc: 'Fast motorbike rides',       emoji: '🏍️', price: 'From $0.80', eta: '2 min',  color: 'from-pink-500 to-rose-600' },
+  { name: 'SmartzGo',   desc: 'Affordable everyday rides',  icon: Car,        price: 'From $1.50', eta: '3 min',  color: 'from-emerald-500 to-teal-600' },
+  { name: 'SmartzPlus', desc: 'Comfortable premium rides',  icon: Star,       price: 'From $3.00', eta: '5 min',  color: 'from-blue-500 to-indigo-600' },
+  { name: 'SmartzXL',   desc: 'Group rides up to 6 people', icon: Bus,        price: 'From $4.50', eta: '7 min',  color: 'from-amber-500 to-orange-600' },
+  { name: 'SmartzMoto', desc: 'Fast motorbike rides',       icon: Bike,       price: 'From $0.80', eta: '2 min',  color: 'from-pink-500 to-rose-600' },
 ]
 
 const driverBenefits = [
@@ -67,35 +68,55 @@ export default function SmartzRidePage() {
 
       {/* ── Hero ── */}
       <section className="relative overflow-hidden" ref={heroRef}>
-        <div className="relative h-[420px] sm:h-[520px] lg:h-[600px]">
-          <img src="/hero-friends.jpg" alt="SmartzConnect Ride" className="w-full h-full object-cover object-center" />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-emerald-950/50 to-black/90" />
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
+        {/* Background */}
+        <div className="relative h-[460px] sm:h-[540px] lg:h-[620px] bg-gradient-to-br from-[#021a0e] via-[#032b16] to-[#041f12]">
+          {/* Decorative blobs */}
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full bg-emerald-600/20 blur-3xl" />
+            <div className="absolute top-10 right-10 w-72 h-72 rounded-full bg-teal-500/15 blur-3xl" />
+            <div className="absolute bottom-10 left-10 w-56 h-56 rounded-full bg-emerald-400/10 blur-2xl" />
+          </div>
 
+          {/* Floating icon decorations */}
+          <div className="absolute inset-0 pointer-events-none overflow-hidden">
+            <div className="absolute top-12 left-[8%] opacity-20 rotate-[-15deg]">
+              <Car className="w-16 h-16 text-emerald-300" />
+            </div>
+            <div className="absolute top-20 right-[10%] opacity-15 rotate-[12deg]">
+              <MapPin className="w-12 h-12 text-teal-300" />
+            </div>
+            <div className="absolute bottom-16 left-[15%] opacity-15 rotate-[8deg]">
+              <Route className="w-14 h-14 text-emerald-200" />
+            </div>
+            <div className="absolute bottom-20 right-[8%] opacity-20 rotate-[-10deg]">
+              <Navigation className="w-10 h-10 text-teal-200" />
+            </div>
+            <div className="absolute top-1/2 right-[20%] opacity-10">
+              <Shield className="w-20 h-20 text-emerald-300" />
+            </div>
+          </div>
+
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
             <motion.div initial={{ opacity: 0, y: 40 }} animate={heroIn ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.7 }}>
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/25 backdrop-blur-sm border border-emerald-400/40 mb-6">
                 <Car className="w-4 h-4 text-emerald-300" />
                 <span className="text-sm font-bold text-emerald-200">SmartzRide — Coming to Africa</span>
               </div>
 
-              <h1 className="font-display font-black text-[2.75rem] sm:text-6xl lg:text-7xl text-white leading-[1.05] mb-5 drop-shadow-2xl">
+              <h1 className="font-display font-black text-[2.75rem] sm:text-6xl lg:text-7xl text-white leading-[1.05] mb-8 drop-shadow-2xl">
                 Ride Smarter<br />
                 Across <span className="text-emerald-300">Africa</span>
               </h1>
 
-              <p className="text-[1.15rem] sm:text-xl text-white/80 mb-8 max-w-xl mx-auto leading-relaxed">
-                Safe, affordable, and reliable rides at your fingertips.
-                Book in seconds, pay with Mobile Money, and get moving.
-              </p>
-
-              <div className="flex flex-wrap gap-3 justify-center">
+              {/* Two main CTAs */}
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link to="/register"
-                  className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold text-base shadow-2xl shadow-emerald-500/30 hover:scale-[1.03] transition-all">
-                  <Car className="w-4 h-4" /> Book a Ride
+                  className="inline-flex items-center justify-center gap-2 px-9 py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold text-lg shadow-2xl shadow-emerald-500/40 hover:scale-[1.04] transition-all">
+                  <Car className="w-5 h-5" /> Book a Ride
                 </Link>
                 <Link to="/register"
-                  className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/25 text-white font-semibold text-base hover:bg-white/25 transition-all">
-                  <Users className="w-4 h-4" /> Become a Driver
+                  className="inline-flex items-center justify-center gap-2 px-9 py-4 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/30 text-white font-bold text-lg hover:bg-white/25 transition-all">
+                  <Users className="w-5 h-5" /> Become a Driver
                 </Link>
               </div>
             </motion.div>
@@ -127,22 +148,25 @@ export default function SmartzRidePage() {
           </motion.div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-20">
-            {rideTypes.map((r, i) => (
-              <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={inView ? { opacity: 1, y: 0 } : {}} transition={{ delay: i * 0.08 }}
-                className="dark:bg-[#130E1E] bg-white rounded-2xl p-6 border dark:border-white/6 border-gray-100 hover:shadow-xl hover:border-emerald-500/30 transition-all text-center group cursor-pointer">
-                <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${r.color} flex items-center justify-center mx-auto mb-4 shadow-lg group-hover:scale-110 transition-transform`}>
-                  <span className="text-3xl">{r.emoji}</span>
-                </div>
-                <h3 className="font-bold text-base dark:text-white text-gray-900 mb-1">{r.name}</h3>
-                <p className="text-sm dark:text-gray-400 text-gray-500 mb-4">{r.desc}</p>
-                <div className="flex items-center justify-between pt-3 border-t dark:border-white/6 border-gray-100">
-                  <p className="text-sm font-black text-emerald-500">{r.price}</p>
-                  <div className="flex items-center gap-1 text-xs dark:text-gray-400 text-gray-500">
-                    <Clock className="w-3.5 h-3.5" /> {r.eta}
+            {rideTypes.map((r, i) => {
+              const RideIcon = r.icon
+              return (
+                <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={inView ? { opacity: 1, y: 0 } : {}} transition={{ delay: i * 0.08 }}
+                  className="dark:bg-[#130E1E] bg-white rounded-2xl p-6 border dark:border-white/6 border-gray-100 hover:shadow-xl hover:border-emerald-500/30 transition-all text-center group cursor-pointer">
+                  <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${r.color} flex items-center justify-center mx-auto mb-4 shadow-lg group-hover:scale-110 transition-transform`}>
+                    <RideIcon className="w-7 h-7 text-white" />
                   </div>
-                </div>
-              </motion.div>
-            ))}
+                  <h3 className="font-bold text-base dark:text-white text-gray-900 mb-1">{r.name}</h3>
+                  <p className="text-sm dark:text-gray-400 text-gray-500 mb-4">{r.desc}</p>
+                  <div className="flex items-center justify-between pt-3 border-t dark:border-white/6 border-gray-100">
+                    <p className="text-sm font-black text-emerald-500">{r.price}</p>
+                    <div className="flex items-center gap-1 text-xs dark:text-gray-400 text-gray-500">
+                      <Clock className="w-3.5 h-3.5" /> {r.eta}
+                    </div>
+                  </div>
+                </motion.div>
+              )
+            })}
           </div>
 
           {/* Features */}
@@ -223,7 +247,9 @@ export default function SmartzRidePage() {
       {/* ── Bottom CTA ── */}
       <section className="py-16 sm:py-20">
         <div className="max-w-3xl mx-auto px-4 text-center">
-          <div className="text-5xl mb-5">🚗</div>
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center mx-auto mb-5 shadow-lg shadow-emerald-500/30">
+            <Navigation className="w-8 h-8 text-white" />
+          </div>
           <h2 className="font-display font-black text-3xl sm:text-4xl dark:text-white text-gray-900 mb-4">
             Ready to Ride?
           </h2>

@@ -1,16 +1,20 @@
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Megaphone, BarChart3, Target, Zap, Globe, Users, TrendingUp, CheckCircle, ArrowRight, Mail } from 'lucide-react'
+import {
+  Megaphone, BarChart3, Target, Globe, Users, TrendingUp,
+  CheckCircle, ArrowRight, Mail, Play, MousePointer, Eye, Layers,
+  PieChart, Radio,
+} from 'lucide-react'
 
 const adFormats = [
   {
-    icon: Megaphone, title: 'Banner Ads',
+    icon: Layers, title: 'Banner Ads',
     description: 'Eye-catching display banners placed throughout feeds, discovery pages, and marketplace.',
     placements: ['Feed', 'Discover', 'Marketplace'],
     color: 'from-pink-500 to-rose-600', bg: 'dark:bg-pink-500/10 bg-pink-50', border: 'dark:border-pink-500/20 border-pink-200',
   },
   {
-    icon: Zap, title: 'Video Ads',
+    icon: Play, title: 'Video Ads',
     description: 'Immersive video campaigns on SmartzTV reaching users during their streaming sessions.',
     placements: ['SmartzTV', 'Live Streams'],
     color: 'from-purple-500 to-violet-600', bg: 'dark:bg-purple-500/10 bg-purple-50', border: 'dark:border-purple-500/20 border-purple-200',
@@ -41,34 +45,57 @@ export default function SmartzAdsPage() {
   return (
     <div className="min-h-screen dark:bg-[#080510] bg-gray-50">
 
-      {/* Hero */}
+      {/* ── Hero ── */}
       <section className="relative overflow-hidden">
-        <div className="relative h-72 sm:h-96 lg:h-[460px] bg-gradient-to-br from-[#1f0818] via-[#0d0512] to-[#220a1e]">
+        <div className="relative h-[460px] sm:h-[540px] lg:h-[620px] bg-gradient-to-br from-[#1f0818] via-[#0d0512] to-[#220a1e]">
+          {/* Decorative blobs */}
           <div className="absolute inset-0 pointer-events-none">
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-pink-600/25 blur-3xl" />
             <div className="absolute top-10 right-10 w-64 h-64 rounded-full bg-rose-500/15 blur-3xl" />
             <div className="absolute bottom-10 left-10 w-48 h-48 rounded-full bg-fuchsia-500/15 blur-2xl" />
           </div>
+
+          {/* Floating icon decorations */}
+          <div className="absolute inset-0 pointer-events-none overflow-hidden">
+            <div className="absolute top-14 left-[7%] opacity-20 rotate-[-12deg]">
+              <Megaphone className="w-16 h-16 text-pink-300" />
+            </div>
+            <div className="absolute top-16 right-[9%] opacity-15 rotate-[10deg]">
+              <BarChart3 className="w-14 h-14 text-rose-300" />
+            </div>
+            <div className="absolute bottom-16 left-[13%] opacity-15 rotate-[6deg]">
+              <MousePointer className="w-12 h-12 text-fuchsia-200" />
+            </div>
+            <div className="absolute bottom-20 right-[7%] opacity-20 rotate-[-8deg]">
+              <Eye className="w-10 h-10 text-pink-200" />
+            </div>
+            <div className="absolute top-1/2 right-[22%] opacity-10">
+              <PieChart className="w-20 h-20 text-rose-300" />
+            </div>
+            <div className="absolute top-1/3 left-[22%] opacity-10">
+              <Radio className="w-16 h-16 text-fuchsia-300" />
+            </div>
+          </div>
+
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
             <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-pink-500/20 backdrop-blur-sm border border-pink-400/35 text-pink-200 text-sm font-bold mb-6">
                 <Megaphone className="w-4 h-4" /> SmartzAds Platform
               </div>
-              <h1 className="font-display font-black text-4xl sm:text-5xl lg:text-6xl text-white leading-tight mb-5">
+              <h1 className="font-display font-black text-4xl sm:text-5xl lg:text-6xl text-white leading-tight mb-8">
                 Reach Africa's Most<br />
                 <span className="text-pink-300">Engaged Audience</span>
               </h1>
-              <p className="text-lg text-white/80 max-w-2xl mx-auto mb-7">
-                Advertise on SmartzConnect and connect your brand with millions of active users across Africa.
-              </p>
-              <div className="flex flex-wrap gap-3 justify-center">
+
+              {/* Two main CTAs */}
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <a href="mailto:ads@smartzconnect.com"
-                  className="inline-flex items-center gap-2 px-7 py-3.5 rounded-2xl bg-love-gradient text-white font-bold shadow-xl shadow-pink-500/30 hover:shadow-pink-500/50 hover:scale-105 transition-all">
-                  <Mail className="w-4 h-4" /> Start Advertising
+                  className="inline-flex items-center justify-center gap-2 px-9 py-4 rounded-2xl bg-love-gradient text-white font-bold text-lg shadow-2xl shadow-pink-500/40 hover:shadow-pink-500/60 hover:scale-[1.04] transition-all">
+                  <Mail className="w-5 h-5" /> Start Advertising
                 </a>
                 <Link to="/about"
-                  className="inline-flex items-center gap-2 px-7 py-3.5 rounded-2xl bg-white/12 backdrop-blur-sm border border-white/20 text-white font-semibold hover:bg-white/22 transition-all">
-                  Learn More <ArrowRight className="w-4 h-4" />
+                  className="inline-flex items-center justify-center gap-2 px-9 py-4 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/30 text-white font-bold text-lg hover:bg-white/25 transition-all">
+                  View Ad Formats <ArrowRight className="w-5 h-5" />
                 </Link>
               </div>
             </motion.div>
@@ -76,7 +103,7 @@ export default function SmartzAdsPage() {
         </div>
       </section>
 
-      {/* Ad Formats */}
+      {/* ── Ad Formats ── */}
       <section className="py-16 px-4">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-12">
@@ -107,7 +134,7 @@ export default function SmartzAdsPage() {
         </div>
       </section>
 
-      {/* Benefits */}
+      {/* ── Benefits ── */}
       <section className="py-16 px-4 dark:bg-[#0D0A14] bg-white">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-12">
@@ -133,7 +160,7 @@ export default function SmartzAdsPage() {
         </div>
       </section>
 
-      {/* How it works */}
+      {/* ── How it works ── */}
       <section className="py-16 px-4">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-12">
@@ -162,7 +189,7 @@ export default function SmartzAdsPage() {
         </div>
       </section>
 
-      {/* FAQ */}
+      {/* ── FAQ ── */}
       <section className="py-16 px-4 dark:bg-[#0D0A14] bg-white">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-10">
@@ -186,21 +213,34 @@ export default function SmartzAdsPage() {
         </div>
       </section>
 
-      {/* CTA */}
+      {/* ── Bottom CTA ── */}
       <section className="py-20 px-4">
         <div className="max-w-3xl mx-auto">
-          <div className="rounded-3xl overflow-hidden relative shadow-2xl">
-            <img src="/hero-couple.jpg" alt="SmartzConnect" className="absolute inset-0 w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/85 to-pink-900/75" />
+          <div className="rounded-3xl overflow-hidden relative shadow-2xl bg-gradient-to-br from-[#1f0818] via-[#150510] to-[#220a1e] border border-pink-500/20">
+            {/* Decorative icons inside CTA */}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden">
+              <div className="absolute top-6 left-8 opacity-10"><Megaphone className="w-20 h-20 text-pink-300" /></div>
+              <div className="absolute bottom-6 right-8 opacity-10"><TrendingUp className="w-20 h-20 text-rose-300" /></div>
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full bg-pink-600/20 blur-3xl" />
+            </div>
             <div className="relative p-10 text-center">
+              <div className="w-16 h-16 rounded-2xl bg-love-gradient flex items-center justify-center mx-auto mb-5 shadow-lg shadow-pink-500/40">
+                <Megaphone className="w-8 h-8 text-white" />
+              </div>
               <h2 className="font-display font-black text-3xl text-white mb-4">Ready to Advertise?</h2>
-              <p className="text-white/80 mb-7">
+              <p className="text-white/80 mb-7 max-w-lg mx-auto">
                 Get in touch with our advertising team today and launch your first campaign on Africa's fastest growing social platform.
               </p>
-              <a href="mailto:ads@smartzconnect.com"
-                className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl bg-love-gradient text-white font-bold shadow-xl shadow-pink-500/30 hover:shadow-pink-500/50 hover:scale-105 transition-all text-sm">
-                <Mail className="w-4 h-4" /> Contact Our Ads Team
-              </a>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="mailto:ads@smartzconnect.com"
+                  className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-love-gradient text-white font-bold shadow-xl shadow-pink-500/30 hover:shadow-pink-500/50 hover:scale-105 transition-all text-sm">
+                  <Mail className="w-4 h-4" /> Contact Our Ads Team
+                </a>
+                <Link to="/about"
+                  className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-white/12 backdrop-blur-sm border border-white/25 text-white font-semibold hover:bg-white/22 transition-all text-sm">
+                  Learn More <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
             </div>
           </div>
         </div>
