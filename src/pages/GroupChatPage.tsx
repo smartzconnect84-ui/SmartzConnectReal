@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, Plus, Users, Lock, Globe, Send, Smile, Mic, Crown, Shield, X, Loader2, RefreshCw } from 'lucide-react'
+import { Search, Plus, Users, Lock, Globe, Send, Smile, Mic, MicOff, Play, Pause, Crown, Shield, X, Loader2, RefreshCw, Square } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { useStream } from '@/contexts/StreamContext'
@@ -17,6 +17,7 @@ interface Room {
 
 interface ChatMessage {
   id: string; author: string; emoji: string; text: string; time: string; mine: boolean; role: string
+  type?: 'text' | 'audio'; audioUrl?: string
 }
 
 const categories = ['All', 'Dating', 'Country', 'Music', 'Culture', 'Business', 'Creators', 'VIP', 'Food']
@@ -51,11 +52,32 @@ export default function GroupChatPage() {
     name: '', topic: '', category: 'Dating', type: 'public', emoji: '💬'
   })
 
+  const [isRecording, setIsRecording] = useState(false)
+  const [recordingTime, setRecordingTime] = useState(0)
+  const [uploadingVoice, setUploadingVoice] = useState(false)
+  const [playingId, setPlayingId] = useState<string | null>(null)
+  const [voiceError, setVoiceError] = useState<string | null>(null)
+
   const channelRef = useRef<Channel | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const typingStopRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const audioChunksRef = useRef<Blob[]>([])
+  const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const audioRefs = useRef<Record<string, HTMLAudioElement>>({})
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages, othersTyping])
+
+  // Cleanup recording resources on unmount
+  useEffect(() => {
+    return () => {
+      if (recordingTimerRef.current) clearInterval(recordingTimerRef.current)
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        mediaRecorderRef.current.stop()
+      }
+      Object.values(audioRefs.current).forEach(a => { a.pause(); a.src = '' })
+    }
+  }, [])
 
   // Fetch group rooms from Supabase
   const fetchRooms = async () => {
@@ -160,15 +182,23 @@ export default function GroupChatPage() {
       // Mark as read on open
       chan.markRead().catch(() => {})
 
-      setMessages((state.messages || []).map((m: any) => ({
-        id: m.id,
-        author: m.user?.name || m.user?.id?.slice(0, 8) || 'User',
-        emoji: defaultEmojis[Math.floor(Math.random() * defaultEmojis.length)],
-        text: m.text || '',
-        time: new Date(m.created_at).toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' }),
-        mine: m.user?.id === user.id,
-        role: 'member',
-      })))
+      const mapGroupMsg = (m: any, myId: string): ChatMessage => {
+        const attach = m.attachments?.[0]
+        const isVoice = attach?.type === 'voice'
+        return {
+          id: m.id,
+          author: m.user?.name || m.user?.id?.slice(0, 8) || 'User',
+          emoji: defaultEmojis[Math.floor(Math.random() * defaultEmojis.length)],
+          text: m.text || '',
+          time: new Date(m.created_at).toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' }),
+          mine: m.user?.id === myId,
+          role: 'member',
+          type: isVoice ? 'audio' : 'text',
+          audioUrl: isVoice ? (attach?.asset_url || attach?.url) : undefined,
+        }
+      }
+
+      setMessages((state.messages || []).map((m: any) => mapGroupMsg(m, user.id!)))
 
       chan.on('message.new', (event: any) => {
         if (!event.message) return
@@ -176,13 +206,7 @@ export default function GroupChatPage() {
         if (m.user?.id === user.id) return
         setMessages(prev => {
           if (prev.some(msg => msg.id === m.id)) return prev
-          return [...prev, {
-            id: m.id, author: m.user?.name || 'User',
-            emoji: defaultEmojis[Math.floor(Math.random() * defaultEmojis.length)],
-            text: m.text || '',
-            time: new Date(m.created_at).toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' }),
-            mine: false, role: 'member',
-          }]
+          return [...prev, mapGroupMsg(m, user.id!)]
         })
         // Mark as read as messages arrive
         chan.markRead().catch(() => {})
@@ -243,6 +267,83 @@ export default function GroupChatPage() {
     }
     setSending(false)
   }
+
+  const toggleRecording = async () => {
+    if (isRecording) {
+      mediaRecorderRef.current?.stop()
+      if (recordingTimerRef.current) clearInterval(recordingTimerRef.current)
+      setIsRecording(false)
+      setRecordingTime(0)
+      return
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/ogg'
+      const recorder = new MediaRecorder(stream, { mimeType })
+      mediaRecorderRef.current = recorder
+      audioChunksRef.current = []
+
+      recorder.ondataavailable = e => { if (e.data.size > 0) audioChunksRef.current.push(e.data) }
+
+      recorder.onstop = async () => {
+        stream.getTracks().forEach(t => t.stop())
+        const blob = new Blob(audioChunksRef.current, { type: mimeType })
+        if (blob.size < 1000 || !channelRef.current || !user?.id) return
+
+        setUploadingVoice(true)
+        try {
+          const ext = mimeType === 'audio/webm' ? 'webm' : 'ogg'
+          const path = `group/${user.id}/${Date.now()}.${ext}`
+          const { error: upErr } = await supabase.storage.from('voice-messages').upload(path, blob, { contentType: mimeType })
+          if (upErr) throw upErr
+          const { data: urlData } = supabase.storage.from('voice-messages').getPublicUrl(path)
+          const audioUrl = urlData.publicUrl
+
+          const clientId = `gvoice-${user.id.slice(0, 8)}-${Date.now()}`
+          const optimistic: ChatMessage = {
+            id: clientId, author: 'You', emoji: '😊', text: '🎙️ Voice message',
+            mine: true, time: new Date().toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' }),
+            role: 'member', type: 'audio', audioUrl,
+          }
+          setMessages(prev => [...prev, optimistic])
+
+          await channelRef.current!.sendMessage({
+            id: clientId,
+            text: '🎙️ Voice message',
+            attachments: [{ type: 'voice', asset_url: audioUrl, url: audioUrl, mime_type: mimeType }],
+          } as any)
+        } catch (err) {
+          console.error('Voice upload error:', err)
+        }
+        setUploadingVoice(false)
+      }
+
+      recorder.start(200)
+      setIsRecording(true)
+      setRecordingTime(0)
+      recordingTimerRef.current = setInterval(() => setRecordingTime(t => t + 1), 1000)
+    } catch (err) {
+      console.error('Microphone access denied:', err)
+      setVoiceError('Microphone access denied. Allow mic access and try again.')
+      setTimeout(() => setVoiceError(null), 4000)
+    }
+  }
+
+  const toggleAudio = (msgId: string, audioUrl: string) => {
+    const existing = audioRefs.current[msgId]
+    if (existing) {
+      if (!existing.paused) { existing.pause(); setPlayingId(null) }
+      else { existing.play(); setPlayingId(msgId) }
+      return
+    }
+    const audio = new Audio(audioUrl)
+    audioRefs.current[msgId] = audio
+    audio.onended = () => setPlayingId(null)
+    audio.play()
+    setPlayingId(msgId)
+  }
+
+  const fmtRecTime = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
 
   const handleCreateRoom = async () => {
     if (!createForm.name.trim() || !user?.id) return
@@ -427,7 +528,23 @@ export default function GroupChatPage() {
                             ? 'dark:bg-purple-100 dark:border dark:border-purple-200 bg-purple-50 dark:text-purple-900 text-purple-900 rounded-bl-sm'
                             : 'dark:bg-white dark:border dark:border-pink-200 bg-gray-100 dark:text-gray-900 text-gray-900 rounded-bl-sm dark:shadow-sm'
                       }`}>
-                        {msg.text}
+                        {msg.type === 'audio' && msg.audioUrl ? (
+                          <div className="flex items-center gap-2 min-w-[140px]">
+                            <button
+                              onClick={() => toggleAudio(msg.id, msg.audioUrl!)}
+                              className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0"
+                            >
+                              {playingId === msg.id ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+                            </button>
+                            <div className="flex gap-0.5 items-center">
+                              {Array.from({ length: 18 }).map((_, j) => (
+                                <div key={j} className="w-0.5 rounded-full bg-current opacity-60" style={{ height: `${6 + (j * 7 % 12)}px` }} />
+                              ))}
+                            </div>
+                          </div>
+                        ) : (
+                          msg.text
+                        )}
                       </div>
                       <p className={`text-[10px] mt-1 dark:text-gray-400 text-gray-400 ${msg.mine ? 'text-right' : ''}`}>{msg.time}</p>
                     </div>
@@ -456,6 +573,25 @@ export default function GroupChatPage() {
               <div ref={bottomRef} />
             </div>
 
+            {/* Recording indicator / error */}
+            <AnimatePresence>
+              {voiceError && (
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
+                  className="mx-3 mb-2 flex items-center gap-2 px-4 py-2 dark:bg-white bg-white rounded-2xl shadow-xl border dark:border-red-200 border-red-200">
+                  <span className="text-xs font-semibold text-red-500 flex-1">{voiceError}</span>
+                  <button onClick={() => setVoiceError(null)} className="text-gray-400 hover:text-red-500"><X className="w-3.5 h-3.5" /></button>
+                </motion.div>
+              )}
+              {isRecording && !voiceError && (
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
+                  className="mx-3 mb-2 flex items-center gap-2 px-4 py-2 dark:bg-white bg-white rounded-2xl shadow-xl border dark:border-red-200 border-red-100">
+                  <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                  <span className="text-xs font-semibold dark:text-gray-900 text-gray-900 flex-1">Recording {fmtRecTime(recordingTime)}</span>
+                  <button onClick={toggleRecording} className="text-red-500 hover:text-red-600"><Square className="w-3.5 h-3.5 fill-current" /></button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             {/* Input */}
             <div className="px-3 py-3 dark:bg-white bg-white border-t dark:border-pink-200 border-gray-100 flex-shrink-0">
               <div className="relative">
@@ -471,11 +607,17 @@ export default function GroupChatPage() {
                 </AnimatePresence>
                 <div className="flex items-center gap-2 dark:bg-pink-50 dark:border dark:border-pink-200 bg-gray-100 border border-transparent rounded-2xl px-3 py-2 focus-within:dark:border-pink-400">
                   <button onClick={() => setShowEmojiPicker(p => !p)} className="text-lg hover:scale-110 transition-transform flex-shrink-0">😊</button>
-                  <input value={input} onChange={handleInputChange} onKeyDown={e => e.key === 'Enter' && sendMsg()}
-                    placeholder="Message the group…"
-                    className="flex-1 bg-transparent text-sm dark:text-gray-900 text-gray-900 placeholder:dark:text-gray-400 placeholder:text-gray-400 focus:outline-none" />
-                  <button onClick={() => {}} className="dark:text-gray-400 text-gray-400 hover:text-brand-pink transition-colors"><Mic className="w-4 h-4" /></button>
-                  <button onClick={sendMsg} disabled={!input.trim() || sending}
+                  <input value={input} onChange={handleInputChange} onKeyDown={e => e.key === 'Enter' && !isRecording && sendMsg()}
+                    placeholder={isRecording ? 'Recording…' : 'Message the group…'} disabled={isRecording}
+                    className="flex-1 bg-transparent text-sm dark:text-gray-900 text-gray-900 placeholder:dark:text-gray-400 placeholder:text-gray-400 focus:outline-none disabled:opacity-50" />
+                  <button
+                    onClick={toggleRecording}
+                    disabled={uploadingVoice}
+                    className={`transition-colors ${isRecording ? 'text-red-500 animate-pulse' : 'dark:text-gray-400 text-gray-400 hover:text-brand-pink'}`}
+                  >
+                    {uploadingVoice ? <Loader2 className="w-4 h-4 animate-spin text-brand-pink" /> : isRecording ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                  </button>
+                  <button onClick={sendMsg} disabled={!input.trim() || sending || isRecording}
                     className="w-8 h-8 rounded-xl bg-love-gradient flex items-center justify-center disabled:opacity-40 hover:opacity-90 transition-all">
                     {sending ? <Loader2 className="w-3.5 h-3.5 text-white animate-spin" /> : <Send className="w-3.5 h-3.5 text-white" />}
                   </button>
