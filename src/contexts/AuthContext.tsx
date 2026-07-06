@@ -103,26 +103,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       )
     }
 
-    // If Supabase returned a session immediately (email confirmation already disabled),
-    // the user is already logged in.
+    // If Supabase returned a session immediately (email confirmation is OFF in the project),
+    // sign in is complete — redirect straight to app.
     if (data.session) return { needsVerification: false }
 
-    // Auto-confirm the email via edge function so users never have to verify.
-    if (data.user?.id) {
-      try {
-        await supabase.functions.invoke('confirm-email', {
-          body: { userId: data.user.id },
-        })
-      } catch {
-        // Non-fatal — fall through to password sign-in attempt
-      }
-    }
-
-    // Now sign in with the (now-confirmed) credentials.
-    const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password })
-    if (!signInErr) return { needsVerification: false }
-
-    // Edge function not yet deployed or confirmation failed — user must verify.
+    // Email confirmation is ON — user must click the link in their inbox.
     return { needsVerification: true }
   }
 

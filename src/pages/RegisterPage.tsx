@@ -345,7 +345,7 @@ export default function RegisterPage() {
                         {/* Info banner */}
                         <div className="p-4 rounded-2xl bg-purple-500/[0.08] border border-purple-500/20">
                           <p className="text-xs text-white/60 leading-relaxed">
-                            🎉 Almost there! Your account will be ready instantly — no email confirmation required.
+                            🎉 Almost there! We'll send a confirmation email — just click the link inside to activate your account.
                           </p>
                         </div>
                       </>
