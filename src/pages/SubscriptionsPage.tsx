@@ -1,9 +1,91 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Check, Crown, Heart, Zap, X, Shield, Star, Gift, AlertCircle, Loader2 } from 'lucide-react'
+import { Check, Crown, Heart, Zap, X, Shield, Star, Gift, AlertCircle, Loader2, Download } from 'lucide-react'
 import CurrencyConverter from '@/components/CurrencyConverter'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
+
+function downloadInvoice(plan: { name: string; price: number; period: string }, txId: string, method: string, userName: string) {
+  const now = new Date()
+  const invoiceNumber = `INV-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${txId.slice(-6).toUpperCase()}`
+  const dateStr = now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Invoice ${invoiceNumber} — SmartzConnect</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #fff; color: #111; padding: 40px; max-width: 640px; margin: auto; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 36px; }
+    .brand { font-size: 22px; font-weight: 900; background: linear-gradient(135deg,#e91e8c,#ff6b35); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .subtitle { font-size: 11px; color: #888; margin-top: 2px; }
+    .inv-label { text-align: right; font-size: 12px; color: #555; }
+    .inv-label strong { display: block; font-size: 20px; color: #111; font-weight: 800; }
+    hr { border: none; border-top: 1.5px solid #f0f0f0; margin: 20px 0; }
+    .section { margin-bottom: 20px; }
+    .section h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: #999; margin-bottom: 8px; }
+    .row { display: flex; justify-content: space-between; font-size: 13px; color: #444; margin-bottom: 5px; }
+    .row span:last-child { font-weight: 600; color: #111; }
+    .total-row { display: flex; justify-content: space-between; font-size: 16px; font-weight: 900; color: #111; margin-top: 12px; }
+    .badge { display: inline-block; background: linear-gradient(135deg,#e91e8c,#ff6b35); color: #fff; font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 20px; margin-bottom: 4px; }
+    .status { display: inline-block; background: #fff7ed; color: #e76f00; border: 1.5px solid #ffb347; font-size: 11px; font-weight: 700; padding: 4px 12px; border-radius: 20px; }
+    .footer { margin-top: 36px; font-size: 10px; color: #bbb; text-align: center; }
+    @media print { body { padding: 20px; } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <div class="brand">SmartzConnect</div>
+      <div class="subtitle">Africa's #1 Social Super-App</div>
+    </div>
+    <div class="inv-label">
+      <strong>INVOICE</strong>
+      ${invoiceNumber}
+    </div>
+  </div>
+  <hr />
+  <div class="section">
+    <h3>Bill To</h3>
+    <div class="row"><span>Customer</span><span>${userName || 'SmartzConnect User'}</span></div>
+    <div class="row"><span>Date Issued</span><span>${dateStr}</span></div>
+  </div>
+  <div class="section">
+    <h3>Plan Details</h3>
+    <div class="badge">💎 ${plan.name} Plan</div>
+    <div class="row" style="margin-top:8px"><span>Plan</span><span>${plan.name}</span></div>
+    <div class="row"><span>Billing Period</span><span>${plan.period}</span></div>
+    <div class="row"><span>Payment Method</span><span>${method}</span></div>
+    <div class="row"><span>Transaction ID</span><span>${txId}</span></div>
+  </div>
+  <hr />
+  <div class="section">
+    <div class="row"><span>Subtotal</span><span>${plan.price.toFixed(2)}</span></div>
+    <div class="row"><span>Tax (0%)</span><span>$0.00</span></div>
+    <div class="total-row"><span>Total Paid</span><span>${plan.price.toFixed(2)}</span></div>
+  </div>
+  <hr />
+  <div class="section" style="text-align:center;padding:16px 0">
+    <span class="status">⏳ Pending Verification</span>
+    <p style="margin-top:10px;font-size:12px;color:#666">Your plan activates within 15 minutes after admin verification.</p>
+  </div>
+  <div class="footer">
+    SmartzConnect · smartzconnect.com · support@smartzconnect.com<br />
+    This invoice was generated automatically. Keep it for your records.
+  </div>
+</body>
+</html>`
+
+  const blob = new Blob([html], { type: 'text/html' })
+  const url  = URL.createObjectURL(blob)
+  const a    = document.createElement('a')
+  a.href     = url
+  a.download = `${invoiceNumber}.html`
+  a.click()
+  URL.revokeObjectURL(url)
+}
 
 const plans = [
   {
@@ -200,6 +282,11 @@ function PaymentModal({ plan, onClose }: { plan: typeof plans[0]; onClose: () =>
               <h3 className="font-display font-black text-2xl text-gradient-love mb-2">Payment Submitted!</h3>
               <p className="text-sm dark:text-gray-400 text-gray-600 mb-2">Your {plan.name} plan will be activated within 15 minutes.</p>
               <p className="text-xs dark:text-gray-500 text-gray-400 mb-6">You'll receive a notification when it's ready. Thank you! 💕</p>
+              <button
+                onClick={() => downloadInvoice(plan, txId, selected.name, user?.email || '')}
+                className="w-full py-3 rounded-2xl border-2 border-brand-pink dark:text-brand-pink text-brand-pink font-bold text-sm flex items-center justify-center gap-2 hover:bg-pink-50 transition-colors mb-3">
+                <Download className="w-4 h-4" /> Download Invoice
+              </button>
               <button onClick={onClose} className="w-full py-3.5 rounded-2xl bg-love-gradient text-white font-bold text-sm shadow-md shadow-pink-500/20">
                 Done 💕
               </button>

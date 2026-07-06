@@ -11,6 +11,7 @@ import { useLiveKitCall } from '@/contexts/LiveKitCallContext'
 import { useStream } from '@/contexts/StreamContext'
 import { getOrCreateDirectChannel } from '@/lib/stream'
 import ReportBlockModal from '@/components/ReportBlockModal'
+import EmojiPicker from '@/components/EmojiPicker'
 import type { Channel } from 'stream-chat'
 
 interface Message {
@@ -32,7 +33,6 @@ interface Participant {
 }
 
 const reactions = ['❤️', '😂', '😮', '😢', '👍', '🔥']
-const quickEmojis = ['😊', '😍', '🥰', '😂', '🔥', '💕', '👏', '🙌']
 
 function mapStreamMessage(m: any, myId: string): Message {
   return {
@@ -429,17 +429,19 @@ export default function ChatPage() {
         <div ref={bottomRef} />
       </div>
 
-      {/* Quick emoji */}
-      <AnimatePresence>
-        {showEmoji && (
-          <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }}
-            className="flex gap-2 px-4 py-2 dark:bg-white bg-white border-t dark:border-pink-200 border-gray-100 overflow-hidden">
-            {quickEmojis.map(e => (
-              <button key={e} onClick={() => setInput(prev => prev + e)} className="text-xl hover:scale-125 transition-transform">{e}</button>
-            ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Emoji Picker */}
+      <div className="relative">
+        <AnimatePresence>
+          {showEmoji && (
+            <div className="absolute bottom-0 left-3 z-50">
+              <EmojiPicker
+                onSelect={e => setInput(prev => prev + e)}
+                onClose={() => setShowEmoji(false)}
+              />
+            </div>
+          )}
+        </AnimatePresence>
+      </div>
 
       {/* Voice toast */}
       <AnimatePresence>

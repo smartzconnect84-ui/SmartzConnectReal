@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { useStream } from '@/contexts/StreamContext'
 import { streamClient } from '@/lib/stream'
+import EmojiPicker from '@/components/EmojiPicker'
 import type { Channel } from 'stream-chat'
 
 interface Room {
@@ -45,6 +46,7 @@ export default function GroupChatPage() {
   const [sending, setSending] = useState(false)
   const [showMembers, setShowMembers] = useState(false)
   const [othersTyping, setOthersTyping] = useState<string[]>([])
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const [createForm, setCreateForm] = useState<CreateRoomForm>({
     name: '', topic: '', category: 'Dating', type: 'public', emoji: '💬'
   })
@@ -456,16 +458,28 @@ export default function GroupChatPage() {
 
             {/* Input */}
             <div className="px-3 py-3 dark:bg-white bg-white border-t dark:border-pink-200 border-gray-100 flex-shrink-0">
-              <div className="flex items-center gap-2 dark:bg-pink-50 dark:border dark:border-pink-200 bg-gray-100 border border-transparent rounded-2xl px-3 py-2 focus-within:dark:border-pink-400">
-                <span className="text-lg cursor-default">😊</span>
-                <input value={input} onChange={handleInputChange} onKeyDown={e => e.key === 'Enter' && sendMsg()}
-                  placeholder="Message the group…"
-                  className="flex-1 bg-transparent text-sm dark:text-gray-900 text-gray-900 placeholder:dark:text-gray-400 placeholder:text-gray-400 focus:outline-none" />
-                <button onClick={() => {}} className="dark:text-gray-400 text-gray-400 hover:text-brand-pink transition-colors"><Mic className="w-4 h-4" /></button>
-                <button onClick={sendMsg} disabled={!input.trim() || sending}
-                  className="w-8 h-8 rounded-xl bg-love-gradient flex items-center justify-center disabled:opacity-40 hover:opacity-90 transition-all">
-                  {sending ? <Loader2 className="w-3.5 h-3.5 text-white animate-spin" /> : <Send className="w-3.5 h-3.5 text-white" />}
-                </button>
+              <div className="relative">
+                <AnimatePresence>
+                  {showEmojiPicker && (
+                    <div className="absolute bottom-full mb-1 left-0 z-50">
+                      <EmojiPicker
+                        onSelect={e => setInput(prev => prev + e)}
+                        onClose={() => setShowEmojiPicker(false)}
+                      />
+                    </div>
+                  )}
+                </AnimatePresence>
+                <div className="flex items-center gap-2 dark:bg-pink-50 dark:border dark:border-pink-200 bg-gray-100 border border-transparent rounded-2xl px-3 py-2 focus-within:dark:border-pink-400">
+                  <button onClick={() => setShowEmojiPicker(p => !p)} className="text-lg hover:scale-110 transition-transform flex-shrink-0">😊</button>
+                  <input value={input} onChange={handleInputChange} onKeyDown={e => e.key === 'Enter' && sendMsg()}
+                    placeholder="Message the group…"
+                    className="flex-1 bg-transparent text-sm dark:text-gray-900 text-gray-900 placeholder:dark:text-gray-400 placeholder:text-gray-400 focus:outline-none" />
+                  <button onClick={() => {}} className="dark:text-gray-400 text-gray-400 hover:text-brand-pink transition-colors"><Mic className="w-4 h-4" /></button>
+                  <button onClick={sendMsg} disabled={!input.trim() || sending}
+                    className="w-8 h-8 rounded-xl bg-love-gradient flex items-center justify-center disabled:opacity-40 hover:opacity-90 transition-all">
+                    {sending ? <Loader2 className="w-3.5 h-3.5 text-white animate-spin" /> : <Send className="w-3.5 h-3.5 text-white" />}
+                  </button>
+                </div>
               </div>
             </div>
           </>
