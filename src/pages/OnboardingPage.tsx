@@ -79,7 +79,7 @@ export default function OnboardingPage() {
             <div className="absolute inset-0 rounded-xl bg-brand-pink/20 blur-md" />
           </div>
           <span className="font-display font-black text-xl tracking-tight">
-            <span className="bg-love-gradient bg-clip-text text-transparent">Smartz</span>
+            <span className="text-gradient-love">Smartz</span>
             <span className="dark:text-white text-gray-900">Connect</span>
           </span>
         </div>
