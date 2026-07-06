@@ -209,6 +209,10 @@ export default function LiveChat() {
   const [bubblePos, setBubblePos] = useState({ x: -1, y: -1 }) // -1 = lazy init
   const bubbleDrag = useRef({ active: false, didDrag: false, sx: 0, sy: 0, spx: 0, spy: 0 })
 
+  const [dragging, setDragging] = useState(false)
+  const [position, setPosition] = useState({ x: 0, y: 0 })
+  const dragStart = useRef({ x: 0, y: 0, px: 0, py: 0 })
+
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -263,7 +267,7 @@ export default function LiveChat() {
     const onUp = () => {
       const d = bubbleDrag.current
       if (d.active && !d.didDrag) {
-        setOpen(o => !o); setTeaserVisible(false); setUnreadCount(0)
+        setOpen(!open); setTeaserVisible(false); setUnreadCount(0)
       }
       d.active = false
     }
@@ -296,7 +300,7 @@ export default function LiveChat() {
     const onEnd = () => {
       const d = bubbleDrag.current
       if (d.active && !d.didDrag) {
-        setOpen(o => !o); setTeaserVisible(false); setUnreadCount(0)
+        setOpen(!open); setTeaserVisible(false); setUnreadCount(0)
       }
       d.active = false
     }

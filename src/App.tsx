@@ -22,6 +22,10 @@ import AboutPage from '@/pages/AboutPage'
 import LoginPage           from '@/pages/LoginPage'
 import RegisterPage        from '@/pages/RegisterPage'
 import AdminLoginPage      from '@/pages/AdminLoginPage'
+import ForgotPasswordPage  from '@/pages/ForgotPasswordPage'
+import ResetPasswordPage   from '@/pages/ResetPasswordPage'
+import VerifyEmailPage     from '@/pages/VerifyEmailPage'
+import AuthCallbackPage    from '@/pages/AuthCallbackPage'
 import OnboardingPage      from '@/pages/OnboardingPage'
 import PrivacyPolicyPage   from '@/pages/PrivacyPolicyPage'
 import CookiePolicyPage    from '@/pages/CookiePolicyPage'
@@ -115,10 +119,10 @@ export default function App() {
               <Route path="/auth"            element={<LoginPage />} />
               <Route path="/register"        element={<RegisterPage />} />
               <Route path="/admin/login"     element={<AdminLoginPage />} />
-              <Route path="/forgot-password" element={<Navigate to="/login" replace />} />
-              <Route path="/reset-password"  element={<Navigate to="/login" replace />} />
-              <Route path="/verify-email"    element={<Navigate to="/login" replace />} />
-              <Route path="/auth/callback"   element={<Navigate to="/login" replace />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/reset-password"  element={<ResetPasswordPage />} />
+              <Route path="/verify-email"    element={<VerifyEmailPage />} />
+              <Route path="/auth/callback"   element={<AuthCallbackPage />} />
               <Route path="/onboarding"      element={<OnboardingPage />} />
 
               {/* Public service pages */}

@@ -1,1 +1,0 @@
-{"root":["./server/db.ts","./server/index.ts","./server/jwt.ts","./server/replitAuth.ts","./server/routes.ts","./server/storage.ts","./server/sufyStorage.ts","./server/vite.ts","./shared/schema.ts"],"errors":true,"version":"6.0.3"}
