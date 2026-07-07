@@ -1,66 +1,89 @@
 # SmartzConnect
 
-Africa's #1 social super-app — social feeds, real-time chat, marketplace, video streaming (SmartzTV), and ride-sharing services.
+A real-time social communication platform with chat, video/audio calls, dating, marketplace, and more.
 
 ## Stack
-
-- **Frontend**: React 18 (TypeScript), Vite, Tailwind CSS, Framer Motion, Radix UI
-- **Auth & Database**: Supabase (PostgreSQL + Row Level Security + Realtime)
-- **Messaging**: Stream Chat (GetStream)
-- **Video/Audio calls**: LiveKit
+- **Frontend**: React 18 + Vite + TypeScript + Tailwind CSS
+- **Auth / DB**: Supabase (PostgreSQL + Auth + Edge Functions)
+- **Real-time chat**: GetStream (`stream-chat`)
+- **Video / audio calls**: LiveKit (`livekit-client`, `@livekit/components-react`)
 - **Push notifications**: OneSignal
+- **Storage**: SUFY object storage (via `src/lib/sufy.ts`)
+- **Animations**: Framer Motion
+- **Icons**: Lucide React
+- **Package manager**: pnpm
 
-## Running the app
-
-```bash
-npm install
-npm run dev
+## Running the App
+```
+pnpm install
+pnpm run dev        # starts Vite dev server on port 5000
+pnpm run build      # TypeScript compile + Vite production build
 ```
 
-The app runs on port 5000. Environment variables are pre-configured in Replit.
+## Key Environment Variables
+Set as Replit Secrets / env vars:
+- `VITE_SUPABASE_URL` — Supabase project URL
+- `VITE_SUPABASE_ANON_KEY` — Supabase public anon key
+- `VITE_STREAM_API_KEY` — GetStream Chat API key
+- `VITE_LIVEKIT_WS_URL` — LiveKit WebSocket URL (`wss://...`)
+- `VITE_ONESIGNAL_APP_ID` — OneSignal App ID (optional; push only on prod domain)
+- `SUPABASE_SERVICE_ROLE_KEY` — Supabase service role key (server-side only)
 
-## Required environment variables
-
-| Variable | Purpose |
-|---|---|
-| `VITE_SUPABASE_URL` | Supabase project URL |
-| `VITE_SUPABASE_ANON_KEY` | Supabase public anon key (safe for browser) |
-| `VITE_STREAM_API_KEY` | GetStream Chat API key |
-| `VITE_LIVEKIT_WS_URL` | LiveKit WebSocket URL (optional) |
-| `VITE_ONESIGNAL_APP_ID` | OneSignal App ID (optional) |
-
-Server-side secrets live in Supabase Edge Functions (not in this repo):
-`STREAM_API_SECRET`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`, `ONESIGNAL_REST_API_KEY`, `RESEND_API_KEY`
-
-## Project structure
-
+## Project Structure
 ```
 src/
-  App.tsx          # Router and global context providers
-  main.tsx         # React root
-  lib/             # Supabase, Stream, LiveKit client setup
-  pages/           # Route-level page components
-    admin/         # Admin panel pages
-    public/        # Public service landing pages
-  components/      # Shared UI components
-  contexts/        # React context providers (Auth, Stream, LiveKit, Theme)
-  hooks/           # Custom React hooks
-  layouts/         # Page layout wrappers
-supabase/
-  functions/       # Supabase Edge Functions (livekit-token, stream-token, send-push, send-email)
-  *.sql            # Database schema files (run against Supabase dashboard)
+  pages/
+    admin/          Admin panel pages (dashboard, users, settings, etc.)
+    public/         Public marketing pages
+    WorldChatPage.tsx     Global community chat for all users
+    UserProfilePage.tsx   View another user's profile with DM/Video/Audio/Follow
+    SettingsPage.tsx      Full user settings (notifications, theme, privacy, account)
+    ProfilePage.tsx       Own profile page
+    ChatPage.tsx          1-on-1 direct message chat (uses Stream)
+    GroupChatPage.tsx     Group chat rooms
+    CallsPage.tsx         Call history
+  components/
+    LiveKitCall.tsx       Video/audio call overlay
+    IncomingCall.tsx      Incoming call notification
+    AdminRoute.tsx        Route guard for admin panel
+  contexts/
+    AuthContext.tsx       Auth state + role management
+    LiveKitCallContext.tsx Call signaling via Supabase Realtime
+    StreamContext.tsx     GetStream connection lifecycle
+  layouts/
+    AppShell.tsx          Main app layout with drawer
+    LeftSidebar.tsx       Desktop left navigation sidebar
+  lib/
+    supabase.ts           Supabase client
+    stream.ts             Stream Chat client + helpers
+    sufy.ts               SUFY file storage helpers
 ```
 
-## Database
+## Admin Accounts
+- `ceo@smartzconnect.com` — superadmin (full access)
+- `shedrickknungehn@gmail.com` — superadmin (full access)
+Both have role `superadmin` in the `profiles` table and `ceo` in `admin_users`.
 
-The database lives in Supabase. To set up a fresh project, run the SQL schema files in order:
-1. `supabase/schema_complete.sql` — full base schema
-2. `supabase/schema_v4_addendum.sql` — WorldStage, swipes, subscriptions
-3. `supabase/schema_v5_addendum.sql` — moderation columns
-4. `supabase/schema_v6_addendum.sql` — activity feed, LiveKit columns
-5. `supabase/schema_v7_production.sql` — final production gaps
+## Routes (App — protected under /app)
+| Path | Page |
+|------|------|
+| `/app/feed` | Home feed |
+| `/app/worldchat` | 🌍 World Chat (global) |
+| `/app/chat/:userId` | Direct message |
+| `/app/groups` | Group chat rooms |
+| `/app/discover` | Dating / discover |
+| `/app/calls/video` | Video calls |
+| `/app/calls/audio` | Audio calls |
+| `/app/profile` | Own profile |
+| `/app/profile/:userId` | View another user's profile |
+| `/app/settings` | Full settings page |
+| `/app/friends` | Friends list |
+| `/admin` | Admin panel (role-gated) |
 
-## User preferences
+## User Preferences
+User preferences (notifications, privacy, appearance) are stored in the UI state in `src/pages/SettingsPage.tsx`. Persistence to the database is a planned follow-up task.
 
-- Leave existing project structure and stack intact unless explicitly asked to change it.
-- Use Supabase for auth and database — do not replace with Replit Auth or Replit DB.
+## Notes
+- OneSignal push only fires on the production domain — no-ops in dev/preview
+- SUFY storage folders: `avatars`, `covers`, `photos`, `stories`, `posts`, `voice-notes`, `documents`
+- Admin roles recognized by AuthContext: `admin`, `superadmin`, `ceo`, `moderator`, `support`

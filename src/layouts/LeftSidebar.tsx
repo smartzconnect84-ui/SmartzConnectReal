@@ -4,7 +4,7 @@ import {
   Home, User, Users, MessageCircle, Bell, Video, Phone,
   Heart, Users2, FileText, Calendar, ShoppingBag, Briefcase,
   BookOpen, Tv, Car, Zap, Crown, Settings, HelpCircle,
-  Sun, Moon, LogOut
+  Sun, Moon, LogOut, Globe
 } from 'lucide-react'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useAuth } from '@/hooks/useAuth'
@@ -34,6 +34,7 @@ const callsNav: NavItemDef[] = [
 ]
 
 const exploreNav: NavItemDef[] = [
+  { path: '/app/worldchat',     icon: Globe,         label: 'World Chat',    color: 'text-cyan-500' },
   { path: '/app/discover',      icon: Heart,         label: 'Dating',        color: 'text-pink-500' },
   { path: '/app/groups',        icon: Users2,        label: 'Groups',        color: 'text-purple-500' },
   { path: '/app/pages',         icon: FileText,      label: 'Pages',         color: 'text-sky-500' },
@@ -49,7 +50,7 @@ const exploreNav: NavItemDef[] = [
 
 const bottomNav: NavItemDef[] = [
   { path: '/app/settings', icon: Settings,   label: 'Settings' },
-  { path: '/app/help',     icon: HelpCircle, label: 'Help' },
+  { path: '/app/help',     icon: HelpCircle, label: 'Help & Support' },
 ]
 
 interface LeftSidebarProps {

@@ -32,10 +32,12 @@ import CookiePolicyPage    from '@/pages/CookiePolicyPage'
 import TermsPage           from '@/pages/TermsPage'
 
 import ProfilePage         from '@/pages/ProfilePage'
+import UserProfilePage     from '@/pages/UserProfilePage'
 import DiscoverPage        from '@/pages/DiscoverPage'
 import MatchesPage         from '@/pages/MatchesPage'
 import ChatPage            from '@/pages/ChatPage'
 import GroupChatPage       from '@/pages/GroupChatPage'
+import WorldChatPage       from '@/pages/WorldChatPage'
 import SpinChatPage        from '@/pages/SpinChatPage'
 import FeedPage            from '@/pages/FeedPage'
 import NotificationsPage   from '@/pages/NotificationsPage'
@@ -45,6 +47,7 @@ import RidePage            from '@/pages/RidePage'
 import SubscriptionsPage   from '@/pages/SubscriptionsPage'
 import FriendsPage         from '@/pages/FriendsPage'
 import CallsPage           from '@/pages/CallsPage'
+import SettingsPage        from '@/pages/SettingsPage'
 
 import SmartzTVPublicPage  from '@/pages/public/SmartzTVPage'
 import SmartzRidePage      from '@/pages/public/SmartzRidePage'
@@ -150,6 +153,7 @@ export default function App() {
                 <Route path="matches"       element={<MatchesPage />} />
                 <Route path="chat/:id"      element={<ChatPage />} />
                 <Route path="groups"        element={<GroupChatPage />} />
+                <Route path="worldchat"     element={<WorldChatPage />} />
                 <Route path="spin"          element={<SpinChatPage />} />
                 <Route path="notifications" element={<NotificationsPage />} />
                 <Route path="marketplace"   element={<MarketplacePage />} />
@@ -157,6 +161,8 @@ export default function App() {
                 <Route path="ride"          element={<RidePage />} />
                 <Route path="subscriptions" element={<SubscriptionsPage />} />
                 <Route path="profile"       element={<ProfilePage />} />
+                <Route path="profile/:userId" element={<UserProfilePage />} />
+                <Route path="settings"      element={<SettingsPage />} />
                 <Route path="friends"       element={<FriendsPage />} />
                 <Route path="calls"         element={<CallsPage />} />
                 <Route path="calls/video"   element={<CallsPage defaultMode="video" />} />

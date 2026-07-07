@@ -10,3 +10,6 @@
 - [Voice notes implementation](voice-notes.md) — MediaRecorder → Supabase 'voice-messages' bucket (public) → Stream attachment. Both ChatPage and GroupChatPage implemented with unmount cleanup.
 - [Call signaling state machine](call-signaling.md) — Full call system via call_notifications realtime; clear outgoingNotifIdRef on accepted to prevent 60s timer closing active calls.
 - [Production deployment](production-deployment.md) — edge functions use --use-api flag; DB on port 5432 (not 6543); admin_users.id = profile UUID; SUFY region needs confirmation.
+- [Stream Chat routing contract](stream-chat-routing.md) — ChatPage uses :id param as the OTHER USER's profile UUID (not a channel ID). Always navigate to /app/chat/:userId, never a derived channel ID.
+- [WorldChat channel lifecycle](worldchat-lifecycle.md) — Capture channel in effect-local variable (not state closure) for cleanup; ch.off() with event name string causes TS error; use ch.stopWatching() only.
+- [Superadmin accounts](superadmin-accounts.md) — ceo@smartzconnect.com and shedrickknungehn@gmail.com created with role=superadmin in profiles; admin_users.role='ceo' (constraint only allows admin/super_admin/ceo/moderator).
