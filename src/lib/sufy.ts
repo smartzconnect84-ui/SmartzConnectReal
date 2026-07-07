@@ -16,14 +16,12 @@ interface UploadResponse {
 }
 
 /**
- * Uploads a file to SUFY object storage via the `sufy-upload` edge function.
+ * Uploads a file to SUFY object storage.
  *
- * The file is sent as multipart/form-data to the edge function, which then
- * PUTs it directly to SUFY using server-side SigV4 credentials. This avoids
- * the CORS restriction that prevents the browser from PUT-ing directly to
- * SUFY's S3-compatible endpoint (the old presigned-URL approach broke because
- * SUFY does not send the required Access-Control-Allow-Origin headers for
- * cross-origin browser PUTs).
+ * Sends the file as multipart/form-data to the `sufy-presign` edge function,
+ * which authenticates the caller and performs the PUT to SUFY server-side
+ * (avoiding the CORS restriction that prevents the browser from PUT-ing
+ * directly to SUFY's S3-compatible endpoint).
  *
  * Returns the public URL to store as a metadata reference in Supabase.
  */
@@ -32,12 +30,12 @@ export async function uploadToSufy(file: File, folder: SufyFolder): Promise<stri
   formData.append('file', file)
   formData.append('folder', folder)
 
-  const { data, error } = await supabase.functions.invoke<UploadResponse>('sufy-upload', {
+  const { data, error } = await supabase.functions.invoke<UploadResponse>('sufy-presign', {
     body: formData,
   })
 
   if (error || !data?.publicUrl) {
-    throw new Error(error?.message || 'Failed to upload file to SUFY')
+    throw new Error(error?.message || 'Failed to upload file to storage')
   }
 
   return data.publicUrl

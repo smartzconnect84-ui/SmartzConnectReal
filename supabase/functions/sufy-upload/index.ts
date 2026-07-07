@@ -1,38 +1,83 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { corsHeaders, jsonResponse, requireUser } from '../_shared/sessionService.ts'
-import { loadSufyConfig, uploadObject, sufyPublicUrl } from '../_shared/sufyStorage.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { AwsClient } from 'https://esm.sh/aws4fetch@1.0.20'
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
 
 const ALLOWED_FOLDERS = [
   'avatars', 'covers', 'photos', 'stories',
   'marketplace', 'posts', 'voice-notes', 'documents',
 ]
 
-// Hard limit: 50 MB per upload. Prevents authenticated users from exhausting
-// edge-function memory with oversized payloads.
+// Hard limit: 50 MB per upload.
 const MAX_BYTES = 50 * 1024 * 1024
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
+function jsonResponse(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  })
+}
+
+async function requireUser(req: Request) {
+  const authHeader = req.headers.get('Authorization')
+  if (!authHeader) return { user: null, error: jsonResponse({ error: 'Unauthorized' }, 401) }
+
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_ANON_KEY')!,
+    { global: { headers: { Authorization: authHeader } } }
+  )
+  const { data: { user }, error } = await supabase.auth.getUser()
+  if (error || !user) return { user: null, error: jsonResponse({ error: 'Unauthorized' }, 401) }
+  return { user, error: null }
+}
+
+function objectUrl(bucket: string, region: string, key: string): string {
+  return `https://${bucket}.mos.${region}.sufybkt.com/${key}`
+}
+
+async function uploadToSufy(
+  accessKeyId: string, secretAccessKey: string,
+  bucket: string, region: string,
+  key: string, body: ArrayBuffer, contentType: string
+): Promise<Response> {
+  const client = new AwsClient({ accessKeyId, secretAccessKey, region, service: 's3' })
+  return client.fetch(objectUrl(bucket, region, key), {
+    method: 'PUT',
+    headers: { 'content-type': contentType },
+    body,
+  })
+}
+
+Deno.serve(async (req: Request) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
-    const { user, error } = await requireUser(req)
-    if (error) return error
+    const { user, error: authError } = await requireUser(req)
+    if (authError) return authError
 
-    const config = loadSufyConfig()
-    if (!config) return jsonResponse({ error: 'SUFY storage not configured' }, 500)
+    const accessKeyId     = Deno.env.get('SUFY_ACCESS_KEY_ID')
+    const secretAccessKey = Deno.env.get('SUFY_SECRET_ACCESS_KEY')
+    const bucket          = Deno.env.get('SUFY_BUCKET')
+    const region          = Deno.env.get('SUFY_REGION')
 
-    // Accept multipart/form-data: the file binary never leaves the edge function
-    // runtime on its way to SUFY — no browser-to-S3 CORS PUT needed.
-    const formData = await req.formData().catch(() => null)
-    if (!formData) return jsonResponse({ error: 'Expected multipart/form-data' }, 400)
+    if (!accessKeyId || !secretAccessKey || !bucket || !region) {
+      return jsonResponse({ error: 'SUFY storage not configured' }, 500)
+    }
+
+    let formData: FormData
+    try { formData = await req.formData() } catch {
+      return jsonResponse({ error: 'Expected multipart/form-data' }, 400)
+    }
 
     const fileField   = formData.get('file')
     const folderField = formData.get('folder')
 
-    // Strict type validation — prevent 500s from unexpected field types
-    if (!(fileField instanceof File)) {
+    // Deno's FormData returns Blob/File for file parts
+    if (!fileField || typeof (fileField as Blob).arrayBuffer !== 'function') {
       return jsonResponse({ error: "'file' field must be a file attachment" }, 400)
     }
     if (typeof folderField !== 'string' || !folderField) {
@@ -42,27 +87,23 @@ serve(async (req) => {
       return jsonResponse({ error: `folder must be one of: ${ALLOWED_FOLDERS.join(', ')}` }, 400)
     }
 
-    // Enforce upload size limit before reading into memory
-    if (fileField.size > MAX_BYTES) {
-      return jsonResponse({ error: `File exceeds the 50 MB upload limit` }, 413)
+    const fileBlob = fileField as File
+    if ((fileBlob.size ?? 0) > MAX_BYTES) {
+      return jsonResponse({ error: 'File exceeds the 50 MB upload limit' }, 413)
     }
 
-    // Namespace every object under the authenticated caller's user id so a user
-    // can never overwrite another user's files.
-    const safeName = fileField.name.replace(/[^a-zA-Z0-9._-]/g, '_')
-    const key = `${folderField}/${user!.id}/${Date.now()}-${safeName}`
-    const contentType = fileField.type || 'application/octet-stream'
+    const safeName    = (fileBlob.name || 'file').replace(/[^a-zA-Z0-9._-]/g, '_')
+    const key         = `${folderField}/${user!.id}/${Date.now()}-${safeName}`
+    const contentType = fileBlob.type || 'application/octet-stream'
+    const body        = await fileBlob.arrayBuffer()
 
-    const body = await fileField.arrayBuffer()
-    const res  = await uploadObject(config, key, body, contentType)
+    const res = await uploadToSufy(accessKeyId, secretAccessKey, bucket, region, key, body, contentType)
 
     if (!res.ok) {
-      // Return status only — don't echo SUFY's raw error body to the client
       return jsonResponse({ error: `SUFY upload failed (${res.status})` }, 502)
     }
 
-    const publicUrl = sufyPublicUrl(config, key)
-    return jsonResponse({ publicUrl, key })
+    return jsonResponse({ publicUrl: objectUrl(bucket, region, key), key })
   } catch (err) {
     return jsonResponse({ error: String(err) }, 500)
   }
