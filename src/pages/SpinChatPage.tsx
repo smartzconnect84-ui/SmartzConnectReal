@@ -40,6 +40,7 @@ interface SpinProfile {
   interests: string[]
   bio: string
   online: boolean
+  lastSeenMs: number   // raw epoch ms — used to recompute online at spin time
   avatar_url: string | null
 }
 type Phase = 'idle' | 'spinning' | 'matched' | 'chatting' | 'skipped'
@@ -64,19 +65,32 @@ export default function SpinChatPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const channelRef = useRef<any>(null)
 
+  // Mark current user as present in SpinChat and refresh every 2 min
+  useEffect(() => {
+    if (!user?.id) return
+    const updatePresence = () =>
+      supabase.from('profiles').update({ last_seen: new Date().toISOString() }).eq('id', user.id)
+    updatePresence()
+    const interval = setInterval(updatePresence, 120_000)
+    return () => clearInterval(interval)
+  }, [user?.id])
+
   useEffect(() => {
     const fetchPool = async () => {
       const { data, error } = await supabase
         .from('profiles')
         .select('id, full_name, date_of_birth, avatar_url, country, bio, interests, last_seen')
         .order('last_seen', { ascending: false })
-        .limit(30)
+        .limit(50)
 
       if (!error && data && data.length > 0) {
         setDbConnected(true)
+        const now = Date.now()
         const mapped: SpinProfile[] = data.map((p: any, i: number) => {
           const dob = p.date_of_birth ? new Date(p.date_of_birth) : null
-          const age = dob ? Math.floor((Date.now() - dob.getTime()) / (365.25 * 24 * 3600 * 1000)) : 22 + i
+          const age = dob ? Math.floor((now - dob.getTime()) / (365.25 * 24 * 3600 * 1000)) : 22 + i
+          // Online = seen within last 5 minutes
+          const online = p.last_seen ? (now - new Date(p.last_seen).getTime()) < 300_000 : false
           return {
             id: p.id,
             name: p.full_name || 'Anonymous',
@@ -88,7 +102,8 @@ export default function SpinChatPage() {
               ? (Array.isArray(p.interests) ? p.interests.slice(0, 3) : String(p.interests).split(',').map((s: string) => s.trim()).slice(0, 3))
               : ['Connect', 'Chat', 'Meet'],
             bio: p.bio || 'Looking for amazing connections! 💕',
-            online: p.last_seen ? (Date.now() - new Date(p.last_seen).getTime()) < 300000 : false,
+            online,
+            lastSeenMs: p.last_seen ? new Date(p.last_seen).getTime() : 0,
             avatar_url: p.avatar_url || null,
           }
         })
@@ -186,7 +201,12 @@ export default function SpinChatPage() {
     const totalDeg = rotation + spins * 360 + extraDeg
     setRotation(totalDeg)
     await controls.start({ rotate: totalDeg, transition: { duration: 3 + Math.random() * 2, ease: [0.17, 0.67, 0.12, 0.99] as any } })
-    const pool = poolProfiles.filter(p => p.online || true)
+    // Recompute online status from stored lastSeenMs at spin time (fresh check,
+    // no extra DB round-trip). Self is always excluded from the pool.
+    const now = Date.now()
+    const others = poolProfiles.filter(p => p.id !== user?.id)
+    const onlinePool = others.filter(p => now - p.lastSeenMs < 300_000)
+    const pool = onlinePool.length > 0 ? onlinePool : others
     if (pool.length === 0) { setPhase('idle'); return }
     const profile = pool[Math.floor(Math.random() * pool.length)]
     setCurrentProfile(profile)

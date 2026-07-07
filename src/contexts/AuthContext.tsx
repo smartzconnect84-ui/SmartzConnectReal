@@ -30,53 +30,81 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [emailVerified, setEmailVerified] = useState(false)
   const [role, setRole]               = useState<string>('user')
 
-  const fetchRole = async (userId: string) => {
+  // Fetch the user's role from DB. Returns the resolved role string.
+  // All callers must guard on isMounted before applying the result to state.
+  const resolveRole = async (userId: string): Promise<string> => {
     const { data } = await supabase
       .from('profiles')
       .select('role')
       .eq('id', userId)
       .single()
-    setRole(data?.role ?? 'user')
+    return data?.role ?? 'user'
   }
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    let isMounted = true
+
+    // ── Initial session ───────────────────────────────────────────────────────
+    // Await role resolution before clearing loading so AdminRoute never sees
+    // a stale role on page refresh and redirects admins to /app/feed.
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!isMounted) return
       setSession(session)
       setUser(session?.user ?? null)
       setEmailVerified(!!session?.user?.email_confirmed_at)
-      if (session?.user?.id) fetchRole(session.user.id)
-      setLoading(false)
+      if (session?.user?.id) {
+        const resolved = await resolveRole(session.user.id)
+        if (isMounted) setRole(resolved)
+      }
+      if (isMounted) setLoading(false)
     })
 
-    // Listen for ALL auth state changes and route accordingly
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    // ── Auth state events ────────────────────────────────────────────────────
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!isMounted) return
       setSession(session)
       setUser(session?.user ?? null)
       setEmailVerified(!!session?.user?.email_confirmed_at)
-      setLoading(false)
 
       if (event === 'SIGNED_IN') {
         if (session?.user?.id) {
-          fetchRole(session.user.id)
+          // Await role so any admin redirect that follows SIGNED_IN sees the
+          // correct isAdmin value, not the default 'user' fallback.
+          const resolved = await resolveRole(session.user.id)
+          if (!isMounted) return
+          setRole(resolved)
           linkOneSignalUser(session.user.id)
         }
+        if (isMounted) setLoading(false)
         window.dispatchEvent(new CustomEvent('supabase:signed_in', { detail: { session } }))
       }
+      if (event === 'TOKEN_REFRESHED') {
+        // Session is still the same user — no role re-fetch needed.
+        if (isMounted) setLoading(false)
+      }
       if (event === 'PASSWORD_RECOVERY') {
+        if (isMounted) setLoading(false)
         window.dispatchEvent(new CustomEvent('supabase:password_recovery', { detail: { session } }))
       }
       if (event === 'USER_UPDATED') {
+        if (isMounted) setLoading(false)
         window.dispatchEvent(new CustomEvent('supabase:user_updated', { detail: { session } }))
       }
       if (event === 'SIGNED_OUT') {
-        setRole('user')
+        if (isMounted) {
+          setRole('user')
+          setLoading(false)
+        }
         window.dispatchEvent(new CustomEvent('supabase:signed_out'))
         unlinkOneSignalUser()
       }
+      // INITIAL_SESSION — handled by getSession() above with awaited role fetch.
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      isMounted = false
+      subscription.unsubscribe()
+    }
   }, [])
 
   const signIn = async (email: string, password: string) => {

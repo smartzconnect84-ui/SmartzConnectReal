@@ -444,6 +444,34 @@ export default function SmartzTVPage() {
 
   useEffect(() => { fetchStreams() }, [])
 
+  // Realtime: update view counts on stream cards as they change in DB
+  useEffect(() => {
+    const sub = supabase
+      .channel('livestreams-view-counts')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'livestreams' },
+        (payload: any) => {
+          const updated = payload.new
+          if (!updated?.id) return
+          setStreams(prev =>
+            prev.map(s => {
+              if (s.id !== String(updated.id)) return s
+              const vc = updated.view_count ?? 0
+              return {
+                ...s,
+                views: vc > 1000 ? `${(vc / 1000).toFixed(1)}K` : String(vc),
+                likes: updated.like_count ?? s.likes,
+                live: updated.status === 'live',
+              }
+            })
+          )
+        }
+      )
+      .subscribe()
+    return () => { supabase.removeChannel(sub) }
+  }, [])
+
   const handleGoLive = async () => {
     if (!liveTitle.trim() || !user?.id) return
     setGoingLive(true)

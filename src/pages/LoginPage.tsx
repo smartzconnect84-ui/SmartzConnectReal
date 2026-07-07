@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
@@ -23,7 +23,14 @@ function GoogleIcon() {
 
 export default function LoginPage() {
   const navigate = useNavigate()
-  const { signIn, signInWithGoogle } = useAuth()
+  const { signIn, signInWithGoogle, session, loading: authLoading } = useAuth()
+
+  // If already authenticated, skip the login screen entirely
+  useEffect(() => {
+    if (!authLoading && session) {
+      navigate('/app/feed', { replace: true })
+    }
+  }, [session, authLoading, navigate])
 
   const [email, setEmail]         = useState('')
   const [password, setPassword]   = useState('')
