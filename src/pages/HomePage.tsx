@@ -88,14 +88,14 @@ const SERVICES = [
 ]
 
 const VALUES = [
-  { icon: Handshake, title: 'Meaningful Connections', desc: 'We believe genuine human relationships have the power to change lives.' },
-  { icon: Shield,    title: 'Trust & Safety',         desc: 'We foster a safe, respectful, and transparent environment where people connect with confidence.' },
-  { icon: Globe,     title: 'Community',               desc: 'We celebrate diversity and create spaces where everyone belongs, from Liberia to the world.' },
-  { icon: Zap,       title: 'Innovation',              desc: 'We continuously build smarter technologies that strengthen human connection.' },
-  { icon: Award,     title: 'Integrity',               desc: 'We act with honesty, accountability, and professionalism in every interaction.' },
-  { icon: Users,     title: 'Inclusion',               desc: 'We welcome people from every background, culture, and community.' },
-  { icon: Star,      title: 'Excellence',              desc: 'We strive to deliver world-class experiences in everything we create.' },
-  { icon: TrendingUp,title: 'Growth',                  desc: 'We empower individuals, communities, and businesses to reach their full potential.' },
+  { icon: Handshake, title: 'Meaningful Connections', titleSize: 'text-[157px]', desc: 'We believe genuine human relationships have the power to change lives.' },
+  { icon: Shield,    title: 'Trust & Safety',         titleSize: 'text-[1px]',   desc: 'We foster a safe, respectful, and transparent environment where people connect with confidence.' },
+  { icon: Globe,     title: 'Community',               titleSize: 'text-[1px]',   desc: 'We celebrate diversity and create spaces where everyone belongs, from Liberia to the world.' },
+  { icon: Zap,       title: 'Innovation',              titleSize: 'text-[17px]',  desc: 'We continuously build smarter technologies that strengthen human connection.' },
+  { icon: Award,     title: 'Integrity',               titleSize: 'text-[1px]',   desc: 'We act with honesty, accountability, and professionalism in every interaction.' },
+  { icon: Users,     title: 'Inclusion',               titleSize: 'text-[1px]',   desc: 'We welcome people from every background, culture, and community.' },
+  { icon: Star,      title: 'Excellence',              titleSize: 'text-[17px]',  desc: 'We strive to deliver world-class experiences in everything we create.' },
+  { icon: TrendingUp,title: 'Growth',                  titleSize: 'text-[17px]',  desc: 'We empower individuals, communities, and businesses to reach their full potential.' },
 ]
 
 const WHY_LIST = [
@@ -192,7 +192,7 @@ export default function HomePage() {
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] rounded-full bg-[#DC2626]/6 blur-3xl" />
         </div>
 
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative pt-[9px] pb-[9px]">
           <div className="grid lg:grid-cols-2 gap-14 lg:gap-20 items-center">
 
             {/* Text */}
@@ -279,7 +279,7 @@ export default function HomePage() {
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute right-0 top-0 w-[500px] h-[500px] rounded-full bg-[#DC2626]/6 blur-3xl" />
         </div>
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative pt-[10px] pb-[10px]">
           <div className="grid lg:grid-cols-2 gap-14 lg:gap-20 items-center">
 
             {/* Pillars */}
@@ -382,7 +382,7 @@ export default function HomePage() {
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] rounded-full bg-[#DC2626]/5 blur-3xl" />
         </div>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative pt-[10px] pb-[10px]">
           <motion.div {...up()} className="text-center mb-12 sm:mb-16">
             <Badge icon={Award} label="Core Values" gold />
             <Heading>
@@ -408,7 +408,7 @@ export default function HomePage() {
                     style={{ background: 'linear-gradient(135deg, rgba(236,72,153,0.12) 0%, rgba(212,175,55,0.12) 100%)' }}>
                     <Icon className="w-5 h-5 text-[#EC4899]" />
                   </div>
-                  <h3 className="font-display font-bold text-white text-sm sm:text-base mb-2">{v.title}</h3>
+                  <h3 className={`font-display font-bold text-white sm:text-base mb-2 ${v.titleSize}`}>{v.title}</h3>
                   <p className="sm:text-[17px] text-white/50 text-[14px]">{v.desc}</p>
                 </motion.div>
               )
