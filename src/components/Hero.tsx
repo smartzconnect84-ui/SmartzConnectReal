@@ -99,11 +99,11 @@ const slides: Slide[] = [
 
 const stats = [
   { value: '15K+', label: 'USERS' },
-  { value: '195+', label: 'COUNTRIES' },
-  { value: '1K+',  label: 'BUSINESSES' },
+  { value: '195+', label: 'STATES' },
+  { value: '1K+',  label: 'STORES' },
   { value: '20+',  label: 'DRIVERS' },
   { value: '1K+',  label: 'VENDORS' },
-  { value: '8K+',  label: 'CONNECTIONS' },
+  { value: '8K+',  label: 'CONNECTED' },
 ]
 
 export default function Hero() {
@@ -266,8 +266,8 @@ export default function Hero() {
           <div className="grid grid-cols-3 sm:grid-cols-6 divide-x divide-white/8">
             {stats.map((s, i) => (
               <div key={i} className="py-3.5 sm:py-4 px-3 sm:px-5 text-center">
-                <p className="font-display font-black text-lg sm:text-xl text-white leading-none">{s.value}</p>
-                <p className="text-[9px] sm:text-[10px] text-white/40 font-semibold tracking-wider mt-0.5">{s.label}</p>
+                <p className="font-display font-black sm:text-xl text-white text-[17px]">{s.value}</p>
+                <p className="sm:text-[10px] text-white/40 font-semibold tracking-wider mt-0.5 text-[15px]">{s.label}</p>
               </div>
             ))}
           </div>
