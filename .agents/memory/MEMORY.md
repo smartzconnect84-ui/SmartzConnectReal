@@ -1,3 +1,4 @@
+- [SUFY upload proxy](sufy-upload-proxy.md) — browser can't PUT to SUFY (CORS); use sufy-upload edge function to proxy server-side.
 - [Auth session persistence fix](auth-session-fix.md) — role-flicker fix: getSession() awaits resolveRole before setLoading(false); all role writes are isMounted-guarded.
 - [Vercel pnpm fix](vercel-pnpm-fix.md) — npm v10 "Exit handler never called" on Vercel; switch to pnpm with onlyBuiltDependencies for esbuild.
 - [Dev-only integrations](dev-integrations.md) — OneSignal is production-domain-only; Turnstile now guards only on VITE_TURNSTILE_SITE_KEY being set (hostname check removed — works on any domain including previews).

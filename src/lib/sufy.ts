@@ -10,38 +10,34 @@ export type SufyFolder =
   | 'voice-notes'
   | 'documents'
 
-interface PresignResponse {
-  uploadUrl: string
+interface UploadResponse {
   publicUrl: string
   key: string
 }
 
 /**
- * Uploads a file directly to SUFY object storage.
+ * Uploads a file to SUFY object storage via the `sufy-upload` edge function.
  *
- * Flow: ask the `sufy-presign` edge function (Session Service pattern) for a
- * short-lived presigned PUT URL scoped to the current user, then PUT the
- * file straight to SUFY from the browser. Supabase never sees the binary —
- * it only ever receives the resulting public URL to store as a reference,
- * matching the SUFY-owns-storage / Supabase-owns-metadata split.
+ * The file is sent as multipart/form-data to the edge function, which then
+ * PUTs it directly to SUFY using server-side SigV4 credentials. This avoids
+ * the CORS restriction that prevents the browser from PUT-ing directly to
+ * SUFY's S3-compatible endpoint (the old presigned-URL approach broke because
+ * SUFY does not send the required Access-Control-Allow-Origin headers for
+ * cross-origin browser PUTs).
+ *
+ * Returns the public URL to store as a metadata reference in Supabase.
  */
 export async function uploadToSufy(file: File, folder: SufyFolder): Promise<string> {
-  const { data, error } = await supabase.functions.invoke<PresignResponse>('sufy-presign', {
-    body: { folder, fileName: file.name, contentType: file.type || 'application/octet-stream' },
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('folder', folder)
+
+  const { data, error } = await supabase.functions.invoke<UploadResponse>('sufy-upload', {
+    body: formData,
   })
 
-  if (error || !data?.uploadUrl) {
-    throw new Error(error?.message || 'Failed to get SUFY upload URL')
-  }
-
-  const putRes = await fetch(data.uploadUrl, {
-    method: 'PUT',
-    headers: { 'Content-Type': file.type || 'application/octet-stream' },
-    body: file,
-  })
-
-  if (!putRes.ok) {
-    throw new Error(`SUFY upload failed (${putRes.status})`)
+  if (error || !data?.publicUrl) {
+    throw new Error(error?.message || 'Failed to upload file to SUFY')
   }
 
   return data.publicUrl

@@ -68,6 +68,27 @@ export async function presignPutUrl(
   return signedRequest.url
 }
 
+/**
+ * Uploads an object directly from the edge function runtime (server-side PUT).
+ * This avoids the browser-to-SUFY CORS issue entirely — the browser posts the
+ * file to our edge function, which then PUTs it to SUFY using signed credentials
+ * that live only in the server environment.
+ */
+export async function uploadObject(
+  config: SufyConfig,
+  key: string,
+  body: ArrayBuffer,
+  contentType: string,
+): Promise<Response> {
+  const client = sufyClient(config)
+  const url = objectUrl(config, key)
+  return client.fetch(url, {
+    method: 'PUT',
+    headers: { 'content-type': contentType },
+    body,
+  })
+}
+
 /** Deletes an object from the bucket (used when a user removes their own media). */
 export async function deleteObject(config: SufyConfig, key: string): Promise<Response> {
   const client = sufyClient(config)
