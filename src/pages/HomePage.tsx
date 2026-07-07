@@ -141,7 +141,7 @@ const STEPS = [
 /* ── shared section shell ── */
 function Sec({ id, dark, children }: { id?: string; dark?: boolean; children: React.ReactNode }) {
   return (
-    <section id={id} className={`relative overflow-hidden py-16 sm:py-20 lg:py-24 ${dark ? 'bg-black' : 'bg-[#05000d]'}`}>
+    <section id={id} className={`relative overflow-hidden py-16 sm:py-20 lg:py-24 pt-[9px] pb-[9px] ${dark ? 'bg-black' : 'bg-[#05000d]'}`}>
       {children}
     </section>
   )
