@@ -101,7 +101,7 @@ function Bubble({ msg, onCopy, onFeedback, onOption }: {
     ))
 
   return (
-    <div className={`flex group pt-[0px] pb-[0px] mt-[0px] mb-[0px] gap-[5px] flex-row justify-center items-center pl-[0px] pr-[0px] ${msg.isBot ? '' : 'flex-row-reverse'}`}>
+    <div className={`flex group gap-2 ${msg.isBot ? 'flex-row items-start' : 'flex-row-reverse items-end'}`}>
       {/* Avatar */}
       {msg.isBot
         ? <div className="w-7 h-7 rounded-full bg-love-gradient flex items-center justify-center flex-shrink-0 mt-1 shadow-md shadow-pink-500/20">
@@ -112,13 +112,13 @@ function Bubble({ msg, onCopy, onFeedback, onOption }: {
           </div>
       }
 
-      <div className={`max-w-[85%] ${msg.isBot ? '' : 'items-end flex flex-col'}`}>
+      <div className={`max-w-[82%] ${msg.isBot ? '' : 'items-end flex flex-col'}`}>
         {/* Bubble */}
         <div
           onClick={() => msg.isBot && setShowActions(s => !s)}
-          className={`px-3.5 py-2.5 rounded-2xl text-[13px] leading-relaxed cursor-default ${
+          className={`px-3 py-2 rounded-2xl text-[12.5px] leading-relaxed cursor-default ${
             msg.isBot
-              ? 'dark:bg-white/8 bg-white border dark:border-white/8 border-gray-100 dark:text-gray-100 rounded-tl-sm shadow-sm text-[#000]'
+              ? 'dark:bg-white/8 bg-white border dark:border-white/8 border-gray-200 dark:text-gray-100 text-gray-900 rounded-tl-sm shadow-sm'
               : 'bg-love-gradient text-white rounded-tr-sm shadow-md shadow-pink-500/20'
           }`}
         >
@@ -356,8 +356,8 @@ export default function LiveChat() {
 
   const windowStyle = isMobile
     ? { bottom: 0, left: 0, right: 0, width: '100%' }
-    : { bottom: `${88 - position.y}px`, right: `${24 - position.x}px`, width: '368px', maxWidth: 'calc(100vw - 32px)' }
-  const windowHeight = isMobile ? '85dvh' : (minimized ? 'auto' : '540px')
+    : { bottom: `${88 - position.y}px`, right: `${24 - position.x}px`, width: '340px', maxWidth: 'calc(100vw - 24px)' }
+  const windowHeight = isMobile ? '80dvh' : (minimized ? 'auto' : '480px')
 
   return (
     <>
@@ -431,7 +431,7 @@ export default function LiveChat() {
                   </div>
 
                   {/* ── Messages ── */}
-                  <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 dark:bg-[#0F0A1A] pt-[12px] pb-[12px] mt-[1px] mb-[1px] pl-[16px] pr-[16px] bg-[#0f0a1a]">
+                  <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2.5 dark:bg-[#0F0A1A] bg-gray-50 overscroll-contain">
                     {messages.map(msg => (
                       <Bubble key={msg.id} msg={msg} onCopy={handleCopy} onFeedback={handleFeedback} onOption={sendMessage} />
                     ))}
@@ -450,16 +450,16 @@ export default function LiveChat() {
                   </AnimatePresence>
 
                   {/* ── Input ── */}
-                  <div className="p-3 border-t dark:border-white/6 border-gray-200 dark:bg-[#0F0A1A] bg-white flex-shrink-0"
+                  <div className="p-2.5 border-t dark:border-white/6 border-gray-200 dark:bg-[#0F0A1A] bg-white flex-shrink-0"
                     style={{ paddingBottom: isMobile ? 'max(12px, env(safe-area-inset-bottom))' : '12px' }}>
-                    <div className="flex items-center gap-2 dark:bg-white/6 bg-gray-50 rounded-2xl border dark:border-white/8 border-gray-200 px-4 py-2.5 focus-within:border-pink-400 transition-colors">
+                    <div className="flex items-center gap-2 dark:bg-white/6 bg-gray-100 rounded-xl border dark:border-white/8 border-gray-200 px-3 py-2 focus-within:border-pink-400 transition-colors">
                       <input
                         ref={inputRef}
                         value={input}
                         onChange={e => setInput(e.target.value)}
                         onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(input) } }}
                         placeholder="Ask anything about SmartzConnect…"
-                        className="flex-1 text-xs dark:text-white text-gray-900 placeholder:dark:text-gray-500 placeholder:text-gray-400 focus:outline-none bg-[transparent]"
+                        className="flex-1 text-[12px] dark:text-white text-gray-900 placeholder:dark:text-gray-500 placeholder:text-gray-400 focus:outline-none bg-transparent"
                       />
                       <motion.button
                         onClick={() => sendMessage(input)}

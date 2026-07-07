@@ -1,10 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Bell, Lock, Shield, Crown, Settings, ChevronRight, ChevronDown,
-  Sun, Moon, Download, Upload, Trash2, LogOut, AlertTriangle,
-  Palette, Type, Eye, Volume2, Globe, Smartphone, Mail,
-  Check, Save, X, RefreshCw
+  Sun, Moon, Download, Trash2, LogOut, AlertTriangle,
+  Palette, Globe, Check, Save, X, RefreshCw
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -28,16 +27,46 @@ interface PrivacyPrefs {
   profile_visibility: 'public' | 'private'
 }
 
+interface AppearancePrefs {
+  accent_color: string
+  font_size: string
+}
+
+const DEFAULT_NOTIF: NotifPrefs = {
+  push_messages: true,
+  push_likes: true,
+  push_follows: true,
+  push_mentions: true,
+  email_digest: false,
+  email_marketing: false,
+  sound_enabled: true,
+}
+
+const DEFAULT_PRIVACY: PrivacyPrefs = {
+  show_online: true,
+  show_last_seen: true,
+  allow_dms: 'everyone',
+  profile_visibility: 'public',
+}
+
+const DEFAULT_APPEARANCE: AppearancePrefs = {
+  accent_color: 'pink',
+  font_size: 'Medium',
+}
+
 const ACCENT_COLORS = [
-  { name: 'Pink (Default)', value: 'pink', class: 'bg-pink-500' },
-  { name: 'Purple', value: 'purple', class: 'bg-purple-500' },
-  { name: 'Blue', value: 'blue', class: 'bg-blue-500' },
-  { name: 'Emerald', value: 'emerald', class: 'bg-emerald-500' },
-  { name: 'Orange', value: 'orange', class: 'bg-orange-500' },
-  { name: 'Rose', value: 'rose', class: 'bg-rose-500' },
+  { name: 'Pink (Default)', value: 'pink',    class: 'bg-pink-500' },
+  { name: 'Purple',         value: 'purple',  class: 'bg-purple-500' },
+  { name: 'Blue',           value: 'blue',    class: 'bg-blue-500' },
+  { name: 'Emerald',        value: 'emerald', class: 'bg-emerald-500' },
+  { name: 'Orange',         value: 'orange',  class: 'bg-orange-500' },
+  { name: 'Rose',           value: 'rose',    class: 'bg-rose-500' },
 ]
 
 const FONT_SIZES = ['Small', 'Medium', 'Large', 'Extra Large']
+const FONT_SCALE: Record<string, string> = {
+  Small: '87.5%', Medium: '100%', Large: '112.5%', 'Extra Large': '125%',
+}
 
 export default function SettingsPage() {
   const { user, signOut, role } = useAuth()
@@ -47,80 +76,88 @@ export default function SettingsPage() {
   const [openSection, setOpenSection] = useState<string | null>('notifications')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [deleteConfirm, setDeleteConfirm] = useState(false)
   const [signOutConfirm, setSignOutConfirm] = useState(false)
   const [exportLoading, setExportLoading] = useState(false)
   const [exportDone, setExportDone] = useState(false)
+  const [verifyLoading, setVerifyLoading] = useState(false)
+  const [verifyDone, setVerifyDone] = useState(false)
 
-  // Notification prefs
-  const [notifPrefs, setNotifPrefs] = useState<NotifPrefs>({
-    push_messages: true,
-    push_likes: true,
-    push_follows: true,
-    push_mentions: true,
-    email_digest: false,
-    email_marketing: false,
-    sound_enabled: true,
-  })
+  const [notifPrefs,   setNotifPrefs]   = useState<NotifPrefs>(DEFAULT_NOTIF)
+  const [privacyPrefs, setPrivacyPrefs] = useState<PrivacyPrefs>(DEFAULT_PRIVACY)
+  const [appearance,   setAppearance]   = useState<AppearancePrefs>(DEFAULT_APPEARANCE)
 
-  // Privacy prefs
-  const [privacyPrefs, setPrivacyPrefs] = useState<PrivacyPrefs>({
-    show_online: true,
-    show_last_seen: true,
-    allow_dms: 'everyone',
-    profile_visibility: 'public',
-  })
-
-  // Appearance
-  const [accentColor, setAccentColor] = useState('pink')
-  const [fontSize, setFontSize] = useState('Medium')
-
-  // Load preferences from DB
-  useEffect(() => {
+  // ── Load preferences from DB ──────────────────────────────────────────────
+  const loadPrefs = useCallback(async () => {
     if (!user) return
-    supabase.from('profiles')
-      .select('push_token,language_pref')
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('preferences')
       .eq('id', user.id)
       .single()
-      .then(({ data }) => {
-        if (!data) return
-        // Load stored prefs if available
-      })
+    if (error) { setLoadError('Could not load preferences.'); return }
+    const prefs = (data?.preferences as Record<string, any>) || {}
+    if (prefs.notifications) setNotifPrefs({ ...DEFAULT_NOTIF, ...prefs.notifications })
+    if (prefs.privacy)       setPrivacyPrefs({ ...DEFAULT_PRIVACY, ...prefs.privacy })
+    if (prefs.appearance)    setAppearance({ ...DEFAULT_APPEARANCE, ...prefs.appearance })
   }, [user])
 
+  useEffect(() => { loadPrefs() }, [loadPrefs])
+
+  // Apply font-size preference globally
+  useEffect(() => {
+    document.documentElement.style.fontSize = FONT_SCALE[appearance.font_size] || '100%'
+    return () => { document.documentElement.style.fontSize = '' }
+  }, [appearance.font_size])
+
+  // ── Save all preferences to DB ────────────────────────────────────────────
   const savePrefs = async () => {
     if (!user) return
     setSaving(true)
-    // Store prefs in profile metadata or a separate prefs table
-    const { error } = await supabase.from('profiles')
-      .update({ updated_at: new Date().toISOString() })
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        preferences: {
+          notifications: notifPrefs,
+          privacy:       privacyPrefs,
+          appearance,
+        },
+        updated_at: new Date().toISOString(),
+      })
       .eq('id', user.id)
     setSaving(false)
-    if (!error) {
+    if (error) {
+      setLoadError('Save failed: ' + error.message)
+      setTimeout(() => setLoadError(null), 4000)
+    } else {
       setSaved(true)
       setTimeout(() => setSaved(false), 2500)
     }
   }
 
+  // ── Export user data ──────────────────────────────────────────────────────
   const handleExportData = async () => {
     if (!user) return
     setExportLoading(true)
     try {
-      const [profileRes, postsRes, followersRes] = await Promise.all([
+      const [profileRes, postsRes, followersRes, storiesRes] = await Promise.all([
         supabase.from('profiles').select('*').eq('id', user.id).single(),
         supabase.from('posts').select('*').eq('author_id', user.id),
         supabase.from('follows').select('*').eq('follower_id', user.id),
+        supabase.from('stories').select('*').eq('author_id', user.id),
       ])
       const exportData = {
         exported_at: new Date().toISOString(),
-        profile: profileRes.data,
-        posts: postsRes.data || [],
-        following: followersRes.data || [],
+        profile:    profileRes.data,
+        posts:      postsRes.data   || [],
+        following:  followersRes.data || [],
+        stories:    storiesRes.data || [],
       }
       const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
+      const url  = URL.createObjectURL(blob)
+      const a    = document.createElement('a')
+      a.href     = url
       a.download = `smartzconnect-data-${Date.now()}.json`
       a.click()
       URL.revokeObjectURL(url)
@@ -130,6 +167,7 @@ export default function SettingsPage() {
     setExportLoading(false)
   }
 
+  // ── Delete account ────────────────────────────────────────────────────────
   const handleDeleteAccount = async () => {
     if (!user) return
     await supabase.from('profiles').update({ is_active: false }).eq('id', user.id)
@@ -137,9 +175,45 @@ export default function SettingsPage() {
     navigate('/login')
   }
 
+  // ── Submit verification request ───────────────────────────────────────────
+  const handleVerificationRequest = async () => {
+    if (!user) return
+    setVerifyLoading(true)
+    try {
+      // Check if a pending request already exists
+      const { data: existing } = await supabase
+        .from('verification_requests')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('status', 'pending')
+        .maybeSingle()
+      if (existing) {
+        // Already pending — just show success
+        setVerifyDone(true)
+        setTimeout(() => setVerifyDone(false), 4000)
+        setVerifyLoading(false)
+        return
+      }
+      const { error } = await supabase.from('verification_requests').insert({
+        user_id: user.id,
+        status: 'pending',
+        submitted_at: new Date().toISOString(),
+      })
+      if (error) throw error
+      setVerifyDone(true)
+      setTimeout(() => setVerifyDone(false), 4000)
+    } catch (err: any) {
+      console.error('Verification request error:', err)
+      setLoadError(err?.message || 'Could not submit verification request.')
+      setTimeout(() => setLoadError(null), 4000)
+    }
+    setVerifyLoading(false)
+  }
+
+  // ── UI helpers ────────────────────────────────────────────────────────────
   const Toggle = ({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) => (
     <button onClick={() => onChange(!value)}
-      className={`relative w-11 h-6 rounded-full transition-colors ${value ? 'bg-love-gradient' : 'dark:bg-white/10 bg-gray-200'}`}>
+      className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${value ? 'bg-love-gradient' : 'dark:bg-white/10 bg-gray-200'}`}>
       <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${value ? 'translate-x-5' : 'translate-x-0'}`} />
     </button>
   )
@@ -149,7 +223,7 @@ export default function SettingsPage() {
       className="dark:bg-[#130E1E] bg-white rounded-2xl border dark:border-white/6 border-gray-100 overflow-hidden">
       <button onClick={() => setOpenSection(openSection === id ? null : id)}
         className="w-full flex items-center gap-3 p-4 text-left hover:bg-love-soft/20 transition-colors">
-        <div className={`w-10 h-10 rounded-xl dark:bg-white/5 bg-gray-50 flex items-center justify-center flex-shrink-0`}>
+        <div className="w-10 h-10 rounded-xl dark:bg-white/5 bg-gray-50 flex items-center justify-center flex-shrink-0">
           <Icon className={`w-4.5 h-4.5 ${color}`} />
         </div>
         <div className="flex-1">
@@ -188,6 +262,9 @@ export default function SettingsPage() {
         <div className="flex items-center justify-between">
           <h1 className="font-display text-xl font-black dark:text-white text-gray-900">Settings</h1>
           <div className="flex items-center gap-2">
+            {loadError && (
+              <span className="text-xs text-red-400">{loadError}</span>
+            )}
             {saved && (
               <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
@@ -198,7 +275,7 @@ export default function SettingsPage() {
             <button onClick={savePrefs} disabled={saving}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-love-gradient text-white text-xs font-bold shadow-md shadow-pink-500/20 disabled:opacity-60">
               {saving ? <div className="w-3.5 h-3.5 border border-white/40 border-t-white rounded-full animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-              {saving ? 'Saving…' : 'Save'}
+              {saving ? 'Saving…' : 'Save All'}
             </button>
           </div>
         </div>
@@ -234,7 +311,7 @@ export default function SettingsPage() {
         {/* Appearance / Theme */}
         <Section id="appearance" icon={Palette} color="text-purple-500" title="Appearance & Theme" desc="Colors, dark mode, font size">
           <PrefRow label="Dark Mode" desc="Switch between light and dark theme">
-            <button onClick={toggleTheme} className={`relative w-11 h-6 rounded-full transition-colors ${theme === 'dark' ? 'bg-love-gradient' : 'dark:bg-white/10 bg-gray-200'}`}>
+            <button onClick={toggleTheme} className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${theme === 'dark' ? 'bg-love-gradient' : 'dark:bg-white/10 bg-gray-200'}`}>
               <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${theme === 'dark' ? 'translate-x-5' : 'translate-x-0'}`} />
             </button>
           </PrefRow>
@@ -243,9 +320,10 @@ export default function SettingsPage() {
             <p className="text-sm font-semibold dark:text-white text-gray-900 mb-2">Accent Color</p>
             <div className="flex flex-wrap gap-2">
               {ACCENT_COLORS.map(c => (
-                <button key={c.value} onClick={() => setAccentColor(c.value)}
-                  className={`w-8 h-8 rounded-full ${c.class} flex items-center justify-center transition-all hover:scale-110 ${accentColor === c.value ? 'ring-2 ring-offset-2 ring-offset-[#130E1E] ring-white scale-110' : ''}`}>
-                  {accentColor === c.value && <Check className="w-3.5 h-3.5 text-white" />}
+                <button key={c.value} onClick={() => setAppearance(a => ({ ...a, accent_color: c.value }))}
+                  title={c.name}
+                  className={`w-8 h-8 rounded-full ${c.class} flex items-center justify-center transition-all hover:scale-110 ${appearance.accent_color === c.value ? 'ring-2 ring-offset-2 dark:ring-offset-[#130E1E] ring-offset-white ring-white scale-110' : ''}`}>
+                  {appearance.accent_color === c.value && <Check className="w-3.5 h-3.5 text-white" />}
                 </button>
               ))}
             </div>
@@ -255,10 +333,9 @@ export default function SettingsPage() {
             <p className="text-sm font-semibold dark:text-white text-gray-900 mb-2">Text Size</p>
             <div className="grid grid-cols-4 gap-2">
               {FONT_SIZES.map(s => (
-                <button key={s} onClick={() => setFontSize(s)}
-                  className={`py-2 rounded-xl text-xs font-bold transition-all ${fontSize === s ? 'bg-love-gradient text-white shadow-md' : 'dark:bg-white/5 bg-gray-100 dark:text-gray-400 text-gray-600 hover:text-brand-pink'}`}>
-                  {s === 'Small' ? 'Aa' : s === 'Medium' ? 'Aa' : s === 'Large' ? 'Aa' : 'Aa'}
-                  <br /><span className="text-[9px]">{s}</span>
+                <button key={s} onClick={() => setAppearance(a => ({ ...a, font_size: s }))}
+                  className={`py-2 rounded-xl text-xs font-bold transition-all ${appearance.font_size === s ? 'bg-love-gradient text-white shadow-md' : 'dark:bg-white/5 bg-gray-100 dark:text-gray-400 text-gray-600 hover:text-brand-pink'}`}>
+                  Aa<br /><span className="text-[9px]">{s}</span>
                 </button>
               ))}
             </div>
@@ -307,10 +384,12 @@ export default function SettingsPage() {
               <Shield className="w-7 h-7 text-purple-500" />
             </div>
             <p className="text-sm dark:text-gray-300 text-gray-700 text-center">
-              Get a verified badge on your profile to build trust with other members.
+              Get a verified badge on your profile to build trust with other members. Our team reviews requests within 48 hours.
             </p>
-            <button className="px-6 py-2.5 rounded-xl bg-purple-500 text-white text-sm font-bold hover:bg-purple-600 transition-colors">
-              Apply for Verification
+            <button onClick={handleVerificationRequest} disabled={verifyLoading || verifyDone}
+              className="px-6 py-2.5 rounded-xl bg-purple-500 text-white text-sm font-bold hover:bg-purple-600 transition-colors disabled:opacity-60 flex items-center gap-2">
+              {verifyLoading ? <div className="w-4 h-4 border border-white/40 border-t-white rounded-full animate-spin" /> : verifyDone ? <Check className="w-4 h-4" /> : <Shield className="w-4 h-4" />}
+              {verifyLoading ? 'Submitting…' : verifyDone ? 'Request Submitted!' : 'Apply for Verification'}
             </button>
           </div>
         </Section>
@@ -335,9 +414,14 @@ export default function SettingsPage() {
         {/* Account Settings */}
         <Section id="account" icon={Settings} color="text-gray-500" title="Account Settings" desc="Email, password & data management">
           <div className="space-y-3">
-            <div className="p-3 rounded-xl dark:bg-white/5 bg-gray-50">
-              <p className="text-xs dark:text-gray-400 text-gray-500 mb-0.5">Email</p>
-              <p className="text-sm font-semibold dark:text-white text-gray-900">{user?.email}</p>
+            <div className="p-3 rounded-xl dark:bg-white/5 bg-gray-50 flex items-center justify-between">
+              <div>
+                <p className="text-xs dark:text-gray-400 text-gray-500 mb-0.5">Email</p>
+                <p className="text-sm font-semibold dark:text-white text-gray-900">{user?.email}</p>
+              </div>
+              {role && (
+                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-love-soft text-brand-pink border border-pink-500/20 capitalize">{role}</span>
+              )}
             </div>
 
             <button onClick={() => navigate('/forgot-password')}
@@ -347,11 +431,10 @@ export default function SettingsPage() {
 
             <div className="border-t dark:border-white/6 border-gray-100 pt-3 space-y-2">
               <p className="text-xs font-semibold dark:text-gray-400 text-gray-500 uppercase tracking-wider">Data & Export</p>
-
               <button onClick={handleExportData} disabled={exportLoading}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl dark:bg-blue-500/10 bg-blue-50 text-blue-500 border dark:border-blue-500/20 border-blue-200 text-sm font-semibold hover:bg-blue-500/20 transition-all disabled:opacity-60">
                 {exportLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : exportDone ? <Check className="w-4 h-4" /> : <Download className="w-4 h-4" />}
-                {exportLoading ? 'Exporting…' : exportDone ? 'Downloaded!' : 'Export My Data'}
+                {exportLoading ? 'Exporting…' : exportDone ? 'Downloaded!' : 'Export My Data (JSON)'}
               </button>
             </div>
 

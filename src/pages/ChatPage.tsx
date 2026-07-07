@@ -6,6 +6,7 @@ import {
   Mic, MicOff, Check, CheckCheck, Play, Pause, Flag, X, Loader2, WifiOff, Square
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { uploadToSufy } from '@/lib/sufy'
 import { useAuth } from '@/hooks/useAuth'
 import { useLiveKitCall } from '@/contexts/LiveKitCallContext'
 import { useStream } from '@/contexts/StreamContext'
@@ -20,8 +21,11 @@ interface Message {
   time: string
   mine: boolean
   status: 'sent' | 'delivered' | 'read'
-  type: 'text' | 'voice'
+  type: 'text' | 'voice' | 'image' | 'file'
   audioUrl?: string
+  imageUrl?: string
+  fileUrl?: string
+  fileName?: string
   reaction?: string
 }
 
@@ -37,15 +41,20 @@ const reactions = ['❤️', '😂', '😮', '😢', '👍', '🔥']
 
 function mapStreamMessage(m: any, myId: string): Message {
   const attach = m.attachments?.[0]
-  const isVoice = attach?.type === 'voice' || m.type === 'voice'
+  const isVoice = attach?.type === 'voice'
+  const isImage = !isVoice && attach?.type === 'image'
+  const isFile  = !isVoice && !isImage && !!attach
   return {
     id: m.id,
     text: m.text || '',
     time: new Date(m.created_at).toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' }),
     mine: m.user?.id === myId,
     status: 'read',
-    type: isVoice ? 'voice' : 'text',
-    audioUrl: isVoice ? (attach?.asset_url || attach?.url || m.audioUrl) : undefined,
+    type: isVoice ? 'voice' : isImage ? 'image' : isFile ? 'file' : 'text',
+    audioUrl:  isVoice ? (attach?.asset_url || attach?.url) : undefined,
+    imageUrl:  isImage ? (attach?.image_url || attach?.asset_url) : undefined,
+    fileUrl:   isFile  ? attach?.asset_url : undefined,
+    fileName:  (isImage || isFile) ? (attach?.title || attach?.fallback) : undefined,
   }
 }
 
@@ -58,6 +67,7 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([])
   const [participant, setParticipant] = useState<Participant | null>(null)
   const [loading, setLoading] = useState(true)
+  const [uploadingFile, setUploadingFile] = useState(false)
   const [connectTimeout, setConnectTimeout] = useState(false)
   const [input, setInput] = useState('')
   const [showReactions, setShowReactions] = useState<string | null>(null)
@@ -282,6 +292,48 @@ export default function ChatPage() {
     try { await channelRef.current?.sendReaction(msgId, { type: emoji }) } catch {}
   }
 
+  const handleFileAttach = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !channelRef.current || !user?.id) return
+    e.target.value = ''
+    setUploadingFile(true)
+    try {
+      const isImage = file.type.startsWith('image/')
+      const folder = isImage ? 'photos' : 'documents'
+      const url = await uploadToSufy(file, folder as any)
+      const clientId = `file-${user.id.slice(0, 8)}-${Date.now()}`
+      const optimistic: Message = {
+        id: clientId,
+        text: isImage ? '' : `📎 ${file.name}`,
+        time: new Date().toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' }),
+        mine: true,
+        status: 'sent',
+        type: isImage ? 'image' : 'file',
+        imageUrl: isImage ? url : undefined,
+        fileUrl: isImage ? undefined : url,
+        fileName: file.name,
+      }
+      setMessages(prev => [...prev, optimistic])
+      await channelRef.current!.sendMessage({
+        id: clientId,
+        text: isImage ? '' : `📎 ${file.name}`,
+        attachments: [{
+          type: isImage ? 'image' : 'file',
+          asset_url: url,
+          image_url: isImage ? url : undefined,
+          title: file.name,
+          mime_type: file.type,
+        }],
+      } as any)
+      setMessages(prev => prev.map(m => m.id === clientId ? { ...m, status: 'delivered' } : m))
+    } catch (err: any) {
+      console.error('File upload error:', err)
+      setVoiceError(err?.message || 'File upload failed. Please try again.')
+      setTimeout(() => setVoiceError(null), 4000)
+    }
+    setUploadingFile(false)
+  }
+
   const toggleRecording = async () => {
     if (isRecording) {
       // Stop recording
@@ -477,6 +529,16 @@ export default function ChatPage() {
                           ))}
                         </div>
                       </div>
+                    ) : msg.type === 'image' && msg.imageUrl ? (
+                      <a href={msg.imageUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}>
+                        <img src={msg.imageUrl} alt={msg.fileName || 'Image'} className="max-w-[220px] max-h-52 rounded-xl object-cover" />
+                      </a>
+                    ) : msg.type === 'file' && msg.fileUrl ? (
+                      <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
+                        className="flex items-center gap-2 py-0.5">
+                        <Paperclip className="w-4 h-4 flex-shrink-0 opacity-80" />
+                        <span className="text-sm underline underline-offset-2 truncate max-w-[180px]">{msg.fileName || 'File'}</span>
+                      </a>
                     ) : (
                       <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.text}</p>
                     )}
@@ -569,17 +631,16 @@ export default function ChatPage() {
 
       {/* Input bar */}
       <div className="px-3 py-3 dark:bg-white bg-white border-t dark:border-pink-200 border-gray-100 flex-shrink-0">
-        <input ref={fileInputRef} type="file" accept="image/*,video/*,.pdf,.doc,.docx,.txt" className="hidden" onChange={e => {
-          const file = e.target.files?.[0]; if (!file) return
-          setInput(prev => prev + (prev ? ' ' : '') + `[📎 ${file.name}]`); e.target.value = ''
-        }} />
+        <input ref={fileInputRef} type="file" accept="image/*,.pdf,.doc,.docx,.txt,.zip,.mp4,.mov" className="hidden" onChange={handleFileAttach} />
         <div className="flex items-center gap-2 dark:bg-pink-50 dark:border dark:border-pink-200 bg-gray-100 border border-transparent rounded-2xl px-3 py-2 focus-within:dark:border-pink-400">
           <button onClick={() => setShowEmoji(!showEmoji)} className="text-lg hover:scale-110 transition-transform">😊</button>
           <input value={input} onChange={handleInputChange} onKeyDown={e => e.key === 'Enter' && !e.shiftKey && send()}
             placeholder={connected ? 'Message…' : 'Connecting…'} disabled={!connected || isRecording}
             className="flex-1 bg-transparent text-sm dark:text-gray-900 text-gray-900 placeholder:dark:text-gray-400 placeholder:text-gray-400 focus:outline-none disabled:opacity-50" />
           <div className="flex items-center gap-1">
-            <button onClick={() => fileInputRef.current?.click()} className="dark:text-gray-400 text-gray-400 hover:text-brand-pink transition-colors"><Paperclip className="w-4 h-4" /></button>
+            <button onClick={() => fileInputRef.current?.click()} disabled={uploadingFile} className="dark:text-gray-400 text-gray-400 hover:text-brand-pink transition-colors disabled:opacity-50">
+              {uploadingFile ? <Loader2 className="w-4 h-4 animate-spin text-brand-pink" /> : <Paperclip className="w-4 h-4" />}
+            </button>
             <button
               onClick={toggleRecording}
               disabled={uploadingVoice}

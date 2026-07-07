@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, Plus, Users, Lock, Globe, Send, Smile, Mic, MicOff, Play, Pause, Crown, Shield, X, Loader2, RefreshCw, Square } from 'lucide-react'
+import { Search, Plus, Users, Lock, Globe, Send, Smile, Mic, MicOff, Play, Pause, Crown, Shield, X, Loader2, RefreshCw, Square, Paperclip, Image as ImageIcon, FileText } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { uploadToSufy } from '@/lib/sufy'
 import { useAuth } from '@/hooks/useAuth'
 import { useStream } from '@/contexts/StreamContext'
 import { streamClient } from '@/lib/stream'
@@ -17,7 +18,8 @@ interface Room {
 
 interface ChatMessage {
   id: string; author: string; emoji: string; text: string; time: string; mine: boolean; role: string
-  type?: 'text' | 'audio'; audioUrl?: string
+  type?: 'text' | 'audio' | 'image' | 'file'
+  audioUrl?: string; imageUrl?: string; fileUrl?: string; fileName?: string
 }
 
 const categories = ['All', 'Dating', 'Country', 'Music', 'Culture', 'Business', 'Creators', 'VIP', 'Food']
@@ -55,6 +57,7 @@ export default function GroupChatPage() {
   const [isRecording, setIsRecording] = useState(false)
   const [recordingTime, setRecordingTime] = useState(0)
   const [uploadingVoice, setUploadingVoice] = useState(false)
+  const [uploadingFile, setUploadingFile] = useState(false)
   const [playingId, setPlayingId] = useState<string | null>(null)
   const [voiceError, setVoiceError] = useState<string | null>(null)
 
@@ -65,6 +68,7 @@ export default function GroupChatPage() {
   const audioChunksRef = useRef<Blob[]>([])
   const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const audioRefs = useRef<Record<string, HTMLAudioElement>>({})
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages, othersTyping])
 
@@ -185,6 +189,8 @@ export default function GroupChatPage() {
       const mapGroupMsg = (m: any, myId: string): ChatMessage => {
         const attach = m.attachments?.[0]
         const isVoice = attach?.type === 'voice'
+        const isImage = !isVoice && attach?.type === 'image'
+        const isFile  = !isVoice && !isImage && !!attach
         return {
           id: m.id,
           author: m.user?.name || m.user?.id?.slice(0, 8) || 'User',
@@ -193,8 +199,11 @@ export default function GroupChatPage() {
           time: new Date(m.created_at).toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' }),
           mine: m.user?.id === myId,
           role: 'member',
-          type: isVoice ? 'audio' : 'text',
-          audioUrl: isVoice ? (attach?.asset_url || attach?.url) : undefined,
+          type: isVoice ? 'audio' : isImage ? 'image' : isFile ? 'file' : 'text',
+          audioUrl:  isVoice ? (attach?.asset_url || attach?.url) : undefined,
+          imageUrl:  isImage ? (attach?.image_url || attach?.asset_url) : undefined,
+          fileUrl:   isFile  ? attach?.asset_url : undefined,
+          fileName:  (isImage || isFile) ? (attach?.title || attach?.fallback) : undefined,
         }
       }
 
@@ -266,6 +275,46 @@ export default function GroupChatPage() {
       try { await channelRef.current.sendMessage({ text, id: clientId } as any) } catch {}
     }
     setSending(false)
+  }
+
+  const handleFileAttach = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !channelRef.current || !user?.id) return
+    e.target.value = ''
+    setUploadingFile(true)
+    try {
+      const isImage = file.type.startsWith('image/')
+      const folder = isImage ? 'photos' : 'documents'
+      const url = await uploadToSufy(file, folder as any)
+      const clientId = `gfile-${user.id.slice(0, 8)}-${Date.now()}`
+      const optimistic: ChatMessage = {
+        id: clientId, author: 'You', emoji: '😊',
+        text: isImage ? '' : `📎 ${file.name}`,
+        time: new Date().toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' }),
+        mine: true, role: 'member',
+        type: isImage ? 'image' : 'file',
+        imageUrl: isImage ? url : undefined,
+        fileUrl: isImage ? undefined : url,
+        fileName: file.name,
+      }
+      setMessages(prev => [...prev, optimistic])
+      await channelRef.current!.sendMessage({
+        id: clientId,
+        text: isImage ? '' : `📎 ${file.name}`,
+        attachments: [{
+          type: isImage ? 'image' : 'file',
+          asset_url: url,
+          image_url: isImage ? url : undefined,
+          title: file.name,
+          mime_type: file.type,
+        }],
+      } as any)
+    } catch (err: any) {
+      console.error('File upload error:', err)
+      setVoiceError(err?.message || 'File upload failed. Please try again.')
+      setTimeout(() => setVoiceError(null), 4000)
+    }
+    setUploadingFile(false)
   }
 
   const toggleRecording = async () => {
@@ -542,6 +591,15 @@ export default function GroupChatPage() {
                               ))}
                             </div>
                           </div>
+                        ) : msg.type === 'image' && msg.imageUrl ? (
+                          <a href={msg.imageUrl} target="_blank" rel="noopener noreferrer">
+                            <img src={msg.imageUrl} alt={msg.fileName || 'Image'} className="max-w-[200px] max-h-44 rounded-xl object-cover" />
+                          </a>
+                        ) : msg.type === 'file' && msg.fileUrl ? (
+                          <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
+                            <FileText className="w-4 h-4 flex-shrink-0 opacity-80" />
+                            <span className="underline underline-offset-2 truncate max-w-[160px]">{msg.fileName || 'File'}</span>
+                          </a>
                         ) : (
                           msg.text
                         )}
@@ -594,6 +652,7 @@ export default function GroupChatPage() {
 
             {/* Input */}
             <div className="px-3 py-3 dark:bg-white bg-white border-t dark:border-pink-200 border-gray-100 flex-shrink-0">
+              <input ref={fileInputRef} type="file" accept="image/*,.pdf,.doc,.docx,.txt,.zip,.mp4,.mov" className="hidden" onChange={handleFileAttach} />
               <div className="relative">
                 <AnimatePresence>
                   {showEmojiPicker && (
@@ -610,6 +669,10 @@ export default function GroupChatPage() {
                   <input value={input} onChange={handleInputChange} onKeyDown={e => e.key === 'Enter' && !isRecording && sendMsg()}
                     placeholder={isRecording ? 'Recording…' : 'Message the group…'} disabled={isRecording}
                     className="flex-1 bg-transparent text-sm dark:text-gray-900 text-gray-900 placeholder:dark:text-gray-400 placeholder:text-gray-400 focus:outline-none disabled:opacity-50" />
+                  <button onClick={() => fileInputRef.current?.click()} disabled={uploadingFile || isRecording}
+                    className="dark:text-gray-400 text-gray-400 hover:text-brand-pink transition-colors disabled:opacity-50">
+                    {uploadingFile ? <Loader2 className="w-4 h-4 animate-spin text-brand-pink" /> : <Paperclip className="w-4 h-4" />}
+                  </button>
                   <button
                     onClick={toggleRecording}
                     disabled={uploadingVoice}
