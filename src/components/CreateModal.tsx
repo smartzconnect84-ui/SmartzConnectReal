@@ -296,7 +296,9 @@ function ListingModal({ onClose }: { onClose: () => void }) {
     try {
       const publicUrl = await uploadToSufy(file, 'marketplace')
       setImageUrl(publicUrl)
-    } catch { /* ignore */ }
+    } catch (err: any) {
+      setError(err?.message || 'Image upload failed. Please try again.')
+    }
     setUploading(false)
   }
 

@@ -25,9 +25,10 @@ description: How to deploy edge functions and run SQL against the live Supabase 
 - To insert: provide `id = auth_id = profile UUID`
 
 ## SUFY Region
-- SUFY_REGION was set to `us-dallas-1` (guessed from display name "USA, dallas")
+- SUFY_REGION set to `us-south-1` (tested: only region that returns HTTP 400 vs 000 DNS failure from Replit shell)
 - Endpoint format: `https://<bucket>.mos.<region>.sufybkt.com/<key>`
-- **Needs verification** — user should confirm the actual region code from SUFY dashboard
+- Display name "USA, dallas" → region code `us-south-1` (DNS resolves, other guesses like us-dallas-1 do not)
+- Still worth confirming from SUFY dashboard if uploads fail after secrets are set
 
 ## Secrets Set on Supabase Edge Functions
 All set via Management API `POST /v1/projects/{ref}/secrets`:

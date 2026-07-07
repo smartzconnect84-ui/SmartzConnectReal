@@ -63,7 +63,13 @@ export default function ProfilePage() {
   const [deleteConfirm, setDeleteConfirm] = useState(false)
   const [signOutConfirm, setSignOutConfirm] = useState(false)
   const [openSetting, setOpenSetting] = useState<string | null>(null)
+  const [uploadToast, setUploadToast] = useState<{ msg: string; ok: boolean } | null>(null)
   const avatarInputRef = useRef<HTMLInputElement>(null)
+
+  const showUploadToast = (msg: string, ok: boolean) => {
+    setUploadToast({ msg, ok })
+    setTimeout(() => setUploadToast(null), 3500)
+  }
   const coverInputRef = useRef<HTMLInputElement>(null)
   const photoInputRef = useRef<HTMLInputElement>(null)
 
@@ -153,7 +159,10 @@ export default function ProfilePage() {
       const publicUrl = await uploadToSufy(file, 'avatars')
       setAvatarUrl(publicUrl + '?t=' + Date.now())
       await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', user.id)
-    } catch { /* ignore */ }
+      showUploadToast('Profile photo updated!', true)
+    } catch (err: any) {
+      showUploadToast(err?.message || 'Photo upload failed. Please try again.', false)
+    }
     setUploading(false)
   }
 
@@ -165,7 +174,10 @@ export default function ProfilePage() {
       const publicUrl = await uploadToSufy(file, 'covers')
       setCoverUrl(publicUrl + '?t=' + Date.now())
       await supabase.from('profiles').update({ cover_url: publicUrl }).eq('id', user.id)
-    } catch { /* ignore */ }
+      showUploadToast('Cover photo updated!', true)
+    } catch (err: any) {
+      showUploadToast(err?.message || 'Cover upload failed. Please try again.', false)
+    }
     setCoverUploading(false)
   }
 
@@ -184,7 +196,10 @@ export default function ProfilePage() {
         is_public: true,
       })
       setUserPhotos(prev => [publicUrl, ...prev])
-    } catch { /* ignore */ }
+      showUploadToast('Photo added!', true)
+    } catch (err: any) {
+      showUploadToast(err?.message || 'Photo upload failed. Please try again.', false)
+    }
     setPhotoUploading(false)
   }
 
@@ -194,7 +209,9 @@ export default function ProfilePage() {
     try {
       if (key) await deleteFromSufy(key)
       await supabase.from('platform_files').delete().eq('user_id', user.id).eq('file_url', url)
-    } catch { /* ignore */ }
+    } catch (err) {
+      console.error('Delete photo error:', err)
+    }
     setUserPhotos(prev => prev.filter(u => u !== url))
   }
 
@@ -247,6 +264,23 @@ export default function ProfilePage() {
 
   return (
     <div className="h-full flex flex-col dark:bg-[#0D0A14] bg-gray-50">
+
+      {/* Upload toast */}
+      <AnimatePresence>
+        {uploadToast && (
+          <motion.div
+            key="upload-toast"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className={`fixed top-4 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-2 px-4 py-2.5 rounded-xl shadow-lg text-sm font-semibold text-white
+              ${uploadToast.ok ? 'bg-emerald-500' : 'bg-red-500'}`}
+          >
+            {uploadToast.ok ? <Check className="w-4 h-4" /> : <AlertTriangle className="w-4 h-4" />}
+            {uploadToast.msg}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Header */}
       <div className="px-4 sm:px-6 py-4 dark:bg-[#130E1E] bg-white border-b dark:border-white/6 border-gray-100 flex-shrink-0">

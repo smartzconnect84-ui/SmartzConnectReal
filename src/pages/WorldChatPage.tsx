@@ -50,6 +50,7 @@ export default function WorldChatPage() {
   const [showPinned, setShowPinned] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [myProfile, setMyProfile] = useState<{ full_name: string; avatar_url?: string } | null>(null)
+  const [voiceError, setVoiceError] = useState<string | null>(null)
 
   const endRef = useRef<HTMLDivElement>(null)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -208,16 +209,23 @@ export default function WorldChatPage() {
         const blob = new Blob(audioChunks.current, { type: 'audio/webm' })
         const file = new File([blob], `voice-${Date.now()}.webm`, { type: 'audio/webm' })
         if (channel) {
-          const url = await uploadToSufy(file, 'voice-notes')
-          await channel.sendMessage({
-            text: '🎤 Voice message',
-            attachments: [{ type: 'audio', asset_url: url, title: 'Voice message' }],
-          })
+          try {
+            const url = await uploadToSufy(file, 'voice-notes')
+            await channel.sendMessage({
+              text: '🎤 Voice message',
+              attachments: [{ type: 'audio', asset_url: url, title: 'Voice message' }],
+            })
+          } catch (err) {
+            console.error('Voice note upload failed:', err)
+          }
         }
       }
       mediaRecorder.current.start()
       setRecording(true)
-    } catch { /* mic denied */ }
+    } catch {
+      setVoiceError('Microphone access denied. Please allow mic permissions and try again.')
+      setTimeout(() => setVoiceError(null), 4000)
+    }
   }
 
   const stopRecording = () => {
@@ -264,6 +272,22 @@ export default function WorldChatPage() {
 
   return (
     <div className="h-full flex flex-col dark:bg-[#0D0A14] bg-gray-50">
+      {/* Voice / mic error banner */}
+      <AnimatePresence>
+        {voiceError && (
+          <motion.div
+            key="voice-error"
+            initial={{ opacity: 0, y: -12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            className="mx-4 mt-2 px-4 py-2.5 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center gap-2 text-sm font-semibold text-red-500 flex-shrink-0"
+          >
+            <MicOff className="w-4 h-4 flex-shrink-0" />
+            {voiceError}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Header */}
       <div className="px-4 py-3 dark:bg-[#130E1E] bg-white border-b dark:border-white/6 border-gray-100 flex-shrink-0">
         <div className="flex items-center justify-between">

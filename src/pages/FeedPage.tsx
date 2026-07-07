@@ -131,6 +131,7 @@ function StoriesBar({ user }: { user: { id?: string; email?: string } | null }) 
   const [dbStories, setDbStories] = useState<DbStory[]>([])
   const [uploading, setUploading] = useState(false)
   const [viewing, setViewing] = useState<ViewStory | null>(null)
+  const [uploadError, setUploadError] = useState<string | null>(null)
 
   const loadStories = useCallback(async () => {
     const { data } = await supabase
@@ -148,6 +149,7 @@ function StoriesBar({ user }: { user: { id?: string; email?: string } | null }) 
     const file = e.target.files?.[0]
     if (!file || !user?.id) return
     setUploading(true)
+    setUploadError(null)
     try {
       const publicUrl = await uploadToSufy(file, 'stories')
       const isVideo = file.type.startsWith('video/')
@@ -158,7 +160,10 @@ function StoriesBar({ user }: { user: { id?: string; email?: string } | null }) 
         expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
       })
       await loadStories()
-    } catch { /* ignore */ }
+    } catch (err: any) {
+      setUploadError(err?.message || 'Story upload failed. Please try again.')
+      setTimeout(() => setUploadError(null), 4000)
+    }
     setUploading(false)
   }
 
@@ -167,6 +172,22 @@ function StoriesBar({ user }: { user: { id?: string; email?: string } | null }) 
 
   return (
     <>
+      {/* Upload error banner */}
+      <AnimatePresence>
+        {uploadError && (
+          <motion.div
+            key="story-upload-error"
+            initial={{ opacity: 0, y: -12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            className="mx-4 mb-2 px-4 py-2.5 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center gap-2 text-sm font-semibold text-red-500"
+          >
+            <X className="w-4 h-4 flex-shrink-0" />
+            {uploadError}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Story viewer overlay */}
       {viewing && (
         <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center" onClick={() => setViewing(null)}>
