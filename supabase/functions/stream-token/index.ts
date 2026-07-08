@@ -25,11 +25,15 @@ serve(async (req) => {
     // the Session Service only signs the token, it does not own storage of it)
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const adminClient = createClient(supabaseUrl!, serviceKey)
-    await adminClient.from('stream_tokens').upsert({
+    const { error: upsertError } = await adminClient.from('stream_tokens').upsert({
       user_id: userId,
       token,
       expires_at: new Date(exp * 1000).toISOString(),
-    })
+    }, { onConflict: 'user_id' })
+    if (upsertError) {
+      console.error('stream_tokens upsert failed:', upsertError.message)
+      // Non-fatal: token is still valid, caching is best-effort
+    }
 
     return jsonResponse({ token, userId })
   } catch (err) {

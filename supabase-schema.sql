@@ -105,32 +105,32 @@ DO $$ BEGIN
 END $$;
 
 -- ── STEP 5: swipes table ─────────────────────────────────────────────────────
+-- NOTE: live DB uses swiper_id/target_id (uuid) referencing auth.users.
+-- The CREATE below matches that — IF NOT EXISTS skips it when the table exists.
 CREATE TABLE IF NOT EXISTS public.swipes (
   id         uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  swiper     int  REFERENCES public.users(id) ON DELETE CASCADE,
-  swiped     int  REFERENCES public.users(id) ON DELETE CASCADE,
+  swiper_id  uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+  target_id  uuid REFERENCES auth.users(id) ON DELETE CASCADE,
   action     text NOT NULL CHECK (action IN ('like','pass','superlike')),
+  source     text,
   created_at timestamptz DEFAULT now(),
-  UNIQUE(swiper, swiped)
+  UNIQUE(swiper_id, target_id)
 );
 
 ALTER TABLE public.swipes ENABLE ROW LEVEL SECURITY;
 
-DO $$ BEGIN
+DO $policy$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='swipes' AND policyname='Users can insert own swipes') THEN
     CREATE POLICY "Users can insert own swipes"
       ON public.swipes FOR INSERT
-      WITH CHECK (auth.uid() = (SELECT auth_id FROM public.users WHERE id = swiper));
+      WITH CHECK (auth.uid() = swiper_id);
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='swipes' AND policyname='Users can see own swipes') THEN
     CREATE POLICY "Users can see own swipes"
       ON public.swipes FOR SELECT
-      USING (
-        auth.uid() = (SELECT auth_id FROM public.users WHERE id = swiper) OR
-        auth.uid() = (SELECT auth_id FROM public.users WHERE id = swiped)
-      );
+      USING (auth.uid() = swiper_id OR auth.uid() = target_id);
   END IF;
-END $$;
+END $policy$;
 
 -- ── STEP 6: messages — add missing columns if needed ────────────────────────
 DO $$ BEGIN
@@ -178,7 +178,7 @@ DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='subscriptions' AND policyname='Users can manage own subscription') THEN
     CREATE POLICY "Users can manage own subscription"
       ON public.subscriptions FOR ALL
-      USING (auth.uid() = (SELECT auth_id FROM public.users WHERE id = user_id));
+      USING (auth.uid() = user_id);
   END IF;
 END $$;
 
@@ -199,7 +199,7 @@ DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='story_views' AND policyname='Users can insert story views') THEN
     CREATE POLICY "Users can insert story views"
       ON public.story_views FOR INSERT
-      WITH CHECK (auth.uid() = (SELECT auth_id FROM public.users WHERE id = viewer_id));
+      WITH CHECK (auth.uid() = viewer_id);
   END IF;
 END $$;
 
@@ -221,7 +221,7 @@ DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='comments' AND policyname='Users can create comments') THEN
     CREATE POLICY "Users can create comments"
       ON public.comments FOR INSERT
-      WITH CHECK (auth.uid() = (SELECT auth_id FROM public.users WHERE id = author_id));
+      WITH CHECK (auth.uid() = author_id);
   END IF;
 END $$;
 
@@ -339,11 +339,21 @@ DO $$ BEGIN
   END IF;
 END $$;
 
--- ── STEP 16: Enable Realtime on key tables ───────────────────────────────────
--- Run these separately in SQL Editor after tables are created:
--- ALTER PUBLICATION supabase_realtime ADD TABLE public.messages;
--- ALTER PUBLICATION supabase_realtime ADD TABLE public.matches;
--- ALTER PUBLICATION supabase_realtime ADD TABLE public.notifications;
+-- ── STEP 16: Enable Realtime on key tables (idempotent) ─────────────────────
+DO $rt$ DECLARE tbl text;
+BEGIN
+  FOREACH tbl IN ARRAY ARRAY[
+    'messages','matches','notifications','call_notifications',
+    'world_chat_messages','worldstage_entries'
+  ] LOOP
+    IF NOT EXISTS (
+      SELECT 1 FROM pg_publication_tables
+      WHERE pubname='supabase_realtime' AND tablename=tbl
+    ) THEN
+      EXECUTE format('ALTER PUBLICATION supabase_realtime ADD TABLE public.%I', tbl);
+    END IF;
+  END LOOP;
+END $rt$;
 
 -- ═══════════════════════════════════════════════════════════════════════════
 -- ✅ Done! Safe to re-run at any time — no duplicate errors.
