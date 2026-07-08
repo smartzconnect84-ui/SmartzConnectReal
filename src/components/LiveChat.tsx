@@ -357,7 +357,7 @@ export default function LiveChat() {
   const windowStyle = isMobile
     ? { bottom: 0, left: 0, right: 0, width: '100%' }
     : { bottom: `${88 - position.y}px`, right: `${24 - position.x}px`, width: '340px', maxWidth: 'calc(100vw - 24px)' }
-  const windowHeight = isMobile ? '80dvh' : (minimized ? 'auto' : '480px')
+  const windowHeight = isMobile ? '68dvh' : (minimized ? 'auto' : '420px')
 
   return (
     <>
@@ -431,7 +431,7 @@ export default function LiveChat() {
                   </div>
 
                   {/* ── Messages ── */}
-                  <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2.5 dark:bg-[#0F0A1A] bg-gray-50 overscroll-contain flex flex-col justify-end">
+                  <div className="flex-1 overflow-y-auto px-3 pt-2 pb-3 space-y-2.5 dark:bg-[#0F0A1A] bg-gray-50 overscroll-contain flex flex-col">
                     {messages.map(msg => (
                       <Bubble key={msg.id} msg={msg} onCopy={handleCopy} onFeedback={handleFeedback} onOption={sendMessage} />
                     ))}

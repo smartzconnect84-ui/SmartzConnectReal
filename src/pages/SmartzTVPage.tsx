@@ -56,15 +56,27 @@ function SmartzTVBroadcaster({ data, onEnd }: { data: BroadcastData; onEnd: () =
     const room = new Room({ adaptiveStream: true, dynacast: true })
     roomRef.current = room
 
+    // Abort after 20 s if LiveKit never connects
+    let timedOut = false
+    const timeoutId = setTimeout(() => {
+      if (!disposed) {
+        timedOut = true
+        room.disconnect() // abort pending connection attempt
+        setLkError('Connection timed out. Check your camera/mic permissions and try again.')
+      }
+    }, 20000)
+
     const connect = async () => {
       try {
         const { data: tkData, error } = await supabase.functions.invoke('livekit-token', {
           body: { room: `smartz-tv-${data.streamId}`, name: 'Broadcaster' },
         })
         if (error || !tkData?.token || !tkData?.wsUrl) throw new Error('LiveKit token unavailable — check server config')
-        if (disposed) return
+        if (disposed || timedOut) return
         await room.connect(tkData.wsUrl, tkData.token)
-        if (disposed) { room.disconnect(); return }
+        if (disposed || timedOut) { room.disconnect(); return }
+        clearTimeout(timeoutId)
+        setLkError('') // clear any race-set error
         await room.localParticipant.setCameraEnabled(true)
         await room.localParticipant.setMicrophoneEnabled(true)
         attachTrack(room.localParticipant, localVideoRef.current)
@@ -75,12 +87,14 @@ function SmartzTVBroadcaster({ data, onEnd }: { data: BroadcastData; onEnd: () =
         room.on(RoomEvent.ParticipantConnected, () => setViewers(room.remoteParticipants.size))
         room.on(RoomEvent.ParticipantDisconnected, () => setViewers(room.remoteParticipants.size))
       } catch (err: any) {
-        if (!disposed) setLkError(err?.message || 'Could not start broadcast')
+        clearTimeout(timeoutId)
+        if (!disposed && !timedOut) setLkError(err?.message || 'Could not start broadcast')
       }
     }
     connect()
     return () => {
       disposed = true
+      clearTimeout(timeoutId)
       if (timerRef.current) clearInterval(timerRef.current)
       room.disconnect()
       roomRef.current = null
@@ -281,13 +295,11 @@ function StreamModal({ stream, onClose }: { stream: Stream; onClose: () => void 
         gift_emoji: gift.emoji,
         coins_cost: gift.price,
       })
-      // Try RPC first; fall back to direct update if RPC doesn't exist
-      const { error: rpcErr } = await supabase.rpc('increment_gift_count', { stream_row_id: stream.id })
-      if (rpcErr) {
-        await supabase.from('livestreams')
-          .update({ gift_count: (stream.gifts || 0) + 1 })
-          .eq('id', stream.id)
-      }
+      // Atomic server-side increment to prevent concurrent-write data loss
+      await supabase.rpc('increment_gifts_earned', {
+        stream_row_id: stream.id,
+        amount: gift.price,
+      })
     } catch {
       // Silently continue — gift UI feedback already shown
     }
@@ -415,40 +427,61 @@ export default function SmartzTVPage() {
 
   const fetchStreams = async () => {
     setLoading(true)
-    const { data } = await supabase
-      .from('livestreams')
-      .select('id, title, category, status, view_count, like_count, gift_count, thumbnail_url, created_at, profiles:streamer_id(full_name, avatar_url, is_verified, subscription_tier)')
-      .order('view_count', { ascending: false })
-      .limit(20)
+    try {
+      // Fetch streams — no FK on creator_id so profiles join is done separately
+      const { data: rows, error } = await supabase
+        .from('livestreams')
+        .select('id, title, category, status, viewer_count, gifts_earned, thumbnail_url, created_at, creator_id')
+        .order('viewer_count', { ascending: false })
+        .limit(20)
 
-    setStreams((data || []).map((s: any) => {
-      const cat = s.category || 'Music'
-      const emojiMap: Record<string, string> = { Music: '🎵', Comedy: '😂', Tech: '💻', Fashion: '👗', Sports: '⚽', Food: '🍛', Education: '📚', Live: '📺' }
-      return {
-        id: String(s.id),
-        title: s.title || 'Untitled Stream',
-        creator: s.profiles?.full_name || 'Creator',
-        creatorEmoji: '🎬',
-        avatar_url: s.profiles?.avatar_url,
-        views: s.view_count > 1000 ? `${(s.view_count / 1000).toFixed(1)}K` : String(s.view_count || 0),
-        likes: s.like_count || 0,
-        duration: s.status === 'live' ? 'LIVE' : '—',
-        category: cat,
-        emoji: emojiMap[cat] || '📺',
-        live: s.status === 'live',
-        trending: (s.view_count || 0) > 5000,
-        gifts: s.gift_count || 0,
-        verified: s.profiles?.is_verified || false,
-        vip: s.profiles?.subscription_tier === 'vip',
-        thumbnail_url: s.thumbnail_url,
+      if (error) throw error
+
+      const creatorIds = [...new Set((rows || []).map((r: any) => r.creator_id).filter(Boolean))]
+      let profileMap: Record<string, any> = {}
+      if (creatorIds.length) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, full_name, avatar_url, is_verified, subscription_tier')
+          .in('id', creatorIds)
+        if (profiles) {
+          profileMap = Object.fromEntries(profiles.map((p: any) => [p.id, p]))
+        }
       }
-    }))
+
+      setStreams((rows || []).map((s: any) => {
+        const cat = s.category || 'Music'
+        const emojiMap: Record<string, string> = { Music: '🎵', Comedy: '😂', Tech: '💻', Fashion: '👗', Sports: '⚽', Food: '🍛', Education: '📚', Live: '📺' }
+        const profile = profileMap[s.creator_id] || null
+        const vc = s.viewer_count || 0
+        return {
+          id: String(s.id),
+          title: s.title || 'Untitled Stream',
+          creator: profile?.full_name || 'Creator',
+          creatorEmoji: '🎬',
+          avatar_url: profile?.avatar_url,
+          views: vc > 1000 ? `${(vc / 1000).toFixed(1)}K` : String(vc),
+          likes: 0,
+          duration: s.status === 'live' ? 'LIVE' : '—',
+          category: cat,
+          emoji: emojiMap[cat] || '📺',
+          live: s.status === 'live',
+          trending: vc > 5000,
+          gifts: s.gifts_earned || 0,
+          verified: profile?.is_verified || false,
+          vip: profile?.subscription_tier === 'vip',
+          thumbnail_url: s.thumbnail_url,
+        }
+      }))
+    } catch {
+      // Leave previous streams intact on error
+    }
     setLoading(false)
   }
 
   useEffect(() => { fetchStreams() }, [])
 
-  // Realtime: update view counts on stream cards as they change in DB
+  // Realtime: update viewer counts on stream cards as they change in DB
   useEffect(() => {
     const sub = supabase
       .channel('livestreams-view-counts')
@@ -461,11 +494,10 @@ export default function SmartzTVPage() {
           setStreams(prev =>
             prev.map(s => {
               if (s.id !== String(updated.id)) return s
-              const vc = updated.view_count ?? 0
+              const vc = updated.viewer_count ?? 0
               return {
                 ...s,
                 views: vc > 1000 ? `${(vc / 1000).toFixed(1)}K` : String(vc),
-                likes: updated.like_count ?? s.likes,
                 live: updated.status === 'live',
               }
             })
@@ -494,12 +526,11 @@ export default function SmartzTVPage() {
     const { data: row, error } = await supabase.from('livestreams').insert({
       title,
       category: liveCategory,
-      streamer_id: user.id,
+      creator_id: user.id,
       status: 'live',
-      view_count: 0,
-      like_count: 0,
       thumbnail_url: liveThumbnailUrl.trim() || null,
     }).select('id').single()
+    if (error) console.error('[Go Live] insert error:', error.message)
 
     if (!error && row?.id) {
       setShowGoLiveModal(false)
