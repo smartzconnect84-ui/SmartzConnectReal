@@ -230,6 +230,7 @@ export default function ChatPage() {
       channel.off('typing.start', handleTypingStart)
       channel.off('typing.stop', handleTypingStop)
       channel.off('message.read', handleRead)
+      // Null out ref so in-flight sends from a previous mount don't proceed
       channelRef.current = null
       setOtherTyping(false)
     }
@@ -262,9 +263,10 @@ export default function ChatPage() {
 
     // Stop typing indicator
     if (typingStopRef.current) clearTimeout(typingStopRef.current)
-    channelRef.current.stopTyping().catch(() => {})
+    try { await channelRef.current.stopTyping() } catch {}
 
-    const clientId = `${user.id.replace(/-/g, '').slice(0, 8)}-${Date.now()}`
+    // Use a client-side temp ID only for optimistic UI; Stream will assign its own server ID.
+    const clientId = `client-${user.id.replace(/-/g, '').slice(0, 12)}-${Date.now()}`
     const optimistic: Message = {
       id: clientId,
       text,
@@ -278,12 +280,24 @@ export default function ChatPage() {
     setSending(true)
 
     try {
-      await channelRef.current.sendMessage({ text, id: clientId } as any)
-      setMessages(prev => prev.map(m => m.id === clientId ? { ...m, status: 'delivered' } : m))
-    } catch (err) {
+      const response = await channelRef.current.sendMessage({ text } as any)
+      // Replace the optimistic message with the server-confirmed message ID
+      const serverId = response.message?.id
+      setMessages(prev => prev.map(m =>
+        m.id === clientId
+          ? { ...m, id: serverId ?? m.id, status: 'delivered' }
+          : m
+      ))
+    } catch (err: any) {
       console.error('Send error:', err)
+      // Remove the failed optimistic message and surface an error
+      setMessages(prev => prev.filter(m => m.id !== clientId))
+      setVoiceError(err?.message || 'Failed to send message. Please try again.')
+      setTimeout(() => setVoiceError(null), 4000)
+      setInput(text) // restore input so user can retry
+    } finally {
+      setSending(false)
     }
-    setSending(false)
   }, [input, connected, user?.id])
 
   const addReaction = async (msgId: string, emoji: string) => {
@@ -648,7 +662,7 @@ export default function ChatPage() {
             >
               {uploadingVoice ? <Loader2 className="w-4 h-4 animate-spin text-brand-pink" /> : isRecording ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
             </button>
-            <button onClick={send} disabled={!input.trim() || sending || !connected || isRecording}
+            <button onClick={send} disabled={!input.trim() || sending || !connected || isRecording || uploadingFile}
               className="w-8 h-8 rounded-xl bg-love-gradient flex items-center justify-center disabled:opacity-40 hover:opacity-90 transition-all ml-1">
               {sending ? <Loader2 className="w-3.5 h-3.5 text-white animate-spin" /> : <Send className="w-3.5 h-3.5 text-white" />}
             </button>

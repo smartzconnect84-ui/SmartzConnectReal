@@ -126,11 +126,15 @@ export default function WorldChatPage() {
     init()
     return () => {
       disposed = true
+      // Null out channel state so sendMessage cannot use a stopped channel
+      setChannel(null)
       if (activeChannel) {
-        activeChannel.stopWatching()
+        activeChannel.stopWatching().catch(() => {})
       }
     }
-  }, [user, streamClient])
+  // streamClient is a module-level singleton; exclude it from deps to avoid spurious re-runs
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user])
 
   // Auto-scroll
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
@@ -168,22 +172,28 @@ export default function WorldChatPage() {
   const sendMessage = async () => {
     if (!channel || !text.trim() || sending) return
     setSending(true)
+    const trimmed = text.trim()
     try {
-      const payload: any = { text: text.trim() }
+      const payload: any = { text: trimmed }
       if (replyTo) payload.quoted_message_id = replyTo.id
       await channel.sendMessage(payload)
       setText('')
       setReplyTo(null)
       setShowEmoji(false)
-    } catch (err) { console.error(err) }
-    setSending(false)
+    } catch (err: any) {
+      console.error('WorldChat send error:', err)
+      setVoiceError(err?.message || 'Failed to send message. Please try again.')
+      setTimeout(() => setVoiceError(null), 4000)
+    } finally {
+      setSending(false)
+    }
   }
 
   const sendAttachment = async (file: File) => {
     if (!channel || uploading) return
     setUploading(true)
     try {
-      const url = await uploadToSufy(file, 'photos')
+      const url = await uploadToSufy(file, file.type.startsWith('image/') ? 'photos' : 'documents')
       const isImage = file.type.startsWith('image/')
       await channel.sendMessage({
         text: '',
@@ -194,8 +204,13 @@ export default function WorldChatPage() {
           title: file.name,
         }],
       })
-    } catch (err) { console.error(err) }
-    setUploading(false)
+    } catch (err: any) {
+      console.error('WorldChat attachment error:', err)
+      setVoiceError(err?.message || 'File upload failed. Please try again.')
+      setTimeout(() => setVoiceError(null), 4000)
+    } finally {
+      setUploading(false)
+    }
   }
 
   const startRecording = async () => {

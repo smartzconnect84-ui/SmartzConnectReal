@@ -1,11 +1,12 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   BookOpen, Plus, Edit, Trash2, X, RefreshCw, Eye, Star, Globe,
   FileText, Archive, CheckCircle, AlertCircle, Loader2, Search,
-  Calendar, Clock, Heart, TrendingUp, Tag, ChevronDown, Image,
+  Calendar, Clock, Heart, TrendingUp, Tag, ChevronDown, Image, Link2,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { uploadToSufy } from '@/lib/sufy'
 
 interface BlogPost {
   id: string
@@ -88,6 +89,8 @@ export default function AdminBlog() {
   const [form, setForm] = useState<FormState>(EMPTY_FORM)
   const [dbError, setDbError] = useState<string | null>(null)
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null)
+  const [uploadingCover, setUploadingCover] = useState(false)
+  const coverInputRef = useRef<HTMLInputElement>(null)
 
   const showToast = (msg: string, ok = true) => {
     setToast({ msg, ok })
@@ -228,6 +231,17 @@ export default function AdminBlog() {
     { label: 'Drafts',       value: posts.filter(p => p.status === 'draft').length,     color: 'from-amber-500 to-orange-600', icon: FileText },
     { label: 'Total Views',  value: posts.reduce((s, p) => s + p.views_count, 0),       color: 'from-purple-500 to-violet-600',icon: TrendingUp },
   ]
+
+  const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadingCover(true)
+    try {
+      const url = await uploadToSufy(file, 'covers')
+      setForm(p => ({ ...p, image_url: url }))
+    } catch { /* ignore */ }
+    setUploadingCover(false)
+  }
 
   const inp = "w-full px-3 py-2.5 rounded-xl dark:bg-white/5 bg-gray-50 border dark:border-white/8 border-gray-200 text-xs dark:text-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-brand-pink transition-colors"
   const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
@@ -474,12 +488,20 @@ export default function AdminBlog() {
                 </Field>
 
                 <Field label="Cover Image URL">
-                  <div className="flex gap-2">
+                  <div className="space-y-1.5">
+                    <input ref={coverInputRef} type="file" accept="image/*" className="hidden" onChange={handleCoverUpload} />
+                    <div className="flex items-center gap-2">
+                      {form.image_url && (
+                        <img src={form.image_url} alt="preview" className="w-9 h-9 rounded-lg object-cover border dark:border-white/8 border-gray-200 flex-shrink-0" />
+                      )}
+                      <button type="button" onClick={() => coverInputRef.current?.click()} disabled={uploadingCover}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl dark:bg-white/5 bg-gray-50 border dark:border-white/8 border-gray-200 text-[10px] font-semibold dark:text-gray-300 text-gray-700 hover:border-brand-pink/40 transition-colors disabled:opacity-50 whitespace-nowrap">
+                        {uploadingCover ? <Loader2 className="w-3 h-3 animate-spin" /> : <Link2 className="w-3 h-3" />}
+                        {uploadingCover ? 'Uploading…' : 'Upload Cover'}
+                      </button>
+                    </div>
                     <input value={form.image_url} onChange={e => setForm(p => ({ ...p, image_url: e.target.value }))}
-                      placeholder="https://..." className={inp} />
-                    {form.image_url && (
-                      <img src={form.image_url} alt="preview" className="w-12 h-10 rounded-lg object-cover flex-shrink-0 border dark:border-white/10 border-gray-200" />
-                    )}
+                      placeholder="https://… or upload above" className={inp} />
                   </div>
                 </Field>
 

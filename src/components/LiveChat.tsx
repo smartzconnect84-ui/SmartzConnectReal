@@ -431,7 +431,7 @@ export default function LiveChat() {
                   </div>
 
                   {/* ── Messages ── */}
-                  <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2.5 dark:bg-[#0F0A1A] bg-gray-50 overscroll-contain">
+                  <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2.5 dark:bg-[#0F0A1A] bg-gray-50 overscroll-contain flex flex-col justify-end">
                     {messages.map(msg => (
                       <Bubble key={msg.id} msg={msg} onCopy={handleCopy} onFeedback={handleFeedback} onOption={sendMessage} />
                     ))}

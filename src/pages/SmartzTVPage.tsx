@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Play, Heart, Eye, Search, Flame, TrendingUp, Radio, Gift, X, Tv, Crown, Zap, Shield, RefreshCw, Plus, Mic, MicOff, Video, VideoOff, PhoneOff, Users } from 'lucide-react'
+import { Play, Heart, Eye, Search, Flame, TrendingUp, Radio, Gift, X, Tv, Crown, Zap, Shield, RefreshCw, Plus, Mic, MicOff, Video, VideoOff, PhoneOff, Users, Loader2, Link2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
+import { uploadToSufy } from '@/lib/sufy'
 import { Room, RoomEvent, Track, type LocalParticipant, type RemoteParticipant } from 'livekit-client'
 
 /** Render all video tracks from a participant into a div */
@@ -406,8 +407,11 @@ export default function SmartzTVPage() {
   const [showGoLiveModal, setShowGoLiveModal] = useState(false)
   const [liveTitle, setLiveTitle] = useState('')
   const [liveCategory, setLiveCategory] = useState('Music')
+  const [liveThumbnailUrl, setLiveThumbnailUrl] = useState('')
+  const [uploadingThumbnail, setUploadingThumbnail] = useState(false)
   const [goingLive, setGoingLive] = useState(false)
   const [broadcastData, setBroadcastData] = useState<BroadcastData | null>(null)
+  const thumbnailInputRef = useRef<HTMLInputElement>(null)
 
   const fetchStreams = async () => {
     setLoading(true)
@@ -472,6 +476,17 @@ export default function SmartzTVPage() {
     return () => { supabase.removeChannel(sub) }
   }, [])
 
+  const handleThumbnailUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadingThumbnail(true)
+    try {
+      const url = await uploadToSufy(file, 'covers')
+      setLiveThumbnailUrl(url)
+    } catch { /* ignore */ }
+    setUploadingThumbnail(false)
+  }
+
   const handleGoLive = async () => {
     if (!liveTitle.trim() || !user?.id) return
     setGoingLive(true)
@@ -483,11 +498,13 @@ export default function SmartzTVPage() {
       status: 'live',
       view_count: 0,
       like_count: 0,
+      thumbnail_url: liveThumbnailUrl.trim() || null,
     }).select('id').single()
 
     if (!error && row?.id) {
       setShowGoLiveModal(false)
       setLiveTitle('')
+      setLiveThumbnailUrl('')
       fetchStreams()
       setBroadcastData({ streamId: String(row.id), title })
     }
@@ -635,6 +652,24 @@ export default function SmartzTVPage() {
                   className="w-full px-4 py-3 rounded-xl dark:bg-purple-900/10 bg-gray-50 dark:text-white text-gray-900 border dark:border-purple-500/15 border-gray-200 text-sm focus:outline-none">
                   {categories.filter(c => c !== 'All' && c !== 'Live').map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
+                {/* Thumbnail upload */}
+                <div className="space-y-1.5">
+                  <p className="text-xs font-semibold dark:text-purple-300/70 text-gray-600">Thumbnail (optional)</p>
+                  <input ref={thumbnailInputRef} type="file" accept="image/*" className="hidden" onChange={handleThumbnailUpload} />
+                  <div className="flex items-center gap-2">
+                    {liveThumbnailUrl && (
+                      <img src={liveThumbnailUrl} alt="thumbnail preview" className="w-10 h-10 rounded-xl object-cover border dark:border-purple-500/20 border-gray-200 flex-shrink-0" />
+                    )}
+                    <button type="button" onClick={() => thumbnailInputRef.current?.click()} disabled={uploadingThumbnail}
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-xl dark:bg-purple-900/10 bg-gray-50 border dark:border-purple-500/15 border-gray-200 text-xs font-semibold dark:text-gray-300 text-gray-700 hover:dark:border-pink-500/30 transition-colors disabled:opacity-50 whitespace-nowrap">
+                      {uploadingThumbnail ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Link2 className="w-3.5 h-3.5" />}
+                      {uploadingThumbnail ? 'Uploading…' : 'Upload Thumbnail'}
+                    </button>
+                  </div>
+                  <input value={liveThumbnailUrl} onChange={e => setLiveThumbnailUrl(e.target.value)}
+                    placeholder="https://… or upload above"
+                    className="w-full px-4 py-2.5 rounded-xl dark:bg-purple-900/10 bg-gray-50 dark:text-white text-gray-900 placeholder:dark:text-purple-400/50 placeholder:text-gray-400 border dark:border-purple-500/15 border-gray-200 text-sm focus:outline-none focus:dark:border-pink-500/30" />
+                </div>
                 <button onClick={handleGoLive} disabled={!liveTitle.trim() || goingLive}
                   className="w-full py-3 rounded-2xl bg-gradient-to-r from-red-500 to-pink-500 text-white font-bold disabled:opacity-50 flex items-center justify-center gap-2">
                   {goingLive ? <div className="w-5 h-5 rounded-full border-2 border-white/30 border-t-white animate-spin" /> : <><Radio className="w-4 h-4" /> Start Streaming</>}

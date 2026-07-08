@@ -255,12 +255,13 @@ export default function GroupChatPage() {
   }
 
   const sendMsg = async () => {
-    if (!input.trim()) return
-    const text = input
-    const clientId = `${user?.id?.slice(0, 8) || 'u'}-${Date.now()}`
+    const text = input.trim()
+    if (!text || !channelRef.current || !connected) return
+
+    const clientId = `client-${user?.id?.replace(/-/g, '').slice(0, 12) || 'u'}-${Date.now()}`
 
     if (typingStopRef.current) clearTimeout(typingStopRef.current)
-    channelRef.current?.stopTyping().catch(() => {})
+    try { await channelRef.current.stopTyping() } catch {}
 
     setMessages(prev => [...prev, {
       id: clientId, author: 'You',
@@ -271,10 +272,22 @@ export default function GroupChatPage() {
     setInput('')
     setSending(true)
 
-    if (channelRef.current && connected) {
-      try { await channelRef.current.sendMessage({ text, id: clientId } as any) } catch {}
+    try {
+      const response = await channelRef.current.sendMessage({ text } as any)
+      const serverId = response.message?.id
+      setMessages(prev => prev.map(m =>
+        m.id === clientId ? { ...m, id: serverId ?? m.id } : m
+      ))
+    } catch (err: any) {
+      console.error('Send error:', err)
+      // Remove failed optimistic message and surface error
+      setMessages(prev => prev.filter(m => m.id !== clientId))
+      setVoiceError(err?.message || 'Failed to send message. Please try again.')
+      setTimeout(() => setVoiceError(null), 4000)
+      setInput(text) // restore so user can retry
+    } finally {
+      setSending(false)
     }
-    setSending(false)
   }
 
   const handleFileAttach = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -282,11 +295,11 @@ export default function GroupChatPage() {
     if (!file || !channelRef.current || !user?.id) return
     e.target.value = ''
     setUploadingFile(true)
+    const clientId = `gfile-${user.id.slice(0, 8)}-${Date.now()}`
     try {
       const isImage = file.type.startsWith('image/')
       const folder = isImage ? 'photos' : 'documents'
       const url = await uploadToSufy(file, folder as any)
-      const clientId = `gfile-${user.id.slice(0, 8)}-${Date.now()}`
       const optimistic: ChatMessage = {
         id: clientId, author: 'You', emoji: '😊',
         text: isImage ? '' : `📎 ${file.name}`,
@@ -298,8 +311,7 @@ export default function GroupChatPage() {
         fileName: file.name,
       }
       setMessages(prev => [...prev, optimistic])
-      await channelRef.current!.sendMessage({
-        id: clientId,
+      const resp = await channelRef.current!.sendMessage({
         text: isImage ? '' : `📎 ${file.name}`,
         attachments: [{
           type: isImage ? 'image' : 'file',
@@ -309,8 +321,11 @@ export default function GroupChatPage() {
           mime_type: file.type,
         }],
       } as any)
+      const serverId = resp.message?.id
+      setMessages(prev => prev.map(m => m.id === clientId ? { ...m, id: serverId ?? m.id } : m))
     } catch (err: any) {
       console.error('File upload error:', err)
+      setMessages(prev => prev.filter(m => m.id !== clientId))
       setVoiceError(err?.message || 'File upload failed. Please try again.')
       setTimeout(() => setVoiceError(null), 4000)
     }

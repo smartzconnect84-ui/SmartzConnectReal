@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, Heart, Star, ShoppingCart, MapPin, Shield, X, Plus, Minus, Package, Database, RefreshCw, Upload } from 'lucide-react'
+import { Search, Heart, Star, ShoppingCart, MapPin, Shield, X, Plus, Minus, Package, Database, RefreshCw, Upload, Loader2, Link2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
+import { uploadToSufy } from '@/lib/sufy'
 
 const categories = ['All', 'Fashion', 'Electronics', 'Food', 'Art', 'Beauty', 'Home', 'Services', 'Digital']
 
@@ -116,6 +117,7 @@ interface NewListing {
   category: string
   description: string
   location: string
+  image_url: string
 }
 
 export default function MarketplacePage() {
@@ -129,7 +131,9 @@ export default function MarketplacePage() {
   const [wishlist, setWishlist] = useState<Set<string | number>>(new Set())
   const [showUpload, setShowUpload] = useState(false)
   const [submitting, setSubmitting] = useState(false)
-  const [newListing, setNewListing] = useState<NewListing>({ name: '', price: '', category: 'Fashion', description: '', location: '' })
+  const [newListing, setNewListing] = useState<NewListing>({ name: '', price: '', category: 'Fashion', description: '', location: '', image_url: '' })
+  const [uploadingImage, setUploadingImage] = useState(false)
+  const imageInputRef = useRef<HTMLInputElement>(null)
   const { user } = useAuth()
 
   const fetchProducts = async () => {
@@ -196,6 +200,17 @@ export default function MarketplacePage() {
     })
   }
 
+  const handleListingImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadingImage(true)
+    try {
+      const url = await uploadToSufy(file, 'marketplace')
+      setNewListing(l => ({ ...l, image_url: url }))
+    } catch { /* ignore */ }
+    setUploadingImage(false)
+  }
+
   const submitListing = async () => {
     if (!user || !newListing.name.trim() || !newListing.price) return
     setSubmitting(true)
@@ -206,12 +221,13 @@ export default function MarketplacePage() {
       category: newListing.category,
       description: newListing.description.trim() || null,
       location: newListing.location.trim() || null,
+      image_url: newListing.image_url.trim() || null,
       is_active: true,                            // schema column: is_active
       stock_qty: 1,                               // schema column: stock_qty
     })
     setSubmitting(false)
     if (!error) {
-      setNewListing({ name: '', price: '', category: 'Fashion', description: '', location: '' })
+      setNewListing({ name: '', price: '', category: 'Fashion', description: '', location: '', image_url: '' })
       setShowUpload(false)
       fetchProducts()
     }
@@ -286,6 +302,25 @@ export default function MarketplacePage() {
                     value={newListing.description}
                     onChange={e => setNewListing(l => ({ ...l, description: e.target.value }))}
                     className="col-span-2 px-3 py-2 rounded-xl text-sm dark:bg-white/5 bg-white border dark:border-white/8 border-gray-200 dark:text-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-brand-pink resize-none" />
+                  {/* Product image upload */}
+                  <div className="col-span-2 space-y-1.5">
+                    <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleListingImageUpload} />
+                    <div className="flex items-center gap-2">
+                      {newListing.image_url && (
+                        <img src={newListing.image_url} alt="preview" className="w-9 h-9 rounded-lg object-cover border dark:border-white/8 border-gray-200 flex-shrink-0" />
+                      )}
+                      <button type="button" onClick={() => imageInputRef.current?.click()} disabled={uploadingImage}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl dark:bg-white/5 bg-white border dark:border-white/8 border-gray-200 text-[10px] font-semibold dark:text-gray-300 text-gray-700 hover:border-brand-pink/40 transition-colors disabled:opacity-50 whitespace-nowrap">
+                        {uploadingImage ? <Loader2 className="w-3 h-3 animate-spin" /> : <Link2 className="w-3 h-3" />}
+                        {uploadingImage ? 'Uploading…' : 'Upload Image'}
+                      </button>
+                    </div>
+                    <input
+                      placeholder="Image URL (or upload above)"
+                      value={newListing.image_url}
+                      onChange={e => setNewListing(l => ({ ...l, image_url: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-xl text-sm dark:bg-white/5 bg-white border dark:border-white/8 border-gray-200 dark:text-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-brand-pink" />
+                  </div>
                 </div>
                 <div className="flex gap-2">
                   <button onClick={() => setShowUpload(false)} className="flex-1 py-2 rounded-xl dark:bg-white/5 bg-white border dark:border-white/8 border-gray-200 text-sm dark:text-gray-400 text-gray-600">Cancel</button>
