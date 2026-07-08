@@ -145,7 +145,7 @@ export default function SettingsPage() {
         supabase.from('profiles').select('*').eq('id', user.id).single(),
         supabase.from('posts').select('*').eq('author_id', user.id),
         supabase.from('follows').select('*').eq('follower_id', user.id),
-        supabase.from('stories').select('*').eq('author_id', user.id),
+        supabase.from('stories').select('*').eq('user_id', user.id),  // live DB column is user_id
       ])
       const exportData = {
         exported_at: new Date().toISOString(),

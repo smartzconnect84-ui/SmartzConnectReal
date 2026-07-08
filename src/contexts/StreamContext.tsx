@@ -68,6 +68,9 @@ export function StreamProvider({ children }: { children: ReactNode }) {
         const avatar = profile.data?.avatar_url || undefined
         setUserName(name)
 
+        // Fetch once to confirm the edge function is reachable and to display
+        // in context (e.g. for channel creation). Stream itself will use the
+        // tokenProvider below so it can silently refresh on expiry (code 16).
         const token = await fetchStreamToken(user.id, session.access_token)
         if (cancelled) return
 
@@ -75,7 +78,19 @@ export function StreamProvider({ children }: { children: ReactNode }) {
 
         setUserToken(token)
 
-        const client = await connectStreamUser(user.id, name, avatar, token)
+        // tokenProvider: called by Stream whenever the current JWT is about to
+        // expire. Always fetches a fresh Supabase session first so the edge
+        // function receives a valid access_token even after an hourly rotation.
+        // Throws on failure so Stream knows to retry rather than using a blank token.
+        const tokenProvider = async (): Promise<string> => {
+          const { data: { session: fresh } } = await supabase.auth.getSession()
+          if (!fresh?.access_token) throw new Error('No active Supabase session for Stream token refresh')
+          const t = await fetchStreamToken(user.id, fresh.access_token)
+          if (!t) throw new Error('Stream token endpoint returned empty — will retry')
+          return t
+        }
+
+        const client = await connectStreamUser(user.id, name, avatar, tokenProvider)
         if (cancelled) {
           await disconnectStreamUser()
           return

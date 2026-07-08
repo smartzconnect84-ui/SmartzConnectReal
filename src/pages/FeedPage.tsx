@@ -134,13 +134,28 @@ function StoriesBar({ user }: { user: { id?: string; email?: string } | null }) 
   const [uploadError, setUploadError] = useState<string | null>(null)
 
   const loadStories = useCallback(async () => {
-    const { data } = await supabase
+    // stories.user_id has no FK to profiles, so PostgREST join would silently
+    // return null. Fetch stories first, then hydrate profiles separately.
+    const { data: rows } = await supabase
       .from('stories')
-      .select('id,author_id,media_url,media_type,expires_at,profiles(full_name,avatar_url,username)')
+      .select('id,user_id,media_url,media_type,expires_at')
       .gt('expires_at', new Date().toISOString())
       .order('created_at', { ascending: false })
       .limit(20)
-    if (data) setDbStories(data as any)
+    if (!rows?.length) { setDbStories([]); return }
+
+    const ids = [...new Set(rows.map((r: any) => r.user_id).filter(Boolean))]
+    const { data: profs } = await supabase
+      .from('profiles')
+      .select('id,full_name,avatar_url,username')
+      .in('id', ids)
+    const profMap = Object.fromEntries((profs ?? []).map((p: any) => [p.id, p]))
+
+    setDbStories(rows.map((r: any) => ({
+      ...r,
+      author_id: r.user_id,            // keep author_id alias for rendering
+      profiles: profMap[r.user_id] ?? null,
+    })) as any)
   }, [])
 
   useEffect(() => { loadStories() }, [loadStories])
@@ -154,7 +169,7 @@ function StoriesBar({ user }: { user: { id?: string; email?: string } | null }) 
       const publicUrl = await uploadToSufy(file, 'stories')
       const isVideo = file.type.startsWith('video/')
       await supabase.from('stories').insert({
-        author_id: user.id,
+        user_id: user.id,           // live DB column is user_id (not author_id)
         media_url: publicUrl,
         media_type: isVideo ? 'video' : 'image',
         expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),

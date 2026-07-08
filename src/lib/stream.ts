@@ -21,9 +21,10 @@ export async function connectStreamUser(
   userId: string,
   userName: string,
   avatarUrl?: string,
-  token?: string
+  /** Pass a function so Stream can auto-refresh on token expiry (code 16). */
+  tokenOrProvider?: string | (() => Promise<string>)
 ) {
-  if (!streamClient || !token) return null
+  if (!streamClient || !tokenOrProvider) return null
 
   try {
     if (streamClient.userID === userId) {
@@ -40,7 +41,7 @@ export async function connectStreamUser(
       ...(avatarUrl ? { image: avatarUrl } : {}),
     }
 
-    await streamClient.connectUser(user, token)
+    await streamClient.connectUser(user, tokenOrProvider)
     return streamClient
   } catch (err) {
     console.error('Stream connection error:', err)

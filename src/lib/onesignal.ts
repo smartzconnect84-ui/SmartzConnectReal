@@ -34,10 +34,22 @@ export function initOneSignal() {
   document.head.appendChild(script)
 }
 
+/** Wait up to `maxMs` for OneSignal SDK to be available on the window object. */
+async function waitForOneSignal(maxMs = 8000): Promise<any | null> {
+  const deadline = Date.now() + maxMs
+  while (Date.now() < deadline) {
+    const os = (window as any).OneSignal
+    // SDK is ready once it exposes Notifications (v16 API)
+    if (os?.Notifications) return os
+    await new Promise(r => setTimeout(r, 300))
+  }
+  return null
+}
+
 export async function linkOneSignalUser(userId: string) {
   if (!appId) return
 
-  const os = (window as any).OneSignal
+  const os = await waitForOneSignal()
   if (!os) return
 
   try {
@@ -59,7 +71,8 @@ export async function unlinkOneSignalUser() {
 
 export async function requestNotificationPermission(): Promise<boolean> {
   if (!appId) return false
-  const os = (window as any).OneSignal
+  // Wait for the SDK to be ready (important for calls that happen right after login)
+  const os = await waitForOneSignal()
   if (!os) return false
   try {
     await os.Notifications.requestPermission()

@@ -1,7 +1,7 @@
 import { createContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { type User, type Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
-import { linkOneSignalUser, unlinkOneSignalUser } from '@/lib/onesignal'
+import { linkOneSignalUser, unlinkOneSignalUser, requestNotificationPermission } from '@/lib/onesignal'
 
 interface AuthContextType {
   user: User | null
@@ -94,6 +94,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Null on sign-in (DB unreachable) defaults to 'user'.
           setRole(resolved ?? 'user')
           linkOneSignalUser(uid)
+          // Request browser push permission after login. OneSignal won't
+          // subscribe the user until permission is granted — without this call
+          // the browser prompt never appears and no pushes are ever delivered.
+          requestNotificationPermission().catch(() => {/* user dismissed — fine */})
         }
         if (isMounted) setLoading(false)
         window.dispatchEvent(new CustomEvent('supabase:signed_in', { detail: { session } }))
