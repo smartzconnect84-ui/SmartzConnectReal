@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Users, CreditCard, Flag, BarChart3, Megaphone,
   ShoppingBag, Tv, Car, FileText, Shield, Settings, ChevronLeft,
   ChevronRight, Bell, Search, Moon, Sun, LogOut, Crown,
-  Users2, ScrollText, Menu, X, Map, MessageCircle, BookOpen
+  Users2, ScrollText, Menu, X, Map, MessageCircle, BookOpen, Layout as LayoutIcon
 } from 'lucide-react'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useLiveChat } from '@/contexts/LiveChatContext'
@@ -18,6 +18,7 @@ const navItems = [
   { icon: Flag,            label: 'Reports',         path: '/admin/reports' },
   { icon: Shield,          label: 'Safety',          path: '/admin/safety' },
   { icon: FileText,        label: 'Content',         path: '/admin/content' },
+  { icon: LayoutIcon,      label: 'Site Content',    path: '/admin/cms' },
   { icon: CreditCard,      label: 'Subscriptions',   path: '/admin/subscriptions' },
   { icon: ShoppingBag,     label: 'Marketplace',     path: '/admin/marketplace' },
   { icon: Tv,              label: 'SmartzTV',        path: '/admin/smartztv' },

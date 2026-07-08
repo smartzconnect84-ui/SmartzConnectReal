@@ -60,6 +60,7 @@ import TeamPage            from '@/pages/public/TeamPage'
 import BlogPage            from '@/pages/public/BlogPage'
 import BlogPostPage        from '@/pages/public/BlogPostPage'
 import WorldStagePage      from '@/pages/public/WorldStagePage'
+import CmsPage             from '@/pages/public/CmsPage'
 
 import AdminDashboard      from '@/pages/admin/AdminDashboard'
 import AdminUsers          from '@/pages/admin/AdminUsers'
@@ -71,6 +72,7 @@ import AdminMarketplace    from '@/pages/admin/AdminMarketplace'
 import AdminSmartzTV       from '@/pages/admin/AdminSmartzTV'
 import AdminRides          from '@/pages/admin/AdminRides'
 import AdminContent        from '@/pages/admin/AdminContent'
+import AdminCMS            from '@/pages/admin/AdminCMS'
 import AdminSafety         from '@/pages/admin/AdminSafety'
 import AdminAds            from '@/pages/admin/AdminAds'
 import AdminSettings       from '@/pages/admin/AdminSettings'
@@ -144,6 +146,7 @@ export default function App() {
               <Route path="/blog"           element={<PublicLayout><BlogPage /></PublicLayout>} />
               <Route path="/blog/:slug"     element={<PublicLayout><BlogPostPage /></PublicLayout>} />
               <Route path="/world-stage"    element={<PublicLayout><WorldStagePage /></PublicLayout>} />
+              <Route path="/pages/:slug"    element={<PublicLayout><CmsPage /></PublicLayout>} />
 
               {/* App — protected */}
               <Route path="/app" element={
@@ -189,6 +192,7 @@ export default function App() {
                 <Route path="smartztv"      element={<AdminSmartzTV />} />
                 <Route path="rides"         element={<AdminRides />} />
                 <Route path="content"       element={<AdminContent />} />
+                <Route path="cms"           element={<AdminCMS />} />
                 <Route path="safety"        element={<AdminSafety />} />
                 <Route path="ads"           element={<AdminAds />} />
                 <Route path="settings"      element={<AdminSettings />} />

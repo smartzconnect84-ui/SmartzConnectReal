@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowRight, Play } from 'lucide-react'
+import { cmsList } from '@/lib/contentSync'
 
 interface Slide {
   badge: string
@@ -12,6 +13,30 @@ interface Slide {
   sub: string
   image: string
   objectPosition: string
+}
+
+interface HeroSlideRow {
+  id: string; title: string; subtitle: string | null; image_url: string | null
+  badge_text: string | null; gradient: string | null; is_active: boolean
+}
+
+/** Splits an admin-authored title into the three-tone headline layout ("White Purple\nOrange"). */
+function splitHeadline(title: string): { headlineWhite: string; headlinePurple: string; headlineOrange: string } {
+  const words = title.trim().split(/\s+/)
+  if (words.length <= 1) return { headlineWhite: title, headlinePurple: '', headlineOrange: '' }
+  if (words.length === 2) return { headlineWhite: words[0], headlinePurple: '', headlineOrange: words[1] }
+  return { headlineWhite: words.slice(0, -2).join(' '), headlinePurple: words[words.length - 2], headlineOrange: words[words.length - 1] }
+}
+
+function toDefaultSlide(row: HeroSlideRow): Slide {
+  return {
+    badge: row.badge_text || 'SMARTZCONNECT',
+    badgeColor: row.gradient || 'from-[#EC4899] to-[#DC2626]',
+    ...splitHeadline(row.title),
+    sub: row.subtitle || '',
+    image: row.image_url || '/hero-scroll.jpg',
+    objectPosition: 'center 30%',
+  }
 }
 
 const slides: Slide[] = [
@@ -109,8 +134,25 @@ const stats = [
 export default function Hero() {
   const [current, setCurrent] = useState(0)
   const [isPlaying, setIsPlaying] = useState(true)
+  // Admin-managed slides override the built-in defaults when present; the
+  // defaults keep showing until (and unless) custom slides are published.
+  const [activeSlides, setActiveSlides] = useState<Slide[]>(slides)
 
-  const next = useCallback(() => setCurrent(c => (c + 1) % slides.length), [])
+  useEffect(() => {
+    let cancelled = false
+    cmsList<HeroSlideRow>('hero_slides', { orderBy: 'display_order' }).then(rows => {
+      if (cancelled) return
+      const active = rows.filter(r => r.is_active)
+      if (active.length > 0) setActiveSlides(active.map(toDefaultSlide))
+    })
+    return () => { cancelled = true }
+  }, [])
+
+  const next = useCallback(() => setCurrent(c => (c + 1) % activeSlides.length), [activeSlides.length])
+
+  useEffect(() => {
+    if (current >= activeSlides.length) setCurrent(0)
+  }, [activeSlides, current])
 
   useEffect(() => {
     if (!isPlaying) return
@@ -118,7 +160,7 @@ export default function Hero() {
     return () => clearInterval(t)
   }, [isPlaying, next])
 
-  const slide = slides[current]
+  const slide = activeSlides[current]
 
   return (
     <section className="relative w-full min-h-screen overflow-hidden bg-[#080614]" style={{ paddingTop: '80px' }}>
@@ -249,7 +291,7 @@ export default function Hero() {
 
       {/* ── Slide dots ── */}
       <div className="absolute bottom-20 sm:bottom-24 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5">
-        {slides.map((_, i) => (
+        {activeSlides.map((_, i) => (
           <button
             key={i}
             onClick={() => { setCurrent(i); setIsPlaying(false) }}
