@@ -36,25 +36,40 @@ export default function AdminSmartzTV() {
 
   const fetchStreams = async () => {
     setLoading(true)
-    const { data, error } = await supabase
-      .from('streams')
-      .select('id, title, category, emoji, viewer_count, is_live, moderation_status, created_at, creator_id, profiles:creator_id(full_name, avatar_url)')
+    // Fetch from livestreams (no direct FK on creator_id, so profiles join is done separately)
+    const { data: rows, error } = await supabase
+      .from('livestreams')
+      .select('id, title, category, thumbnail_url, viewer_count, status, moderation_status, created_at, creator_id')
       .order('created_at', { ascending: false })
       .limit(60)
 
-    if (!error && data) {
-      const mapped: Video[] = data.map((v: any) => ({
-        id: v.id,
-        title: v.title,
-        creator: v.profiles?.full_name || 'Unknown Creator',
-        creatorAvatar: v.profiles?.avatar_url || '',
-        category: v.category || 'General',
-        views: (v.viewer_count || 0).toLocaleString(),
-        type: v.is_live ? 'live' : 'upload',
-        status: v.is_live ? 'live' : ((v.moderation_status || 'approved') as Video['status']),
-        thumbnail: v.emoji || '📺',
-        submitted: v.is_live ? 'Live now' : timeAgo(v.created_at),
-      }))
+    if (!error && rows) {
+      // Resolve creator profiles separately
+      const creatorIds = [...new Set(rows.map((r: any) => r.creator_id).filter(Boolean))]
+      let profileMap: Record<string, any> = {}
+      if (creatorIds.length) {
+        const { data: profiles } = await supabase.from('profiles').select('id, full_name, avatar_url').in('id', creatorIds)
+        if (profiles) profileMap = Object.fromEntries(profiles.map((p: any) => [p.id, p]))
+      }
+      const data = rows
+      const mapped: Video[] = data.map((v: any) => {
+        const profile = profileMap[v.creator_id] || null
+        const isLive = v.status === 'live'
+        // Use dedicated moderation_status column; default to 'approved' for live streams
+        const modStatus = isLive ? 'live' : ((['pending', 'approved', 'rejected'].includes(v.moderation_status) ? v.moderation_status : 'approved') as Video['status'])
+        return {
+          id: String(v.id),
+          title: v.title || 'Untitled Stream',
+          creator: profile?.full_name || 'Unknown Creator',
+          creatorAvatar: profile?.avatar_url || '',
+          category: v.category || 'General',
+          views: (v.viewer_count || 0).toLocaleString(),
+          type: isLive ? 'live' : 'upload',
+          status: modStatus,
+          thumbnail: v.thumbnail_url || '📺',
+          submitted: isLive ? 'Live now' : timeAgo(v.created_at),
+        }
+      })
       setList(mapped)
       setTotalViews(data.reduce((sum: number, v: any) => sum + (v.viewer_count || 0), 0))
       setCreatorCount(new Set(data.map((v: any) => v.creator_id)).size)
@@ -72,7 +87,8 @@ export default function AdminSmartzTV() {
 
   const updateStatus = async (id: string, status: 'approved' | 'rejected') => {
     setList(prev => prev.map(v => v.id === id ? { ...v, status } : v))
-    await supabase.from('streams').update({ moderation_status: status }).eq('id', id)
+    // Write to moderation_status, never to the lifecycle status column
+    await supabase.from('livestreams').update({ moderation_status: status }).eq('id', id)
   }
 
   return (

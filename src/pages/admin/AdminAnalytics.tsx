@@ -39,7 +39,7 @@ export default function AdminAnalytics() {
       supabase.from('matches').select('id', { count: 'exact' }),
       supabase.from('posts').select('id', { count: 'exact' }),
       supabase.from('reports').select('id', { count: 'exact' }),
-      supabase.from('streams').select('id', { count: 'exact' }),
+      supabase.from('livestreams').select('id', { count: 'exact' }),
       supabase.from('ride_requests').select('id', { count: 'exact' }),
       supabase.from('marketplace_items').select('id', { count: 'exact' }),
     ])

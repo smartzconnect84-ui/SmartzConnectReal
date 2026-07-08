@@ -224,10 +224,14 @@ export default function AdminDashboard() {
 
   const fetchData = useCallback(async () => {
     try {
-      const [usersRes, reportsRes, activityRes] = await Promise.all([
+      const [usersRes, reportsRes, activityRes, ridesRes, matchesRes, liveStreamsRes, marketRes] = await Promise.all([
         supabase.from('users').select('id, email, full_name, country, subscription_tier, is_active, created_at', { count: 'exact' }).order('created_at', { ascending: false }).limit(10),
-        supabase.from('reports').select('id', { count: 'exact' }).eq('status', 'open'),
+        supabase.from('reports').select('id', { count: 'exact' }).eq('status', 'pending'),
         supabase.from('audit_logs').select('id, action, created_at, user_id').order('created_at', { ascending: false }).limit(8),
+        supabase.from('ride_requests').select('id', { count: 'exact' }).in('status', ['pending', 'accepted', 'in_progress']),
+        supabase.from('matches').select('id', { count: 'exact' }),
+        supabase.from('livestreams').select('id', { count: 'exact' }).eq('status', 'live'),
+        supabase.from('marketplace_items').select('id', { count: 'exact' }),
       ])
 
       if (usersRes.error && usersRes.error.message.includes('does not exist')) {
@@ -246,6 +250,10 @@ export default function AdminDashboard() {
         totalUsers,
         verifiedUsers,
         openReports: reportsRes.count || 0,
+        activeRides: ridesRes.count || 0,
+        newMatches: matchesRes.count || 0,
+        liveStreams: liveStreamsRes.count || 0,
+        marketplaceSales: marketRes.count || 0,
       }))
 
       setRecentUsers(allUsers.slice(0, 6) as RecentUser[])

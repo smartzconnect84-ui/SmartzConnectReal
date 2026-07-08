@@ -62,16 +62,55 @@ export default function CallsPage({ defaultMode }: { defaultMode?: CallMode }) {
   useEffect(() => {
     if (!user?.id) return
     setLoading(true)
-    supabase
-      .from('profiles')
-      .select('id, full_name, avatar_url, is_online')
-      .neq('id', user.id)
-      .order('is_online', { ascending: false })
-      .limit(40)
-      .then(({ data }) => {
-        setContacts(data ?? [])
-        setLoading(false)
-      })
+    // Load mutual follows (friends) first, then fall back to all users
+    const loadContacts = async () => {
+      // Get IDs of people the current user follows
+      const { data: followingRows } = await supabase
+        .from('follows')
+        .select('following_id')
+        .eq('follower_id', user.id)
+      const followingIds = (followingRows ?? []).map((r: any) => r.following_id)
+
+      // Get IDs of people who follow the current user
+      const { data: followerRows } = await supabase
+        .from('follows')
+        .select('follower_id')
+        .eq('following_id', user.id)
+      const followerIds = (followerRows ?? []).map((r: any) => r.follower_id)
+
+      // Mutual follows = intersection
+      const mutualIds = followingIds.filter((id: string) => followerIds.includes(id))
+
+      let friendProfiles: any[] = []
+      if (mutualIds.length > 0) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('id, full_name, avatar_url, is_online')
+          .in('id', mutualIds)
+          .order('is_online', { ascending: false })
+          .limit(40)
+        friendProfiles = data ?? []
+      }
+
+      // If fewer than 20 friends, pad with other recently-seen users (excluding already included)
+      if (friendProfiles.length < 20) {
+        const excludedSet = new Set([user.id, ...friendProfiles.map((p: any) => p.id)])
+        const { data: others, error: othersErr } = await supabase
+          .from('profiles')
+          .select('id, full_name, avatar_url, is_online')
+          .neq('id', user.id)
+          .order('is_online', { ascending: false })
+          .limit(60) // fetch extra to filter client-side
+        if (!othersErr && others) {
+          const filtered = others.filter((p: any) => !excludedSet.has(p.id)).slice(0, 40 - friendProfiles.length)
+          friendProfiles = [...friendProfiles, ...filtered]
+        }
+      }
+
+      setContacts(friendProfiles)
+      setLoading(false)
+    }
+    loadContacts()
   }, [user?.id])
 
   // Fetch recent calls

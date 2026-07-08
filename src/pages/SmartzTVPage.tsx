@@ -31,7 +31,7 @@ const giftItems = [
 ]
 
 interface Stream {
-  id: string; title: string; creator: string; creatorEmoji: string; avatar_url?: string
+  id: string; title: string; creator: string; creatorId: string; creatorEmoji: string; avatar_url?: string
   views: string; likes: number; duration: string; category: string; emoji: string
   live: boolean; trending: boolean; gifts: number; verified: boolean; vip: boolean
   thumbnail_url?: string
@@ -84,8 +84,20 @@ function SmartzTVBroadcaster({ data, onEnd }: { data: BroadcastData; onEnd: () =
         setViewers(room.remoteParticipants.size)
         timerRef.current = setInterval(() => setDuration(d => d + 1), 1000)
         room.on(RoomEvent.LocalTrackPublished, () => attachTrack(room.localParticipant, localVideoRef.current))
-        room.on(RoomEvent.ParticipantConnected, () => setViewers(room.remoteParticipants.size))
-        room.on(RoomEvent.ParticipantDisconnected, () => setViewers(room.remoteParticipants.size))
+        const syncViewerCount = () => {
+          const count = room.remoteParticipants.size
+          setViewers(count)
+          // Sync to DB so the stream list and viewer modal stay consistent
+          supabase.from('livestreams').update({ viewer_count: count }).eq('id', data.streamId).then(() => {})
+        }
+        room.on(RoomEvent.ParticipantConnected, syncViewerCount)
+        room.on(RoomEvent.ParticipantDisconnected, syncViewerCount)
+        // Reset count to 0 if broadcaster's connection drops unexpectedly
+        room.on(RoomEvent.Disconnected, () => {
+          if (disposed) return // graceful cleanup: handleEnd already wrote status/viewer_count
+          // Unexpected network drop — reset stream state so viewers see it as offline
+          supabase.from('livestreams').update({ status: 'ended', viewer_count: 0 }).eq('id', data.streamId).then(() => {})
+        })
       } catch (err: any) {
         clearTimeout(timeoutId)
         if (!disposed && !timedOut) setLkError(err?.message || 'Could not start broadcast')
@@ -101,11 +113,15 @@ function SmartzTVBroadcaster({ data, onEnd }: { data: BroadcastData; onEnd: () =
     }
   }, [data.streamId])
 
+  const resetViewerCount = useCallback(async () => {
+    await supabase.from('livestreams').update({ status: 'ended', viewer_count: 0 }).eq('id', data.streamId)
+  }, [data.streamId])
+
   const handleEnd = useCallback(async () => {
     roomRef.current?.disconnect()
-    await supabase.from('livestreams').update({ status: 'ended' }).eq('id', data.streamId)
+    await resetViewerCount()
     onEnd()
-  }, [data.streamId, onEnd])
+  }, [data.streamId, onEnd, resetViewerCount])
 
   const toggleMute = useCallback(async () => {
     const r = roomRef.current; if (!r) return
@@ -191,10 +207,38 @@ function StreamModal({ stream, onClose }: { stream: Stream; onClose: () => void 
   const [comment, setComment] = useState('')
   const [comments, setComments] = useState<{ id?: number; user: string; text: string; time: string }[]>([])
   const [commentsLoading, setCommentsLoading] = useState(true)
+  const [following, setFollowing] = useState(false)
+  const [followLoading, setFollowLoading] = useState(false)
   // LiveKit viewer
   const liveVideoRef = useRef<HTMLDivElement>(null)
   const viewerRoomRef = useRef<Room | null>(null)
   const [liveVideoReady, setLiveVideoReady] = useState(false)
+
+  // Check follow status on open
+  useEffect(() => {
+    if (!user || !stream.creatorId || stream.creatorId === user.id) return
+    supabase
+      .from('follows')
+      .select('id')
+      .eq('follower_id', user.id)
+      .eq('following_id', stream.creatorId)
+      .maybeSingle()
+      .then(({ data }) => { if (data) setFollowing(true) })
+  }, [user?.id, stream.creatorId])
+
+  const toggleFollow = async () => {
+    if (!user || !stream.creatorId || stream.creatorId === user.id || followLoading) return
+    setFollowLoading(true)
+    if (following) {
+      await supabase.from('follows').delete().eq('follower_id', user.id).eq('following_id', stream.creatorId)
+      setFollowing(false)
+    } else {
+      await supabase.from('follows').insert({ follower_id: user.id, following_id: stream.creatorId })
+      await supabase.from('notifications').insert({ user_id: stream.creatorId, type: 'follow', from_user_id: user.id }).then(() => {})
+      setFollowing(true)
+    }
+    setFollowLoading(false)
+  }
 
   useEffect(() => {
     if (!stream.live) return
@@ -212,6 +256,11 @@ function StreamModal({ stream, onClose }: { stream: Stream; onClose: () => void 
         if (disposed) return
         await room.connect(data.wsUrl, data.token)
         if (disposed) { room.disconnect(); return }
+
+        // viewer_count is kept authoritative by the broadcaster's syncViewerCount
+        // (fires on ParticipantConnected/Disconnected in SmartzTVBroadcaster).
+        // Viewers do not write counts themselves to avoid competing updates.
+
         // Viewer: render remote tracks only; clear ready when no tracks remain
         const renderRemote = () => {
           if (liveVideoRef.current) {
@@ -355,7 +404,12 @@ function StreamModal({ stream, onClose }: { stream: Stream; onClose: () => void 
                 <p className="text-white/70 text-[10px] flex items-center gap-1"><Eye className="w-3 h-3" /> {stream.views}</p>
               </div>
             </div>
-            <button className="px-3 py-1.5 rounded-full bg-love-gradient text-white text-[10px] font-black shadow-lg">Follow</button>
+            {user && stream.creatorId && stream.creatorId !== user.id && (
+              <button onClick={toggleFollow} disabled={followLoading}
+                className={`px-3 py-1.5 rounded-full text-[10px] font-black shadow-lg transition-all disabled:opacity-60 ${following ? 'bg-white/20 text-white border border-white/30' : 'bg-love-gradient text-white'}`}>
+                {following ? 'Following' : 'Follow'}
+              </button>
+            )}
           </div>
         </div>
 
@@ -453,11 +507,14 @@ export default function SmartzTVPage() {
         const cat = s.category || 'Music'
         const emojiMap: Record<string, string> = { Music: '🎵', Comedy: '😂', Tech: '💻', Fashion: '👗', Sports: '⚽', Food: '🍛', Education: '📚', Live: '📺' }
         const profile = profileMap[s.creator_id] || null
-        const vc = s.viewer_count || 0
+        const isLive = s.status === 'live'
+        // Only show viewer count for live streams; ended/offline streams always show 0
+        const vc = isLive ? (s.viewer_count || 0) : 0
         return {
           id: String(s.id),
           title: s.title || 'Untitled Stream',
           creator: profile?.full_name || 'Creator',
+          creatorId: String(s.creator_id || ''),
           creatorEmoji: '🎬',
           avatar_url: profile?.avatar_url,
           views: vc > 1000 ? `${(vc / 1000).toFixed(1)}K` : String(vc),
@@ -465,7 +522,7 @@ export default function SmartzTVPage() {
           duration: s.status === 'live' ? 'LIVE' : '—',
           category: cat,
           emoji: emojiMap[cat] || '📺',
-          live: s.status === 'live',
+          live: isLive,
           trending: vc > 5000,
           gifts: s.gifts_earned || 0,
           verified: profile?.is_verified || false,
@@ -494,11 +551,13 @@ export default function SmartzTVPage() {
           setStreams(prev =>
             prev.map(s => {
               if (s.id !== String(updated.id)) return s
-              const vc = updated.viewer_count ?? 0
+              const isLive = updated.status === 'live'
+              // Non-live streams always display 0 viewers
+              const vc = isLive ? (updated.viewer_count ?? 0) : 0
               return {
                 ...s,
                 views: vc > 1000 ? `${(vc / 1000).toFixed(1)}K` : String(vc),
-                live: updated.status === 'live',
+                live: isLive,
               }
             })
           )

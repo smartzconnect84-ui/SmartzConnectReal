@@ -77,11 +77,16 @@ export default function SpinChatPage() {
 
   useEffect(() => {
     const fetchPool = async () => {
-      const { data, error } = await supabase
+      let q = supabase
         .from('profiles')
         .select('id, full_name, date_of_birth, avatar_url, country, bio, interests, last_seen')
         .order('last_seen', { ascending: false })
         .limit(50)
+
+      // Exclude current user from the spin pool
+      if (user?.id) q = q.neq('id', user.id)
+
+      const { data, error } = await q
 
       if (!error && data && data.length > 0) {
         setDbConnected(true)
@@ -111,7 +116,7 @@ export default function SpinChatPage() {
       }
     }
     fetchPool()
-  }, [])
+  }, [user?.id])
 
   const handleSpinCall = (type: 'video' | 'audio') => {
     if (!currentProfile) return

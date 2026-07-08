@@ -20,15 +20,28 @@ export default function AdminBroadcasts() {
   const [form, setForm] = useState({ title: '', body: '', target_audience: 'all' })
   const [sending, setSending] = useState(false)
   const [userCount, setUserCount] = useState(0)
+  const [segmentCounts, setSegmentCounts] = useState({ premium: 0, vip: 0, free: 0, inactive: 0 })
 
   const fetchData = async () => {
     setLoading(true)
-    const [bRes, uRes] = await Promise.all([
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString()
+    const [bRes, uRes, premRes, vipRes, freeRes, inactiveRes] = await Promise.all([
       supabase.from('broadcast_messages').select('*').order('sent_at', { ascending: false }),
       supabase.from('users').select('id', { count: 'exact', head: true }),
+      supabase.from('users').select('id', { count: 'exact', head: true }).eq('subscription_tier', 'premium'),
+      supabase.from('users').select('id', { count: 'exact', head: true }).eq('subscription_tier', 'vip'),
+      supabase.from('users').select('id', { count: 'exact', head: true }).or('subscription_tier.eq.free,subscription_tier.is.null'),
+      supabase.from('profiles').select('id', { count: 'exact', head: true }).lt('last_seen', sevenDaysAgo),
     ])
     setBroadcasts(bRes.data || [])
-    setUserCount(uRes.count || 0)
+    const total = uRes.count || 0
+    setUserCount(total)
+    setSegmentCounts({
+      premium:  premRes.error  ? 0 : (premRes.count || 0),
+      vip:      vipRes.error   ? 0 : (vipRes.count || 0),
+      free:     freeRes.error  ? 0 : (freeRes.count || 0),
+      inactive: inactiveRes.error ? 0 : (inactiveRes.count || 0),
+    })
     setLoading(false)
   }
 
@@ -42,7 +55,7 @@ export default function AdminBroadcasts() {
       body: form.body,
       target_audience: form.target_audience,
       sent_by_name: 'Admin',
-      recipient_count: form.target_audience === 'all' ? userCount : Math.floor(userCount * 0.3),
+      recipient_count: { all: userCount, premium: segmentCounts.premium, vip: segmentCounts.vip, free: segmentCounts.free, inactive: segmentCounts.inactive }[form.target_audience] ?? userCount,
       sent_at: new Date().toISOString(),
     })
     await fetchData()
@@ -52,11 +65,11 @@ export default function AdminBroadcasts() {
   }
 
   const audienceOptions = [
-    { value: 'all', label: '🌍 All Users', count: userCount },
-    { value: 'premium', label: '💕 Premium Users', count: Math.floor(userCount * 0.3) },
-    { value: 'vip', label: '👑 VIP Users', count: Math.floor(userCount * 0.1) },
-    { value: 'free', label: '🆓 Free Users', count: Math.floor(userCount * 0.6) },
-    { value: 'inactive', label: '😴 Inactive (7+ days)', count: Math.floor(userCount * 0.2) },
+    { value: 'all',      label: '🌍 All Users',           count: userCount },
+    { value: 'premium',  label: '💕 Premium Users',        count: segmentCounts.premium },
+    { value: 'vip',      label: '👑 VIP Users',            count: segmentCounts.vip },
+    { value: 'free',     label: '🆓 Free Users',           count: segmentCounts.free },
+    { value: 'inactive', label: '😴 Inactive (7+ days)',   count: segmentCounts.inactive },
   ]
 
   return (
