@@ -171,7 +171,7 @@ export default function GroupChatPage() {
 
     setActiveRoom(room)
     setMessages([])
-    if (!connected || !user?.id) return
+    if (!connected || !user?.id || !streamClient) return
 
     setLoadingMsgs(true)
     try {

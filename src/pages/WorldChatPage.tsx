@@ -67,12 +67,13 @@ export default function WorldChatPage() {
   // Init channel
   useEffect(() => {
     if (!user || !streamClient) return
+    const client = streamClient
     let disposed = false
     let activeChannel: Channel | null = null
 
     const init = async () => {
       try {
-        const ch = streamClient.channel('messaging', WORLD_CHANNEL_ID, {
+        const ch = client.channel('messaging', WORLD_CHANNEL_ID, {
           members: [],
         })
         await ch.watch()
@@ -263,13 +264,13 @@ export default function WorldChatPage() {
   }
 
   const deleteMessage = async (msgId: string) => {
-    if (!channel) return
+    if (!channel || !streamClient) return
     try { await streamClient.deleteMessage(msgId) } catch (err) { console.error(err) }
     setContextMsg(null)
   }
 
   const pinMessage = async (msgId: string, pinned: boolean) => {
-    if (!channel) return
+    if (!channel || !streamClient) return
     try {
       if (pinned) {
         await streamClient.unpinMessage(msgId)

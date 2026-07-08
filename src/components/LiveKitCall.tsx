@@ -177,7 +177,13 @@ export default function LiveKitCall() {
       const next = !screenSharing
       await room.localParticipant.setScreenShareEnabled(next)
       setScreenSharing(next)
-    } catch { /* user cancelled */ }
+    } catch (err) {
+      // Ignore the browser's own "Share cancelled" rejection, but surface real failures.
+      const message = err instanceof Error ? err.message : String(err)
+      if (!/permission denied|cancel/i.test(message)) {
+        console.error('Screen share failed:', err)
+      }
+    }
   }, [screenSharing])
 
   const handleEndCall = () => {

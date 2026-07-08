@@ -98,10 +98,12 @@ CREATE TABLE IF NOT EXISTS verification_requests (
 
 ALTER TABLE verification_requests ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY IF NOT EXISTS "users can view own verification requests"
+DROP POLICY IF EXISTS "users can view own verification requests" ON verification_requests;
+CREATE POLICY "users can view own verification requests"
   ON verification_requests FOR SELECT TO authenticated
   USING (user_id = auth.uid());
 
-CREATE POLICY IF NOT EXISTS "users can insert own verification request"
+DROP POLICY IF EXISTS "users can insert own verification request" ON verification_requests;
+CREATE POLICY "users can insert own verification request"
   ON verification_requests FOR INSERT TO authenticated
   WITH CHECK (user_id = auth.uid());

@@ -15,3 +15,4 @@
 - [Stream Chat routing contract](stream-chat-routing.md) — ChatPage uses :id param as the OTHER USER's profile UUID (not a channel ID). Always navigate to /app/chat/:userId, never a derived channel ID.
 - [WorldChat channel lifecycle](worldchat-lifecycle.md) — Capture channel in effect-local variable (not state closure) for cleanup; ch.off() with event name string causes TS error; use ch.stopWatching() only.
 - [Superadmin accounts](superadmin-accounts.md) — ceo@smartzconnect.com and shedrickknungehn@gmail.com created with role=superadmin in profiles; admin_users.role='ceo' (constraint only allows admin/super_admin/ceo/moderator).
+- [Integration audit 2026-07](integration-audit-2026-07.md) — real bugs vs. false positives found auditing GetStream/LiveKit/Supabase/OneSignal/SUFY; check live DB/deployed functions before "fixing" naming mismatches.

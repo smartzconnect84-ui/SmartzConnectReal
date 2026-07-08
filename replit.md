@@ -81,9 +81,10 @@ Both have role `superadmin` in the `profiles` table and `ceo` in `admin_users`.
 | `/admin` | Admin panel (role-gated) |
 
 ## User Preferences
-User preferences (notifications, privacy, appearance) are stored in the UI state in `src/pages/SettingsPage.tsx`. Persistence to the database is a planned follow-up task.
+User preferences (notifications, privacy, appearance) are stored in the UI state in `src/pages/SettingsPage.tsx`, backed by a `profiles.preferences` JSONB column (schema_v8) for persistence.
 
 ## Notes
 - OneSignal push only fires on the production domain — no-ops in dev/preview
 - SUFY storage folders: `avatars`, `covers`, `photos`, `stories`, `posts`, `voice-notes`, `documents`
 - Admin roles recognized by AuthContext: `admin`, `superadmin`, `ceo`, `moderator`, `support`
+- GetStream: `streamClient` in `src/lib/stream.ts` is typed `StreamChat | null` — it's `null` when `VITE_STREAM_API_KEY` is unset. All chat call sites gate on `connected`/truthiness before use.

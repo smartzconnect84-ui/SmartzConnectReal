@@ -3,14 +3,19 @@ import { StreamChat } from 'stream-chat'
 const apiKey = import.meta.env.VITE_STREAM_API_KEY as string
 
 if (!apiKey) {
-  console.warn(
+  console.error(
     '⚠️  GetStream API key not set.\n' +
     'Add VITE_STREAM_API_KEY to your environment.\n' +
-    'Get your key from: getstream.io/dashboard'
+    'Get your key from: getstream.io/dashboard\n' +
+    'Chat features are disabled until this is configured.'
   )
 }
 
-export const streamClient = StreamChat.getInstance(apiKey || 'placeholder-key')
+// A 'placeholder-key' fallback used to mask missing configuration by letting the
+// client "connect" and fail later with confusing errors deep in chat components.
+// Fail fast instead: only construct the real client when a key is present; every
+// caller below already guards on `connected`/truthiness before touching this.
+export const streamClient: StreamChat | null = apiKey ? StreamChat.getInstance(apiKey) : null
 
 export async function connectStreamUser(
   userId: string,
@@ -18,7 +23,7 @@ export async function connectStreamUser(
   avatarUrl?: string,
   token?: string
 ) {
-  if (!apiKey || !token) return null
+  if (!streamClient || !token) return null
 
   try {
     if (streamClient.userID === userId) {
@@ -44,12 +49,13 @@ export async function connectStreamUser(
 }
 
 export async function disconnectStreamUser() {
-  if (streamClient.userID) {
+  if (streamClient?.userID) {
     await streamClient.disconnectUser()
   }
 }
 
 export function getOrCreateDirectChannel(userId1: string, userId2: string) {
+  if (!streamClient) throw new Error('Stream chat is not configured (missing VITE_STREAM_API_KEY)')
   // Stream channel IDs are capped at 64 chars.
   // Strip dashes from both UUIDs (32 chars each), sort for determinism, take 60 chars total.
   const [a, b] = [userId1, userId2].sort()
@@ -60,6 +66,7 @@ export function getOrCreateDirectChannel(userId1: string, userId2: string) {
 }
 
 export function getOrCreateGroupChannel(roomId: string, members: string[], name: string) {
+  if (!streamClient) throw new Error('Stream chat is not configured (missing VITE_STREAM_API_KEY)')
   const channelData = { name, members } as Record<string, unknown>
   return streamClient.channel('team', roomId, channelData as any)
 }
