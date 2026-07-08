@@ -60,20 +60,20 @@ export default function SmartzAdsPage() {
         </div>
 
         {/* CTA buttons */}
-        <div className="dark:bg-[#0D0A14] bg-white py-8 px-4">
+        <div className="dark:bg-[#1a0014]/90 bg-pink-50/70 border-t-2 border-pink-500/25 py-6 px-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="flex flex-col sm:flex-row gap-4 justify-center"
+            className="flex flex-col sm:flex-row gap-3 justify-center"
           >
             <a href="mailto:ads@smartzconnect.com"
-              className="inline-flex items-center justify-center gap-2 px-10 py-4 rounded-2xl bg-love-gradient text-white font-bold text-lg shadow-xl shadow-pink-500/30 hover:shadow-pink-500/50 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
-              <Megaphone className="w-5 h-5" /> Create Ad
+              className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-love-gradient text-white font-semibold text-sm shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
+              <Megaphone className="w-4 h-4" /> Create Ad
             </a>
             <a href="mailto:ads@smartzconnect.com"
-              className="inline-flex items-center justify-center gap-2 px-10 py-4 rounded-2xl dark:bg-white/8 bg-gray-100 dark:border dark:border-white/12 border border-gray-200 dark:text-white text-gray-900 font-bold text-lg hover:dark:bg-white/14 hover:bg-gray-200 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
-              <TrendingUp className="w-5 h-5" /> Promote Business
+              className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl dark:bg-pink-900/30 bg-white border dark:border-pink-500/20 border-pink-300/50 dark:text-pink-200 text-pink-800 font-semibold text-sm hover:dark:bg-pink-900/50 hover:bg-pink-100 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
+              <TrendingUp className="w-4 h-4" /> Promote Business
             </a>
           </motion.div>
         </div>

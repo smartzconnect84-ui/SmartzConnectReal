@@ -93,20 +93,20 @@ export default function SmartzMarketPage() {
         </div>
 
         {/* CTA buttons */}
-        <div className="dark:bg-[#0D0A14] bg-white py-8 px-4">
+        <div className="dark:bg-[#120A00]/90 bg-amber-50/70 border-t-2 border-amber-500/25 py-6 px-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={heroIn ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="flex flex-col sm:flex-row gap-4 justify-center"
+            className="flex flex-col sm:flex-row gap-3 justify-center"
           >
             <Link to="/register"
-              className="inline-flex items-center justify-center gap-2 px-10 py-4 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold text-lg shadow-xl shadow-amber-500/30 hover:shadow-amber-500/50 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
-              <ShoppingBag className="w-5 h-5" /> Shop Now
+              className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold text-sm shadow-lg shadow-amber-500/30 hover:shadow-amber-500/50 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
+              <ShoppingBag className="w-4 h-4" /> Shop Now
             </Link>
             <Link to="/register"
-              className="inline-flex items-center justify-center gap-2 px-10 py-4 rounded-2xl dark:bg-white/8 bg-gray-100 dark:border dark:border-white/12 border border-gray-200 dark:text-white text-gray-900 font-bold text-lg hover:dark:bg-white/14 hover:bg-gray-200 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
-              <TrendingUp className="w-5 h-5" /> Sell Now
+              className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl dark:bg-amber-900/30 bg-white border dark:border-amber-500/20 border-amber-300/50 dark:text-amber-200 text-amber-800 font-semibold text-sm hover:dark:bg-amber-900/50 hover:bg-amber-100 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
+              <TrendingUp className="w-4 h-4" /> Sell Now
             </Link>
           </motion.div>
         </div>

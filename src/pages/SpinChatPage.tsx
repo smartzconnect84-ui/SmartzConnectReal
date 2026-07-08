@@ -415,16 +415,24 @@ export default function SpinChatPage() {
                 {!anonymous && <p className="text-xs dark:text-gray-400 text-gray-500 mt-3 leading-relaxed">{currentProfile.bio}</p>}
               </motion.div>
 
-              {/* Call buttons */}
+              {/* Call + Follow buttons */}
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}
-                className="flex items-center gap-3 w-full max-w-sm">
+                className="flex items-center gap-2 w-full max-w-sm">
                 <button onClick={() => handleSpinCall('audio')}
-                  className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 font-semibold text-sm hover:bg-emerald-500/20 transition-colors">
-                  <Phone className="w-4 h-4" /> Voice
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 font-semibold text-xs hover:bg-emerald-500/20 transition-colors">
+                  <Phone className="w-3.5 h-3.5" /> Voice
                 </button>
                 <button onClick={() => handleSpinCall('video')}
-                  className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-500 font-semibold text-sm hover:bg-blue-500/20 transition-colors">
-                  <Video className="w-4 h-4" /> Video
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-500 font-semibold text-xs hover:bg-blue-500/20 transition-colors">
+                  <Video className="w-3.5 h-3.5" /> Video
+                </button>
+                <button onClick={async () => {
+                  if (!user || !currentProfile) return
+                  await supabase.from('follows').insert({ follower_id: user.id, following_id: currentProfile.id })
+                  await supabase.from('notifications').insert({ user_id: currentProfile.id, type: 'follow', from_user_id: user.id }).then(() => {})
+                }}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-fuchsia-500/10 border border-fuchsia-500/20 text-fuchsia-500 font-semibold text-xs hover:bg-fuchsia-500/20 transition-colors">
+                  <Zap className="w-3.5 h-3.5" /> Follow
                 </button>
               </motion.div>
 

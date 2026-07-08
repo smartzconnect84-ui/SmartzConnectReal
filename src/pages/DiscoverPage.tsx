@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import { motion, useMotionValue, useTransform, AnimatePresence } from 'framer-motion'
-import { Heart, X, Star, MapPin, Briefcase, ChevronDown, RotateCcw, SlidersHorizontal, Shield, Database, RefreshCw } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Heart, X, Star, MapPin, Briefcase, ChevronDown, RotateCcw, SlidersHorizontal, Shield, Database, RefreshCw, MessageCircle, UserPlus, Video, Phone } from 'lucide-react'
+import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
+import { useLiveKitCall } from '@/contexts/LiveKitCallContext'
 
 interface Profile {
   id: number | string
@@ -35,11 +36,15 @@ const bgColors = [
 
 const defaultEmojis = ['👩🏾', '👨🏿', '👩🏽', '👨🏾', '👩🏿', '👨🏽', '👩🏾‍💼', '👨🏿‍💻']
 
-function SwipeCard({ profile, onSwipe, isTop, stackIndex }: {
+function SwipeCard({ profile, onSwipe, isTop, stackIndex, onMessage, onFollow, onVideoCall, onAudioCall }: {
   profile: Profile
   onSwipe: (dir: 'left' | 'right' | 'super') => void
   isTop: boolean
   stackIndex: number
+  onMessage?: () => void
+  onFollow?: () => void
+  onVideoCall?: () => void
+  onAudioCall?: () => void
 }) {
   const x = useMotionValue(0)
   const y = useMotionValue(0)
@@ -165,8 +170,34 @@ function SwipeCard({ profile, onSwipe, isTop, stackIndex }: {
           </AnimatePresence>
         </div>
 
-        {/* Action buttons */}
-        <div className="px-5 pb-5 flex items-center justify-center gap-4">
+        {/* Secondary action icons — message, follow, video, audio */}
+        {isTop && (
+          <div className="px-5 pb-1 flex items-center justify-center gap-2 border-t dark:border-white/5 border-gray-100 pt-2">
+            <motion.button whileTap={{ scale: 0.85 }} onClick={e => { e.stopPropagation(); onMessage?.() }}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl dark:bg-white/5 bg-gray-50 border dark:border-white/8 border-gray-100 hover:bg-blue-500/10 hover:border-blue-400/30 hover:text-blue-400 dark:text-gray-400 text-gray-500 transition-all text-[10px] font-semibold"
+              title="Message">
+              <MessageCircle className="w-3.5 h-3.5" /> Message
+            </motion.button>
+            <motion.button whileTap={{ scale: 0.85 }} onClick={e => { e.stopPropagation(); onFollow?.() }}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl dark:bg-white/5 bg-gray-50 border dark:border-white/8 border-gray-100 hover:bg-emerald-500/10 hover:border-emerald-400/30 hover:text-emerald-400 dark:text-gray-400 text-gray-500 transition-all text-[10px] font-semibold"
+              title="Follow">
+              <UserPlus className="w-3.5 h-3.5" /> Follow
+            </motion.button>
+            <motion.button whileTap={{ scale: 0.85 }} onClick={e => { e.stopPropagation(); onVideoCall?.() }}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl dark:bg-white/5 bg-gray-50 border dark:border-white/8 border-gray-100 hover:bg-violet-500/10 hover:border-violet-400/30 hover:text-violet-400 dark:text-gray-400 text-gray-500 transition-all text-[10px] font-semibold"
+              title="Video Call">
+              <Video className="w-3.5 h-3.5" /> Video
+            </motion.button>
+            <motion.button whileTap={{ scale: 0.85 }} onClick={e => { e.stopPropagation(); onAudioCall?.() }}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl dark:bg-white/5 bg-gray-50 border dark:border-white/8 border-gray-100 hover:bg-amber-500/10 hover:border-amber-400/30 hover:text-amber-400 dark:text-gray-400 text-gray-500 transition-all text-[10px] font-semibold"
+              title="Audio Call">
+              <Phone className="w-3.5 h-3.5" /> Call
+            </motion.button>
+          </div>
+        )}
+
+        {/* Swipe action buttons */}
+        <div className="px-5 pb-5 pt-2 flex items-center justify-center gap-4">
           <motion.button whileTap={{ scale: 0.9 }} onClick={() => onSwipe('left')}
             className="w-14 h-14 rounded-full bg-white dark:bg-white/10 shadow-xl flex items-center justify-center border dark:border-white/10 border-gray-200 hover:border-red-400 hover:shadow-red-500/20 transition-all">
             <X className="w-6 h-6 text-red-400" />
@@ -187,6 +218,8 @@ function SwipeCard({ profile, onSwipe, isTop, stackIndex }: {
 
 export default function DiscoverPage() {
   const { user } = useAuth()
+  const navigate = useNavigate()
+  const { startCall } = useLiveKitCall()
   const [profiles, setProfiles] = useState<Profile[]>([])
   const [loading, setLoading] = useState(true)
   const [dbConnected, setDbConnected] = useState(false)
@@ -310,6 +343,24 @@ export default function DiscoverPage() {
     setSuperLiked(new Set())
   }
 
+  const handleMessage = (profileId: string | number) => {
+    navigate(`/app/chat/${profileId}`)
+  }
+
+  const handleFollow = async (profileId: string | number) => {
+    if (!user) return
+    await supabase.from('follows').insert({ follower_id: user.id, following_id: String(profileId) })
+    await supabase.from('notifications').insert({ user_id: String(profileId), type: 'follow', from_user_id: user.id }).then(() => {})
+  }
+
+  const handleVideoCall = (profile: Profile) => {
+    startCall({ roomId: `sc-discover-video-${Date.now()}`, type: 'video', participantName: profile.name, participantEmoji: profile.emoji || '👤' })
+  }
+
+  const handleAudioCall = (profile: Profile) => {
+    startCall({ roomId: `sc-discover-audio-${Date.now()}`, type: 'audio', participantName: profile.name, participantEmoji: profile.emoji || '👤' })
+  }
+
   return (
     <div className="h-full flex flex-col dark:bg-[#0A0710] bg-gray-50 overflow-hidden">
 
@@ -389,7 +440,7 @@ export default function DiscoverPage() {
             )}
           </div>
         ) : (
-          <div className="relative w-full max-w-sm" style={{ height: 'min(580px, calc(100vh - 200px))' }}>
+          <div className="relative w-full max-w-sm" style={{ height: 'min(620px, calc(100vh - 180px))' }}>
             {activeProfiles.slice(0, 3).map((profile, i) => (
               <SwipeCard
                 key={profile.id}
@@ -397,6 +448,10 @@ export default function DiscoverPage() {
                 onSwipe={dir => handleSwipe(profile, dir)}
                 isTop={i === 0}
                 stackIndex={i}
+                onMessage={() => handleMessage(profile.id)}
+                onFollow={() => handleFollow(profile.id)}
+                onVideoCall={() => handleVideoCall(profile)}
+                onAudioCall={() => handleAudioCall(profile)}
               />
             ))}
           </div>

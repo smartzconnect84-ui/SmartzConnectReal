@@ -38,9 +38,30 @@ export default function AdminSafety() {
       supabase.from('safety_rules').select('*').order('order_num'),
       supabase.from('feature_permissions').select('*').order('id'),
     ])
-    setRules(rulesRes.data || [])
-    setPerms(permsRes.data || [])
+    // Deduplicate by id to prevent repeated rows from showing
+    const rawRules: SafetyRule[] = rulesRes.data || []
+    const rawPerms: FeaturePerm[] = permsRes.data || []
+    setRules(Array.from(new Map(rawRules.map(r => [r.id, r])).values()))
+    setPerms(Array.from(new Map(rawPerms.map(p => [p.id, p])).values()))
     setLoading(false)
+  }
+
+  const cleanDuplicateRules = async () => {
+    const seen = new Map<string, number>()
+    const toDelete: number[] = []
+    const sorted = [...rules].sort((a, b) => a.id - b.id)
+    for (const r of sorted) {
+      const key = r.title.toLowerCase().trim()
+      if (seen.has(key)) toDelete.push(r.id)
+      else seen.set(key, r.id)
+    }
+    if (toDelete.length === 0) { alert('No duplicate rules found.'); return }
+    const confirmed = window.confirm(
+      `Remove ${toDelete.length} duplicate rule${toDelete.length > 1 ? 's' : ''} (same title, lowest ID kept)? This cannot be undone.`
+    )
+    if (!confirmed) return
+    await Promise.all(toDelete.map(id => supabase.from('safety_rules').delete().eq('id', id)))
+    await fetchData()
   }
 
   useEffect(() => { fetchData() }, [])
@@ -99,7 +120,11 @@ export default function AdminSafety() {
         <div className="flex items-center justify-center py-16"><RefreshCw className="w-6 h-6 animate-spin text-brand-pink" /></div>
       ) : tab === 'rules' ? (
         <div className="space-y-4">
-          <div className="flex justify-end">
+          <div className="flex items-center justify-end gap-2">
+            <button onClick={cleanDuplicateRules}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl dark:bg-white/5 bg-gray-100 dark:text-gray-400 text-gray-600 text-sm font-semibold hover:text-red-500 transition-colors" title="Remove rules with duplicate titles">
+              <Trash2 className="w-4 h-4" /> Clean Dupes
+            </button>
             <button onClick={() => setShowAdd(true)} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-love-gradient text-white text-sm font-bold shadow-lg shadow-pink-500/25">
               <Plus className="w-4 h-4" /> Add Rule
             </button>

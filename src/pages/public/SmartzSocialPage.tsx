@@ -71,20 +71,20 @@ export default function SmartzSocialPage() {
         </div>
 
         {/* CTA buttons */}
-        <div className="dark:bg-[#0D0A14] bg-white py-8 px-4">
+        <div className="dark:bg-[#04081e]/90 bg-blue-50/70 border-t-2 border-blue-500/25 py-6 px-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={heroIn ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="flex flex-col sm:flex-row gap-4 justify-center"
+            className="flex flex-col sm:flex-row gap-3 justify-center"
           >
             <Link to="/register"
-              className="inline-flex items-center justify-center gap-2 px-10 py-4 rounded-2xl bg-gradient-to-r from-blue-600 to-violet-600 text-white font-bold text-lg shadow-xl shadow-blue-500/30 hover:shadow-blue-500/50 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
-              <Zap className="w-5 h-5" /> Join Now
+              className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-violet-600 text-white font-semibold text-sm shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
+              <Zap className="w-4 h-4" /> Join Now
             </Link>
             <Link to="/register"
-              className="inline-flex items-center justify-center gap-2 px-10 py-4 rounded-2xl dark:bg-white/8 bg-gray-100 dark:border dark:border-white/12 border border-gray-200 dark:text-white text-gray-900 font-bold text-lg hover:dark:bg-white/14 hover:bg-gray-200 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
-              <UserPlus className="w-5 h-5" /> Create Profile
+              className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl dark:bg-blue-900/30 bg-white border dark:border-blue-500/20 border-blue-300/50 dark:text-blue-200 text-blue-800 font-semibold text-sm hover:dark:bg-blue-900/50 hover:bg-blue-100 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
+              <UserPlus className="w-4 h-4" /> Create Profile
             </Link>
           </motion.div>
         </div>

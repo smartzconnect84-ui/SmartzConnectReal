@@ -109,14 +109,14 @@ export default function SmartzRidePage() {
               </h1>
 
               {/* Two main CTAs */}
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Link to="/register"
-                  className="inline-flex items-center justify-center gap-2 px-9 py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold text-lg shadow-2xl shadow-emerald-500/40 hover:shadow-emerald-500/60 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
-                  <Car className="w-5 h-5" /> Book Ride
+                  className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold text-sm shadow-lg shadow-emerald-500/40 hover:shadow-emerald-500/60 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
+                  <Car className="w-4 h-4" /> Book Ride
                 </Link>
                 <Link to="/register"
-                  className="inline-flex items-center justify-center gap-2 px-9 py-4 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/30 text-white font-bold text-lg hover:bg-white/25 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
-                  <Users className="w-5 h-5" /> Drive With Us
+                  className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-white/15 backdrop-blur-sm border border-white/30 text-white font-semibold text-sm hover:bg-white/25 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
+                  <Users className="w-4 h-4" /> Drive With Us
                 </Link>
               </div>
             </motion.div>

@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion } from 'framer-motion'
 import {
   Megaphone, Eye, TrendingUp, DollarSign, Plus, CheckCircle,
-  Clock, BarChart3, RefreshCw, X, Loader2, Database, Search
+  Clock, BarChart3, RefreshCw, X, Loader2, Database, Search, Upload, ImageIcon
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { uploadToSufy } from '@/lib/sufy'
 
 interface Ad {
   id: string
@@ -37,6 +38,7 @@ const typeColors: Record<string, string> = {
 const defaultForm = {
   title: '', advertiser: '', type: 'banner' as Ad['type'],
   budget_usd: '', placement: '', start_date: '', end_date: '',
+  creative_url: '',
 }
 
 export default function AdminAds() {
@@ -48,6 +50,19 @@ export default function AdminAds() {
   const [showCreate, setShowCreate] = useState(false)
   const [form, setForm] = useState(defaultForm)
   const [creating, setCreating] = useState(false)
+  const [uploadingCreative, setUploadingCreative] = useState(false)
+  const creativeInputRef = useRef<HTMLInputElement>(null)
+
+  const handleCreativeUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadingCreative(true)
+    try {
+      const url = await uploadToSufy(file, 'photos')
+      setForm(p => ({ ...p, creative_url: url }))
+    } catch { /* ignore */ }
+    setUploadingCreative(false)
+  }
 
   const fetchAds = useCallback(async () => {
     setLoading(true)
@@ -79,7 +94,7 @@ export default function AdminAds() {
   const createCampaign = async () => {
     if (!form.title || !form.advertiser) return
     setCreating(true)
-    await supabase.from('ad_campaigns').insert({
+    const basePayload: Record<string, unknown> = {
       title: form.title,
       advertiser: form.advertiser,
       type: form.type,
@@ -91,7 +106,14 @@ export default function AdminAds() {
       placement: form.placement || null,
       start_date: form.start_date || null,
       end_date: form.end_date || null,
-    })
+    }
+    if (form.creative_url) basePayload.creative_url = form.creative_url
+    const { error: insertErr } = await supabase.from('ad_campaigns').insert(basePayload)
+    if (insertErr && form.creative_url) {
+      // Column may not exist yet — retry without creative_url
+      const { creative_url: _omit, ...safePayload } = basePayload as typeof basePayload & { creative_url?: string }
+      await supabase.from('ad_campaigns').insert(safePayload)
+    }
     await fetchAds()
     setShowCreate(false)
     setForm(defaultForm)
@@ -313,6 +335,25 @@ export default function AdminAds() {
                   <option value="video">Video</option>
                   <option value="sponsored">Sponsored</option>
                 </select>
+              </div>
+              {/* Creative image upload */}
+              <div>
+                <label className="text-xs font-semibold dark:text-gray-400 text-gray-600 mb-1.5 block">Creative Image</label>
+                <input ref={creativeInputRef} type="file" accept="image/*" className="hidden" onChange={handleCreativeUpload} />
+                <div className="flex items-center gap-2">
+                  <button type="button" onClick={() => creativeInputRef.current?.click()}
+                    disabled={uploadingCreative}
+                    className="flex items-center gap-2 px-3 py-2 rounded-xl dark:bg-white/5 bg-gray-50 border dark:border-white/8 border-gray-200 text-xs font-semibold dark:text-gray-300 text-gray-700 hover:border-brand-pink/40 transition-colors disabled:opacity-50">
+                    {uploadingCreative ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                    {uploadingCreative ? 'Uploading…' : 'Upload'}
+                  </button>
+                  {form.creative_url && (
+                    <img src={form.creative_url} alt="creative" className="w-8 h-8 rounded-lg object-cover border dark:border-white/8 border-gray-200" />
+                  )}
+                  {!form.creative_url && (
+                    <span className="text-xs dark:text-gray-600 text-gray-400 flex items-center gap-1"><ImageIcon className="w-3 h-3" /> No image yet</span>
+                  )}
+                </div>
               </div>
             </div>
             <div className="flex gap-3 mt-6">

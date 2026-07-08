@@ -1,4 +1,4 @@
-import { useState, useEffect, type ReactNode } from 'react'
+import { useState, useEffect, useRef, type ReactNode } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Users2, Plus, Crown, Shield, Eye, Edit, Trash2, X,
@@ -7,6 +7,7 @@ import {
   ChevronUp, ChevronDown,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { uploadToSufy } from '@/lib/sufy'
 
 interface TeamMember {
   id: string
@@ -55,6 +56,44 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   )
 }
 
+function PhotoUploadField({ value, onChange, inputClass }: {
+  value: string
+  onChange: (url: string) => void
+  inputClass: string
+}) {
+  const fileRef = useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = useState(false)
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    try {
+      const url = await uploadToSufy(file, 'photos')
+      onChange(url)
+    } catch { /* ignore */ }
+    setUploading(false)
+  }
+
+  return (
+    <div className="space-y-1.5">
+      <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
+      <div className="flex items-center gap-2">
+        {value && (
+          <img src={value} alt="preview" className="w-9 h-9 rounded-lg object-cover border dark:border-white/8 border-gray-200 flex-shrink-0" />
+        )}
+        <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-xl dark:bg-white/5 bg-gray-50 border dark:border-white/8 border-gray-200 text-[10px] font-semibold dark:text-gray-300 text-gray-700 hover:border-brand-pink/40 transition-colors disabled:opacity-50 whitespace-nowrap">
+          {uploading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Link2 className="w-3 h-3" />}
+          {uploading ? 'Uploading…' : 'Upload Photo'}
+        </button>
+      </div>
+      <input value={value} onChange={e => onChange(e.target.value)}
+        placeholder="https://… or upload above" className={inputClass} />
+    </div>
+  )
+}
+
 export default function AdminTeamMembers() {
   const [members, setMembers] = useState<TeamMember[]>([])
   const [loading, setLoading] = useState(true)
@@ -86,14 +125,36 @@ export default function AdminTeamMembers() {
       setDbError(error.message)
       setMembers([])
     } else {
+      // Deduplicate by id to prevent double rows
+      const unique = Array.from(new Map((data || []).map((m: any) => [m.id, m])).values())
       setMembers(
-        (data || []).map((m: any) => ({
+        unique.map((m: any) => ({
           ...m,
           skills: Array.isArray(m.skills) ? m.skills : [],
         }))
       )
     }
     setLoading(false)
+  }
+
+  const cleanDuplicateMembers = async () => {
+    // Keep earliest row per full_name; delete the rest
+    const sorted = [...members].sort((a, b) => new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime())
+    const seen = new Map<string, string>()
+    const toDelete: string[] = []
+    for (const m of sorted) {
+      const key = (m.full_name || '').toLowerCase().trim()
+      if (seen.has(key)) toDelete.push(m.id)
+      else seen.set(key, m.id)
+    }
+    if (toDelete.length === 0) { showToast('No duplicates found.'); return }
+    const confirmed = window.confirm(
+      `Remove ${toDelete.length} duplicate member${toDelete.length > 1 ? 's' : ''} (same name, older entries kept)? This cannot be undone.`
+    )
+    if (!confirmed) return
+    await Promise.all(toDelete.map(id => supabase.from('team_members').delete().eq('id', id)))
+    showToast(`Removed ${toDelete.length} duplicate(s).`)
+    fetchMembers()
   }
 
   useEffect(() => { fetchMembers() }, [])
@@ -247,6 +308,10 @@ export default function AdminTeamMembers() {
         <div className="flex items-center gap-2">
           <button onClick={fetchMembers} className="p-2 rounded-xl dark:bg-white/5 bg-gray-100 hover:text-brand-pink transition-colors" title="Refresh">
             <RefreshCw className="w-4 h-4" />
+          </button>
+          <button onClick={cleanDuplicateMembers}
+            className="flex items-center gap-2 px-3 py-2 rounded-xl dark:bg-white/5 bg-gray-100 dark:text-gray-400 text-gray-600 text-xs font-semibold hover:text-red-500 transition-colors" title="Remove duplicate members with same name">
+            <Trash2 className="w-3.5 h-3.5" /> Clean Dupes
           </button>
           <button onClick={openAdd}
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-love-gradient text-white text-xs font-bold shadow-lg shadow-pink-500/20 hover:opacity-90 transition-all">
@@ -488,9 +553,12 @@ export default function AdminTeamMembers() {
 
                 {/* Row 3 */}
                 <div className="grid sm:grid-cols-3 gap-4">
-                  <Field label="Photo URL">
-                    <input value={form.photo_url || ''} onChange={e => setForm(p => ({ ...p, photo_url: e.target.value }))}
-                      placeholder="https://..." className={inp} />
+                  <Field label="Photo">
+                    <PhotoUploadField
+                      value={form.photo_url || ''}
+                      onChange={url => setForm(p => ({ ...p, photo_url: url }))}
+                      inputClass={inp}
+                    />
                   </Field>
                   <Field label="Emoji (fallback)">
                     <input value={form.emoji || ''} onChange={e => setForm(p => ({ ...p, emoji: e.target.value }))}
