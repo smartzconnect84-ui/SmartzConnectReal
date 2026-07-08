@@ -2,8 +2,7 @@ import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   Megaphone, BarChart3, Target, Globe, Users, TrendingUp,
-  CheckCircle, ArrowRight, Mail, Play, MousePointer, Eye, Layers,
-  PieChart, Radio,
+  CheckCircle, ArrowRight, Mail, Play, Layers,
 } from 'lucide-react'
 
 const adFormats = [
@@ -46,60 +45,37 @@ export default function SmartzAdsPage() {
     <div className="min-h-screen dark:bg-[#080510] bg-gray-50">
 
       {/* ── Hero ── */}
-      <section className="relative overflow-hidden">
-        <div className="relative h-[460px] sm:h-[540px] lg:h-[620px] bg-gradient-to-br from-[#1f0818] via-[#0d0512] to-[#220a1e]">
-          {/* Decorative blobs */}
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-pink-600/25 blur-3xl" />
-            <div className="absolute top-10 right-10 w-64 h-64 rounded-full bg-rose-500/15 blur-3xl" />
-            <div className="absolute bottom-10 left-10 w-48 h-48 rounded-full bg-fuchsia-500/15 blur-2xl" />
-          </div>
+      <section>
+        {/* Hero image */}
+        <div className="w-full overflow-hidden">
+          <motion.img
+            src="/smartz-ads-hero.png"
+            alt="SmartzAds — Advertise Smarter. Grow Faster."
+            className="w-full object-cover object-center"
+            style={{ maxHeight: '620px' }}
+            initial={{ opacity: 0, scale: 1.03 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.7 }}
+          />
+        </div>
 
-          {/* Floating icon decorations */}
-          <div className="absolute inset-0 pointer-events-none overflow-hidden">
-            <div className="absolute top-14 left-[7%] opacity-20 rotate-[-12deg]">
-              <Megaphone className="w-16 h-16 text-pink-300" />
-            </div>
-            <div className="absolute top-16 right-[9%] opacity-15 rotate-[10deg]">
-              <BarChart3 className="w-14 h-14 text-rose-300" />
-            </div>
-            <div className="absolute bottom-16 left-[13%] opacity-15 rotate-[6deg]">
-              <MousePointer className="w-12 h-12 text-fuchsia-200" />
-            </div>
-            <div className="absolute bottom-20 right-[7%] opacity-20 rotate-[-8deg]">
-              <Eye className="w-10 h-10 text-pink-200" />
-            </div>
-            <div className="absolute top-1/2 right-[22%] opacity-10">
-              <PieChart className="w-20 h-20 text-rose-300" />
-            </div>
-            <div className="absolute top-1/3 left-[22%] opacity-10">
-              <Radio className="w-16 h-16 text-fuchsia-300" />
-            </div>
-          </div>
-
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
-            <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-pink-500/20 backdrop-blur-sm border border-pink-400/35 text-pink-200 text-sm font-bold mb-6">
-                <Megaphone className="w-4 h-4" /> SmartzAds Platform
-              </div>
-              <h1 className="font-display font-black text-4xl sm:text-5xl lg:text-6xl text-white leading-tight mb-8">
-                Reach Africa's Most<br />
-                <span className="text-pink-300">Engaged Audience</span>
-              </h1>
-
-              {/* Two main CTAs */}
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <a href="mailto:ads@smartzconnect.com"
-                  className="inline-flex items-center justify-center gap-2 px-9 py-4 rounded-2xl bg-love-gradient text-white font-bold text-lg shadow-2xl shadow-pink-500/40 hover:shadow-pink-500/60 hover:scale-[1.04] transition-all">
-                  <Mail className="w-5 h-5" /> Start Advertising
-                </a>
-                <Link to="/about"
-                  className="inline-flex items-center justify-center gap-2 px-9 py-4 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/30 text-white font-bold text-lg hover:bg-white/25 transition-all">
-                  View Ad Formats <ArrowRight className="w-5 h-5" />
-                </Link>
-              </div>
-            </motion.div>
-          </div>
+        {/* CTA buttons */}
+        <div className="dark:bg-[#0D0A14] bg-white py-8 px-4">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="flex flex-col sm:flex-row gap-4 justify-center"
+          >
+            <a href="mailto:ads@smartzconnect.com"
+              className="inline-flex items-center justify-center gap-2 px-10 py-4 rounded-2xl bg-love-gradient text-white font-bold text-lg shadow-xl shadow-pink-500/30 hover:shadow-pink-500/50 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
+              <Megaphone className="w-5 h-5" /> Create Ad
+            </a>
+            <a href="mailto:ads@smartzconnect.com"
+              className="inline-flex items-center justify-center gap-2 px-10 py-4 rounded-2xl dark:bg-white/8 bg-gray-100 dark:border dark:border-white/12 border border-gray-200 dark:text-white text-gray-900 font-bold text-lg hover:dark:bg-white/14 hover:bg-gray-200 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
+              <TrendingUp className="w-5 h-5" /> Promote Business
+            </a>
+          </motion.div>
         </div>
       </section>
 

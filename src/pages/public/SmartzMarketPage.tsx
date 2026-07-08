@@ -78,60 +78,37 @@ export default function SmartzMarketPage() {
     <div className="dark:bg-[#080510] bg-gray-50 min-h-screen">
 
       {/* ── Hero ── */}
-      <section className="relative overflow-hidden" ref={heroRef}>
-        <div className="relative h-[460px] sm:h-[540px] lg:h-[620px] bg-gradient-to-br from-[#1a0e00] via-[#1f1100] to-[#251500]">
-          {/* Decorative blobs */}
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[650px] rounded-full bg-amber-600/20 blur-3xl" />
-            <div className="absolute top-10 right-10 w-72 h-72 rounded-full bg-orange-500/15 blur-3xl" />
-            <div className="absolute bottom-10 left-10 w-56 h-56 rounded-full bg-yellow-500/10 blur-2xl" />
-          </div>
+      <section ref={heroRef}>
+        {/* Hero image */}
+        <div className="w-full overflow-hidden">
+          <motion.img
+            src="/smartz-market-hero.png"
+            alt="SmartzMarket — Shop Smart. Live Better."
+            className="w-full object-cover object-center"
+            style={{ maxHeight: '620px' }}
+            initial={{ opacity: 0, scale: 1.03 }}
+            animate={heroIn ? { opacity: 1, scale: 1 } : {}}
+            transition={{ duration: 0.7 }}
+          />
+        </div>
 
-          {/* Floating icon decorations */}
-          <div className="absolute inset-0 pointer-events-none overflow-hidden">
-            <div className="absolute top-12 left-[8%] opacity-20 rotate-[-12deg]">
-              <ShoppingBag className="w-16 h-16 text-amber-300" />
-            </div>
-            <div className="absolute top-20 right-[9%] opacity-15 rotate-[10deg]">
-              <Tag className="w-12 h-12 text-orange-300" />
-            </div>
-            <div className="absolute bottom-16 left-[14%] opacity-15 rotate-[6deg]">
-              <Package className="w-14 h-14 text-amber-200" />
-            </div>
-            <div className="absolute bottom-20 right-[7%] opacity-20 rotate-[-8deg]">
-              <Truck className="w-10 h-10 text-orange-200" />
-            </div>
-            <div className="absolute top-1/2 right-[22%] opacity-10">
-              <Shield className="w-20 h-20 text-amber-300" />
-            </div>
-          </div>
-
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
-            <motion.div initial={{ opacity: 0, y: 40 }} animate={heroIn ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.7 }}>
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/25 backdrop-blur-sm border border-amber-400/40 mb-6">
-                <ShoppingBag className="w-4 h-4 text-amber-300" />
-                <span className="text-sm font-bold text-amber-200">SmartzMarket — Shop &amp; Sell</span>
-              </div>
-
-              <h1 className="font-display font-black text-[2.75rem] sm:text-6xl lg:text-7xl text-white leading-[1.05] mb-8 drop-shadow-2xl">
-                Africa's Biggest<br />
-                <span className="bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">Social</span>{' '}
-                Marketplace
-              </h1>
-
-              {/* Two main CTAs */}
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link to="/register"
-                  className="inline-flex items-center justify-center gap-2 px-9 py-4 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold text-lg shadow-2xl shadow-amber-500/40 hover:scale-[1.04] transition-all">
-                  <ShoppingBag className="w-5 h-5" /> Start Shopping
-                </Link>
-                <Link to="/register"
-                  className="inline-flex items-center justify-center gap-2 px-9 py-4 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/30 text-white font-bold text-lg hover:bg-white/25 transition-all">
-                  <TrendingUp className="w-5 h-5" /> Sell on SmartzMarket
-                </Link>
-              </div>
-            </motion.div>
-          </div>
+        {/* CTA buttons */}
+        <div className="dark:bg-[#0D0A14] bg-white py-8 px-4">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={heroIn ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="flex flex-col sm:flex-row gap-4 justify-center"
+          >
+            <Link to="/register"
+              className="inline-flex items-center justify-center gap-2 px-10 py-4 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold text-lg shadow-xl shadow-amber-500/30 hover:shadow-amber-500/50 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
+              <ShoppingBag className="w-5 h-5" /> Shop Now
+            </Link>
+            <Link to="/register"
+              className="inline-flex items-center justify-center gap-2 px-10 py-4 rounded-2xl dark:bg-white/8 bg-gray-100 dark:border dark:border-white/12 border border-gray-200 dark:text-white text-gray-900 font-bold text-lg hover:dark:bg-white/14 hover:bg-gray-200 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
+              <TrendingUp className="w-5 h-5" /> Sell Now
+            </Link>
+          </motion.div>
         </div>
       </section>
 

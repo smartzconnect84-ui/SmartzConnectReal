@@ -2,8 +2,8 @@ import { useRef } from 'react'
 import { motion, useInView } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import {
-  Tv, Play, Users, Gift, TrendingUp, Mic, Video, Crown, Zap, Globe,
-  Radio, Star, Signal, Clapperboard,
+  Tv, Play, Users, Gift, TrendingUp, Mic, Video, Crown, Zap,
+  Signal, Clapperboard,
 } from 'lucide-react'
 
 const features = [
@@ -25,57 +25,37 @@ export default function SmartzTVPage() {
     <div className="dark:bg-[#080510] bg-gray-50 min-h-screen">
 
       {/* ── Hero ── */}
-      <section className="relative overflow-hidden" ref={heroRef}>
-        <div className="relative h-[460px] sm:h-[540px] lg:h-[620px] bg-gradient-to-br from-[#0e0720] via-[#120828] to-[#160a2e]">
-          {/* Decorative blobs */}
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-violet-600/25 blur-3xl" />
-            <div className="absolute top-8 right-16 w-56 h-56 rounded-full bg-purple-500/20 blur-3xl" />
-            <div className="absolute bottom-8 left-16 w-44 h-44 rounded-full bg-pink-500/15 blur-2xl" />
-          </div>
+      <section ref={heroRef}>
+        {/* Hero image */}
+        <div className="w-full overflow-hidden">
+          <motion.img
+            src="/smartz-tv-hero.png"
+            alt="SmartzTV Live — Live TV. Anytime. Anywhere."
+            className="w-full object-cover object-center"
+            style={{ maxHeight: '620px' }}
+            initial={{ opacity: 0, scale: 1.03 }}
+            animate={heroIn ? { opacity: 1, scale: 1 } : {}}
+            transition={{ duration: 0.7 }}
+          />
+        </div>
 
-          {/* Floating icon decorations */}
-          <div className="absolute inset-0 pointer-events-none overflow-hidden">
-            <div className="absolute top-12 left-[8%] opacity-20 rotate-[-12deg]">
-              <Tv className="w-16 h-16 text-violet-300" />
-            </div>
-            <div className="absolute top-20 right-[9%] opacity-15 rotate-[10deg]">
-              <Radio className="w-12 h-12 text-purple-300" />
-            </div>
-            <div className="absolute bottom-16 left-[14%] opacity-15 rotate-[6deg]">
-              <Clapperboard className="w-14 h-14 text-violet-200" />
-            </div>
-            <div className="absolute bottom-20 right-[7%] opacity-20 rotate-[-8deg]">
-              <Signal className="w-10 h-10 text-pink-200" />
-            </div>
-            <div className="absolute top-1/2 right-[22%] opacity-10">
-              <Star className="w-20 h-20 text-purple-300" />
-            </div>
-          </div>
-
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
-            <motion.div initial={{ opacity: 0, y: 30 }} animate={heroIn ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.6 }}>
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-violet-500/20 backdrop-blur-sm border border-violet-400/35 mb-6">
-                <Tv className="w-4 h-4 text-violet-300" />
-                <span className="text-sm font-semibold text-violet-200">SmartzConnect TV</span>
-              </div>
-              <h1 className="font-display font-black text-4xl sm:text-5xl lg:text-6xl text-white leading-tight mb-8">
-                Africa's Live<br /><span className="text-pink-300">Streaming</span>{' '}Platform
-              </h1>
-
-              {/* Two main CTAs */}
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link to="/register"
-                  className="inline-flex items-center justify-center gap-2 px-9 py-4 rounded-2xl btn-love font-bold text-lg shadow-2xl shadow-pink-500/40 hover:scale-[1.04] transition-all">
-                  <Play className="w-5 h-5" fill="white" /> Start Streaming Free
-                </Link>
-                <Link to="/register"
-                  className="inline-flex items-center justify-center gap-2 px-9 py-4 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/30 text-white font-bold text-lg hover:bg-white/25 transition-all">
-                  <Globe className="w-5 h-5" /> Watch Live Now
-                </Link>
-              </div>
-            </motion.div>
-          </div>
+        {/* CTA buttons */}
+        <div className="dark:bg-[#0D0A14] bg-white py-8 px-4">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={heroIn ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="flex flex-col sm:flex-row gap-4 justify-center"
+          >
+            <Link to="/register"
+              className="inline-flex items-center justify-center gap-2 px-10 py-4 rounded-2xl bg-gradient-to-r from-violet-600 to-purple-600 text-white font-bold text-lg shadow-xl shadow-violet-500/30 hover:shadow-violet-500/50 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
+              <Play className="w-5 h-5" fill="white" /> Watch Live
+            </Link>
+            <Link to="/register"
+              className="inline-flex items-center justify-center gap-2 px-10 py-4 rounded-2xl dark:bg-white/8 bg-gray-100 dark:border dark:border-white/12 border border-gray-200 dark:text-white text-gray-900 font-bold text-lg hover:dark:bg-white/14 hover:bg-gray-200 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
+              <Signal className="w-5 h-5" /> Go Live
+            </Link>
+          </motion.div>
         </div>
       </section>
 

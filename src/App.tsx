@@ -54,6 +54,8 @@ import SmartzRidePage      from '@/pages/public/SmartzRidePage'
 import SmartzMarketPage    from '@/pages/public/SmartzMarketPage'
 import SmartzDeliveryPage  from '@/pages/public/SmartzDeliveryPage'
 import SmartzAdsPage       from '@/pages/public/SmartzAdsPage'
+import SmartzSocialPage    from '@/pages/public/SmartzSocialPage'
+import SmartzDatingPage    from '@/pages/public/SmartzDatingPage'
 import TeamPage            from '@/pages/public/TeamPage'
 import BlogPage            from '@/pages/public/BlogPage'
 import BlogPostPage        from '@/pages/public/BlogPostPage'
@@ -136,6 +138,8 @@ export default function App() {
               <Route path="/smartzmarket"   element={<PublicLayout><SmartzMarketPage /></PublicLayout>} />
               <Route path="/smartzdelivery" element={<PublicLayout><SmartzDeliveryPage /></PublicLayout>} />
               <Route path="/smartzads"      element={<PublicLayout><SmartzAdsPage /></PublicLayout>} />
+              <Route path="/smartzsocial"   element={<PublicLayout><SmartzSocialPage /></PublicLayout>} />
+              <Route path="/smartzdating"   element={<PublicLayout><SmartzDatingPage /></PublicLayout>} />
               <Route path="/team"           element={<PublicLayout><TeamPage /></PublicLayout>} />
               <Route path="/blog"           element={<PublicLayout><BlogPage /></PublicLayout>} />
               <Route path="/blog/:slug"     element={<PublicLayout><BlogPostPage /></PublicLayout>} />
