@@ -22,7 +22,7 @@ export default function SmartzTVPage() {
   const heroIn = useInView(heroRef, { once: true })
 
   return (
-    <div className="dark:bg-[#080510] bg-gray-50 min-h-screen">
+    <div className="dark:bg-[#080510] bg-gray-50 min-h-screen pt-[72px] sm:pt-20">
 
       {/* ── Hero ── */}
       <section ref={heroRef}>

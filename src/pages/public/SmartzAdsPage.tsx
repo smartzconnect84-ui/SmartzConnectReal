@@ -42,7 +42,7 @@ const faqs = [
 
 export default function SmartzAdsPage() {
   return (
-    <div className="min-h-screen dark:bg-[#080510] bg-gray-50">
+    <div className="min-h-screen dark:bg-[#080510] bg-gray-50 pt-[72px] sm:pt-20">
 
       {/* ── Hero ── */}
       <section>
