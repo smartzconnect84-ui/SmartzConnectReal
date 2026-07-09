@@ -96,7 +96,7 @@ export default function SpinChatPage() {
   const presenceChannelRef = useRef<any>(null)
 
   const handlePresenceSync = useCallback((channel: any) => {
-    const state = channel.presenceState<{ user_id: string }>()
+    const state = channel.presenceState() as Record<string, Array<{ user_id: string }>>
     const ids = new Set(
       Object.values(state)
         .flat()

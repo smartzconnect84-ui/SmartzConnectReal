@@ -14,7 +14,9 @@
  */
 import { supabase } from './supabase'
 
-type Row = Record<string, unknown> & { id?: string }
+// Intentionally loose — concrete row interfaces need not carry an index signature.
+// Supabase upsert calls cast to Record<string, unknown> at the call site.
+type Row = { id?: string }
 
 const CACHE_PREFIX = 'smartz_cms_cache_'
 const QUEUE_KEY = 'smartz_cms_queue'
@@ -88,7 +90,7 @@ export async function flushQueue(): Promise<{ ok: number; failed: number }> {
     for (const item of queue) {
       try {
         if (item.op === 'upsert' && item.row) {
-          const { error } = await supabase.from(item.table).upsert(item.row)
+          const { error } = await supabase.from(item.table).upsert(item.row as Record<string, unknown>)
           if (error) throw error
         } else if (item.op === 'delete' && item.rowId) {
           const { error } = await supabase.from(item.table).delete().eq('id', item.rowId)
@@ -170,7 +172,7 @@ export async function cmsSave<T extends Row>(table: string, row: T): Promise<T> 
   writeCache(table, cached)
 
   try {
-    const { error } = await supabase.from(table).upsert(saved)
+    const { error } = await supabase.from(table).upsert(saved as Record<string, unknown>)
     if (error) throw error
   } catch {
     enqueue({ table, op: 'upsert', row: saved })
