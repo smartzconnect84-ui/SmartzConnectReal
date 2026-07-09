@@ -5,7 +5,7 @@ import {
   Home, User, Users, MessageCircle, Bell, Video, Phone,
   Heart, Users2, FileText, Calendar, ShoppingBag, Briefcase,
   BookOpen, Tv, Car, Zap, Crown, Settings, HelpCircle,
-  Sun, Moon, LogOut, Globe, Bookmark
+  Sun, Moon, LogOut, Globe, Bookmark, Trophy, Gift
 } from 'lucide-react'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useAuth } from '@/hooks/useAuth'
@@ -49,12 +49,14 @@ const drawerSections = [
       { path: '/app/smartztv',      icon: Tv,            label: 'SmartzTV',     badge: null as string | null, color: 'text-violet-500' },
       { path: '/app/ride',          icon: Car,           label: 'Ride',         badge: null as string | null, color: 'text-emerald-500' },
       { path: '/app/spin',          icon: Zap,           label: 'Spin Chat',    badge: null as string | null, color: 'text-fuchsia-500' },
+      { path: '/app/worldstage',    icon: Trophy,        label: 'World Stage',  badge: null as string | null, color: 'text-amber-500' },
       { path: '/app/subscriptions', icon: Crown,         label: 'Premium',      badge: null as string | null, color: 'text-yellow-500' },
     ],
   },
   {
     section: 'Account',
     items: [
+      { path: '/app/referrals', icon: Gift,       label: 'Invite & Earn', badge: null as string | null, color: '' },
       { path: '/app/saved',    icon: Bookmark,   label: 'Saved Posts',   badge: null as string | null, color: '' },
       { path: '/app/settings', icon: Settings,   label: 'Settings',      badge: null as string | null, color: '' },
       { path: '/app/help',     icon: HelpCircle, label: 'Help & Support', badge: null as string | null, color: '' },

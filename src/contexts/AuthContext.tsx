@@ -2,6 +2,7 @@ import { createContext, useEffect, useRef, useState, type ReactNode } from 'reac
 import { type User, type Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import { linkOneSignalUser, unlinkOneSignalUser, requestNotificationPermission } from '@/lib/onesignal'
+import { applyStoredReferralCode } from '@/lib/referral'
 
 interface AuthContextType {
   user: User | null
@@ -95,6 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setRole(resolved ?? 'user')
           linkOneSignalUser(uid)
           if (session?.user?.email) applyPendingProfile(uid, undefined, session.user.email)
+          applyStoredReferralCode(uid)
           // Request browser push permission after login. OneSignal won't
           // subscribe the user until permission is granted — without this call
           // the browser prompt never appears and no pushes are ever delivered.

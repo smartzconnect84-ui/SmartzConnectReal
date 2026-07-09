@@ -36,6 +36,7 @@ interface LiveKitCallContextValue {
   acceptCall: () => Promise<void>
   declineCall: () => Promise<void>
   dismissDeclined: () => void
+  inviteToCall: (opts: { contactId: string; contactName: string; contactAvatar?: string }) => Promise<void>
 }
 
 const LiveKitCallContext = createContext<LiveKitCallContextValue | null>(null)
@@ -214,6 +215,26 @@ export function LiveKitCallProvider({ children }: { children: ReactNode }) {
     })
   }, [user?.id, startCall])
 
+  // ── inviteToCall — add another participant to the CURRENT active call room ─
+  const inviteToCall = useCallback(async (opts: { contactId: string; contactName: string; contactAvatar?: string }) => {
+    if (!user?.id || !activeCallRef.current) return
+    const { contactId } = opts
+    const roomId = activeCallRef.current.roomId
+    await supabase.from('call_notifications').insert({
+      from_id: user.id,
+      to_id: contactId,
+      room_name: roomId,
+      call_type: activeCallRef.current.type,
+      status: 'pending',
+    })
+    await supabase.from('call_invites').upsert({
+      room_name: roomId,
+      user_id: contactId,
+      invited_by: user.id,
+      status: 'invited',
+    }, { onConflict: 'room_name,user_id' })
+  }, [user?.id])
+
   // ── acceptCall — callee side ──────────────────────────────────────────────
   const acceptCall = useCallback(async () => {
     if (!incomingCall) return
@@ -227,6 +248,14 @@ export function LiveKitCallProvider({ children }: { children: ReactNode }) {
 
     const snap = incomingCall
     setIncomingCall(null)
+    if (user?.id) {
+      await supabase.from('call_invites').upsert({
+        room_name: snap.roomId,
+        user_id: user.id,
+        status: 'joined',
+        joined_at: new Date().toISOString(),
+      }, { onConflict: 'room_name,user_id' })
+    }
     startCall({
       roomId: snap.roomId,
       type: snap.type,
@@ -236,7 +265,7 @@ export function LiveKitCallProvider({ children }: { children: ReactNode }) {
       notificationId: snap.notificationId,
       isCaller: false,
     })
-  }, [incomingCall, startCall])
+  }, [incomingCall, startCall, user?.id])
 
   // ── declineCall — callee side ─────────────────────────────────────────────
   const declineCall = useCallback(async () => {
@@ -253,7 +282,7 @@ export function LiveKitCallProvider({ children }: { children: ReactNode }) {
   return (
     <LiveKitCallContext.Provider value={{
       activeCall, incomingCall, callDeclined,
-      startCall, endCall, initiateCall, acceptCall, declineCall, dismissDeclined,
+      startCall, endCall, initiateCall, acceptCall, declineCall, dismissDeclined, inviteToCall,
     }}>
       {children}
     </LiveKitCallContext.Provider>

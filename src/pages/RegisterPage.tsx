@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Loader2, Check, Globe, ArrowLeft, Calendar, Camera } from 'lucide-react'
+import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Loader2, Check, Globe, ArrowLeft, Calendar, Camera, Gift } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { AuthInput, AuthError, AuthLabel } from '@/components/auth/AuthLayout'
 import TurnstileWidget from '@/components/TurnstileWidget'
+import { captureReferralCodeFromUrl, getStoredReferralCode } from '@/lib/referral'
 
 const TURNSTILE_ENABLED = !!import.meta.env.VITE_TURNSTILE_SITE_KEY
 
@@ -70,6 +71,9 @@ export default function RegisterPage() {
   const [agreed, setAgreed]     = useState(false)
   const [turnstileToken, setTurnstileToken] = useState('')
   const [googleLoading, setGoogleLoading] = useState(false)
+  const referralCode = getStoredReferralCode()
+
+  useEffect(() => { captureReferralCodeFromUrl() }, [])
 
   const handleGoogle = async () => {
     setGoogleLoading(true)
@@ -464,6 +468,16 @@ export default function RegisterPage() {
                             🎉 Almost there! We'll send a confirmation email — just click the link inside to activate your account.
                           </p>
                         </div>
+
+                        {referralCode && (
+                          <div className="p-4 rounded-2xl bg-emerald-500/[0.08] border border-emerald-500/20 flex items-start gap-2.5">
+                            <Gift className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                            <p className="text-xs text-emerald-300 leading-relaxed">
+                              Invited by code <span className="font-bold">{referralCode}</span> — once you verify your email,
+                              you and your friend each get 2 min free calls, plus unlimited spins & messaging for 24h!
+                            </p>
+                          </div>
+                        )}
                       </>
                     )}
 

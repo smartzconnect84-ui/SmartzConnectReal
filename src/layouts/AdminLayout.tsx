@@ -1,16 +1,27 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard, Users, CreditCard, Flag, BarChart3, Megaphone,
   ShoppingBag, Tv, Car, FileText, Shield, Settings, ChevronLeft,
   ChevronRight, Bell, Search, Moon, Sun, LogOut, Crown,
-  Users2, ScrollText, Menu, X, Map, MessageCircle, BookOpen, Layout as LayoutIcon, Zap
+  Users2, ScrollText, Menu, X, Map, MessageCircle, BookOpen, Layout as LayoutIcon, Zap, Trophy
 } from 'lucide-react'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useLiveChat } from '@/contexts/LiveChatContext'
 import AnnouncementBanner from '@/components/AnnouncementBanner'
+import { supabase } from '@/lib/supabase'
 const logoImg = '/logo.png'
+
+// Scroll speed multiplier for the admin panel's main content (+15% faster than default)
+const ADMIN_SCROLL_SPEED_MULTIPLIER = 1.15
+
+interface GlobalSearchResult {
+  id: string
+  label: string
+  sublabel: string
+  path: string
+}
 
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard',      path: '/admin',                 end: true },
@@ -31,6 +42,7 @@ const navItems = [
   { icon: Settings,        label: 'Settings',        path: '/admin/settings' },
   { icon: ScrollText,      label: 'Audit Logs',      path: '/admin/audit' },
   { icon: Map,             label: 'Page Tour',       path: '/admin/tour' },
+  { icon: Trophy,          label: 'World Stage',     path: '/admin/worldstage' },
 ]
 
 export default function AdminLayout() {
@@ -39,6 +51,48 @@ export default function AdminLayout() {
   const { theme, toggleTheme } = useTheme()
   const { dismissed, setOpen, setDismissed, unreadCount, setUnreadCount } = useLiveChat()
   const navigate = useNavigate()
+  const mainRef = useRef<HTMLElement>(null)
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState<GlobalSearchResult[]>([])
+  const [searching, setSearching] = useState(false)
+
+  // +15% faster wheel scroll inside the admin main content area
+  useEffect(() => {
+    const el = mainRef.current
+    if (!el) return
+    const onWheel = (e: WheelEvent) => {
+      if (e.ctrlKey) return
+      e.preventDefault()
+      el.scrollTop += e.deltaY * ADMIN_SCROLL_SPEED_MULTIPLIER
+    }
+    el.addEventListener('wheel', onWheel, { passive: false })
+    return () => el.removeEventListener('wheel', onWheel)
+  }, [])
+
+  // Global "search anything" — users, reports, marketplace orders
+  useEffect(() => {
+    const q = searchQuery.trim()
+    if (q.length < 2) { setSearchResults([]); return }
+    let cancelled = false
+    setSearching(true)
+    const timer = setTimeout(async () => {
+      const [users, reports, orders] = await Promise.all([
+        supabase.from('profiles').select('id, full_name, email').or(`full_name.ilike.%${q}%,email.ilike.%${q}%`).limit(4),
+        supabase.from('reports').select('id, reason').ilike('reason', `%${q}%`).limit(3),
+        supabase.from('marketplace_orders').select('id, status').ilike('status', `%${q}%`).limit(3),
+      ])
+      if (cancelled) return
+      const results: GlobalSearchResult[] = [
+        ...(users.data ?? []).map((u: any) => ({ id: `u-${u.id}`, label: u.full_name || u.email || 'User', sublabel: u.email || '', path: `/admin/users?q=${encodeURIComponent(u.id)}` })),
+        ...(reports.data ?? []).map((r: any) => ({ id: `r-${r.id}`, label: r.reason || 'Report', sublabel: 'Report', path: '/admin/reports' })),
+        ...(orders.data ?? []).map((o: any) => ({ id: `o-${o.id}`, label: `Order #${o.id.slice(0, 8)}`, sublabel: o.status, path: '/admin/marketplace' })),
+      ]
+      setSearchResults(results)
+      setSearching(false)
+    }, 300)
+    return () => { cancelled = true; clearTimeout(timer) }
+  }, [searchQuery])
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
@@ -187,11 +241,35 @@ export default function AdminLayout() {
               <Menu className="w-4 h-4 dark:text-gray-400 text-gray-600" />
             </button>
             <div className="relative hidden sm:block">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 dark:text-gray-500 text-gray-400" />
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 dark:text-gray-500 text-gray-400" />
               <input
-                placeholder="Search users, orders, reports..."
-                className="pl-9 pr-4 py-2 rounded-xl dark:bg-white/5 bg-gray-100 border dark:border-white/8 border-gray-200 text-sm dark:text-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-brand-pink transition-colors w-64"
+                value={searchQuery}
+                onChange={e => { setSearchQuery(e.target.value); setSearchOpen(true) }}
+                onFocus={() => setSearchOpen(true)}
+                onBlur={() => setTimeout(() => setSearchOpen(false), 150)}
+                placeholder="Search anything..."
+                className="pl-8 pr-3 py-1.5 rounded-lg dark:bg-white/5 bg-gray-100 border dark:border-white/8 border-gray-200 text-xs dark:text-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-brand-pink transition-colors w-40 focus:w-56 transition-all"
               />
+              {searchOpen && searchQuery.trim().length >= 2 && (
+                <div className="absolute top-full mt-1 left-0 w-72 max-h-80 overflow-y-auto rounded-xl dark:bg-[#130E1E] bg-white border dark:border-white/8 border-gray-200 shadow-xl z-50">
+                  {searching ? (
+                    <p className="text-xs px-3 py-3 dark:text-gray-500 text-gray-400">Searching…</p>
+                  ) : searchResults.length === 0 ? (
+                    <p className="text-xs px-3 py-3 dark:text-gray-500 text-gray-400">No results for "{searchQuery}"</p>
+                  ) : (
+                    searchResults.map(r => (
+                      <button
+                        key={r.id}
+                        onClick={() => { navigate(r.path); setSearchOpen(false); setSearchQuery('') }}
+                        className="w-full text-left px-3 py-2.5 hover:dark:bg-white/5 hover:bg-gray-50 border-b dark:border-white/5 border-gray-100 last:border-0"
+                      >
+                        <p className="text-xs font-bold dark:text-white text-gray-900 truncate">{r.label}</p>
+                        <p className="text-[11px] dark:text-gray-500 text-gray-400 truncate">{r.sublabel}</p>
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -226,7 +304,7 @@ export default function AdminLayout() {
         <AnnouncementBanner />
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto">
+        <main ref={mainRef} className="flex-1 overflow-y-auto">
           <Outlet />
         </main>
       </div>

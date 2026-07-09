@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Mic, MicOff, Video, VideoOff, PhoneOff, Minimize2, Maximize2,
-  Wifi, WifiOff, MonitorUp, PhoneIncoming,
+  Wifi, WifiOff, MonitorUp, PhoneIncoming, Pause, Play, Sparkles, UserPlus, X,
 } from 'lucide-react'
 import {
   Room, RoomEvent, Track, ConnectionQuality,
@@ -24,13 +24,29 @@ function attachTrack(participant: LocalParticipant | RemoteParticipant, el: HTML
   })
 }
 
+const VIDEO_FILTERS = [
+  { id: 'none',      label: 'None',      css: 'none' },
+  { id: 'warm',      label: 'Warm',      css: 'saturate(1.25) sepia(0.12) brightness(1.05)' },
+  { id: 'cool',      label: 'Cool',      css: 'saturate(1.1) hue-rotate(-8deg) brightness(1.02)' },
+  { id: 'bw',        label: 'B&W',       css: 'grayscale(1) contrast(1.1)' },
+  { id: 'soft',      label: 'Soft Glow', css: 'brightness(1.08) contrast(0.95) blur(0.3px)' },
+  { id: 'vivid',     label: 'Vivid',     css: 'saturate(1.5) contrast(1.1)' },
+]
+
+interface ConferenceMember {
+  userId: string
+  name: string
+  avatar?: string
+  status: string
+}
+
 export default function LiveKitCall() {
-  const { activeCall, endCall, callDeclined, dismissDeclined } = useLiveKitCall()
+  const { activeCall, endCall, callDeclined, dismissDeclined, inviteToCall } = useLiveKitCall()
   // userName is the current user's own display name (fetched from their profile by StreamContext).
   // It is used as the LiveKit participant identity/name — NOT the other person's name.
   const { userName: myDisplayName } = useStream()
   const localVideoRef = useRef<HTMLDivElement>(null)
-  const remoteVideoRef = useRef<HTMLDivElement>(null)
+  const remoteTileRefs = useRef<Map<string, HTMLDivElement>>(new Map())
   const roomRef = useRef<Room | null>(null)
   const videoCallRowRef = useRef<string | null>(null)  // video_calls.id
   const callStartRef = useRef<number>(0)
@@ -43,7 +59,15 @@ export default function LiveKitCall() {
   const [connected, setConnected] = useState(false)
   const [quality, setQuality] = useState<ConnectionQuality>(ConnectionQuality.Unknown)
   const [remoteJoined, setRemoteJoined] = useState(false)
+  const [onHold, setOnHold] = useState(false)
+  const [filter, setFilter] = useState(VIDEO_FILTERS[0])
+  const [showFilters, setShowFilters] = useState(false)
+  const [showInvite, setShowInvite] = useState(false)
+  const [contacts, setContacts] = useState<{ id: string; name: string; avatar?: string }[]>([])
+  const [remoteParticipants, setRemoteParticipants] = useState<RemoteParticipant[]>([])
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const preHoldMicRef = useRef(false)
+  const preHoldCamRef = useRef(false)
 
   // Reset UI state whenever a new call starts
   useEffect(() => {
@@ -55,13 +79,24 @@ export default function LiveKitCall() {
       setMinimized(false)
       setConnected(false)
       setRemoteJoined(false)
+      setOnHold(false)
+      setFilter(VIDEO_FILTERS[0])
       callStartRef.current = Date.now()
-      timerRef.current = setInterval(() => setDuration(d => d + 1), 1000)
     } else {
       if (timerRef.current) clearInterval(timerRef.current)
     }
     return () => { if (timerRef.current) clearInterval(timerRef.current) }
   }, [activeCall?.roomId])
+
+  // Duration timer only runs once the call is actually connected to the other
+  // party (not while ringing) and pauses while on hold.
+  useEffect(() => {
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null }
+    if (connected && remoteJoined && !onHold) {
+      timerRef.current = setInterval(() => setDuration(d => d + 1), 1000)
+    }
+    return () => { if (timerRef.current) clearInterval(timerRef.current) }
+  }, [connected, remoteJoined, onHold])
 
   // Connect to LiveKit room
   useEffect(() => {
@@ -89,6 +124,7 @@ export default function LiveKitCall() {
         if (activeCall.type === 'video') await room.localParticipant.setCameraEnabled(true)
 
         attachTrack(room.localParticipant, localVideoRef.current)
+        if (localVideoRef.current) localVideoRef.current.style.filter = filter.css
         setConnected(true)
 
         // Record call in video_calls table (only caller inserts, to avoid duplicate)
@@ -108,20 +144,23 @@ export default function LiveKitCall() {
           }
         }
 
-        room.remoteParticipants.forEach(p => attachTrack(p, remoteVideoRef.current))
-        setRemoteJoined(room.remoteParticipants.size > 0)
+        const syncRemoteTiles = () => {
+          const list = Array.from(room.remoteParticipants.values())
+          setRemoteParticipants(list)
+          list.forEach(p => attachTrack(p, remoteTileRefs.current.get(p.identity) ?? null))
+          setRemoteJoined(list.length > 0)
+        }
 
-        room.on(RoomEvent.TrackSubscribed, () => {
-          room.remoteParticipants.forEach(p => attachTrack(p, remoteVideoRef.current))
-          setRemoteJoined(true)
+        syncRemoteTiles()
+
+        room.on(RoomEvent.TrackSubscribed, syncRemoteTiles)
+        room.on(RoomEvent.TrackUnsubscribed, syncRemoteTiles)
+        room.on(RoomEvent.ParticipantConnected, syncRemoteTiles)
+        room.on(RoomEvent.LocalTrackPublished, () => {
+          attachTrack(room.localParticipant, localVideoRef.current)
+          if (localVideoRef.current) localVideoRef.current.style.filter = filter.css
         })
-        room.on(RoomEvent.TrackUnsubscribed, () => {
-          room.remoteParticipants.forEach(p => attachTrack(p, remoteVideoRef.current))
-        })
-        room.on(RoomEvent.LocalTrackPublished, () => attachTrack(room.localParticipant, localVideoRef.current))
-        room.on(RoomEvent.ParticipantDisconnected, () => {
-          setRemoteJoined(room.remoteParticipants.size > 0)
-        })
+        room.on(RoomEvent.ParticipantDisconnected, syncRemoteTiles)
         room.on(RoomEvent.ConnectionQualityChanged, (q, participant) => {
           if (participant.isLocal) setQuality(q)
         })
@@ -152,6 +191,52 @@ export default function LiveKitCall() {
       roomRef.current = null
     }
   }, [activeCall?.roomId])
+
+  // Re-apply the chosen visual filter whenever it changes (local preview only —
+  // a true server-side/outgoing filter would require a canvas track processor;
+  // this is a lightweight local styling pass).
+  useEffect(() => {
+    if (localVideoRef.current) localVideoRef.current.style.filter = filter.css
+  }, [filter])
+
+  const handleToggleHold = useCallback(async () => {
+    const room = roomRef.current
+    if (!room) return
+    const next = !onHold
+    if (next) {
+      preHoldMicRef.current = muted
+      preHoldCamRef.current = cameraOff
+      await room.localParticipant.setMicrophoneEnabled(false)
+      if (activeCall?.type === 'video') await room.localParticipant.setCameraEnabled(false)
+    } else {
+      await room.localParticipant.setMicrophoneEnabled(!preHoldMicRef.current)
+      if (activeCall?.type === 'video') await room.localParticipant.setCameraEnabled(!preHoldCamRef.current)
+    }
+    setOnHold(next)
+  }, [onHold, muted, cameraOff, activeCall?.type])
+
+  const openInvite = useCallback(async () => {
+    setShowInvite(true)
+    if (contacts.length > 0) return
+    const { data } = await supabase.auth.getSession()
+    const myId = data.session?.user?.id
+    if (!myId) return
+    const { data: friends } = await supabase
+      .from('follows')
+      .select('following_id, profiles:following_id(id, full_name, avatar_url)')
+      .eq('follower_id', myId)
+      .limit(20)
+    const list = (friends ?? [])
+      .map((f: any) => f.profiles)
+      .filter(Boolean)
+      .map((p: any) => ({ id: p.id, name: p.full_name || 'Member', avatar: p.avatar_url }))
+    setContacts(list)
+  }, [contacts.length])
+
+  const handleInvite = useCallback(async (contact: { id: string; name: string; avatar?: string }) => {
+    await inviteToCall({ contactId: contact.id, contactName: contact.name, contactAvatar: contact.avatar })
+    setShowInvite(false)
+  }, [inviteToCall])
 
   const formatDuration = (secs: number) => {
     const m = Math.floor(secs / 60).toString().padStart(2, '0')
@@ -260,11 +345,26 @@ export default function LiveKitCall() {
                             </span>
                           </>
                         )}
+                        {onHold && (
+                          <>
+                            <span className="text-xs text-white/40">·</span>
+                            <span className="text-[10px] font-bold text-amber-400">ON HOLD</span>
+                          </>
+                        )}
                       </div>
                     </div>
                   )}
                 </div>
                 <div className="flex items-center gap-1.5 flex-shrink-0">
+                  {!minimized && (
+                    <button
+                      onClick={openInvite}
+                      title="Add to call"
+                      className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors"
+                    >
+                      <UserPlus className="w-3.5 h-3.5 text-white" />
+                    </button>
+                  )}
                   <button
                     onClick={() => setMinimized(m => !m)}
                     className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors"
@@ -282,9 +382,22 @@ export default function LiveKitCall() {
                 </div>
               </div>
 
-              {/* Video area */}
+              {/* Video area — grid supports unlimited conference participants */}
               <div className={`flex-1 relative bg-black overflow-hidden ${minimized ? 'rounded-b-2xl' : ''}`}>
-                <div ref={remoteVideoRef} className="absolute inset-0 w-full h-full flex items-center justify-center [&>video]:w-full [&>video]:h-full [&>video]:object-cover" />
+                <div className={`absolute inset-0 grid gap-0.5 ${
+                  remoteParticipants.length <= 1 ? 'grid-cols-1' :
+                  remoteParticipants.length <= 4 ? 'grid-cols-2' : 'grid-cols-3'
+                }`}>
+                  {remoteParticipants.map(p => (
+                    <div key={p.identity} className="relative w-full h-full bg-black/50 flex items-center justify-center overflow-hidden">
+                      <div
+                        ref={el => { if (el) remoteTileRefs.current.set(p.identity, el); else remoteTileRefs.current.delete(p.identity) }}
+                        className="w-full h-full flex items-center justify-center [&>video]:w-full [&>video]:h-full [&>video]:object-cover"
+                      />
+                      <span className="absolute bottom-1.5 left-1.5 text-[10px] font-bold text-white bg-black/50 px-1.5 py-0.5 rounded-md">{p.name || p.identity}</span>
+                    </div>
+                  ))}
+                </div>
 
                 {!remoteJoined && connected && (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/60">
@@ -316,6 +429,61 @@ export default function LiveKitCall() {
                     ref={localVideoRef}
                     className="absolute bottom-4 right-4 w-24 h-32 sm:w-32 sm:h-44 rounded-2xl overflow-hidden border-2 border-brand-pink/60 shadow-xl bg-black/70 [&>video]:w-full [&>video]:h-full [&>video]:object-cover z-10"
                   />
+                )}
+
+                {onHold && !minimized && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/70 z-20">
+                    <div className="text-center">
+                      <Pause className="w-10 h-10 text-amber-400 mx-auto mb-2" />
+                      <p className="text-sm font-bold text-white">Call on hold</p>
+                      <p className="text-xs text-white/50">Your mic &amp; camera are paused</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Filter picker */}
+                {showFilters && !minimized && (
+                  <div className="absolute top-3 right-3 z-20 dark:bg-[#130E1E]/95 bg-gray-900/95 rounded-2xl border border-white/10 p-3 flex gap-2 shadow-2xl">
+                    {VIDEO_FILTERS.map(f => (
+                      <button
+                        key={f.id}
+                        onClick={() => { setFilter(f); }}
+                        className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold whitespace-nowrap ${filter.id === f.id ? 'bg-love-gradient text-white' : 'bg-white/10 text-white/70'}`}
+                      >
+                        {f.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Invite to call modal */}
+                {showInvite && !minimized && (
+                  <div className="absolute inset-0 z-30 bg-black/70 flex items-center justify-center p-6">
+                    <div className="w-full max-w-sm dark:bg-[#130E1E] bg-white rounded-2xl border dark:border-white/10 border-gray-200 p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <p className="text-sm font-bold dark:text-white text-gray-900">Add to this call</p>
+                        <button onClick={() => setShowInvite(false)}><X className="w-4 h-4 dark:text-gray-400 text-gray-500" /></button>
+                      </div>
+                      {contacts.length === 0 ? (
+                        <p className="text-xs dark:text-gray-500 text-gray-400 py-4 text-center">No contacts to invite yet.</p>
+                      ) : (
+                        <div className="space-y-1.5 max-h-64 overflow-y-auto">
+                          {contacts.map(c => (
+                            <button
+                              key={c.id}
+                              onClick={() => handleInvite(c)}
+                              className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl dark:hover:bg-white/5 hover:bg-gray-50 text-left"
+                            >
+                              <div className="w-8 h-8 rounded-full bg-love-gradient flex items-center justify-center text-xs overflow-hidden flex-shrink-0">
+                                {c.avatar ? <img src={c.avatar} className="w-full h-full object-cover" /> : '👤'}
+                              </div>
+                              <span className="text-sm font-semibold dark:text-white text-gray-900 truncate">{c.name}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 )}
 
                 {minimized && (
@@ -366,6 +534,26 @@ export default function LiveKitCall() {
                   >
                     <MonitorUp className="w-5 h-5 text-white" />
                   </button>
+
+                  <button
+                    onClick={handleToggleHold}
+                    disabled={!connected}
+                    title={onHold ? 'Resume call' : 'Hold call'}
+                    className={`w-12 h-12 rounded-full flex items-center justify-center transition-all disabled:opacity-40 ${onHold ? 'bg-amber-500 shadow-lg shadow-amber-500/30' : 'bg-white/15 hover:bg-white/25'}`}
+                  >
+                    {onHold ? <Play className="w-5 h-5 text-white" /> : <Pause className="w-5 h-5 text-white" />}
+                  </button>
+
+                  {activeCall.type === 'video' && (
+                    <button
+                      onClick={() => setShowFilters(v => !v)}
+                      disabled={!connected}
+                      title="Video filters"
+                      className={`hidden sm:flex w-12 h-12 rounded-full items-center justify-center transition-all disabled:opacity-40 ${showFilters ? 'bg-brand-pink shadow-lg shadow-pink-500/30' : 'bg-white/15 hover:bg-white/25'}`}
+                    >
+                      <Sparkles className="w-5 h-5 text-white" />
+                    </button>
+                  )}
                 </div>
               )}
 

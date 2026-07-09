@@ -15,6 +15,7 @@ import { AnnouncementProvider } from '@/contexts/AnnouncementContext'
 import AppShell from '@/layouts/AppShell'
 import PWAInstallPrompt from '@/components/PWAInstallPrompt'
 import NotificationPrompt from '@/components/NotificationPrompt'
+import NetworkStatusToast from '@/components/NetworkStatusToast'
 
 import AdminLayout from '@/layouts/AdminLayout'
 import ProtectedRoute from '@/components/ProtectedRoute'
@@ -54,6 +55,8 @@ import CallsPage           from '@/pages/CallsPage'
 import SettingsPage        from '@/pages/SettingsPage'
 import HelpSupportPage     from '@/pages/HelpSupportPage'
 import SavedPostsPage      from '@/pages/SavedPostsPage'
+import ReferralsPage       from '@/pages/ReferralsPage'
+import WorldStageVotePage  from '@/pages/WorldStageVotePage'
 
 import SmartzTVPublicPage  from '@/pages/public/SmartzTVPage'
 import SmartzRidePage      from '@/pages/public/SmartzRidePage'
@@ -87,6 +90,7 @@ import AdminBlog           from '@/pages/admin/AdminBlog'
 import AdminAuditLogs      from '@/pages/admin/AdminAuditLogs'
 import AdminCEO            from '@/pages/admin/AdminCEO'
 import AdminTour           from '@/pages/admin/AdminTour'
+import AdminWorldStage      from '@/pages/admin/AdminWorldStage'
 
 function PublicLayout({ children, showFooter = true }: { children: React.ReactNode; showFooter?: boolean }) {
   return (
@@ -117,6 +121,7 @@ export default function App() {
           <LiveKitCallProvider>
           <BrowserRouter>
             <AppInit />
+            <NetworkStatusToast />
             <LiveChat />
             <LiveKitCall />
             <CookieBanner />
@@ -185,6 +190,8 @@ export default function App() {
                 <Route path="calls/audio"   element={<CallsPage defaultMode="audio" />} />
                 <Route path="help"          element={<HelpSupportPage />} />
                 <Route path="saved"         element={<SavedPostsPage />} />
+                <Route path="referrals"     element={<ReferralsPage />} />
+                <Route path="worldstage"    element={<WorldStageVotePage />} />
               </Route>
 
               {/* Admin Panel — role-gated: only admin/superadmin/ceo/moderator/support */}
@@ -212,6 +219,7 @@ export default function App() {
                 <Route path="audit"         element={<AdminAuditLogs />} />
                 <Route path="ceo"           element={<AdminCEO />} />
                 <Route path="tour"          element={<AdminTour />} />
+                <Route path="worldstage"    element={<AdminWorldStage />} />
               </Route>
 
               <Route path="*" element={<Navigate to="/" replace />} />

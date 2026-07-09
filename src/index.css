@@ -91,6 +91,11 @@
     background: linear-gradient(135deg, #FF4D8D 0%, #9B5DE5 100%);
   }
 
+  /* ── Shared admin form input ── */
+  .input-field {
+    @apply px-3 py-2.5 rounded-xl text-sm border dark:bg-white/5 bg-gray-50 dark:text-white text-gray-900 dark:border-white/10 border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-pink/40;
+  }
+
   /* ── Soft love gradient (for badges/pills) ── */
   .bg-love-soft {
     background: linear-gradient(135deg, rgba(255,77,141,0.12) 0%, rgba(155,93,229,0.12) 100%);

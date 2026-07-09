@@ -4,7 +4,7 @@ import {
   Home, User, Users, MessageCircle, Bell, Video, Phone,
   Heart, Users2, FileText, Calendar, ShoppingBag, Briefcase,
   BookOpen, Tv, Car, Zap, Crown, Settings, HelpCircle,
-  Sun, Moon, LogOut, Globe, Bookmark
+  Sun, Moon, LogOut, Globe, Bookmark, Trophy, Gift
 } from 'lucide-react'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useAuth } from '@/hooks/useAuth'
@@ -45,10 +45,12 @@ const exploreNav: NavItemDef[] = [
   { path: '/app/smartztv',      icon: Tv,            label: 'SmartzTV',      color: 'text-violet-500' },
   { path: '/app/ride',          icon: Car,           label: 'Ride',          color: 'text-emerald-500' },
   { path: '/app/spin',          icon: Zap,           label: 'Spin Chat',     color: 'text-fuchsia-500' },
+  { path: '/app/worldstage',    icon: Trophy,        label: 'World Stage',   color: 'text-amber-500' },
   { path: '/app/subscriptions', icon: Crown,         label: 'Premium',       color: 'text-yellow-500' },
 ]
 
 const bottomNav: NavItemDef[] = [
+  { path: '/app/referrals', icon: Gift,       label: 'Invite & Earn' },
   { path: '/app/saved',    icon: Bookmark,   label: 'Saved Posts' },
   { path: '/app/settings', icon: Settings,   label: 'Settings' },
   { path: '/app/help',     icon: HelpCircle, label: 'Help & Support' },
