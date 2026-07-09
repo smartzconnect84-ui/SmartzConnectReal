@@ -1,9 +1,16 @@
-import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
+import { useState, useEffect, type ElementType } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   Settings, ToggleLeft, ToggleRight, Globe, Shield, Bell, CreditCard,
-  Smartphone, Save, RefreshCw, Palette, Sliders, Zap, Sun, Moon, Monitor
+  Smartphone, Save, RefreshCw, Palette, Sliders, Zap, Sun, Moon, Monitor,
+  Megaphone, Plus, Edit, Trash2, X, Link, CheckCircle, AlertCircle, Info,
+  AlertTriangle, Gift
 } from 'lucide-react'
+import { useTheme } from '@/contexts/ThemeContext'
+import { useAnnouncement } from '@/contexts/AnnouncementContext'
+import type { AnnouncementType, Announcement } from '@/contexts/AnnouncementContext'
+
+// ── Feature Toggles ────────────────────────────────────────────────────────────
 
 const SETTINGS_KEY = 'smartz_admin_settings'
 
@@ -11,15 +18,11 @@ function loadSettings() {
   try {
     const raw = localStorage.getItem(SETTINGS_KEY)
     return raw ? JSON.parse(raw) : null
-  } catch {
-    return null
-  }
+  } catch { return null }
 }
 
 function saveSettings(data: object) {
-  try {
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(data))
-  } catch { /* ignore storage error */ }
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(data)) } catch { /* ignore */ }
 }
 
 interface Toggle {
@@ -30,6 +33,7 @@ const defaultToggles: Toggle[] = [
   { id: 't1',  label: 'User Registration',       description: 'Allow new users to register',                    enabled: true,  category: 'Platform' },
   { id: 't2',  label: 'Email Verification',       description: 'Require email verification on signup',           enabled: true,  category: 'Platform' },
   { id: 't3',  label: 'Social Login',             description: 'Allow Google/Facebook login',                    enabled: true,  category: 'Platform' },
+  { id: 't21', label: 'Maintenance Mode',         description: 'Put platform in maintenance mode',               enabled: false, category: 'Platform' },
   { id: 't4',  label: 'Discover / Matching',      description: 'Enable the Tinder-style swipe feature',          enabled: true,  category: 'Features' },
   { id: 't5',  label: 'Spin & Chat',              description: 'Enable random matching feature',                 enabled: true,  category: 'Features' },
   { id: 't6',  label: 'SmartzTV Live Streaming',  description: 'Allow users to go live',                         enabled: true,  category: 'Features' },
@@ -47,7 +51,6 @@ const defaultToggles: Toggle[] = [
   { id: 't18', label: 'Email Notifications',      description: 'Send email notifications to users',              enabled: true,  category: 'Notifications' },
   { id: 't19', label: 'Match Alerts',             description: 'Notify users instantly when matched',            enabled: true,  category: 'Notifications' },
   { id: 't20', label: 'Promotional Emails',       description: 'Send promotional and offer emails',              enabled: false, category: 'Notifications' },
-  { id: 't21', label: 'Maintenance Mode',         description: 'Put platform in maintenance mode',               enabled: false, category: 'Platform' },
   { id: 't22', label: 'Profile Verification',     description: 'Allow users to request verification badge',      enabled: true,  category: 'Safety' },
   { id: 't23', label: 'Content Moderation AI',    description: 'Auto-flag inappropriate content with AI',        enabled: true,  category: 'Safety' },
   { id: 't24', label: 'Screenshot Prevention',    description: 'Block screenshots in private chats',             enabled: false, category: 'Safety' },
@@ -59,84 +62,179 @@ const defaultToggles: Toggle[] = [
 ]
 
 const themes = [
-  { id: 'love',   label: 'Love (Default)',  gradient: 'from-pink-500 to-rose-500',   preview: '#ec4899' },
-  { id: 'ocean',  label: 'Ocean',           gradient: 'from-blue-500 to-cyan-500',   preview: '#3b82f6' },
-  { id: 'forest', label: 'Forest',          gradient: 'from-emerald-500 to-teal-500',preview: '#10b981' },
-  { id: 'sunset', label: 'Sunset',          gradient: 'from-orange-500 to-amber-500',preview: '#f97316' },
-  { id: 'royal',  label: 'Royal',           gradient: 'from-purple-500 to-violet-600',preview: '#a855f7' },
-  { id: 'carbon', label: 'Carbon',          gradient: 'from-gray-700 to-gray-900',   preview: '#374151' },
+  { id: 'love',    label: 'Love (Default)',  gradient: 'from-pink-500 to-rose-500',    preview: '#ec4899' },
+  { id: 'ocean',   label: 'Ocean',           gradient: 'from-blue-500 to-cyan-500',    preview: '#3b82f6' },
+  { id: 'forest',  label: 'Forest',          gradient: 'from-emerald-500 to-teal-500', preview: '#10b981' },
+  { id: 'sunset',  label: 'Sunset',          gradient: 'from-orange-500 to-amber-500', preview: '#f97316' },
+  { id: 'royal',   label: 'Royal',           gradient: 'from-purple-500 to-violet-600',preview: '#a855f7' },
+  { id: 'carbon',  label: 'Carbon',          gradient: 'from-gray-700 to-gray-900',    preview: '#374151' },
 ]
 
-const colorOptions = [
-  { id: 'pink',    label: 'Pink',     hex: '#ec4899' },
-  { id: 'purple',  label: 'Purple',   hex: '#a855f7' },
-  { id: 'blue',    label: 'Blue',     hex: '#3b82f6' },
-  { id: 'green',   label: 'Green',    hex: '#22c55e' },
-  { id: 'amber',   label: 'Amber',    hex: '#f59e0b' },
-  { id: 'red',     label: 'Red',      hex: '#ef4444' },
-  { id: 'teal',    label: 'Teal',     hex: '#14b8a6' },
-  { id: 'indigo',  label: 'Indigo',   hex: '#6366f1' },
+const fontScaleOptions = [
+  { id: 'small',  label: 'Small',   preview: 'text-[11px]' },
+  { id: 'normal', label: 'Normal',  preview: 'text-[13px]' },
+  { id: 'large',  label: 'Large',   preview: 'text-[15px]' },
+  { id: 'xl',     label: 'XL',      preview: 'text-[17px]' },
+]
+
+const fontStyleOptions = [
+  { id: 'default', label: 'Inter (Default)', preview: 'font-sans' },
+  { id: 'serif',   label: 'Georgia (Serif)', preview: 'font-serif' },
+  { id: 'mono',    label: 'Mono',            preview: 'font-mono' },
+]
+
+const borderRadiusOptions = [
+  { id: 'sharp',   label: 'Sharp',   cls: 'rounded-none' },
+  { id: 'rounded', label: 'Rounded', cls: 'rounded-xl' },
+  { id: 'pill',    label: 'Pill',    cls: 'rounded-full' },
 ]
 
 const categories = ['All', 'Platform', 'Features', 'Payments', 'Notifications', 'Safety', 'Privacy']
-const categoryIcons: Record<string, React.ElementType> = {
+const categoryIcons: Record<string, ElementType> = {
   Platform: Globe, Features: Smartphone, Payments: CreditCard,
-  Notifications: Bell, Safety: Shield, Privacy: Shield
+  Notifications: Bell, Safety: Shield, Privacy: Shield,
 }
 
-export default function AdminSettings() {
-  const [toggles, setToggles] = useState(defaultToggles)
-  const [activeCategory, setActiveCategory] = useState('All')
-  const [saved, setSaved] = useState(false)
-  const [activeTab, setActiveTab] = useState<'features' | 'appearance'>('features')
-  const [selectedTheme, setSelectedTheme] = useState('love')
-  const [selectedColor, setSelectedColor] = useState('pink')
-  const [defaultMode, setDefaultMode] = useState<'dark' | 'light' | 'system'>('dark')
-  const [borderRadius, setBorderRadius] = useState('rounded')
-  const [fontScale, setFontScale] = useState('normal')
+// ── Announcement helpers ───────────────────────────────────────────────────────
 
-  // Load persisted settings on mount
+const ANN_TYPE_CONFIG: Record<AnnouncementType, { icon: ElementType; label: string; color: string }> = {
+  info:    { icon: Info,          label: 'Info',    color: 'text-blue-400' },
+  warning: { icon: AlertTriangle, label: 'Warning', color: 'text-amber-400' },
+  success: { icon: CheckCircle,   label: 'Success', color: 'text-emerald-400' },
+  error:   { icon: AlertCircle,   label: 'Error',   color: 'text-red-400' },
+  promo:   { icon: Gift,          label: 'Promo',   color: 'text-pink-400' },
+}
+
+const ANN_TYPES: AnnouncementType[] = ['info', 'warning', 'success', 'error', 'promo']
+
+const EMPTY_ANN = { message: '', type: 'info' as AnnouncementType, is_active: true, link_text: '', link_url: '', created_by: 'Admin' }
+
+const inp = 'w-full px-3 py-2.5 rounded-xl dark:bg-white/5 bg-gray-50 border dark:border-white/8 border-gray-200 dark:text-white text-gray-900 text-sm placeholder:dark:text-gray-500 placeholder:text-gray-400 focus:outline-none focus:border-brand-pink transition-colors'
+
+// ── Component ──────────────────────────────────────────────────────────────────
+
+export default function AdminSettings() {
+  const { appearance, setAppearance, theme, setTheme } = useTheme()
+  const {
+    announcements, bannerEnabled, setBannerEnabled,
+    addAnnouncement, updateAnnouncement, deleteAnnouncement, toggleAnnouncement, refetch,
+  } = useAnnouncement()
+
+  const [toggles, setToggles]               = useState(defaultToggles)
+  const [activeCategory, setActiveCategory] = useState('All')
+  const [saved, setSaved]                   = useState(false)
+  const [activeTab, setActiveTab]           = useState<'features' | 'appearance' | 'announcements'>('features')
+
+  // Announcement form
+  const [showAnnForm, setShowAnnForm]         = useState(false)
+  const [editAnn, setEditAnn]                 = useState<Announcement | null>(null)
+  const [annForm, setAnnForm]                 = useState(EMPTY_ANN)
+  const [annSaving, setAnnSaving]             = useState(false)
+  const [annToast, setAnnToast]               = useState<string | null>(null)
+
   useEffect(() => {
     const stored = loadSettings()
     if (!stored) return
     if (stored.toggles) setToggles(stored.toggles)
-    if (stored.selectedTheme) setSelectedTheme(stored.selectedTheme)
-    if (stored.selectedColor) setSelectedColor(stored.selectedColor)
-    if (stored.defaultMode) setDefaultMode(stored.defaultMode)
-    if (stored.borderRadius) setBorderRadius(stored.borderRadius)
-    if (stored.fontScale) setFontScale(stored.fontScale)
   }, [])
+
+  useEffect(() => { refetch() }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggle = (id: string) => setToggles(prev => prev.map(t => t.id === id ? { ...t, enabled: !t.enabled } : t))
 
   const handleSave = () => {
-    saveSettings({ toggles, selectedTheme, selectedColor, defaultMode, borderRadius, fontScale })
+    saveSettings({ toggles })
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
   }
 
   const filtered = toggles.filter(t => activeCategory === 'All' || t.category === activeCategory)
 
+  // ── Announcement handlers ──────────────────────────────────────────────────
+
+  const showAnnToast = (msg: string) => {
+    setAnnToast(msg)
+    setTimeout(() => setAnnToast(null), 2500)
+  }
+
+  const openAddAnn = () => {
+    setEditAnn(null)
+    setAnnForm(EMPTY_ANN)
+    setShowAnnForm(true)
+  }
+
+  const openEditAnn = (a: Announcement) => {
+    setEditAnn(a)
+    setAnnForm({ message: a.message, type: a.type, is_active: a.is_active, link_text: a.link_text || '', link_url: a.link_url || '', created_by: a.created_by || 'Admin' })
+    setShowAnnForm(true)
+  }
+
+  const handleSaveAnn = async () => {
+    if (!annForm.message.trim()) return
+    setAnnSaving(true)
+    const payload = {
+      ...annForm,
+      link_text: annForm.link_text || null,
+      link_url: annForm.link_url || null,
+    }
+    if (editAnn) {
+      await updateAnnouncement(editAnn.id, payload)
+      showAnnToast('Announcement updated')
+    } else {
+      await addAnnouncement(payload)
+      showAnnToast('Announcement created')
+    }
+    setShowAnnForm(false)
+    setAnnSaving(false)
+  }
+
+  const handleDeleteAnn = async (id: string) => {
+    await deleteAnnouncement(id)
+    showAnnToast('Announcement deleted')
+  }
+
+  const handleToggleAnn = async (a: Announcement) => {
+    await toggleAnnouncement(a.id, !a.is_active)
+    showAnnToast(a.is_active ? 'Announcement hidden' : 'Announcement activated')
+  }
+
   return (
     <div className="p-4 sm:p-6 space-y-5">
+
+      {/* Ann Toast */}
+      <AnimatePresence>
+        {annToast && (
+          <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}
+            className="fixed top-4 right-4 z-[200] flex items-center gap-2 px-4 py-3 rounded-2xl shadow-xl text-sm font-semibold text-white bg-emerald-500">
+            <CheckCircle className="w-4 h-4" /> {annToast}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="font-display font-black text-2xl dark:text-white text-gray-900">Platform Settings</h1>
-          <p className="text-sm dark:text-gray-400 text-gray-500 mt-0.5">Configure features, appearance, and platform behavior</p>
+          <p className="text-sm dark:text-gray-400 text-gray-500 mt-0.5">Configure features, appearance, announcements, and platform behavior</p>
         </div>
-        <button onClick={handleSave}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold shadow-lg transition-all ${saved ? 'bg-emerald-500 text-white shadow-emerald-500/20' : 'bg-love-gradient text-white shadow-pink-500/20 hover:opacity-90'}`}>
-          {saved ? <><RefreshCw className="w-3.5 h-3.5" /> Saved!</> : <><Save className="w-3.5 h-3.5" /> Save Changes</>}
-        </button>
+        {activeTab === 'features' && (
+          <button onClick={handleSave}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold shadow-lg transition-all ${saved ? 'bg-emerald-500 text-white shadow-emerald-500/20' : 'bg-love-gradient text-white shadow-pink-500/20 hover:opacity-90'}`}>
+            {saved ? <><RefreshCw className="w-3.5 h-3.5" /> Saved!</> : <><Save className="w-3.5 h-3.5" /> Save Changes</>}
+          </button>
+        )}
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 p-1 dark:bg-[#130E1E] bg-gray-100 rounded-xl w-fit">
-        {[{ id: 'features', icon: Sliders, label: 'Features & Toggles' }, { id: 'appearance', icon: Palette, label: 'Theme & Colors' }].map(tab => {
+      <div className="flex gap-1.5 p-1 dark:bg-[#130E1E] bg-gray-100 rounded-xl w-fit">
+        {[
+          { id: 'features',      icon: Sliders,    label: 'Features' },
+          { id: 'appearance',    icon: Palette,    label: 'Appearance' },
+          { id: 'announcements', icon: Megaphone,  label: 'Announcements' },
+        ].map(tab => {
           const Icon = tab.icon
           return (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id as 'features' | 'appearance')}
+            <button key={tab.id} onClick={() => setActiveTab(tab.id as any)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === tab.id ? 'bg-love-gradient text-white shadow-md' : 'dark:text-gray-400 text-gray-600 hover:text-brand-pink'}`}>
               <Icon className="w-4 h-4" />
               {tab.label}
@@ -145,10 +243,9 @@ export default function AdminSettings() {
         })}
       </div>
 
-      {/* ── Features & Toggles tab ── */}
+      {/* ── Features Tab ──────────────────────────────────────────────────────── */}
       {activeTab === 'features' && (
         <>
-          {/* Category filter */}
           <div className="flex gap-2 flex-wrap">
             {categories.map(cat => (
               <button key={cat} onClick={() => setActiveCategory(cat)}
@@ -158,7 +255,6 @@ export default function AdminSettings() {
             ))}
           </div>
 
-          {/* Toggles */}
           {(activeCategory === 'All' ? categories.slice(1) : [activeCategory]).map(cat => {
             const catToggles = filtered.filter(t => t.category === cat)
             if (catToggles.length === 0) return null
@@ -196,27 +292,59 @@ export default function AdminSettings() {
         </>
       )}
 
-      {/* ── Theme & Colors tab ── */}
+      {/* ── Appearance Tab ────────────────────────────────────────────────────── */}
       {activeTab === 'appearance' && (
         <div className="space-y-5">
+          <div className="flex items-center gap-3 p-3.5 rounded-2xl dark:bg-emerald-500/8 bg-emerald-50 border dark:border-emerald-500/15 border-emerald-200">
+            <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+            <p className="text-xs dark:text-emerald-400 text-emerald-700 font-semibold">Changes apply instantly — all users see updates in real time</p>
+          </div>
+
+          {/* Dark / Light Mode */}
+          <div className="dark:bg-[#130E1E] bg-white rounded-2xl border dark:border-white/6 border-gray-200 overflow-hidden">
+            <div className="flex items-center gap-2 px-5 py-4 border-b dark:border-white/5 border-gray-100">
+              <Moon className="w-4 h-4 text-brand-pink" />
+              <h3 className="font-bold text-sm dark:text-white text-gray-900">Display Mode</h3>
+            </div>
+            <div className="p-5 grid grid-cols-3 gap-3">
+              {([
+                { id: 'dark',   icon: Moon,    label: 'Dark' },
+                { id: 'light',  icon: Sun,     label: 'Light' },
+                { id: 'system', icon: Monitor, label: 'System' },
+              ] as { id: 'dark' | 'light' | 'system'; icon: ElementType; label: string }[]).map(mode => {
+                const Icon = mode.icon
+                const active = theme === mode.id || (mode.id === 'system' && false)
+                return (
+                  <button key={mode.id}
+                    onClick={() => { if (mode.id !== 'system') setTheme(mode.id) }}
+                    className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all ${
+                      theme === mode.id ? 'border-brand-pink dark:bg-pink-500/10 bg-pink-50' : 'dark:border-white/8 border-gray-200 dark:hover:border-white/20 hover:border-gray-300'
+                    }`}>
+                    <Icon className={`w-5 h-5 ${theme === mode.id ? 'text-brand-pink' : 'dark:text-gray-400 text-gray-500'}`} />
+                    <span className={`text-xs font-semibold ${theme === mode.id ? 'text-brand-pink' : 'dark:text-gray-300 text-gray-600'}`}>{mode.label}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
 
           {/* Theme Presets */}
           <div className="dark:bg-[#130E1E] bg-white rounded-2xl border dark:border-white/6 border-gray-200 overflow-hidden">
             <div className="flex items-center gap-2 px-5 py-4 border-b dark:border-white/5 border-gray-100">
               <Palette className="w-4 h-4 text-brand-pink" />
-              <h3 className="font-bold text-sm dark:text-white text-gray-900">Theme Presets</h3>
+              <h3 className="font-bold text-sm dark:text-white text-gray-900">Color Theme</h3>
             </div>
             <div className="p-5 grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {themes.map(theme => (
-                <button key={theme.id} onClick={() => setSelectedTheme(theme.id)}
+              {themes.map(t => (
+                <button key={t.id} onClick={() => setAppearance({ themePreset: t.id as any, accentColor: t.preview })}
                   className={`relative flex flex-col items-center gap-3 p-4 rounded-2xl border-2 transition-all ${
-                    selectedTheme === theme.id
+                    appearance.themePreset === t.id
                       ? 'border-brand-pink dark:bg-pink-500/10 bg-pink-50'
                       : 'dark:border-white/8 border-gray-200 dark:hover:border-white/20 hover:border-gray-300'
                   }`}>
-                  <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${theme.gradient} shadow-md`} />
-                  <span className="text-xs font-semibold dark:text-white text-gray-900">{theme.label}</span>
-                  {selectedTheme === theme.id && (
+                  <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${t.gradient} shadow-md`} />
+                  <span className="text-xs font-semibold dark:text-white text-gray-900">{t.label}</span>
+                  {appearance.themePreset === t.id && (
                     <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-brand-pink flex items-center justify-center">
                       <Zap className="w-2.5 h-2.5 text-white" />
                     </div>
@@ -226,51 +354,49 @@ export default function AdminSettings() {
             </div>
           </div>
 
-          {/* Accent Color */}
+          {/* Font Scale */}
           <div className="dark:bg-[#130E1E] bg-white rounded-2xl border dark:border-white/6 border-gray-200 overflow-hidden">
             <div className="flex items-center gap-2 px-5 py-4 border-b dark:border-white/5 border-gray-100">
-              <div className="w-4 h-4 rounded-full" style={{ background: colorOptions.find(c => c.id === selectedColor)?.hex }} />
-              <h3 className="font-bold text-sm dark:text-white text-gray-900">Accent Color</h3>
+              <Settings className="w-4 h-4 text-brand-pink" />
+              <h3 className="font-bold text-sm dark:text-white text-gray-900">Font Size</h3>
+              <span className="ml-auto text-xs dark:text-gray-500 text-gray-400 capitalize">{appearance.fontScale}</span>
             </div>
-            <div className="p-5 flex flex-wrap gap-3">
-              {colorOptions.map(color => (
-                <button key={color.id} onClick={() => setSelectedColor(color.id)}
-                  title={color.label}
-                  className={`w-10 h-10 rounded-xl transition-all ${selectedColor === color.id ? 'ring-2 ring-offset-2 dark:ring-offset-[#130E1E] ring-offset-white scale-110' : 'hover:scale-105'}`}
-                  style={{ background: color.hex, boxShadow: selectedColor === color.id ? `0 0 12px ${color.hex}60` : undefined }}
-                />
+            <div className="p-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {fontScaleOptions.map(f => (
+                <button key={f.id} onClick={() => setAppearance({ fontScale: f.id as any })}
+                  className={`flex flex-col items-center gap-2 px-4 py-3 rounded-xl border-2 transition-all ${
+                    appearance.fontScale === f.id
+                      ? 'border-brand-pink dark:bg-pink-500/10 bg-pink-50'
+                      : 'dark:border-white/8 border-gray-200 dark:hover:border-white/20 hover:border-gray-300'
+                  }`}>
+                  <span className={`font-black ${f.preview} ${appearance.fontScale === f.id ? 'text-brand-pink' : 'dark:text-gray-300 text-gray-600'}`}>Aa</span>
+                  <span className={`text-[10px] font-semibold ${appearance.fontScale === f.id ? 'text-brand-pink' : 'dark:text-gray-400 text-gray-500'}`}>{f.label}</span>
+                </button>
               ))}
-            </div>
-            <div className="px-5 pb-4">
-              <p className="text-xs dark:text-gray-400 text-gray-500">Selected: <span className="font-bold dark:text-white text-gray-900">{colorOptions.find(c => c.id === selectedColor)?.label}</span></p>
             </div>
           </div>
 
-          {/* Default Mode */}
+          {/* Font Style */}
           <div className="dark:bg-[#130E1E] bg-white rounded-2xl border dark:border-white/6 border-gray-200 overflow-hidden">
             <div className="flex items-center gap-2 px-5 py-4 border-b dark:border-white/5 border-gray-100">
-              <Moon className="w-4 h-4 text-brand-pink" />
-              <h3 className="font-bold text-sm dark:text-white text-gray-900">Default Display Mode</h3>
+              <Settings className="w-4 h-4 text-brand-pink" />
+              <h3 className="font-bold text-sm dark:text-white text-gray-900">Font Style</h3>
+              <span className="ml-auto text-xs dark:text-gray-500 text-gray-400 capitalize">{appearance.fontStyle}</span>
             </div>
-            <div className="p-5 grid grid-cols-3 gap-3">
-              {[
-                { id: 'dark',   icon: Moon,    label: 'Dark Mode' },
-                { id: 'light',  icon: Sun,     label: 'Light Mode' },
-                { id: 'system', icon: Monitor, label: 'System' },
-              ].map(mode => {
-                const Icon = mode.icon
-                return (
-                  <button key={mode.id} onClick={() => setDefaultMode(mode.id as 'dark' | 'light' | 'system')}
-                    className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all ${
-                      defaultMode === mode.id
-                        ? 'border-brand-pink dark:bg-pink-500/10 bg-pink-50'
-                        : 'dark:border-white/8 border-gray-200 dark:hover:border-white/20 hover:border-gray-300'
-                    }`}>
-                    <Icon className={`w-5 h-5 ${defaultMode === mode.id ? 'text-brand-pink' : 'dark:text-gray-400 text-gray-500'}`} />
-                    <span className={`text-xs font-semibold ${defaultMode === mode.id ? 'text-brand-pink' : 'dark:text-gray-300 text-gray-600'}`}>{mode.label}</span>
-                  </button>
-                )
-              })}
+            <div className="p-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {fontStyleOptions.map(f => (
+                <button key={f.id} onClick={() => setAppearance({ fontStyle: f.id as any })}
+                  className={`flex flex-col items-center gap-2 px-4 py-4 rounded-xl border-2 transition-all ${
+                    appearance.fontStyle === f.id
+                      ? 'border-brand-pink dark:bg-pink-500/10 bg-pink-50'
+                      : 'dark:border-white/8 border-gray-200 dark:hover:border-white/20 hover:border-gray-300'
+                  }`}>
+                  <span className={`text-lg font-bold ${f.preview} ${appearance.fontStyle === f.id ? 'text-brand-pink' : 'dark:text-gray-200 text-gray-700'}`}>
+                    The quick brown fox
+                  </span>
+                  <span className={`text-[10px] font-semibold ${appearance.fontStyle === f.id ? 'text-brand-pink' : 'dark:text-gray-400 text-gray-500'}`}>{f.label}</span>
+                </button>
+              ))}
             </div>
           </div>
 
@@ -279,50 +405,239 @@ export default function AdminSettings() {
             <div className="flex items-center gap-2 px-5 py-4 border-b dark:border-white/5 border-gray-100">
               <Settings className="w-4 h-4 text-brand-pink" />
               <h3 className="font-bold text-sm dark:text-white text-gray-900">Border Radius Style</h3>
+              <span className="ml-auto text-xs dark:text-gray-500 text-gray-400 capitalize">{appearance.borderRadius}</span>
             </div>
             <div className="p-5 flex flex-wrap gap-3">
-              {[
-                { id: 'sharp',    label: 'Sharp',    preview: 'rounded-none' },
-                { id: 'rounded',  label: 'Rounded',  preview: 'rounded-xl' },
-                { id: 'pill',     label: 'Pill',     preview: 'rounded-full' },
-              ].map(r => (
-                <button key={r.id} onClick={() => setBorderRadius(r.id)}
-                  className={`flex flex-col items-center gap-2 px-5 py-3 border-2 transition-all ${r.preview} ${
-                    borderRadius === r.id
+              {borderRadiusOptions.map(r => (
+                <button key={r.id} onClick={() => setAppearance({ borderRadius: r.id as any })}
+                  className={`flex flex-col items-center gap-2 px-6 py-3 border-2 transition-all ${r.cls} ${
+                    appearance.borderRadius === r.id
                       ? 'border-brand-pink dark:bg-pink-500/10 bg-pink-50'
                       : 'dark:border-white/8 border-gray-200 dark:hover:border-white/20 hover:border-gray-300'
                   }`}>
-                  <span className={`text-sm font-semibold ${borderRadius === r.id ? 'text-brand-pink' : 'dark:text-gray-300 text-gray-600'}`}>{r.label}</span>
+                  <span className={`text-sm font-semibold ${appearance.borderRadius === r.id ? 'text-brand-pink' : 'dark:text-gray-300 text-gray-600'}`}>{r.label}</span>
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Font Scale */}
-          <div className="dark:bg-[#130E1E] bg-white rounded-2xl border dark:border-white/6 border-gray-200 overflow-hidden">
-            <div className="flex items-center gap-2 px-5 py-4 border-b dark:border-white/5 border-gray-100">
-              <Settings className="w-4 h-4 text-brand-pink" />
-              <h3 className="font-bold text-sm dark:text-white text-gray-900">Font Scale</h3>
+          {/* Reset */}
+          <button onClick={() => setAppearance({
+            fontScale: 'normal', fontStyle: 'default', accentColor: '#ec4899',
+            borderRadius: 'rounded', themePreset: 'love',
+          })} className="flex items-center gap-2 px-4 py-2.5 rounded-xl dark:bg-white/5 bg-gray-100 dark:text-gray-400 text-gray-600 text-sm font-semibold hover:text-brand-pink transition-colors">
+            <RefreshCw className="w-3.5 h-3.5" /> Reset to defaults
+          </button>
+        </div>
+      )}
+
+      {/* ── Announcements Tab ─────────────────────────────────────────────────── */}
+      {activeTab === 'announcements' && (
+        <div className="space-y-5">
+
+          {/* Global Banner Toggle */}
+          <div className="dark:bg-[#130E1E] bg-white rounded-2xl border dark:border-white/6 border-gray-200 p-5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-love-soft flex items-center justify-center">
+                  <Megaphone className="w-5 h-5 text-brand-pink" />
+                </div>
+                <div>
+                  <p className="font-bold text-sm dark:text-white text-gray-900">Announcement Banner</p>
+                  <p className="text-xs dark:text-gray-400 text-gray-500 mt-0.5">Show scrolling banner to all users and admins platform-wide</p>
+                </div>
+              </div>
+              <button onClick={() => setBannerEnabled(!bannerEnabled)} className="transition-transform hover:scale-110">
+                {bannerEnabled
+                  ? <ToggleRight className="w-9 h-9 text-brand-pink" />
+                  : <ToggleLeft className="w-9 h-9 dark:text-gray-600 text-gray-400" />
+                }
+              </button>
             </div>
-            <div className="p-5 flex flex-wrap gap-3">
-              {[
-                { id: 'small',   label: 'Small',   size: 'text-xs' },
-                { id: 'normal',  label: 'Normal',  size: 'text-sm' },
-                { id: 'large',   label: 'Large',   size: 'text-base' },
-              ].map(f => (
-                <button key={f.id} onClick={() => setFontScale(f.id)}
-                  className={`flex flex-col items-center gap-2 px-5 py-3 rounded-xl border-2 transition-all ${
-                    fontScale === f.id
-                      ? 'border-brand-pink dark:bg-pink-500/10 bg-pink-50'
-                      : 'dark:border-white/8 border-gray-200 dark:hover:border-white/20 hover:border-gray-300'
-                  }`}>
-                  <span className={`font-semibold ${f.size} ${fontScale === f.id ? 'text-brand-pink' : 'dark:text-gray-300 text-gray-600'}`}>{f.label}</span>
-                </button>
-              ))}
+            {bannerEnabled && (
+              <div className="mt-4 pt-4 border-t dark:border-white/5 border-gray-100 flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${announcements.some(a => a.is_active) ? 'bg-emerald-500 animate-pulse' : 'bg-gray-400'}`} />
+                <p className="text-xs dark:text-gray-400 text-gray-500">
+                  {announcements.some(a => a.is_active)
+                    ? `Banner live: "${announcements.find(a => a.is_active)?.message?.substring(0, 60)}${(announcements.find(a => a.is_active)?.message?.length ?? 0) > 60 ? '…' : ''}"`
+                    : 'No active announcement — activate one below'}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Announcements list */}
+          <div className="dark:bg-[#130E1E] bg-white rounded-2xl border dark:border-white/6 border-gray-200 overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b dark:border-white/5 border-gray-100">
+              <div className="flex items-center gap-2">
+                <Megaphone className="w-4 h-4 text-brand-pink" />
+                <h3 className="font-bold text-sm dark:text-white text-gray-900">Announcement Messages</h3>
+                <span className="text-xs dark:text-gray-500 text-gray-400">({announcements.length})</span>
+              </div>
+              <button onClick={openAddAnn}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-love-gradient text-white text-xs font-bold shadow-md shadow-pink-500/20 hover:opacity-90 transition-opacity">
+                <Plus className="w-3 h-3" /> New
+              </button>
+            </div>
+
+            {announcements.length === 0 ? (
+              <div className="py-12 text-center">
+                <Megaphone className="w-8 h-8 dark:text-gray-600 text-gray-300 mx-auto mb-3 opacity-50" />
+                <p className="text-sm dark:text-gray-500 text-gray-400">No announcements yet</p>
+                <button onClick={openAddAnn} className="mt-3 text-xs text-brand-pink font-semibold hover:underline">+ Create first announcement</button>
+              </div>
+            ) : (
+              <div className="divide-y dark:divide-white/4 divide-gray-50">
+                {announcements.map((ann, i) => {
+                  const tc = ANN_TYPE_CONFIG[ann.type] || ANN_TYPE_CONFIG.info
+                  const TIcon = tc.icon
+                  return (
+                    <motion.div key={ann.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.04 }}
+                      className="flex items-start gap-4 px-5 py-4 hover:dark:bg-white/2 hover:bg-gray-50 transition-colors">
+                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${ann.is_active ? 'bg-love-soft' : 'dark:bg-white/5 bg-gray-100'}`}>
+                        <TIcon className={`w-4 h-4 ${ann.is_active ? 'text-brand-pink' : 'dark:text-gray-500 text-gray-400'}`} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                          <span className={`text-[10px] font-black uppercase tracking-wide ${tc.color}`}>{tc.label}</span>
+                          {ann.is_active && bannerEnabled && (
+                            <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-500 text-[9px] font-black">
+                              <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" /> LIVE
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm dark:text-white text-gray-900 font-semibold line-clamp-2">{ann.message}</p>
+                        {ann.link_text && ann.link_url && (
+                          <p className="text-[10px] dark:text-gray-500 text-gray-400 mt-0.5 flex items-center gap-1">
+                            <Link className="w-2.5 h-2.5" /> {ann.link_text} → {ann.link_url}
+                          </p>
+                        )}
+                        <p className="text-[10px] dark:text-gray-600 text-gray-400 mt-1">
+                          {ann.created_at ? new Date(ann.created_at).toLocaleString() : 'Just now'} · by {ann.created_by || 'Admin'}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <button onClick={() => handleToggleAnn(ann)} title={ann.is_active ? 'Deactivate' : 'Activate'} className="transition-transform hover:scale-110">
+                          {ann.is_active
+                            ? <ToggleRight className="w-7 h-7 text-brand-pink" />
+                            : <ToggleLeft className="w-7 h-7 dark:text-gray-600 text-gray-400" />
+                          }
+                        </button>
+                        <button onClick={() => openEditAnn(ann)} className="w-7 h-7 rounded-lg dark:bg-white/5 bg-gray-100 flex items-center justify-center hover:text-brand-pink transition-colors">
+                          <Edit className="w-3 h-3" />
+                        </button>
+                        <button onClick={() => handleDeleteAnn(ann.id)} className="w-7 h-7 rounded-lg dark:bg-white/5 bg-gray-100 flex items-center justify-center hover:text-red-500 transition-colors">
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </motion.div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* SQL tip */}
+          <div className="flex items-start gap-3 p-4 rounded-2xl dark:bg-blue-500/8 bg-blue-50 border dark:border-blue-500/15 border-blue-200">
+            <Info className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-xs font-bold dark:text-blue-400 text-blue-600">Persistent storage</p>
+              <p className="text-xs dark:text-blue-400/70 text-blue-600/70 mt-0.5">
+                For announcements to persist across all user sessions, run the SQL migration in <code className="font-mono bg-blue-500/10 px-1 rounded">supabase/announcements_migration.sql</code> in your Supabase SQL editor.
+                Until then, announcements are stored locally in this browser.
+              </p>
             </div>
           </div>
         </div>
       )}
+
+      {/* ── Announcement Form Modal ────────────────────────────────────────────── */}
+      <AnimatePresence>
+        {showAnnForm && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowAnnForm(false)}>
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
+              onClick={e => e.stopPropagation()}
+              className="w-full max-w-lg dark:bg-[#1A1228] bg-white rounded-3xl p-6 border dark:border-white/8 border-gray-200 shadow-2xl">
+
+              <div className="flex items-center justify-between mb-5">
+                <h3 className="font-display font-black text-lg dark:text-white text-gray-900">
+                  {editAnn ? 'Edit Announcement' : 'New Announcement'}
+                </h3>
+                <button onClick={() => setShowAnnForm(false)} className="w-8 h-8 rounded-xl dark:bg-white/5 bg-gray-100 flex items-center justify-center hover:text-brand-pink transition-colors">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                {/* Type */}
+                <div>
+                  <label className="text-xs font-bold dark:text-gray-400 text-gray-600 mb-2 block">Type</label>
+                  <div className="grid grid-cols-5 gap-2">
+                    {ANN_TYPES.map(type => {
+                      const tc = ANN_TYPE_CONFIG[type]
+                      const TIcon = tc.icon
+                      return (
+                        <button key={type} onClick={() => setAnnForm(p => ({ ...p, type }))}
+                          className={`flex flex-col items-center gap-1 py-2.5 rounded-xl border-2 transition-all ${
+                            annForm.type === type ? 'border-brand-pink dark:bg-pink-500/10 bg-pink-50' : 'dark:border-white/8 border-gray-200'
+                          }`}>
+                          <TIcon className={`w-4 h-4 ${annForm.type === type ? 'text-brand-pink' : tc.color}`} />
+                          <span className={`text-[9px] font-bold ${annForm.type === type ? 'text-brand-pink' : 'dark:text-gray-400 text-gray-500'}`}>{tc.label}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Message */}
+                <div>
+                  <label className="text-xs font-bold dark:text-gray-400 text-gray-600 mb-1.5 block">Message *</label>
+                  <textarea value={annForm.message} onChange={e => setAnnForm(p => ({ ...p, message: e.target.value }))}
+                    rows={3} placeholder="Announcement text shown in the scrolling banner…"
+                    className={inp + ' resize-none'} />
+                </div>
+
+                {/* Link (optional) */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-bold dark:text-gray-400 text-gray-600 mb-1.5 block">Link Text <span className="font-normal opacity-60">(optional)</span></label>
+                    <input value={annForm.link_text} onChange={e => setAnnForm(p => ({ ...p, link_text: e.target.value }))}
+                      placeholder="Learn more" className={inp} />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold dark:text-gray-400 text-gray-600 mb-1.5 block">Link URL <span className="font-normal opacity-60">(optional)</span></label>
+                    <input value={annForm.link_url} onChange={e => setAnnForm(p => ({ ...p, link_url: e.target.value }))}
+                      placeholder="https://…" className={inp} />
+                  </div>
+                </div>
+
+                {/* Active */}
+                <div className="flex items-center justify-between p-4 rounded-xl dark:bg-white/3 bg-gray-50 border dark:border-white/5 border-gray-100">
+                  <div>
+                    <p className="text-sm font-semibold dark:text-white text-gray-900">Activate immediately</p>
+                    <p className="text-xs dark:text-gray-400 text-gray-500 mt-0.5">This will replace any currently active announcement</p>
+                  </div>
+                  <button onClick={() => setAnnForm(p => ({ ...p, is_active: !p.is_active }))}>
+                    {annForm.is_active
+                      ? <ToggleRight className="w-8 h-8 text-brand-pink" />
+                      : <ToggleLeft className="w-8 h-8 dark:text-gray-600 text-gray-400" />
+                    }
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button onClick={() => setShowAnnForm(false)} className="flex-1 py-3 rounded-xl dark:bg-white/5 bg-gray-100 dark:text-white text-gray-900 text-sm font-semibold">Cancel</button>
+                <button onClick={handleSaveAnn} disabled={annSaving || !annForm.message.trim()}
+                  className="flex-1 py-3 rounded-xl bg-love-gradient text-white text-sm font-bold flex items-center justify-center gap-2 shadow-lg shadow-pink-500/20 hover:opacity-90 disabled:opacity-50">
+                  {annSaving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  {annSaving ? 'Saving…' : editAnn ? 'Update' : 'Create'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

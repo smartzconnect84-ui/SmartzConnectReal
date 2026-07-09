@@ -14,6 +14,7 @@ import TopNavBar from '@/layouts/TopNavBar'
 import LeftSidebar from '@/layouts/LeftSidebar'
 import CreateModal from '@/components/CreateModal'
 import IncomingCall from '@/components/IncomingCall'
+import AnnouncementBanner from '@/components/AnnouncementBanner'
 
 // All nav sections for the mobile drawer
 const drawerSections = [
@@ -109,6 +110,9 @@ export default function AppShell() {
 
   return (
     <div className="app-shell h-screen flex flex-col dark:bg-[#0A0710] bg-gray-50 overflow-hidden">
+
+      {/* ── Announcement Banner ── */}
+      <AnnouncementBanner />
 
       {/* ── Full-width Top Nav ── */}
       <TopNavBar

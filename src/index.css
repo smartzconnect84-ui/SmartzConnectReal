@@ -171,6 +171,59 @@
     box-shadow: 0 0 30px rgba(155, 93, 229, 0.25);
   }
 
+  /* ── Announcement banner marquee ── */
+  @keyframes marquee {
+    0%   { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+  .animate-marquee {
+    animation: marquee 28s linear infinite;
+    white-space: nowrap;
+    will-change: transform;
+  }
+
+  /* ────────────────────────────────────────────────────────────────
+     APPEARANCE THEMING — CSS custom properties set by ThemeContext
+     via document.documentElement.style.setProperty(...)
+     ──────────────────────────────────────────────────────────────── */
+
+  /* Gradient & accent color overrides so preset switches apply live */
+  .bg-love-gradient {
+    background-image: linear-gradient(135deg, var(--color-brand-from, #FF4D8D) 0%, var(--color-brand-to, #9B5DE5) 100%) !important;
+  }
+  .text-brand-pink {
+    color: var(--color-accent, #EC4899) !important;
+  }
+  .bg-brand-pink {
+    background-color: var(--color-accent, #EC4899) !important;
+  }
+  .border-brand-pink {
+    border-color: var(--color-accent, #EC4899) !important;
+  }
+  .ring-brand-pink, .focus\:ring-brand-pink:focus {
+    --tw-ring-color: var(--color-accent, #EC4899) !important;
+  }
+  /* Soft/translucent love variants */
+  .bg-love-soft {
+    background-color: color-mix(in srgb, var(--color-accent, #EC4899) 12%, transparent) !important;
+  }
+
+  /* Border radius mode overrides (set via html.radius-* class) */
+  html.radius-sharp .rounded-sm,
+  html.radius-sharp .rounded,
+  html.radius-sharp .rounded-md,
+  html.radius-sharp .rounded-lg,
+  html.radius-sharp .rounded-xl,
+  html.radius-sharp .rounded-2xl,
+  html.radius-sharp .rounded-3xl,
+  html.radius-sharp .rounded-4xl { border-radius: 0 !important; }
+
+  html.radius-pill .rounded-lg,
+  html.radius-pill .rounded-xl,
+  html.radius-pill .rounded-2xl,
+  html.radius-pill .rounded-3xl,
+  html.radius-pill .rounded-4xl  { border-radius: 9999px !important; }
+
   /* ── Public site font-size floor ── */
   .public-site .text-xs  { font-size: 0.9375rem !important; line-height: 1.5rem !important; }
   .public-site .text-sm  { font-size: 0.9375rem !important; line-height: 1.5rem !important; }

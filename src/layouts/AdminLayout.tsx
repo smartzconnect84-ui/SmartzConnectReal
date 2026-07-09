@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useLiveChat } from '@/contexts/LiveChatContext'
+import AnnouncementBanner from '@/components/AnnouncementBanner'
 const logoImg = '/logo.png'
 
 const navItems = [
@@ -220,6 +221,9 @@ export default function AdminLayout() {
             </div>
           </div>
         </header>
+
+        {/* Announcement Banner — shown above page content */}
+        <AnnouncementBanner />
 
         {/* Page content */}
         <main className="flex-1 overflow-y-auto">

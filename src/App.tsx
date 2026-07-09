@@ -11,7 +11,9 @@ import Footer from '@/components/Footer'
 import LiveChat from '@/components/LiveChat'
 import LiveKitCall from '@/components/LiveKitCall'
 import CookieBanner from '@/components/CookieBanner'
+import { AnnouncementProvider } from '@/contexts/AnnouncementContext'
 import AppShell from '@/layouts/AppShell'
+
 import AdminLayout from '@/layouts/AdminLayout'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import AdminRoute from '@/components/AdminRoute'
@@ -104,6 +106,7 @@ function AppInit() {
 export default function App() {
   return (
     <ThemeProvider>
+      <AnnouncementProvider>
       <AuthProvider>
         <StreamProvider>
           <LiveChatProvider>
@@ -210,6 +213,7 @@ export default function App() {
           </LiveChatProvider>
         </StreamProvider>
       </AuthProvider>
+      </AnnouncementProvider>
     </ThemeProvider>
   )
 }
