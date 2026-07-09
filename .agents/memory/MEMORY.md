@@ -14,6 +14,7 @@
 - [Call signaling state machine](call-signaling.md) — Full call system via call_notifications realtime; clear outgoingNotifIdRef on accepted to prevent 60s timer closing active calls.
 - [Production deployment](production-deployment.md) — edge functions use --use-api flag; DB on port 5432 (not 6543); admin_users.id = profile UUID; SUFY region needs confirmation.
 - [Stream Chat routing contract](stream-chat-routing.md) — ChatPage uses :id param as the OTHER USER's profile UUID (not a channel ID). Always navigate to /app/chat/:userId, never a derived channel ID.
+- [Stream Chat WorldChat fixes](stream-chat-worldchat-fixes.md) — use 'livestream' type for global chat (any auth user can watch/send); STREAM_SECRET ≠ STREAM_API_SECRET; pgcrypto hmac needs extensions.hmac() or SET search_path.
 - [WorldChat channel lifecycle](worldchat-lifecycle.md) — Capture channel in effect-local variable (not state closure) for cleanup; ch.off() with event name string causes TS error; use ch.stopWatching() only.
 - [Superadmin accounts](superadmin-accounts.md) — ceo@smartzconnect.com and shedrickknungehn@gmail.com created with role=superadmin in profiles; admin_users.role='ceo' (constraint only allows admin/super_admin/ceo/moderator).
 - [Integration audit 2026-07](integration-audit-2026-07.md) — real bugs vs. false positives found auditing GetStream/LiveKit/Supabase/OneSignal/SUFY; check live DB/deployed functions before "fixing" naming mismatches.
