@@ -2,6 +2,55 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders, jsonResponse, requireUser, signJwtHS256, nowAndExpiry } from '../_shared/sessionService.ts'
 
+const WORLD_CHANNEL_ID   = 'smartz-worldchat-global'
+const WORLD_CHANNEL_TYPE = 'messaging'
+const STREAM_API_BASE    = 'https://chat.stream-io-api.com'
+
+/**
+ * Create a server-to-server JWT for Stream's Management API.
+ * This is a token signed with the app secret with user_id = "server".
+ */
+async function serverJwt(apiKey: string, secret: string): Promise<string> {
+  const { now, exp } = nowAndExpiry(60) // 1-minute server token
+  return signJwtHS256({ user_id: 'server', iat: now, exp }, secret)
+}
+
+/**
+ * Ensure the authenticated user is a member of the world chat channel.
+ * If not, add them. If the channel doesn't exist yet, create it.
+ * Non-fatal — if this fails, we still return the user token.
+ */
+async function ensureWorldChatMember(userId: string, apiKey: string, secret: string) {
+  try {
+    const jwt = await serverJwt(apiKey, secret)
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${jwt}`,
+      'Stream-Auth-Type': 'jwt',
+    }
+    const base = `${STREAM_API_BASE}/channels/${WORLD_CHANNEL_TYPE}/${WORLD_CHANNEL_ID}`
+
+    // Upsert the channel (create if not exists, no-op if it does)
+    await fetch(`${base}?api_key=${apiKey}`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        data: { name: 'World Chat', created_by_id: 'server' },
+        members: [{ user_id: userId }],
+      }),
+    })
+
+    // Add the user as a member (idempotent — Stream ignores duplicates)
+    await fetch(`${base}/member?api_key=${apiKey}`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ add_members: [{ user_id: userId }] }),
+    })
+  } catch (err) {
+    console.warn('ensureWorldChatMember failed (non-fatal):', err)
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -12,24 +61,22 @@ serve(async (req) => {
     if (error) return error
 
     const userId = user!.id
-    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const adminClient = createClient(supabaseUrl!, serviceKey)
 
     // ── Resolve stream secret: env var takes priority, then fall back to admin_config ──
     let streamSecret = Deno.env.get('STREAM_API_SECRET') || Deno.env.get('STREAM_SECRET')
+    const streamApiKey = Deno.env.get('STREAM_API_KEY') || Deno.env.get('VITE_STREAM_API_KEY') || 'awspcvfkzuq7'
 
     if (!streamSecret) {
-      // Attempt to read the secret from the admin_config table in the database.
-      // This allows the function to work even when the Supabase edge-function secret
-      // is not set — the secret is stored securely in the DB row.
-      const { data: cfgRow, error: cfgErr } = await adminClient
+      const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+      const adminClient = createClient(supabaseUrl!, serviceKey)
+      const { data: cfgRow } = await adminClient
         .from('admin_config')
         .select('value')
         .eq('key', 'getstream_api_secret')
         .single()
 
-      if (cfgErr || !cfgRow?.value || cfgRow.value.startsWith('REPLACE_')) {
-        console.error('Stream secret not configured (env var and admin_config both missing)')
+      if (!cfgRow?.value || cfgRow.value.startsWith('REPLACE_')) {
+        console.error('Stream secret not configured')
         return jsonResponse({ error: 'Stream not configured' }, 500)
       }
       streamSecret = cfgRow.value
@@ -39,14 +86,20 @@ serve(async (req) => {
 
     const token = await signJwtHS256({ user_id: userId, iat: now, exp }, streamSecret)
 
-    // Cache token in Supabase (best-effort — non-fatal if it fails)
-    const { error: upsertError } = await adminClient.from('stream_tokens').upsert({
-      user_id: userId,
-      token,
-      expires_at: new Date(exp * 1000).toISOString(),
-    }, { onConflict: 'user_id' })
-    if (upsertError) {
-      console.error('stream_tokens upsert failed:', upsertError.message)
+    // Add user to world chat channel (best-effort, non-fatal)
+    await ensureWorldChatMember(userId, streamApiKey, streamSecret)
+
+    // Cache token in Supabase (best-effort)
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    if (serviceKey) {
+      const adminClient = createClient(supabaseUrl!, serviceKey)
+      await adminClient.from('stream_tokens').upsert({
+        user_id: userId,
+        token,
+        expires_at: new Date(exp * 1000).toISOString(),
+      }, { onConflict: 'user_id' }).then(({ error: e }) => {
+        if (e) console.error('stream_tokens upsert failed:', e.message)
+      })
     }
 
     return jsonResponse({ token, userId })

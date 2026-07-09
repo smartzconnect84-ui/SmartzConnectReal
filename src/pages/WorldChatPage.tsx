@@ -93,7 +93,24 @@ export default function WorldChatPage() {
         const ch = client.channel('messaging', WORLD_CHANNEL_ID, {
           members: user?.id ? [user.id] : [],
         })
-        await ch.watch()
+        try {
+          await ch.watch()
+        } catch (watchErr: any) {
+          // If watch() fails because the user isn't yet a member (happens when
+          // the channel already exists and this is a new user), the stream-token
+          // edge function's ensureWorldChatMember will have added them on the
+          // next token refresh.  For now, surface a clear error rather than
+          // an opaque loading spinner.
+          const msg = watchErr?.message ?? String(watchErr)
+          const notMember = msg.includes('not a member') ||
+            msg.includes('WatchChannel') || (watchErr?.code === 5)
+          if (notMember) {
+            console.warn('WorldChat: user not yet a member — token refresh will add them')
+          } else {
+            console.error('WorldChat watch failed:', watchErr)
+          }
+          return
+        }
         if (disposed) { ch.stopWatching(); return }
         activeChannel = ch
         setChannel(ch)
