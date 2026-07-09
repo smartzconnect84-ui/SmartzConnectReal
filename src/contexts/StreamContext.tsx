@@ -82,7 +82,8 @@ export function StreamProvider({ children }: { children: ReactNode }) {
         if (cancelled) return
 
         if (!token) {
-          console.error('Stream token unavailable after retries — chat features disabled')
+          console.error('Stream token unavailable after retries — chat features disabled. Ensure STREAM_API_SECRET is set as a Supabase edge function secret.')
+          setConnected(false)
           return
         }
 

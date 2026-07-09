@@ -13,6 +13,8 @@ import LiveKitCall from '@/components/LiveKitCall'
 import CookieBanner from '@/components/CookieBanner'
 import { AnnouncementProvider } from '@/contexts/AnnouncementContext'
 import AppShell from '@/layouts/AppShell'
+import PWAInstallPrompt from '@/components/PWAInstallPrompt'
+import NotificationPrompt from '@/components/NotificationPrompt'
 
 import AdminLayout from '@/layouts/AdminLayout'
 import ProtectedRoute from '@/components/ProtectedRoute'
@@ -116,6 +118,8 @@ export default function App() {
             <LiveChat />
             <LiveKitCall />
             <CookieBanner />
+            <PWAInstallPrompt />
+            <NotificationPrompt />
             <Routes>
               {/* Public */}
               <Route path="/"            element={<PublicLayout><HomePage /></PublicLayout>} />

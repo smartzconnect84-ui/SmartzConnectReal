@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Play, Heart, Eye, Search, Flame, TrendingUp, Radio, Gift, X, Tv, Crown, Zap, Shield, RefreshCw, Plus, Mic, MicOff, Video, VideoOff, PhoneOff, Users, Loader2, Link2 } from 'lucide-react'
+import { Play, Heart, Eye, Search, Flame, TrendingUp, Radio, Gift, X, Tv, Crown, Zap, Shield, RefreshCw, Plus, Mic, MicOff, Video, VideoOff, PhoneOff, Users, Loader2, Link2, Edit2, Trash2, Share2, MessageSquare, Clapperboard, Save, CheckCircle } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { uploadToSufy } from '@/lib/sufy'
@@ -463,6 +463,154 @@ function StreamModal({ stream, onClose }: { stream: Stream; onClose: () => void 
   )
 }
 
+/* ── Creator Studio: Edit Modal ──────────────────────────────────────── */
+interface MyStream {
+  id: string; title: string; category: string; status: string
+  thumbnail_url?: string; viewer_count: number; created_at: string
+  comment_count?: number
+}
+
+function UserEditStreamModal({ stream, onClose, onSaved }: {
+  stream: MyStream; onClose: () => void; onSaved: () => void
+}) {
+  const [title, setTitle] = useState(stream.title)
+  const [category, setCategory] = useState(stream.category)
+  const [thumbnail, setThumbnail] = useState(stream.thumbnail_url || '')
+  const [saving, setSaving] = useState(false)
+
+  const handleSave = async () => {
+    setSaving(true)
+    await supabase.from('livestreams').update({ title: title.trim(), category, thumbnail_url: thumbnail || null }).eq('id', stream.id)
+    setSaving(false)
+    onSaved()
+    onClose()
+  }
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+      onClick={onClose}>
+      <motion.div initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95 }}
+        onClick={e => e.stopPropagation()}
+        className="w-full max-w-sm dark:bg-[#0D0A14] bg-white rounded-2xl border dark:border-white/8 border-gray-200 overflow-hidden shadow-2xl">
+        <div className="flex items-center justify-between px-5 py-4 border-b dark:border-white/6 border-gray-100">
+          <h2 className="font-bold text-sm dark:text-white text-gray-900 flex items-center gap-2"><Edit2 className="w-4 h-4 text-brand-pink" /> Edit Stream</h2>
+          <button onClick={onClose} className="w-7 h-7 rounded-lg dark:bg-white/5 bg-gray-100 flex items-center justify-center"><X className="w-3.5 h-3.5 dark:text-gray-400 text-gray-500" /></button>
+        </div>
+        <div className="p-5 space-y-3">
+          <div>
+            <label className="text-xs font-semibold dark:text-gray-400 text-gray-600 block mb-1">Title</label>
+            <input value={title} onChange={e => setTitle(e.target.value)}
+              className="w-full px-3 py-2.5 rounded-xl dark:bg-purple-900/10 bg-gray-50 border dark:border-purple-500/15 border-gray-200 text-sm dark:text-white text-gray-900 focus:outline-none focus:dark:border-pink-500/30" />
+          </div>
+          <div>
+            <label className="text-xs font-semibold dark:text-gray-400 text-gray-600 block mb-1">Category</label>
+            <select value={category} onChange={e => setCategory(e.target.value)}
+              className="w-full px-3 py-2.5 rounded-xl dark:bg-purple-900/10 bg-gray-50 border dark:border-purple-500/15 border-gray-200 text-sm dark:text-white text-gray-900 focus:outline-none">
+              {['Music','Comedy','Tech','Fashion','Sports','Food','Education','Live'].map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs font-semibold dark:text-gray-400 text-gray-600 block mb-1">Thumbnail URL</label>
+            <input value={thumbnail} onChange={e => setThumbnail(e.target.value)} placeholder="https://…"
+              className="w-full px-3 py-2.5 rounded-xl dark:bg-purple-900/10 bg-gray-50 border dark:border-purple-500/15 border-gray-200 text-sm dark:text-white text-gray-900 focus:outline-none focus:dark:border-pink-500/30" />
+          </div>
+          <button onClick={handleSave} disabled={!title.trim() || saving}
+            className="w-full py-2.5 rounded-2xl bg-love-gradient text-white font-bold text-sm disabled:opacity-50 flex items-center justify-center gap-2">
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            {saving ? 'Saving…' : 'Save Changes'}
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  )
+}
+
+/* ── Creator Studio: Stream Comments Modal ────────────────────────────── */
+function StreamCommentsModal({ stream, userId, onClose }: {
+  stream: MyStream; userId: string; onClose: () => void
+}) {
+  const [comments, setComments] = useState<{ id: number; user: string; text: string; time: string; userId?: string }[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true)
+      const { data } = await supabase
+        .from('stream_comments')
+        .select('id, content, created_at, user_id, profiles:user_id(full_name, avatar_url)')
+        .eq('stream_id', stream.id)
+        .eq('is_deleted', false)
+        .order('created_at', { ascending: false })
+        .limit(50)
+      if (data) {
+        setComments(data.map((c: any) => ({
+          id: c.id,
+          user: (c.profiles as any)?.full_name || 'User',
+          text: c.content,
+          time: new Date(c.created_at).toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' }),
+          userId: c.user_id,
+        })))
+      }
+      setLoading(false)
+    }
+    load()
+    // Realtime subscription
+    const sub = supabase.channel(`stream-comments-${stream.id}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'stream_comments', filter: `stream_id=eq.${stream.id}` },
+        () => load())
+      .subscribe()
+    return () => { supabase.removeChannel(sub) }
+  }, [stream.id])
+
+  const handleDelete = async (id: number) => {
+    await supabase.from('stream_comments').update({ is_deleted: true }).eq('id', id)
+    setComments(prev => prev.filter(c => c.id !== id))
+  }
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4"
+      onClick={onClose}>
+      <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} transition={{ type: 'spring', damping: 30 }}
+        onClick={e => e.stopPropagation()}
+        className="w-full sm:max-w-md dark:bg-[#0D0A14] bg-white rounded-t-3xl sm:rounded-3xl border dark:border-white/8 border-gray-200 overflow-hidden shadow-2xl max-h-[80vh] flex flex-col">
+        <div className="flex items-center justify-between px-5 py-4 border-b dark:border-white/6 border-gray-100 flex-shrink-0">
+          <h2 className="font-bold text-sm dark:text-white text-gray-900 flex items-center gap-2">
+            <MessageSquare className="w-4 h-4 text-brand-pink" /> Comments — {stream.title}
+          </h2>
+          <button onClick={onClose} className="w-7 h-7 rounded-lg dark:bg-white/5 bg-gray-100 flex items-center justify-center"><X className="w-3.5 h-3.5 dark:text-gray-400 text-gray-500" /></button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-4">
+          {loading ? (
+            <div className="flex justify-center py-10"><Loader2 className="w-5 h-5 animate-spin text-brand-pink" /></div>
+          ) : comments.length === 0 ? (
+            <div className="text-center py-10 dark:text-gray-500 text-gray-400 text-sm">No comments yet.</div>
+          ) : (
+            <div className="space-y-3">
+              {comments.map(c => (
+                <div key={c.id} className="flex items-start gap-3 p-3 rounded-xl dark:bg-white/5 bg-gray-50 group">
+                  <div className="w-8 h-8 rounded-full bg-love-gradient flex items-center justify-center text-white text-xs font-bold flex-shrink-0">{c.user[0]}</div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold dark:text-white text-gray-900">{c.user}</p>
+                    <p className="text-sm dark:text-gray-300 text-gray-700 mt-0.5">{c.text}</p>
+                    <p className="text-[10px] dark:text-gray-500 text-gray-400 mt-1">{c.time}</p>
+                  </div>
+                  <button onClick={() => handleDelete(c.id)}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 rounded-lg dark:bg-red-500/10 bg-red-50 text-red-500 flex items-center justify-center flex-shrink-0"
+                    title="Delete comment">
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </motion.div>
+    </motion.div>
+  )
+}
+
 export default function SmartzTVPage() {
   const { user } = useAuth()
   const [streams, setStreams] = useState<Stream[]>([])
@@ -478,6 +626,15 @@ export default function SmartzTVPage() {
   const [goingLive, setGoingLive] = useState(false)
   const [broadcastData, setBroadcastData] = useState<BroadcastData | null>(null)
   const thumbnailInputRef = useRef<HTMLInputElement>(null)
+  // Creator Studio state
+  const [activeTab, setActiveTab] = useState<'watch' | 'studio'>('watch')
+  const [myStreams, setMyStreams] = useState<MyStream[]>([])
+  const [myStreamsLoading, setMyStreamsLoading] = useState(false)
+  const [editingStream, setEditingStream] = useState<MyStream | null>(null)
+  const [commentsStream, setCommentsStream] = useState<MyStream | null>(null)
+  const [deleteStreamId, setDeleteStreamId] = useState<string | null>(null)
+  const [deletingStream, setDeletingStream] = useState(false)
+  const [shareToast, setShareToast] = useState<string | null>(null)
 
   const fetchStreams = async () => {
     setLoading(true)
@@ -570,6 +727,53 @@ export default function SmartzTVPage() {
     return () => { supabase.removeChannel(sub) }
   }, [])
 
+  // Creator Studio: fetch user's own streams
+  const fetchMyStreams = useCallback(async () => {
+    if (!user?.id) return
+    setMyStreamsLoading(true)
+    const { data } = await supabase
+      .from('livestreams')
+      .select('id, title, category, status, thumbnail_url, viewer_count, created_at')
+      .eq('creator_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(30)
+    setMyStreams((data || []).map((s: any) => ({
+      id: String(s.id),
+      title: s.title || 'Untitled',
+      category: s.category || 'General',
+      status: s.status || 'ended',
+      thumbnail_url: s.thumbnail_url,
+      viewer_count: s.viewer_count || 0,
+      created_at: s.created_at,
+    })))
+    setMyStreamsLoading(false)
+  }, [user?.id])
+
+  useEffect(() => {
+    if (activeTab === 'studio') fetchMyStreams()
+  }, [activeTab, fetchMyStreams])
+
+  const handleDeleteStream = async () => {
+    if (!deleteStreamId) return
+    setDeletingStream(true)
+    await supabase.from('livestreams').delete().eq('id', deleteStreamId).eq('creator_id', user?.id || '')
+    setMyStreams(prev => prev.filter(s => s.id !== deleteStreamId))
+    setDeleteStreamId(null)
+    setDeletingStream(false)
+  }
+
+  const handleShareStream = (stream: MyStream) => {
+    const url = `${window.location.origin}/app/smartztv`
+    if (navigator.share) {
+      navigator.share({ title: stream.title, text: `Watch "${stream.title}" on SmartzTV!`, url }).catch(() => {})
+    } else {
+      navigator.clipboard.writeText(url).then(() => {
+        setShareToast(stream.title)
+        setTimeout(() => setShareToast(null), 3000)
+      }).catch(() => {})
+    }
+  }
+
   const handleThumbnailUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -624,9 +828,19 @@ export default function SmartzTVPage() {
         )}
       </AnimatePresence>
 
+      {/* Share toast */}
+      <AnimatePresence>
+        {shareToast && (
+          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+            className="fixed top-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-xl bg-emerald-500 text-white text-sm font-semibold shadow-lg flex items-center gap-2">
+            <CheckCircle className="w-4 h-4" /> Link copied for "{shareToast}"
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Header */}
       <div className="px-4 sm:px-6 py-4 dark:bg-[#0D0A14] bg-white border-b dark:border-purple-900/20 border-gray-100">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-3">
           <div>
             <h1 className="font-display text-xl font-black dark:text-white text-gray-900 flex items-center gap-2">
               <Tv className="w-5 h-5 text-brand-pink" /> SmartzTV
@@ -634,10 +848,11 @@ export default function SmartzTVPage() {
             <p className="text-xs dark:text-pink-300/60 text-gray-500">Live & on-demand streaming</p>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={fetchStreams} className="w-8 h-8 rounded-xl dark:bg-white/5 bg-gray-100 flex items-center justify-center hover:text-brand-pink transition-colors">
+            <button onClick={activeTab === 'watch' ? fetchStreams : fetchMyStreams}
+              className="w-8 h-8 rounded-xl dark:bg-white/5 bg-gray-100 flex items-center justify-center hover:text-brand-pink transition-colors">
               <RefreshCw className="w-3.5 h-3.5 dark:text-gray-400 text-gray-600" />
             </button>
-            {liveCount > 0 && (
+            {liveCount > 0 && activeTab === 'watch' && (
               <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-500/10 border border-red-500/20">
                 <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
                 <span className="text-xs font-bold text-red-500">{liveCount} live</span>
@@ -650,79 +865,230 @@ export default function SmartzTVPage() {
           </div>
         </div>
 
-        {/* Search */}
-        <div className="relative mb-3">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 dark:text-gray-500 text-gray-400" />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search streams, creators…"
-            className="w-full pl-9 pr-4 py-2.5 rounded-xl dark:bg-purple-900/10 bg-gray-50 dark:border dark:border-purple-500/15 border border-gray-200 text-sm dark:text-white text-gray-900 placeholder:dark:text-purple-400/50 placeholder:text-gray-400 focus:outline-none focus:dark:border-pink-500/30 transition-colors" />
+        {/* Watch / Creator Studio tab switcher */}
+        <div className="flex gap-1 p-1 dark:bg-white/5 bg-gray-100 rounded-xl mb-3">
+          <button onClick={() => setActiveTab('watch')}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'watch' ? 'bg-love-gradient text-white shadow' : 'dark:text-gray-400 text-gray-600 hover:text-brand-pink'}`}>
+            <Play className="w-3.5 h-3.5" /> Watch
+          </button>
+          <button onClick={() => setActiveTab('studio')}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'studio' ? 'bg-love-gradient text-white shadow' : 'dark:text-gray-400 text-gray-600 hover:text-brand-pink'}`}>
+            <Clapperboard className="w-3.5 h-3.5" /> Creator Studio
+          </button>
         </div>
 
-        {/* Categories */}
-        <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
-          {categories.map(cat => (
-            <button key={cat} onClick={() => setActiveCategory(cat)}
-              className={`flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all ${activeCategory === cat ? 'bg-love-gradient text-white' : 'dark:bg-white/5 bg-gray-100 dark:text-purple-300/70 text-gray-600 hover:text-brand-pink'}`}>
-              {cat === 'Live' && <span className="w-1.5 h-1.5 rounded-full bg-red-500 inline-block mr-1 animate-pulse" />}
-              {cat}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="px-4 py-4">
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-16 gap-3">
-            <div className="w-10 h-10 rounded-full border-2 border-pink-500/30 border-t-pink-500 animate-spin" />
-            <p className="text-sm dark:text-pink-300/60 text-gray-500">Loading streams…</p>
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 gap-4 text-center">
-            <div className="text-5xl">📺</div>
-            <p className="font-bold dark:text-white text-gray-900">No streams yet</p>
-            <p className="text-sm dark:text-pink-300/60 text-gray-500">Be the first to go live on SmartzTV!</p>
-            <button onClick={() => setShowGoLiveModal(true)}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-love-gradient text-white font-bold text-sm shadow-lg shadow-pink-500/20">
-              <Radio className="w-4 h-4" /> Go Live Now
-            </button>
-          </div>
-        ) : (
+        {/* Search + categories only in Watch tab */}
+        {activeTab === 'watch' && (
           <>
-            {/* Live streams */}
-            {filtered.some(s => s.live) && (
-              <div className="mb-5">
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                  <h2 className="font-bold text-sm dark:text-white text-gray-900">Live Now</h2>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {filtered.filter(s => s.live).map((stream, i) => (
-                    <StreamCard key={stream.id} stream={stream} i={i} onClick={() => setSelectedStream(stream)} />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* All / Trending */}
-            {filtered.some(s => !s.live) && (
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <TrendingUp className="w-4 h-4 text-brand-pink" />
-                  <h2 className="font-bold text-sm dark:text-white text-gray-900">Trending Videos</h2>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {filtered.filter(s => !s.live).map((stream, i) => (
-                    <StreamCard key={stream.id} stream={stream} i={i} onClick={() => setSelectedStream(stream)} />
-                  ))}
-                </div>
-              </div>
-            )}
+            <div className="relative mb-3">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 dark:text-gray-500 text-gray-400" />
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search streams, creators…"
+                className="w-full pl-9 pr-4 py-2.5 rounded-xl dark:bg-purple-900/10 bg-gray-50 dark:border dark:border-purple-500/15 border border-gray-200 text-sm dark:text-white text-gray-900 placeholder:dark:text-purple-400/50 placeholder:text-gray-400 focus:outline-none focus:dark:border-pink-500/30 transition-colors" />
+            </div>
+            <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
+              {categories.map(cat => (
+                <button key={cat} onClick={() => setActiveCategory(cat)}
+                  className={`flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all ${activeCategory === cat ? 'bg-love-gradient text-white' : 'dark:bg-white/5 bg-gray-100 dark:text-purple-300/70 text-gray-600 hover:text-brand-pink'}`}>
+                  {cat === 'Live' && <span className="w-1.5 h-1.5 rounded-full bg-red-500 inline-block mr-1 animate-pulse" />}
+                  {cat}
+                </button>
+              ))}
+            </div>
           </>
         )}
       </div>
 
-      {/* Stream modal */}
+      {/* Watch Tab */}
+      {activeTab === 'watch' && (
+        <div className="px-4 py-4">
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-16 gap-3">
+              <div className="w-10 h-10 rounded-full border-2 border-pink-500/30 border-t-pink-500 animate-spin" />
+              <p className="text-sm dark:text-pink-300/60 text-gray-500">Loading streams…</p>
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 gap-4 text-center">
+              <div className="text-5xl">📺</div>
+              <p className="font-bold dark:text-white text-gray-900">No streams yet</p>
+              <p className="text-sm dark:text-pink-300/60 text-gray-500">Be the first to go live on SmartzTV!</p>
+              <button onClick={() => { setActiveTab('studio'); setShowGoLiveModal(true) }}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-love-gradient text-white font-bold text-sm shadow-lg shadow-pink-500/20">
+                <Radio className="w-4 h-4" /> Go Live Now
+              </button>
+            </div>
+          ) : (
+            <>
+              {filtered.some(s => s.live) && (
+                <div className="mb-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                    <h2 className="font-bold text-sm dark:text-white text-gray-900">Live Now</h2>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {filtered.filter(s => s.live).map((stream, i) => (
+                      <StreamCard key={stream.id} stream={stream} i={i} onClick={() => setSelectedStream(stream)} />
+                    ))}
+                  </div>
+                </div>
+              )}
+              {filtered.some(s => !s.live) && (
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <TrendingUp className="w-4 h-4 text-brand-pink" />
+                    <h2 className="font-bold text-sm dark:text-white text-gray-900">Trending Videos</h2>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {filtered.filter(s => !s.live).map((stream, i) => (
+                      <StreamCard key={stream.id} stream={stream} i={i} onClick={() => setSelectedStream(stream)} />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Creator Studio Tab */}
+      {activeTab === 'studio' && (
+        <div className="px-4 py-4 space-y-4">
+          {/* Studio header */}
+          <div className="dark:bg-[#130E1E] bg-white rounded-2xl border dark:border-purple-900/15 border-gray-200 p-4">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-love-gradient flex items-center justify-center flex-shrink-0">
+                <Clapperboard className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h2 className="font-bold dark:text-white text-gray-900">Creator Studio</h2>
+                <p className="text-xs dark:text-pink-300/60 text-gray-500">Manage your streams, view analytics & comments</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-2 text-center">
+              {[
+                { label: 'My Streams', value: myStreams.length.toString() },
+                { label: 'Live Now',   value: myStreams.filter(s => s.status === 'live').length.toString() },
+                { label: 'Total Views', value: myStreams.reduce((a, s) => a + s.viewer_count, 0).toLocaleString() },
+              ].map(stat => (
+                <div key={stat.label} className="dark:bg-white/5 bg-gray-50 rounded-xl p-2.5">
+                  <p className="font-black text-lg dark:text-white text-gray-900">{stat.value}</p>
+                  <p className="text-[10px] dark:text-gray-400 text-gray-500">{stat.label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* My Streams list */}
+          {myStreamsLoading ? (
+            <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-brand-pink" /></div>
+          ) : myStreams.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="text-5xl mb-3">🎬</div>
+              <p className="font-bold dark:text-white text-gray-900 mb-1">No streams yet</p>
+              <p className="text-sm dark:text-pink-300/60 text-gray-500 mb-4">Go live to start building your audience!</p>
+              <button onClick={() => setShowGoLiveModal(true)}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-love-gradient text-white font-bold text-sm mx-auto">
+                <Radio className="w-4 h-4" /> Start Your First Stream
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <h3 className="font-bold text-sm dark:text-white text-gray-900 flex items-center gap-2">
+                <Radio className="w-4 h-4 text-brand-pink" /> My Streams
+              </h3>
+              {myStreams.map((stream, i) => (
+                <motion.div key={stream.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
+                  className="dark:bg-[#130E1E] bg-white rounded-2xl border dark:border-purple-900/15 border-gray-200 overflow-hidden">
+                  <div className="flex items-center gap-3 p-3">
+                    {/* Thumbnail */}
+                    <div className="w-16 h-16 rounded-xl dark:bg-white/5 bg-gray-100 flex-shrink-0 overflow-hidden flex items-center justify-center text-2xl">
+                      {stream.thumbnail_url
+                        ? <img src={stream.thumbnail_url} alt={stream.title} className="w-full h-full object-cover" />
+                        : '📺'}
+                    </div>
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <p className="font-bold text-sm dark:text-white text-gray-900 truncate">{stream.title}</p>
+                        <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-black flex-shrink-0 ${stream.status === 'live' ? 'bg-red-500 text-white' : 'dark:bg-white/8 bg-gray-100 dark:text-gray-400 text-gray-600'}`}>
+                          {stream.status === 'live' ? '● LIVE' : stream.status.toUpperCase()}
+                        </span>
+                      </div>
+                      <p className="text-[11px] dark:text-gray-400 text-gray-500 mt-0.5">{stream.category} · <Eye className="w-3 h-3 inline" /> {stream.viewer_count} views</p>
+                      <p className="text-[10px] dark:text-gray-500 text-gray-400">{new Date(stream.created_at).toLocaleDateString()}</p>
+                    </div>
+                  </div>
+                  {/* Action buttons */}
+                  <div className="flex items-center gap-0 border-t dark:border-white/5 border-gray-100 divide-x dark:divide-white/5 divide-gray-100">
+                    <button onClick={() => handleShareStream(stream)}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold dark:text-gray-400 text-gray-600 hover:text-emerald-500 transition-colors">
+                      <Share2 className="w-3.5 h-3.5" /> Share
+                    </button>
+                    <button onClick={() => setEditingStream(stream)}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold dark:text-gray-400 text-gray-600 hover:text-blue-500 transition-colors">
+                      <Edit2 className="w-3.5 h-3.5" /> Edit
+                    </button>
+                    <button onClick={() => setCommentsStream(stream)}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold dark:text-gray-400 text-gray-600 hover:text-purple-500 transition-colors">
+                      <MessageSquare className="w-3.5 h-3.5" /> Comments
+                    </button>
+                    <button onClick={() => setDeleteStreamId(stream.id)}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold dark:text-gray-400 text-gray-600 hover:text-red-500 transition-colors">
+                      <Trash2 className="w-3.5 h-3.5" /> Delete
+                    </button>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Stream modal (Watch tab) */}
       <AnimatePresence>
         {selectedStream && <StreamModal stream={selectedStream} onClose={() => setSelectedStream(null)} />}
+      </AnimatePresence>
+
+      {/* Creator Studio: Edit modal */}
+      <AnimatePresence>
+        {editingStream && (
+          <UserEditStreamModal
+            stream={editingStream}
+            onClose={() => setEditingStream(null)}
+            onSaved={fetchMyStreams}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Creator Studio: Comments modal */}
+      <AnimatePresence>
+        {commentsStream && user && (
+          <StreamCommentsModal
+            stream={commentsStream}
+            userId={user.id}
+            onClose={() => setCommentsStream(null)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Creator Studio: Delete confirmation */}
+      <AnimatePresence>
+        {deleteStreamId && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }}
+              className="w-full max-w-xs dark:bg-[#0D0A14] bg-white rounded-2xl border dark:border-white/8 border-gray-200 p-6 text-center shadow-2xl">
+              <div className="text-4xl mb-3">🗑️</div>
+              <p className="font-bold dark:text-white text-gray-900 mb-1">Delete stream?</p>
+              <p className="text-sm dark:text-gray-400 text-gray-500 mb-5">This cannot be undone.</p>
+              <div className="flex gap-3">
+                <button onClick={() => setDeleteStreamId(null)} className="flex-1 py-2.5 rounded-xl dark:bg-white/5 bg-gray-100 text-sm font-semibold dark:text-gray-300 text-gray-700">Cancel</button>
+                <button onClick={handleDeleteStream} disabled={deletingStream} className="flex-1 py-2.5 rounded-xl bg-red-500 text-white text-sm font-bold disabled:opacity-60">
+                  {deletingStream ? 'Deleting…' : 'Delete'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
       </AnimatePresence>
 
       {/* Go Live modal */}
