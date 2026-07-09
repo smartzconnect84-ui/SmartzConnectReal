@@ -9,23 +9,6 @@ import { getOrCreateDirectChannel } from '@/lib/stream'
 
 const defaultEmojis = ['👩🏾', '👨🏿', '👩🏽', '👨🏾', '👩🏿', '👨🏽']
 
-const BOT_REPLIES = [
-  "That's awesome! Tell me more 😊",
-  "Haha, I love that! 😂",
-  "Where are you from? 🌍",
-  "Really? I've always wanted to try that!",
-  "You seem really interesting 💕",
-  "Oh wow, same here! What a coincidence 🔥",
-  "That's such a cool perspective 👀",
-  "I totally get what you mean 😌",
-  "No way! That's wild 😲",
-  "You have great taste! ✨",
-  "Tell me your favourite thing about where you live 🌟",
-  "That made me smile 😄",
-  "I think we'd get along great!",
-  "What do you like to do on weekends?",
-  "Africa is so beautiful 💫",
-]
 const segments = ['💕', '🔥', '⭐', '💎', '🎯', '✨', '🌟', '💫', '🎪', '🎭', '🎨', '🎵']
 const SEGMENT_COUNT = segments.length
 const SEGMENT_ANGLE = 360 / SEGMENT_COUNT
@@ -80,7 +63,7 @@ export default function SpinChatPage() {
   const [dbConnected, setDbConnected] = useState(false)
   const [connectSaving, setConnectSaving] = useState(false)
   const [connectDone, setConnectDone] = useState(false)
-  const [chatMode, setChatMode] = useState<'idle' | 'connecting' | 'live' | 'demo'>('idle')
+  const [chatMode, setChatMode] = useState<'idle' | 'connecting' | 'live'>('idle')
   // Current user's profile data for smart matching
   const [myInterests, setMyInterests] = useState<string[]>([])
   const [myCountry, setMyCountry] = useState('')
@@ -221,7 +204,7 @@ export default function SpinChatPage() {
   // Set up a real Stream Chat channel when a match is made
   useEffect(() => {
     if (phase !== 'matched' || !currentProfile || !user) return
-    if (!streamConnected) { setChatMode('demo'); return }
+    if (!streamConnected) { return } // chat stays idle/disabled until Stream connects
 
     let cancelled = false
     // Track the channel created in this effect run so cleanup can target it specifically
@@ -259,7 +242,7 @@ export default function SpinChatPage() {
 
         if (!cancelled) setChatMode('live')
       } catch {
-        if (!cancelled) setChatMode('demo')
+        if (!cancelled) setChatMode('idle')
       }
     }
 
@@ -321,7 +304,7 @@ export default function SpinChatPage() {
     const profile = topCandidates[Math.floor(Math.random() * topCandidates.length)].p
     setCurrentProfile(profile)
     setSpinCount(c => c + 1)
-    setMessages([{ text: `Hey! We just matched on Spin & Chat 🎉 How are you?`, mine: false, time: new Date().toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' }) }])
+    setMessages([])
     setPhase('matched')
   }
 
@@ -335,15 +318,6 @@ export default function SpinChatPage() {
       // Optimistic: add locally, event will handle incoming from other user
       setMessages(prev => [...prev, { text, mine: true, time: now }])
       try { await channelRef.current.sendMessage({ text }) } catch { /* optimistic already shown */ }
-    } else {
-      // Demo / bot mode fallback
-      setMessages(prev => [...prev, { text, mine: true, time: now }])
-      const delay = 1000 + Math.random() * 1500
-      const t = setTimeout(() => {
-        const reply = BOT_REPLIES[Math.floor(Math.random() * BOT_REPLIES.length)]
-        setMessages(prev => [...prev, { text: reply, mine: false, time: new Date().toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' }) }])
-      }, delay)
-      pendingTimers.current.push(t)
     }
   }
 
@@ -390,9 +364,9 @@ export default function SpinChatPage() {
           <p className="text-xs dark:text-gray-400 text-gray-500">Spin the wheel, meet someone new instantly</p>
         </div>
         <div className="flex items-center gap-2">
-          <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-semibold ${dbConnected ? 'bg-emerald-500/10 text-emerald-500' : 'bg-fuchsia-500/10 text-fuchsia-500'}`}>
+          <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-semibold ${dbConnected ? 'bg-emerald-500/10 text-emerald-500' : 'bg-gray-500/10 text-gray-400'}`}>
             <Database className="w-3 h-3" />
-            <span className="hidden sm:inline">{dbConnected ? 'Live' : 'Demo'}</span>
+            <span className="hidden sm:inline">{dbConnected ? 'Live' : 'Offline'}</span>
           </div>
           <span className="text-xs dark:text-gray-400 text-gray-500 bg-fuchsia-500/10 text-fuchsia-500 px-2.5 py-1 rounded-full font-semibold">{spinCount} spins</span>
           <label className="flex items-center gap-1.5 cursor-pointer select-none">
@@ -453,7 +427,7 @@ export default function SpinChatPage() {
                   {phase === 'spinning' ? '🎲 Finding your match...' : '🎡 Spin to meet someone amazing!'}
                 </p>
                 <p className="text-xs dark:text-gray-500 text-gray-400">
-                  {poolProfiles.length} people ready to connect {dbConnected ? '· Live' : '· Demo mode'}
+                  {poolProfiles.length} people ready to connect
                 </p>
               </div>
 
@@ -567,8 +541,8 @@ export default function SpinChatPage() {
                       <RefreshCw className="w-2.5 h-2.5 animate-spin" /> Connecting…
                     </span>
                   )}
-                  {chatMode === 'demo' && (
-                    <span className="px-2 py-0.5 rounded-full bg-white/5 text-gray-500 text-[10px] font-semibold">Demo</span>
+                  {chatMode === 'idle' && !streamConnected && (
+                    <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 text-[10px] font-semibold">Connecting…</span>
                   )}
                 </div>
                 <div className="flex-1 overflow-y-auto p-3 space-y-2">
@@ -586,11 +560,11 @@ export default function SpinChatPage() {
                     value={input}
                     onChange={e => setInput(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && void sendMsg()}
-                    disabled={chatMode === 'connecting'}
-                    placeholder={chatMode === 'connecting' ? 'Connecting to chat…' : 'Say hello...'}
+                    disabled={chatMode !== 'live'}
+                    placeholder={chatMode === 'connecting' ? 'Connecting to chat…' : chatMode === 'live' ? 'Say hello...' : 'Chat connecting…'}
                     className="flex-1 bg-transparent text-xs dark:text-white text-gray-900 placeholder:text-gray-400 focus:outline-none disabled:opacity-50"
                   />
-                  <button onClick={() => void sendMsg()} disabled={!input.trim() || chatMode === 'connecting'} className="w-7 h-7 rounded-lg bg-love-gradient flex items-center justify-center disabled:opacity-40">
+                  <button onClick={() => void sendMsg()} disabled={!input.trim() || chatMode !== 'live'} className="w-7 h-7 rounded-lg bg-love-gradient flex items-center justify-center disabled:opacity-40">
                     <Send className="w-3 h-3 text-white" />
                   </button>
                 </div>
