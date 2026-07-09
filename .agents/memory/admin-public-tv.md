@@ -24,7 +24,8 @@ description: How admin broadcasts work on the public SmartzTV page — schema, t
 - Token issuance is `canPublish: false, canSubscribe: true` (viewer only)
 - Deploy via Supabase Dashboard → Edge Functions → Deploy (API token auth kept failing from Replit)
 
-**Why:** Edge function deployment from Replit fails 401 even with --use-api flag. Confirmed 2026-07-09: the provided PAT (sbp_...) returns 401 Unauthorized even on GET /v1/projects (list projects) — the token itself is invalid/expired, not a deploy-specific restriction. Ask the user for a fresh PAT from Supabase Dashboard → Account → Access Tokens if this recurs. Deploy manually from dashboard or CI in the meantime.
+**Why:** Edge function deployment from Replit fails 401 with an invalid/expired PAT — confirm validity first with `GET /v1/projects` (returns 401 for a bad token even before deploy). Once a fresh PAT is confirmed valid, `supabase functions deploy <name> --project-ref <ref> --no-verify-jwt --use-api` works fine from Replit using the CLI at `/home/runner/.npm/_npx/aa8e5c70f9d8d161/node_modules/@supabase/cli-linux-x64/bin/supabase`.
+`livekit-public-token` deployed successfully 2026-07-09; verified it correctly 403s on non-admin-broadcast rooms via DB check rather than leaking access.
 
 ## Access Control
 - Community streams (is_admin_broadcast=false) are shown on public page as a teaser grid with lock overlay — clicking goes to /register
