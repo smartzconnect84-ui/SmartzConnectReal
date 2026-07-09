@@ -2,10 +2,21 @@ import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Phone, PhoneOff, Video } from 'lucide-react'
 import { useLiveKitCall } from '@/contexts/LiveKitCallContext'
+import { startRinging, stopRinging } from '@/lib/callSounds'
 
 export default function IncomingCall() {
   const { incomingCall, acceptCall, declineCall } = useLiveKitCall()
   const [timeLeft, setTimeLeft] = useState(60)
+
+  // Ring while an incoming call is waiting
+  useEffect(() => {
+    if (incomingCall) {
+      startRinging()
+    } else {
+      stopRinging()
+    }
+    return () => stopRinging()
+  }, [!!incomingCall])
 
   useEffect(() => {
     if (!incomingCall) { setTimeLeft(60); return }

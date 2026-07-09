@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { AlertTriangle, CheckCircle, XCircle, RefreshCw, Search, Eye, Ban } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
@@ -15,6 +15,13 @@ interface Report {
   updated_at: string
 }
 
+interface UserProfile {
+  id: number
+  full_name: string | null
+  email: string
+  avatar_url?: string | null
+}
+
 const statusColor: Record<string, string> = {
   pending: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
   reviewed: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
@@ -22,8 +29,28 @@ const statusColor: Record<string, string> = {
   actioned: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
 }
 
+function UserCell({ profile, userId }: { profile?: UserProfile; userId: number }) {
+  if (!profile) {
+    return <span className="font-mono text-xs dark:text-gray-400 text-gray-500">#{userId}</span>
+  }
+  return (
+    <div className="flex items-center gap-2">
+      <div className="w-7 h-7 rounded-full bg-love-gradient flex items-center justify-center text-white text-[10px] font-bold overflow-hidden flex-shrink-0">
+        {profile.avatar_url
+          ? <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+          : (profile.full_name || profile.email || '?')[0].toUpperCase()}
+      </div>
+      <div className="min-w-0">
+        <p className="text-xs font-semibold dark:text-white text-gray-900 truncate">{profile.full_name || '—'}</p>
+        <p className="text-[10px] dark:text-gray-500 text-gray-400 truncate">{profile.email}</p>
+      </div>
+    </div>
+  )
+}
+
 export default function AdminReports() {
   const [reports, setReports] = useState<Report[]>([])
+  const [userMap, setUserMap] = useState<Map<number, UserProfile>>(new Map())
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
@@ -31,16 +58,54 @@ export default function AdminReports() {
   const [note, setNote] = useState('')
   const [saving, setSaving] = useState(false)
 
-  const fetchReports = async () => {
+  /** Batch-fetch user profiles for all unique reporter/reported IDs */
+  const hydrateUsers = useCallback(async (reportRows: Report[]) => {
+    const ids = [...new Set([
+      ...reportRows.map(r => r.reporter_id),
+      ...reportRows.map(r => r.reported_user_id),
+    ].filter(Boolean))]
+    if (!ids.length) return
+
+    const { data: users } = await supabase
+      .from('users')
+      .select('id, full_name, email, auth_id')
+      .in('id', ids)
+
+    // Fetch avatar_url from profiles via auth_id
+    const authIds = (users || []).map((u: any) => u.auth_id).filter(Boolean)
+    let avatarMap: Record<string, string> = {}
+    if (authIds.length) {
+      const { data: profs } = await supabase
+        .from('profiles')
+        .select('id, avatar_url')
+        .in('id', authIds)
+      avatarMap = Object.fromEntries((profs || []).map((p: any) => [p.id, p.avatar_url ?? null]))
+    }
+
+    const map = new Map<number, UserProfile>()
+    for (const u of (users || []) as any[]) {
+      map.set(u.id, {
+        id: u.id,
+        full_name: u.full_name,
+        email: u.email,
+        avatar_url: u.auth_id ? (avatarMap[u.auth_id] ?? null) : null,
+      })
+    }
+    setUserMap(map)
+  }, [])
+
+  const fetchReports = useCallback(async () => {
     setLoading(true)
     let q = supabase.from('reports').select('*').order('created_at', { ascending: false })
     if (statusFilter !== 'all') q = q.eq('status', statusFilter)
     const { data } = await q.limit(100)
-    setReports(data || [])
+    const rows = (data || []) as Report[]
+    setReports(rows)
+    await hydrateUsers(rows)
     setLoading(false)
-  }
+  }, [statusFilter, hydrateUsers])
 
-  useEffect(() => { fetchReports() }, [statusFilter])
+  useEffect(() => { fetchReports() }, [fetchReports])
 
   const updateStatus = async (id: number, status: string, adminNote?: string) => {
     setSaving(true)
@@ -54,9 +119,21 @@ export default function AdminReports() {
     await supabase.from('users').update({ is_banned: true }).eq('id', userId)
   }
 
-  const filtered = reports.filter(r =>
-    !search || r.reason.toLowerCase().includes(search.toLowerCase()) || String(r.reporter_id).includes(search) || String(r.reported_user_id).includes(search)
-  )
+  const filtered = reports.filter(r => {
+    if (!search) return true
+    const lower = search.toLowerCase()
+    const reporter = userMap.get(r.reporter_id)
+    const reported = userMap.get(r.reported_user_id)
+    return (
+      r.reason.toLowerCase().includes(lower) ||
+      String(r.reporter_id).includes(search) ||
+      String(r.reported_user_id).includes(search) ||
+      reporter?.full_name?.toLowerCase().includes(lower) ||
+      reporter?.email?.toLowerCase().includes(lower) ||
+      reported?.full_name?.toLowerCase().includes(lower) ||
+      reported?.email?.toLowerCase().includes(lower)
+    )
+  })
 
   const stats = [
     { label: 'Total', value: reports.length, color: 'text-brand-pink' },
@@ -89,7 +166,7 @@ export default function AdminReports() {
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 dark:text-gray-500 text-gray-400" />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search reports..."
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by name, email or reason..."
             className="w-full pl-9 pr-4 py-2.5 rounded-xl dark:bg-white/5 bg-gray-50 border dark:border-white/8 border-gray-200 dark:text-white text-gray-900 text-sm focus:outline-none focus:border-brand-pink" />
         </div>
         <div className="flex gap-2">
@@ -114,13 +191,20 @@ export default function AdminReports() {
                   <AlertTriangle className="w-4 h-4 text-amber-500" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap mb-1">
+                  <div className="flex items-center gap-2 flex-wrap mb-2">
                     <span className="font-semibold dark:text-white text-gray-900 text-sm capitalize">{r.reason.replace(/_/g, ' ')}</span>
                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${statusColor[r.status]}`}>{r.status}</span>
                   </div>
-                  <p className="text-xs dark:text-gray-400 text-gray-500 mb-1">
-                    Reporter: <span className="font-mono">#{r.reporter_id}</span> → Reported: <span className="font-mono">#{r.reported_user_id}</span>
-                  </p>
+                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 mb-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] dark:text-gray-500 text-gray-400 shrink-0">Reporter:</span>
+                      <UserCell profile={userMap.get(r.reporter_id)} userId={r.reporter_id} />
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] dark:text-gray-500 text-gray-400 shrink-0">Reported:</span>
+                      <UserCell profile={userMap.get(r.reported_user_id)} userId={r.reported_user_id} />
+                    </div>
+                  </div>
                   {r.description && <p className="text-xs dark:text-gray-500 text-gray-400 line-clamp-2">{r.description}</p>}
                   <p className="text-[10px] dark:text-gray-600 text-gray-400 mt-1">{new Date(r.created_at).toLocaleString()}</p>
                 </div>
@@ -142,9 +226,18 @@ export default function AdminReports() {
             className="w-full max-w-md dark:bg-[#1A1228] bg-white rounded-3xl p-6 border dark:border-white/8 border-gray-200 shadow-2xl">
             <h3 className="font-display font-black text-xl dark:text-white text-gray-900 mb-4">Review Report #{selected.id}</h3>
             <div className="space-y-3 mb-5 text-sm">
-              <div className="flex justify-between"><span className="dark:text-gray-400 text-gray-500">Reason</span><span className="font-semibold dark:text-white text-gray-900 capitalize">{selected.reason.replace(/_/g, ' ')}</span></div>
-              <div className="flex justify-between"><span className="dark:text-gray-400 text-gray-500">Reporter</span><span className="font-mono dark:text-white text-gray-900">#{selected.reporter_id}</span></div>
-              <div className="flex justify-between"><span className="dark:text-gray-400 text-gray-500">Reported</span><span className="font-mono dark:text-white text-gray-900">#{selected.reported_user_id}</span></div>
+              <div className="flex justify-between items-center">
+                <span className="dark:text-gray-400 text-gray-500">Reason</span>
+                <span className="font-semibold dark:text-white text-gray-900 capitalize">{selected.reason.replace(/_/g, ' ')}</span>
+              </div>
+              <div className="flex justify-between items-start gap-4">
+                <span className="dark:text-gray-400 text-gray-500 shrink-0">Reporter</span>
+                <UserCell profile={userMap.get(selected.reporter_id)} userId={selected.reporter_id} />
+              </div>
+              <div className="flex justify-between items-start gap-4">
+                <span className="dark:text-gray-400 text-gray-500 shrink-0">Reported</span>
+                <UserCell profile={userMap.get(selected.reported_user_id)} userId={selected.reported_user_id} />
+              </div>
               {selected.description && (
                 <div className="p-3 rounded-xl dark:bg-white/5 bg-gray-50 border dark:border-white/8 border-gray-200 text-xs dark:text-gray-300 text-gray-700">{selected.description}</div>
               )}

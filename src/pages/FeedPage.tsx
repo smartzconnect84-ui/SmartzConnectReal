@@ -193,7 +193,7 @@ interface ViewStory {
   isOwn?: boolean
 }
 
-function StoriesBar({ user }: { user: { id?: string; email?: string } | null }) {
+function StoriesBar({ user, onStoriesLoaded }: { user: { id?: string; email?: string } | null; onStoriesLoaded?: (authorIds: Set<string>, stories: DbStory[]) => void }) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const storyInputRef = useRef<HTMLInputElement>(null)
   const [dbStories, setDbStories] = useState<DbStory[]>([])
@@ -204,6 +204,16 @@ function StoriesBar({ user }: { user: { id?: string; email?: string } | null }) 
   const [textContent, setTextContent] = useState('')
   const [textBg, setTextBg] = useState(TEXT_STORY_BG_OPTIONS[0].value)
   const [postingTextStory, setPostingTextStory] = useState(false)
+  const [myAvatar, setMyAvatar] = useState<string | null>(null)
+
+  // Fetch current user's own profile avatar
+  useEffect(() => {
+    if (!user?.id) return
+    let mounted = true
+    supabase.from('profiles').select('avatar_url').eq('id', user.id).single()
+      .then(({ data }) => { if (mounted && data?.avatar_url) setMyAvatar(data.avatar_url) })
+    return () => { mounted = false }
+  }, [user?.id])
 
   const handleTextStorySubmit = async () => {
     if (!textContent.trim() || !user?.id) return
@@ -233,7 +243,7 @@ function StoriesBar({ user }: { user: { id?: string; email?: string } | null }) 
       .gt('expires_at', new Date().toISOString())
       .order('created_at', { ascending: false })
       .limit(20)
-    if (!rows?.length) { setDbStories([]); return }
+    if (!rows?.length) { setDbStories([]); onStoriesLoaded?.(new Set(), []); return }
 
     const ids = [...new Set(rows.map((r: any) => r.user_id).filter(Boolean))]
     const { data: profs } = await supabase
@@ -242,14 +252,16 @@ function StoriesBar({ user }: { user: { id?: string; email?: string } | null }) 
       .in('id', ids)
     const profMap = Object.fromEntries((profs ?? []).map((p: any) => [p.id, p]))
 
-    setDbStories(rows.map((r: any) => ({
+    const mapped = rows.map((r: any) => ({
       ...r,
       author_id: r.user_id,            // keep author_id alias for rendering
       text_content: r.text_content ?? null,
       bg_color: r.bg_color ?? null,
       profiles: profMap[r.user_id] ?? null,
-    })) as any)
-  }, [])
+    })) as any
+    setDbStories(mapped)
+    onStoriesLoaded?.(new Set(ids), mapped)
+  }, [onStoriesLoaded])
 
   useEffect(() => { loadStories() }, [loadStories])
 
@@ -388,7 +400,9 @@ function StoriesBar({ user }: { user: { id?: string; email?: string } | null }) 
                 className={`w-14 h-14 rounded-full bg-gradient-to-br from-brand-pink to-brand-purple flex items-center justify-center text-white font-bold text-lg overflow-hidden border-2 dark:border-[#0D0A14] border-white ${myStory ? 'ring-2 ring-offset-1 ring-pink-500' : ''}`}>
                 {uploading
                   ? <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                  : <span className="text-lg">{user?.email?.[0]?.toUpperCase() ?? 'U'}</span>
+                  : myAvatar
+                    ? <img src={myAvatar} alt="You" className="w-full h-full object-cover" />
+                    : <span className="text-lg">{user?.email?.[0]?.toUpperCase() ?? 'U'}</span>
                 }
               </button>
               {!myStory && !uploading && (
@@ -650,11 +664,13 @@ interface DbComment {
 }
 
 // ── Post Card ─────────────────────────────────────────────────────────────────
-function PostCard({ post, onLike, onSave, currentUserId }: {
+function PostCard({ post, onLike, onSave, currentUserId, storyData, onViewStory }: {
   post: Post
   onLike: (id: string) => void
   onSave: (id: string) => void
   currentUserId?: string
+  storyData?: { id: string; author_id: string; media_url: string; media_type: string; text_content?: string | null; bg_color?: string | null } | null
+  onViewStory?: () => void
 }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [commentsOpen, setCommentsOpen] = useState(false)
@@ -776,10 +792,20 @@ function PostCard({ post, onLike, onSave, currentUserId }: {
     <div className="dark:bg-[#0D0A14] bg-white rounded-2xl border dark:border-white/6 border-gray-200 mb-3 overflow-hidden shadow-sm hover:shadow-md hover:dark:shadow-pink-500/5 transition-shadow">
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-3.5">
-        <div className="w-10 h-10 rounded-full dark:bg-white/8 bg-gray-100 flex items-center justify-center text-xl flex-shrink-0 overflow-hidden">
-          {post.avatar_url
-            ? <img src={post.avatar_url} alt={post.author} className="w-full h-full object-cover" />
-            : post.emoji}
+        {/* Avatar with optional story ring */}
+        <div
+          className={`relative flex-shrink-0 ${storyData ? 'cursor-pointer' : ''}`}
+          onClick={storyData ? onViewStory : undefined}
+          title={storyData ? `View ${post.author}'s story` : undefined}
+        >
+          {storyData && (
+            <div className="absolute -inset-[3px] rounded-full bg-gradient-to-tr from-pink-500 via-rose-400 to-violet-500 animate-pulse" />
+          )}
+          <div className={`relative w-10 h-10 rounded-full dark:bg-white/8 bg-gray-100 flex items-center justify-center text-xl overflow-hidden ${storyData ? 'border-[2.5px] dark:border-[#0D0A14] border-white' : ''}`}>
+            {post.avatar_url
+              ? <img src={post.avatar_url} alt={post.author} className="w-full h-full object-cover" />
+              : post.emoji}
+          </div>
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 flex-wrap">
@@ -1113,6 +1139,18 @@ export default function FeedPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [showWelcome, setShowWelcome] = useState(searchParams.get('welcome') === '1')
 
+  // Story state — lifted here so PostCard avatars can show story rings
+  const [storyAuthorMap, setStoryAuthorMap] = useState<Map<string, DbStory>>(new Map())
+  const [feedViewingStory, setFeedViewingStory] = useState<ViewStory | null>(null)
+
+  const handleStoriesLoaded = useCallback((_ids: Set<string>, stories: DbStory[]) => {
+    const map = new Map<string, DbStory>()
+    for (const s of stories) {
+      if (!map.has(s.author_id)) map.set(s.author_id, s)
+    }
+    setStoryAuthorMap(map)
+  }, [])
+
   useEffect(() => {
     if (showWelcome) {
       const params = new URLSearchParams(searchParams)
@@ -1299,7 +1337,7 @@ export default function FeedPage() {
           </AnimatePresence>
 
           {/* Stories */}
-          <StoriesBar user={user} />
+          <StoriesBar user={user} onStoriesLoaded={handleStoriesLoaded} />
 
           {/* Compose */}
           <ComposeBox user={user} onPost={() => { setNewPostsCount(0); fetchPosts() }} />
@@ -1354,16 +1392,35 @@ export default function FeedPage() {
           )}
 
           {/* Posts */}
-          {!loading && !error && posts.map((post, i) => (
-            <motion.div
-              key={post.id}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.04, duration: 0.3 }}
-            >
-              <PostCard post={post} onLike={toggleLike} onSave={toggleSave} currentUserId={user?.id} />
-            </motion.div>
-          ))}
+          {!loading && !error && posts.map((post, i) => {
+            const authorStory = post.authorId ? storyAuthorMap.get(post.authorId) ?? null : null
+            return (
+              <motion.div
+                key={post.id}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.04, duration: 0.3 }}
+              >
+                <PostCard
+                  post={post}
+                  onLike={toggleLike}
+                  onSave={toggleSave}
+                  currentUserId={user?.id}
+                  storyData={authorStory}
+                  onViewStory={authorStory ? () => setFeedViewingStory({
+                    id: authorStory.id,
+                    authorId: authorStory.author_id,
+                    name: post.author,
+                    avatar: post.avatar_url ?? null,
+                    mediaUrl: authorStory.media_url,
+                    mediaType: authorStory.media_type,
+                    textContent: authorStory.text_content,
+                    bgColor: authorStory.bg_color,
+                  }) : undefined}
+                />
+              </motion.div>
+            )
+          })}
 
           {/* Load more hint */}
           {!loading && !error && posts.length > 0 && (
@@ -1379,6 +1436,42 @@ export default function FeedPage() {
 
       {/* Right sidebar */}
       <RightSidebar />
+
+      {/* Story viewer triggered from a post-card avatar click */}
+      {feedViewingStory && (
+        <div
+          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
+          onClick={() => setFeedViewingStory(null)}
+        >
+          <button
+            className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center"
+            onClick={() => setFeedViewingStory(null)}
+          >
+            <X className="w-5 h-5 text-white" />
+          </button>
+          <div className="max-w-sm w-full mx-4 rounded-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+            {feedViewingStory.mediaType === 'text' ? (
+              <div className={`w-full h-[360px] bg-gradient-to-br ${feedViewingStory.bgColor || 'from-pink-500 to-rose-600'} flex items-center justify-center p-8`}>
+                <p className="text-white text-center font-bold text-2xl leading-snug break-words">
+                  {feedViewingStory.textContent || ''}
+                </p>
+              </div>
+            ) : feedViewingStory.mediaUrl.match(/\.(mp4|webm|mov)$/i) ? (
+              <video src={feedViewingStory.mediaUrl} autoPlay controls className="w-full" />
+            ) : (
+              <img src={feedViewingStory.mediaUrl} alt="Story" className="w-full object-contain max-h-[80vh]" />
+            )}
+            <div className="bg-black/70 p-3 flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-love-gradient flex items-center justify-center text-white text-sm font-bold overflow-hidden flex-shrink-0">
+                {feedViewingStory.avatar
+                  ? <img src={feedViewingStory.avatar} alt="" className="w-full h-full object-cover" />
+                  : feedViewingStory.name[0]}
+              </div>
+              <p className="text-white text-sm font-semibold">{feedViewingStory.name}</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

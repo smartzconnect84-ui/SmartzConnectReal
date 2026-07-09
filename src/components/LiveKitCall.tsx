@@ -11,6 +11,7 @@ import {
 import { useLiveKitCall } from '@/contexts/LiveKitCallContext'
 import { useStream } from '@/contexts/StreamContext'
 import { supabase } from '@/lib/supabase'
+import { startRinging, stopRinging, playConnected, playCallEnded, playMuteToggle } from '@/lib/callSounds'
 
 function attachTrack(participant: LocalParticipant | RemoteParticipant, el: HTMLDivElement | null) {
   if (!el) return
@@ -83,10 +84,33 @@ export default function LiveKitCall() {
       setFilter(VIDEO_FILTERS[0])
       callStartRef.current = Date.now()
     } else {
+      stopRinging()
       if (timerRef.current) clearInterval(timerRef.current)
     }
-    return () => { if (timerRef.current) clearInterval(timerRef.current) }
+    return () => {
+      stopRinging()
+      if (timerRef.current) clearInterval(timerRef.current)
+    }
   }, [activeCall?.roomId])
+
+  // Caller-side ringing: play while connected to room but remote hasn't joined yet
+  useEffect(() => {
+    if (connected && !remoteJoined && activeCall?.isCaller) {
+      startRinging()
+    } else {
+      stopRinging()
+    }
+    return () => stopRinging()
+  }, [connected, remoteJoined, activeCall?.isCaller])
+
+  // Play "connected" chime when the other party joins
+  const prevRemoteJoinedRef = useRef(false)
+  useEffect(() => {
+    if (remoteJoined && !prevRemoteJoinedRef.current) {
+      playConnected()
+    }
+    prevRemoteJoinedRef.current = remoteJoined
+  }, [remoteJoined])
 
   // Duration timer only runs once the call is actually connected to the other
   // party (not while ringing) and pauses while on hold.
@@ -250,6 +274,7 @@ export default function LiveKitCall() {
     const next = !muted
     await room.localParticipant.setMicrophoneEnabled(!next)
     setMuted(next)
+    playMuteToggle(next)
   }, [muted])
 
   const handleToggleCamera = useCallback(async () => {
@@ -278,6 +303,7 @@ export default function LiveKitCall() {
   }, [screenSharing])
 
   const handleEndCall = () => {
+    playCallEnded()
     roomRef.current?.disconnect()
     void endCall().catch(console.error)
   }
@@ -502,13 +528,17 @@ export default function LiveKitCall() {
               {/* Bottom controls */}
               {!minimized && (
                 <div className="flex items-center justify-center gap-3 px-4 py-4 bg-black/40 backdrop-blur-sm flex-shrink-0">
-                  <button
-                    onClick={handleToggleMute}
-                    disabled={!connected}
-                    className={`w-12 h-12 rounded-full flex items-center justify-center transition-all disabled:opacity-40 ${muted ? 'bg-red-500 shadow-lg shadow-red-500/30' : 'bg-white/15 hover:bg-white/25'}`}
-                  >
-                    {muted ? <MicOff className="w-5 h-5 text-white" /> : <Mic className="w-5 h-5 text-white" />}
-                  </button>
+
+                  {/* Mute — only appears once the other party has joined */}
+                  {remoteJoined && (
+                    <button
+                      onClick={handleToggleMute}
+                      title={muted ? 'Unmute' : 'Mute'}
+                      className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${muted ? 'bg-red-500 shadow-lg shadow-red-500/30' : 'bg-white/15 hover:bg-white/25'}`}
+                    >
+                      {muted ? <MicOff className="w-5 h-5 text-white" /> : <Mic className="w-5 h-5 text-white" />}
+                    </button>
+                  )}
 
                   <button
                     onClick={handleEndCall}
@@ -517,39 +547,40 @@ export default function LiveKitCall() {
                     <PhoneOff className="w-6 h-6 text-white" />
                   </button>
 
-                  {activeCall.type === 'video' && (
+                  {activeCall.type === 'video' && connected && (
                     <button
                       onClick={handleToggleCamera}
-                      disabled={!connected}
-                      className={`w-12 h-12 rounded-full flex items-center justify-center transition-all disabled:opacity-40 ${cameraOff ? 'bg-red-500 shadow-lg shadow-red-500/30' : 'bg-white/15 hover:bg-white/25'}`}
+                      className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${cameraOff ? 'bg-red-500 shadow-lg shadow-red-500/30' : 'bg-white/15 hover:bg-white/25'}`}
                     >
                       {cameraOff ? <VideoOff className="w-5 h-5 text-white" /> : <Video className="w-5 h-5 text-white" />}
                     </button>
                   )}
 
-                  <button
-                    onClick={handleToggleScreenShare}
-                    disabled={!connected}
-                    className={`hidden sm:flex w-12 h-12 rounded-full items-center justify-center transition-all disabled:opacity-40 ${screenSharing ? 'bg-brand-pink shadow-lg shadow-pink-500/30' : 'bg-white/15 hover:bg-white/25'}`}
-                  >
-                    <MonitorUp className="w-5 h-5 text-white" />
-                  </button>
+                  {connected && (
+                    <button
+                      onClick={handleToggleScreenShare}
+                      className={`hidden sm:flex w-12 h-12 rounded-full items-center justify-center transition-all ${screenSharing ? 'bg-brand-pink shadow-lg shadow-pink-500/30' : 'bg-white/15 hover:bg-white/25'}`}
+                    >
+                      <MonitorUp className="w-5 h-5 text-white" />
+                    </button>
+                  )}
 
-                  <button
-                    onClick={handleToggleHold}
-                    disabled={!connected}
-                    title={onHold ? 'Resume call' : 'Hold call'}
-                    className={`w-12 h-12 rounded-full flex items-center justify-center transition-all disabled:opacity-40 ${onHold ? 'bg-amber-500 shadow-lg shadow-amber-500/30' : 'bg-white/15 hover:bg-white/25'}`}
-                  >
-                    {onHold ? <Play className="w-5 h-5 text-white" /> : <Pause className="w-5 h-5 text-white" />}
-                  </button>
+                  {/* Hold — only appears once the other party has joined */}
+                  {remoteJoined && (
+                    <button
+                      onClick={handleToggleHold}
+                      title={onHold ? 'Resume call' : 'Hold call'}
+                      className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${onHold ? 'bg-amber-500 shadow-lg shadow-amber-500/30' : 'bg-white/15 hover:bg-white/25'}`}
+                    >
+                      {onHold ? <Play className="w-5 h-5 text-white" /> : <Pause className="w-5 h-5 text-white" />}
+                    </button>
+                  )}
 
-                  {activeCall.type === 'video' && (
+                  {activeCall.type === 'video' && connected && (
                     <button
                       onClick={() => setShowFilters(v => !v)}
-                      disabled={!connected}
                       title="Video filters"
-                      className={`hidden sm:flex w-12 h-12 rounded-full items-center justify-center transition-all disabled:opacity-40 ${showFilters ? 'bg-brand-pink shadow-lg shadow-pink-500/30' : 'bg-white/15 hover:bg-white/25'}`}
+                      className={`hidden sm:flex w-12 h-12 rounded-full items-center justify-center transition-all ${showFilters ? 'bg-brand-pink shadow-lg shadow-pink-500/30' : 'bg-white/15 hover:bg-white/25'}`}
                     >
                       <Sparkles className="w-5 h-5 text-white" />
                     </button>

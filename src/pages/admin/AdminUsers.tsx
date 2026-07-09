@@ -19,6 +19,7 @@ interface AppUser {
   is_verified: boolean
   created_at: string
   country: string | null
+  avatar_url?: string | null
 }
 
 const ALL_ROLES = [
@@ -77,7 +78,20 @@ export default function AdminUsers() {
     if (filter === 'premium') q = q.eq('subscription_tier', 'premium')
     if (filter === 'admins')  q = q.in('role', ['admin', 'superadmin', 'moderator', 'support', 'ceo'])
     const { data, count } = await q.limit(100)
-    setUsers(data || [])
+
+    // Hydrate avatar_url from profiles via auth_id
+    let rows = (data || []) as AppUser[]
+    const authIds = rows.map(u => u.auth_id).filter(Boolean) as string[]
+    if (authIds.length) {
+      const { data: profs } = await supabase
+        .from('profiles')
+        .select('id, avatar_url')
+        .in('id', authIds)
+      const profMap = Object.fromEntries((profs || []).map((p: any) => [p.id, p.avatar_url]))
+      rows = rows.map(u => ({ ...u, avatar_url: u.auth_id ? (profMap[u.auth_id] ?? null) : null }))
+    }
+
+    setUsers(rows)
     setTotal(count || 0)
     setLoading(false)
   }
@@ -222,8 +236,10 @@ export default function AdminUsers() {
                     className="hover:dark:bg-white/2 hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-love-gradient flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
-                          {(u.full_name || u.email || '?')[0].toUpperCase()}
+                        <div className="w-9 h-9 rounded-full bg-love-gradient flex items-center justify-center text-white font-bold text-sm flex-shrink-0 overflow-hidden">
+                          {u.avatar_url
+                            ? <img src={u.avatar_url} alt={u.full_name || u.email} className="w-full h-full object-cover" />
+                            : (u.full_name || u.email || '?')[0].toUpperCase()}
                         </div>
                         <div className="min-w-0">
                           <p className="font-semibold dark:text-white text-gray-900 truncate text-sm">{u.full_name || '—'}</p>
@@ -277,8 +293,10 @@ export default function AdminUsers() {
 
               {/* User header */}
               <div className="flex items-center gap-3 mb-5">
-                <div className="w-12 h-12 rounded-full bg-love-gradient flex items-center justify-center text-white font-bold text-lg">
-                  {(selected.full_name || selected.email || '?')[0].toUpperCase()}
+                <div className="w-12 h-12 rounded-full bg-love-gradient flex items-center justify-center text-white font-bold text-lg overflow-hidden">
+                  {selected.avatar_url
+                    ? <img src={selected.avatar_url} alt={selected.full_name || selected.email} className="w-full h-full object-cover" />
+                    : (selected.full_name || selected.email || '?')[0].toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-bold dark:text-white text-gray-900 truncate">{selected.full_name || '—'}</p>

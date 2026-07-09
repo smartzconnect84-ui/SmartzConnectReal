@@ -160,12 +160,14 @@ interface DashStats {
 
 interface RecentUser {
   id: string
+  auth_id?: string | null
   email: string
   full_name: string | null
   country: string | null
   subscription_tier: string | null
   is_active: boolean
   created_at: string
+  avatar_url?: string | null
 }
 
 interface ActivityLog {
@@ -225,7 +227,7 @@ export default function AdminDashboard() {
   const fetchData = useCallback(async () => {
     try {
       const [usersRes, reportsRes, activityRes, ridesRes, matchesRes, liveStreamsRes, marketRes] = await Promise.all([
-        supabase.from('users').select('id, email, full_name, country, subscription_tier, is_active, created_at', { count: 'exact' }).order('created_at', { ascending: false }).limit(10),
+        supabase.from('users').select('id, auth_id, email, full_name, country, subscription_tier, is_active, created_at', { count: 'exact' }).order('created_at', { ascending: false }).limit(10),
         supabase.from('reports').select('id', { count: 'exact' }).eq('status', 'pending'),
         supabase.from('audit_logs').select('id, action, created_at, user_id').order('created_at', { ascending: false }).limit(8),
         supabase.from('ride_requests').select('id', { count: 'exact' }).in('status', ['pending', 'accepted', 'in_progress']),
@@ -256,7 +258,19 @@ export default function AdminDashboard() {
         marketplaceSales: marketRes.count || 0,
       }))
 
-      setRecentUsers(allUsers.slice(0, 6) as RecentUser[])
+      // Hydrate avatar_url from profiles via auth_id
+      const recent = allUsers.slice(0, 6) as RecentUser[]
+      const authIds = recent.map((u: any) => u.auth_id).filter(Boolean)
+      if (authIds.length) {
+        const { data: profs } = await supabase
+          .from('profiles')
+          .select('id, avatar_url')
+          .in('id', authIds)
+        const profMap = Object.fromEntries((profs || []).map((p: any) => [p.id, p.avatar_url]))
+        setRecentUsers(recent.map((u: any) => ({ ...u, avatar_url: u.auth_id ? (profMap[u.auth_id] ?? null) : null })))
+      } else {
+        setRecentUsers(recent)
+      }
       setRecentActivity((activityRes.data || []) as ActivityLog[])
     } catch {
       setDbConnected(false)
@@ -390,9 +404,16 @@ export default function AdminDashboard() {
                     <motion.tr key={user.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.05 }}
                       className="hover:dark:bg-white/2 hover:bg-pink-50/30 transition-colors">
                       <td className="px-4 py-3">
-                        <div>
-                          <p className="text-xs font-semibold dark:text-white text-gray-900">{user.full_name || 'User'}</p>
-                          <p className="text-[10px] dark:text-gray-500 text-gray-400">{user.email}</p>
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-full bg-love-gradient flex items-center justify-center text-white font-bold text-xs flex-shrink-0 overflow-hidden">
+                            {user.avatar_url
+                              ? <img src={user.avatar_url} alt={user.full_name || user.email} className="w-full h-full object-cover" />
+                              : (user.full_name || user.email || '?')[0].toUpperCase()}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-xs font-semibold dark:text-white text-gray-900 truncate">{user.full_name || 'User'}</p>
+                            <p className="text-[10px] dark:text-gray-500 text-gray-400 truncate">{user.email}</p>
+                          </div>
                         </div>
                       </td>
                       <td className="px-4 py-3 text-sm">{user.country || '—'}</td>
