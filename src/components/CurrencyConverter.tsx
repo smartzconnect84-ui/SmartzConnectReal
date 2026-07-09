@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { ArrowLeftRight, RefreshCw } from 'lucide-react'
+import { fetchRates, FALLBACK_RATES } from '@/lib/exchangeRates'
 
 const CURRENCIES = [
   { code: 'USD', name: 'US Dollar',         symbol: '$',   flag: '🇺🇸' },
@@ -15,35 +16,32 @@ const CURRENCIES = [
   { code: 'GBP', name: 'British Pound',     symbol: '£',   flag: '🇬🇧' },
 ]
 
-const RATES_FROM_USD: Record<string, number> = {
-  USD: 1,
-  LRD: 193.5,
-  NGN: 1610,
-  GHS: 15.3,
-  KES: 129.5,
-  ZAR: 18.6,
-  XOF: 613,
-  SLL: 22500,
-  GMD: 67.4,
-  EUR: 0.921,
-  GBP: 0.785,
-}
-
 export default function CurrencyConverter() {
   const [amount, setAmount] = useState('1')
   const [from, setFrom] = useState('USD')
   const [to, setTo] = useState('LRD')
-  const [, setSwapped] = useState(false)
+  const [rates, setRates] = useState<Record<string, number>>(FALLBACK_RATES)
+  const [loading, setLoading] = useState(true)
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+  const mountedRef = useRef(true)
+
+  useEffect(() => {
+    mountedRef.current = true
+    fetchRates().then(r => {
+      if (!mountedRef.current) return
+      setRates(r)
+      setLastUpdated(new Date())
+      setLoading(false)
+    })
+    return () => { mountedRef.current = false }
+  }, [])
 
   const numericAmount = parseFloat(amount) || 0
-  const inUSD = numericAmount / (RATES_FROM_USD[from] || 1)
-  const converted = inUSD * (RATES_FROM_USD[to] || 1)
+  const inUSD = numericAmount / (rates[from] || 1)
+  const converted = inUSD * (rates[to] || 1)
+  const pairRate = (rates[to] || 1) / (rates[from] || 1)
 
-  const swap = () => {
-    setFrom(to)
-    setTo(from)
-    setSwapped(s => !s)
-  }
+  const swap = () => { setFrom(to); setTo(from) }
 
   const fromCur = CURRENCIES.find(c => c.code === from)!
   const toCur   = CURRENCIES.find(c => c.code === to)!
@@ -51,9 +49,11 @@ export default function CurrencyConverter() {
   return (
     <div className="dark:bg-[#130E1E] bg-white rounded-2xl border dark:border-white/8 border-gray-200 p-5 shadow-lg">
       <div className="flex items-center gap-2 mb-4">
-        <RefreshCw className="w-4 h-4 text-brand-pink" />
+        <RefreshCw className={`w-4 h-4 text-brand-pink ${loading ? 'animate-spin' : ''}`} />
         <h3 className="font-bold text-sm dark:text-white text-gray-900">Currency Converter</h3>
-        <span className="ml-auto text-[10px] dark:text-gray-500 text-gray-400 bg-emerald-500/10 text-emerald-500 px-2 py-0.5 rounded-full font-semibold">Live Rates</span>
+        <span className="ml-auto text-[10px] bg-emerald-500/10 text-emerald-500 px-2 py-0.5 rounded-full font-semibold">
+          {loading ? 'Loading…' : 'Live Rates'}
+        </span>
       </div>
 
       <div className="space-y-3">
@@ -105,12 +105,14 @@ export default function CurrencyConverter() {
           </p>
           <p className="text-xs dark:text-gray-500 text-gray-400 mt-1">{toCur.flag} {toCur.name}</p>
           <p className="text-[10px] dark:text-gray-600 text-gray-400 mt-2">
-            1 {from} = {toCur.symbol}{((RATES_FROM_USD[to] || 1) / (RATES_FROM_USD[from] || 1)).toFixed(4)} {to}
+            1 {from} = {toCur.symbol}{pairRate.toFixed(4)} {to}
           </p>
         </div>
 
         <p className="text-[10px] dark:text-gray-600 text-gray-400 text-center">
-          Approximate rates · Updated daily · For reference only
+          {lastUpdated
+            ? `Rates updated ${lastUpdated.toLocaleTimeString()} · Cached 24h`
+            : 'Rates cached 24h · Falls back to offline data'}
         </p>
       </div>
     </div>

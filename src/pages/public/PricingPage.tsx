@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, useInView, AnimatePresence } from 'framer-motion'
 import {
@@ -37,16 +37,10 @@ const CURRENCIES = [
   { code: 'XAF', name: 'Central African CFA',symbol: 'CFA',   flag: '🌍',  popular: false },
 ]
 
-const RATES_FROM_USD: Record<string, number> = {
-  USD:1,     LRD:193.5,  NGN:1610,  GHS:15.3,  KES:129.5,
-  ZAR:18.6,  XOF:613,    SLL:22500, GMD:67.4,  EUR:0.921,
-  GBP:0.785, CAD:1.365,  AUD:1.535, INR:83.5,  CNY:7.25,
-  JPY:157.5, BRL:4.97,   MXN:17.1,  EGP:48.9,  ETB:56.4,
-  TZS:2570,  UGX:3740,   RWF:1330,  MAD:9.98,  XAF:613,
-}
+import { fetchRates, FALLBACK_RATES } from '@/lib/exchangeRates'
 
-function toLocal(usd: number, currency: string) {
-  const rate = RATES_FROM_USD[currency] ?? 1
+function toLocal(usd: number, currency: string, rates: Record<string, number> = FALLBACK_RATES) {
+  const rate = rates[currency] ?? 1
   const val = usd * rate
   const sym = CURRENCIES.find(c => c.code === currency)?.symbol ?? currency
   if (val >= 1000) return `${sym}${val.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
@@ -180,8 +174,23 @@ function CurrencyPanel() {
   const [from, setFrom] = useState('USD')
   const [to, setTo] = useState('LRD')
   const [amount, setAmount] = useState('5')
-  const fromRate = RATES_FROM_USD[from] ?? 1
-  const toRate   = RATES_FROM_USD[to] ?? 1
+  const [rates, setRates] = useState<Record<string, number>>(FALLBACK_RATES)
+  const [ratesLoading, setRatesLoading] = useState(true)
+  const [ratesUpdated, setRatesUpdated] = useState<Date | null>(null)
+
+  useEffect(() => {
+    let mounted = true
+    fetchRates().then(r => {
+      if (!mounted) return
+      setRates(r)
+      setRatesUpdated(new Date())
+      setRatesLoading(false)
+    })
+    return () => { mounted = false }
+  }, [])
+
+  const fromRate = rates[from] ?? 1
+  const toRate   = rates[to] ?? 1
   const converted = (parseFloat(amount) || 0) / fromRate * toRate
   const toCur = CURRENCIES.find(c => c.code === to)!
   const fromCur = CURRENCIES.find(c => c.code === from)!
@@ -193,7 +202,9 @@ function CurrencyPanel() {
       <div className="flex items-center gap-2 mb-5">
         <RefreshCw className="w-4 h-4 text-brand-pink" />
         <h3 className="font-bold dark:text-white text-gray-900">Currency Converter</h3>
-        <span className="ml-auto text-[10px] bg-emerald-500/10 text-emerald-500 px-2.5 py-0.5 rounded-full font-bold">Live Rates</span>
+        <span className="ml-auto text-[10px] bg-emerald-500/10 text-emerald-500 px-2.5 py-0.5 rounded-full font-bold">
+          {ratesLoading ? 'Loading…' : 'Live Rates ✓'}
+        </span>
       </div>
 
       <div className="space-y-3">
@@ -245,7 +256,7 @@ function CurrencyPanel() {
           {plans.filter(p => p.priceUSD > 0).map(p => (
             <div key={p.name} className="flex items-center justify-between py-2 px-3 rounded-xl dark:bg-white/4 bg-gray-50 border dark:border-white/6 border-gray-100">
               <span className="text-xs font-semibold dark:text-gray-300 text-gray-700">{p.emoji} {p.name}</span>
-              <span className="text-xs font-black text-brand-pink">{toLocal(p.priceUSD, to)}<span className="font-normal dark:text-gray-500 text-gray-400">/mo</span></span>
+              <span className="text-xs font-black text-brand-pink">{toLocal(p.priceUSD, to, rates)}<span className="font-normal dark:text-gray-500 text-gray-400">/mo</span></span>
             </div>
           ))}
           <div className="flex items-center justify-between py-2 px-3 rounded-xl dark:bg-white/4 bg-gray-50 border dark:border-white/6 border-gray-100">
@@ -254,7 +265,9 @@ function CurrencyPanel() {
           </div>
         </div>
 
-        <p className="text-[10px] dark:text-gray-600 text-gray-400 text-center">Approximate rates · Updated daily · For reference only</p>
+        <p className="text-[10px] dark:text-gray-600 text-gray-400 text-center">
+          {ratesLoading ? 'Loading live rates…' : ratesUpdated ? `Live rates · Updated ${ratesUpdated.toLocaleTimeString()} · Cached 24h` : 'Rates cached 24h · Fallback data shown'}
+        </p>
       </div>
     </div>
   )
