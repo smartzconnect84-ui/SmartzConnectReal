@@ -91,7 +91,7 @@ export default function WorldChatPage() {
     const init = async () => {
       try {
         const ch = client.channel('messaging', WORLD_CHANNEL_ID, {
-          members: [],
+          members: user?.id ? [user.id] : [],
         })
         await ch.watch()
         if (disposed) { ch.stopWatching(); return }

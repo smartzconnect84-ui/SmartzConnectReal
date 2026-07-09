@@ -907,7 +907,7 @@ function RightSidebar() {
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           {onlineContacts.map(c => (
-            <Link key={c.id} to="/app/chat/1" className="relative group" title={c.name}>
+            <Link key={c.id} to="/app/matches" className="relative group" title={c.name}>
               <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${c.gradient} flex items-center justify-center text-sm transition-transform group-hover:scale-110`}>
                 {c.avatar}
               </div>

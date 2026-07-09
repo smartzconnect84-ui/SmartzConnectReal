@@ -24,7 +24,7 @@ const mainNav: NavItemDef[] = [
   { path: '/app/feed',          icon: Home,          label: 'Home' },
   { path: '/app/profile',       icon: User,          label: 'Profile' },
   { path: '/app/friends',       icon: Users,         label: 'Friends',       badge: '3' },
-  { path: '/app/chat/1',        icon: MessageCircle, label: 'Messages' },
+  { path: '/app/matches',        icon: MessageCircle, label: 'Messages' },
   { path: '/app/notifications', icon: Bell,          label: 'Notifications' },
 ]
 

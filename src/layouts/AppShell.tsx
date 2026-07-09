@@ -24,7 +24,7 @@ const drawerSections = [
       { path: '/app/feed',          icon: Home,          label: 'Home',          badge: null as string | null, color: '' },
       { path: '/app/profile',       icon: User,          label: 'Profile',       badge: null as string | null, color: '' },
       { path: '/app/friends',       icon: Users,         label: 'Friends',       badge: '3' as string | null,  color: '' },
-      { path: '/app/chat/1',        icon: MessageCircle, label: 'Messages',      badge: null as string | null, color: '' },
+      { path: '/app/matches',        icon: MessageCircle, label: 'Messages',      badge: null as string | null, color: '' },
       { path: '/app/notifications', icon: Bell,          label: 'Notifications', badge: null as string | null, color: '' },
     ],
   },
@@ -65,7 +65,7 @@ const drawerSections = [
 const mobileBottomNav = [
   { path: '/app/feed',          icon: Home,          label: 'Home' },
   { path: '/app/discover',      icon: Heart,         label: 'Dating' },
-  { path: '/app/chat/1',        icon: MessageCircle, label: 'Chat' },
+  { path: '/app/matches',        icon: MessageCircle, label: 'Chat' },
   { path: '/app/notifications', icon: Bell,          label: 'Alerts' },
   { path: '/app/profile',       icon: User,          label: 'Me' },
 ]

@@ -30,7 +30,7 @@ const features = [
     color: 'from-purple-500 to-violet-600', glow: 'shadow-purple-500/20',
     desc: 'End-to-end encrypted messaging with voice notes, media sharing, and group rooms.',
     bullets: ['E2E encryption', 'Voice & video calls', 'Group rooms'],
-    href: '/app/chat/1', size: 'small',
+    href: '/app/matches', size: 'small',
   },
   {
     icon: ShoppingBag, label: 'Marketplace', tag: 'Buy & Sell',

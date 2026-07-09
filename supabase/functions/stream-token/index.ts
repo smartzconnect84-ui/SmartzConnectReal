@@ -11,20 +11,35 @@ serve(async (req) => {
     const { user, error, supabaseUrl } = await requireUser(req)
     if (error) return error
 
-    const streamSecret = Deno.env.get('STREAM_API_SECRET')
+    const userId = user!.id
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const adminClient = createClient(supabaseUrl!, serviceKey)
+
+    // ── Resolve stream secret: env var takes priority, then fall back to admin_config ──
+    let streamSecret = Deno.env.get('STREAM_API_SECRET') || Deno.env.get('STREAM_SECRET')
+
     if (!streamSecret) {
-      return jsonResponse({ error: 'Stream not configured' }, 500)
+      // Attempt to read the secret from the admin_config table in the database.
+      // This allows the function to work even when the Supabase edge-function secret
+      // is not set — the secret is stored securely in the DB row.
+      const { data: cfgRow, error: cfgErr } = await adminClient
+        .from('admin_config')
+        .select('value')
+        .eq('key', 'getstream_api_secret')
+        .single()
+
+      if (cfgErr || !cfgRow?.value || cfgRow.value.startsWith('REPLACE_')) {
+        console.error('Stream secret not configured (env var and admin_config both missing)')
+        return jsonResponse({ error: 'Stream not configured' }, 500)
+      }
+      streamSecret = cfgRow.value
     }
 
-    const userId = user!.id
     const { now, exp } = nowAndExpiry(60 * 60 * 24) // 24 hours
 
     const token = await signJwtHS256({ user_id: userId, iat: now, exp }, streamSecret)
 
-    // Cache token in Supabase (Supabase remains the data owner of stream_tokens;
-    // the Session Service only signs the token, it does not own storage of it)
-    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const adminClient = createClient(supabaseUrl!, serviceKey)
+    // Cache token in Supabase (best-effort — non-fatal if it fails)
     const { error: upsertError } = await adminClient.from('stream_tokens').upsert({
       user_id: userId,
       token,
@@ -32,7 +47,6 @@ serve(async (req) => {
     }, { onConflict: 'user_id' })
     if (upsertError) {
       console.error('stream_tokens upsert failed:', upsertError.message)
-      // Non-fatal: token is still valid, caching is best-effort
     }
 
     return jsonResponse({ token, userId })

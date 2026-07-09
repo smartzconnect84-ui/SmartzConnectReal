@@ -132,7 +132,7 @@ export default function TopNavBar({ unreadMessages, unreadNotifs, onMenuToggle, 
         </button>
 
         {/* Messages */}
-        <Link to="/app/chat/1" className="relative w-9 h-9 rounded-xl dark:bg-white/5 bg-gray-100 flex items-center justify-center hover:bg-pink-500/10 dark:text-gray-400 text-gray-600 transition-colors">
+        <Link to="/app/matches" className="relative w-9 h-9 rounded-xl dark:bg-white/5 bg-gray-100 flex items-center justify-center hover:bg-pink-500/10 dark:text-gray-400 text-gray-600 transition-colors">
           <MessageCircle className="w-4 h-4" />
           {unreadMessages > 0 && (
             <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-brand-pink text-white text-[8px] font-black flex items-center justify-center">

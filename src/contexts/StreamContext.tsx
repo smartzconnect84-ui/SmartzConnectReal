@@ -25,6 +25,22 @@ const STREAM_API_KEY = import.meta.env.VITE_STREAM_API_KEY as string
 
 async function fetchStreamToken(userId: string, accessToken: string): Promise<string | undefined> {
   if (!import.meta.env.VITE_SUPABASE_URL) return undefined
+
+  // ── Primary: DB RPC (generate_getstream_token reads secret from admin_config).
+  // This avoids needing STREAM_API_SECRET set as a Supabase edge-function secret.
+  try {
+    const { data: rpcToken, error: rpcError } = await supabase.rpc('generate_getstream_token')
+    if (!rpcError && rpcToken) {
+      return rpcToken as string
+    }
+    if (rpcError) {
+      console.warn('Stream token RPC fallback to edge function:', rpcError.message)
+    }
+  } catch (rpcErr) {
+    console.warn('Stream token RPC failed, falling back to edge function:', rpcErr)
+  }
+
+  // ── Fallback: edge function (requires STREAM_API_SECRET in Supabase secrets).
   try {
     const { data, error } = await supabase.functions.invoke('stream-token', {
       body: { userId },
