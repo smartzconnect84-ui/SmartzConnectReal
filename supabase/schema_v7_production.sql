@@ -321,7 +321,7 @@ CREATE TABLE IF NOT EXISTS public.stories (
   created_at timestamptz DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS stories_user_idx    ON public.stories(user_id, created_at DESC);
-CREATE INDEX IF NOT EXISTS stories_expires_idx ON public.stories(expires_at) WHERE expires_at > now();
+CREATE INDEX IF NOT EXISTS stories_expires_idx ON public.stories(expires_at DESC);
 ALTER TABLE public.stories ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN CREATE POLICY "stories_select_all"  ON public.stories FOR SELECT USING (expires_at > now()); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN CREATE POLICY "stories_insert_own"  ON public.stories FOR INSERT WITH CHECK (auth.uid() = user_id); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
@@ -610,7 +610,7 @@ ALTER TABLE public.call_participants ADD COLUMN IF NOT EXISTS camera_on         
 ALTER TABLE public.call_participants ADD COLUMN IF NOT EXISTS is_screen_sharing  boolean DEFAULT false;
 ALTER TABLE public.call_participants ADD COLUMN IF NOT EXISTS connection_quality text;
 ALTER TABLE public.call_participants ENABLE ROW LEVEL SECURITY;
-DO $$ BEGIN CREATE POLICY "call_participants_own" ON public.call_participants FOR ALL USING (auth.uid() = user_id); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $ BEGIN CREATE POLICY "call_participants_own" ON public.call_participants FOR ALL USING (auth.uid()::text = user_id); EXCEPTION WHEN duplicate_object THEN NULL; END $;
 
 -- ════════════════════════════════════════════════════════════════════════════
 -- SECTION 9 — REPORTS & SAFETY
