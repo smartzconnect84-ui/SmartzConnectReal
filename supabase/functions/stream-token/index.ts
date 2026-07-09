@@ -18,7 +18,7 @@ async function serverJwt(apiKey: string, secret: string): Promise<string> {
 /**
  * Ensure the authenticated user is a member of the world chat channel.
  * If not, add them. If the channel doesn't exist yet, create it.
- * Non-fatal — if this fails, we still return the user token.
+ * Non-fatal — if this fails we still return the user token and log the error.
  */
 async function ensureWorldChatMember(userId: string, apiKey: string, secret: string) {
   try {
@@ -30,8 +30,9 @@ async function ensureWorldChatMember(userId: string, apiKey: string, secret: str
     }
     const base = `${STREAM_API_BASE}/channels/${WORLD_CHANNEL_TYPE}/${WORLD_CHANNEL_ID}`
 
-    // Upsert the channel (create if not exists, no-op if it does)
-    await fetch(`${base}?api_key=${apiKey}`, {
+    // Upsert the channel (create if not exists, no-op if it does).
+    // Stream returns 201 (created) or 200 (existing channel returned).
+    const upsertRes = await fetch(`${base}?api_key=${apiKey}`, {
       method: 'POST',
       headers,
       body: JSON.stringify({
@@ -39,13 +40,22 @@ async function ensureWorldChatMember(userId: string, apiKey: string, secret: str
         members: [{ user_id: userId }],
       }),
     })
+    if (!upsertRes.ok) {
+      const body = await upsertRes.text().catch(() => '(unreadable)')
+      console.error(`ensureWorldChatMember: channel upsert ${upsertRes.status} — ${body}`)
+      return
+    }
 
-    // Add the user as a member (idempotent — Stream ignores duplicates)
-    await fetch(`${base}/member?api_key=${apiKey}`, {
+    // Add the user as a member (idempotent — Stream ignores duplicates).
+    const memberRes = await fetch(`${base}/member?api_key=${apiKey}`, {
       method: 'POST',
       headers,
       body: JSON.stringify({ add_members: [{ user_id: userId }] }),
     })
+    if (!memberRes.ok) {
+      const body = await memberRes.text().catch(() => '(unreadable)')
+      console.error(`ensureWorldChatMember: member add ${memberRes.status} — ${body}`)
+    }
   } catch (err) {
     console.warn('ensureWorldChatMember failed (non-fatal):', err)
   }
@@ -64,7 +74,12 @@ serve(async (req) => {
 
     // ── Resolve stream secret: env var takes priority, then fall back to admin_config ──
     let streamSecret = Deno.env.get('STREAM_API_SECRET') || Deno.env.get('STREAM_SECRET')
-    const streamApiKey = Deno.env.get('STREAM_API_KEY') || Deno.env.get('VITE_STREAM_API_KEY') || 'awspcvfkzuq7'
+    // STREAM_API_KEY must be set in Supabase secrets — no hardcoded fallback.
+    const streamApiKey = Deno.env.get('STREAM_API_KEY')
+    if (!streamApiKey) {
+      console.error('STREAM_API_KEY not configured in edge function secrets')
+      return jsonResponse({ error: 'Stream not configured' }, 500)
+    }
 
     if (!streamSecret) {
       const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!

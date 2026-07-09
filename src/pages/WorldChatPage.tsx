@@ -55,6 +55,7 @@ export default function WorldChatPage() {
   const [myProfile, setMyProfile] = useState<{ full_name: string; avatar_url?: string } | null>(null)
   const [voiceError, setVoiceError] = useState<string | null>(null)
   const [connectFailed, setConnectFailed] = useState(false)
+  const [notMember, setNotMember] = useState(false)
 
   const endRef = useRef<HTMLDivElement>(null)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -97,15 +98,16 @@ export default function WorldChatPage() {
           await ch.watch()
         } catch (watchErr: any) {
           // If watch() fails because the user isn't yet a member (happens when
-          // the channel already exists and this is a new user), the stream-token
-          // edge function's ensureWorldChatMember will have added them on the
-          // next token refresh.  For now, surface a clear error rather than
-          // an opaque loading spinner.
+          // the channel already exists and this is a new user), surface a retry
+          // UI. The stream-token edge function's ensureWorldChatMember will add
+          // them on the next token refresh; the retry button reloads the page
+          // to trigger a fresh token fetch.
           const msg = watchErr?.message ?? String(watchErr)
-          const notMember = msg.includes('not a member') ||
+          const isMemberErr = msg.includes('not a member') ||
             msg.includes('WatchChannel') || (watchErr?.code === 5)
-          if (notMember) {
+          if (isMemberErr) {
             console.warn('WorldChat: user not yet a member — token refresh will add them')
+            if (!disposed) setNotMember(true)
           } else {
             console.error('WorldChat watch failed:', watchErr)
           }
@@ -421,7 +423,29 @@ export default function WorldChatPage() {
             )}
           </div>
         )}
-        {streamConnected && messages.length === 0 && (
+        {streamConnected && !channel && notMember && (
+          <div className="flex flex-col items-center justify-center h-full gap-4 py-16">
+            <Globe className="w-10 h-10 text-gray-300" />
+            <div className="text-center">
+              <p className="font-bold dark:text-white text-gray-900 mb-1">Joining World Chat…</p>
+              <p className="text-sm dark:text-gray-400 text-gray-500 max-w-xs">
+                You're being added to the global chat room. Tap Retry to enter.
+              </p>
+            </div>
+            <button onClick={() => window.location.reload()}
+              className="px-4 py-2 rounded-xl bg-love-gradient text-white text-xs font-bold shadow-md shadow-pink-500/20 hover:opacity-90 transition-opacity">
+              Retry
+            </button>
+          </div>
+        )}
+        {streamConnected && !channel && !notMember && messages.length === 0 && (
+          <div className="flex flex-col items-center justify-center h-full gap-3 py-16">
+            <div className="w-16 h-16 rounded-3xl bg-love-gradient flex items-center justify-center text-3xl shadow-lg shadow-pink-500/20">🌍</div>
+            <p className="font-display font-black text-lg dark:text-white text-gray-900">World Chat</p>
+            <p className="text-sm dark:text-gray-400 text-gray-500 text-center max-w-xs">The global community chat — say hello to everyone on SmartzConnect!</p>
+          </div>
+        )}
+        {streamConnected && channel && messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full gap-3 py-16">
             <div className="w-16 h-16 rounded-3xl bg-love-gradient flex items-center justify-center text-3xl shadow-lg shadow-pink-500/20">🌍</div>
             <p className="font-display font-black text-lg dark:text-white text-gray-900">World Chat</p>
