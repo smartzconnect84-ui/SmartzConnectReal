@@ -2,8 +2,8 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders, jsonResponse, requireUser, signJwtHS256, nowAndExpiry } from '../_shared/sessionService.ts'
 
-const WORLD_CHANNEL_ID   = 'smartz-worldchat-global'
-const WORLD_CHANNEL_TYPE = 'messaging'
+const WORLD_CHANNEL_ID   = 'smartz-worldchat-v2'
+const WORLD_CHANNEL_TYPE = 'livestream'
 const STREAM_API_BASE    = 'https://chat.stream-io-api.com'
 
 /**

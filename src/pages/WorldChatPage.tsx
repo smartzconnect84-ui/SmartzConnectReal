@@ -13,7 +13,11 @@ import EmojiPicker from '@/components/EmojiPicker'
 import TranslateButton from '@/components/TranslateButton'
 import { uploadToSufy } from '@/lib/sufy'
 
-const WORLD_CHANNEL_ID = 'smartz-worldchat-global'
+// Using 'livestream' channel type: any authenticated Stream user can watch and
+// send messages without being explicitly added as a member. This is the correct
+// type for a global community chat room.
+const WORLD_CHANNEL_ID   = 'smartz-worldchat-v2'
+const WORLD_CHANNEL_TYPE = 'livestream'
 const QUICK_REACTIONS = [
   { emoji: '❤️', name: 'love' },
   { emoji: '👍', name: 'like' },
@@ -91,8 +95,10 @@ export default function WorldChatPage() {
 
     const init = async () => {
       try {
-        const ch = client.channel('messaging', WORLD_CHANNEL_ID, {
-          members: user?.id ? [user.id] : [],
+        const ch = client.channel(WORLD_CHANNEL_TYPE, WORLD_CHANNEL_ID, {
+          name: 'World Chat',
+          // 'livestream' channels don't require explicit membership: any
+          // authenticated user can watch and post.
         })
         try {
           await ch.watch()
