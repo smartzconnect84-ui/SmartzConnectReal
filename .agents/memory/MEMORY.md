@@ -18,3 +18,4 @@
 - [Integration audit 2026-07](integration-audit-2026-07.md) — real bugs vs. false positives found auditing GetStream/LiveKit/Supabase/OneSignal/SUFY; check live DB/deployed functions before "fixing" naming mismatches.
 - [Livestreams schema & PostgREST joins](livestreams-schema.md) — column names differ from code (creator_id/viewer_count/gifts_earned); no FKs so joins must be done separately; atomic gifts RPC created; LK broadcaster timeout pattern.
 - [Exchange rates utility](exchange-rates-utility.md) — fetchRates() singleton; _inflight must clear on ALL paths incl. cache-hit; AbortSignal.timeout not safe cross-env; use manual AbortController.
+- [DB migration 2026-07](db-migration-2026-07.md) — live DB confirmed; psql works, Mgmt API blocked from Replit (CF 1010); backup_cron needs dashboard.

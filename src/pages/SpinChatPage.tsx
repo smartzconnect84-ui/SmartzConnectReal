@@ -64,6 +64,7 @@ export default function SpinChatPage() {
   const { connected: streamConnected } = useContext(StreamContext)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const channelRef = useRef<any>(null)
+  const pendingTimers = useRef<ReturnType<typeof setTimeout>[]>([])
 
   // ── Supabase Realtime Presence: who's actively on SpinChat right now ──────
   const [spinActiveIds, setSpinActiveIds] = useState<Set<string>>(new Set())
@@ -229,11 +230,13 @@ export default function SpinChatPage() {
     }
   }, [phase, currentProfile?.id, user?.id, streamConnected])
 
-  // Cleanup channel on unmount
+  // Cleanup channel and pending timers on unmount
   useEffect(() => {
     return () => {
       channelRef.current?.stopWatching?.()
       channelRef.current = null
+      pendingTimers.current.forEach(clearTimeout)
+      pendingTimers.current = []
     }
   }, [])
 
@@ -281,10 +284,11 @@ export default function SpinChatPage() {
       // Demo / bot mode fallback
       setMessages(prev => [...prev, { text, mine: true, time: now }])
       const delay = 1000 + Math.random() * 1500
-      setTimeout(() => {
+      const t = setTimeout(() => {
         const reply = BOT_REPLIES[Math.floor(Math.random() * BOT_REPLIES.length)]
         setMessages(prev => [...prev, { text: reply, mine: false, time: new Date().toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' }) }])
       }, delay)
+      pendingTimers.current.push(t)
     }
   }
 
@@ -315,7 +319,8 @@ export default function SpinChatPage() {
     setConnectSaving(false)
     setConnectDone(true)
     // Auto-reset after 2.5s
-    setTimeout(reset, 2500)
+    const t = setTimeout(reset, 2500)
+    pendingTimers.current.push(t)
   }
 
   return (
