@@ -33,7 +33,7 @@ const AnnouncementContext = createContext<AnnouncementContextType>({
   announcements: [],
   activeAnnouncement: null,
   bannerEnabled: true,
-  setBannerEnabled: () => {},
+  setBannerEnabled: async () => {},
   refetch: async () => {},
   addAnnouncement: async () => {},
   updateAnnouncement: async () => {},
