@@ -45,6 +45,28 @@ interface SpinProfile {
 }
 type Phase = 'idle' | 'spinning' | 'matched' | 'chatting' | 'skipped'
 
+/** Score how well a candidate profile matches the current user's interests + country.
+ *  Higher = better match. Used to bias the spin pool toward compatible people. */
+function scoreMatch(
+  candidate: SpinProfile,
+  myInterests: string[],
+  myCountry: string,
+): number {
+  let score = 0
+  // Shared interests: 10 pts each
+  if (myInterests.length > 0) {
+    const mine = new Set(myInterests.map(i => i.toLowerCase().trim()))
+    for (const interest of candidate.interests) {
+      if (mine.has(interest.toLowerCase().trim())) score += 10
+    }
+  }
+  // Same country: 5 pts
+  if (myCountry && candidate.country && myCountry.toLowerCase() === candidate.country.toLowerCase()) {
+    score += 5
+  }
+  return score
+}
+
 export default function SpinChatPage() {
   const { user } = useAuth()
   const [phase, setPhase] = useState<Phase>('idle')
@@ -59,6 +81,9 @@ export default function SpinChatPage() {
   const [connectSaving, setConnectSaving] = useState(false)
   const [connectDone, setConnectDone] = useState(false)
   const [chatMode, setChatMode] = useState<'idle' | 'connecting' | 'live' | 'demo'>('idle')
+  // Current user's profile data for smart matching
+  const [myInterests, setMyInterests] = useState<string[]>([])
+  const [myCountry, setMyCountry] = useState('')
   const controls = useAnimation()
   const { startCall } = useLiveKitCall()
   const { connected: streamConnected } = useContext(StreamContext)
@@ -117,6 +142,26 @@ export default function SpinChatPage() {
     updatePresence()
     const interval = setInterval(updatePresence, 120_000)
     return () => clearInterval(interval)
+  }, [user?.id])
+
+  // Fetch current user's interests + country for smart matching
+  useEffect(() => {
+    if (!user?.id) return
+    let cancelled = false
+    supabase
+      .from('profiles')
+      .select('interests, country')
+      .eq('id', user.id)
+      .single()
+      .then(({ data }) => {
+        if (cancelled || !data) return
+        const interests = Array.isArray(data.interests)
+          ? (data.interests as string[])
+          : String(data.interests || '').split(',').map((s: string) => s.trim()).filter(Boolean)
+        setMyInterests(interests)
+        setMyCountry(data.country || '')
+      })
+    return () => { cancelled = true }
   }, [user?.id])
 
   useEffect(() => {
@@ -263,7 +308,17 @@ export default function SpinChatPage() {
     // Priority 3: anyone in the pool
     const pool = presencePool.length > 0 ? presencePool : onlinePool.length > 0 ? onlinePool : others
     if (pool.length === 0) { setPhase('idle'); return }
-    const profile = pool[Math.floor(Math.random() * pool.length)]
+
+    // ── Smart matching: score by shared interests + country, pick from top-3 ──
+    // Sorting by score descending; ties preserve original array order (stable sort).
+    // We then pick randomly among the top-3 so the wheel feels genuinely random
+    // while still preferring the most compatible people.
+    const scored = pool
+      .map(p => ({ p, score: scoreMatch(p, myInterests, myCountry) }))
+      .sort((a, b) => b.score - a.score)
+    // Take the top-3 candidates (or all if fewer) and pick randomly among them
+    const topCandidates = scored.slice(0, Math.min(3, scored.length))
+    const profile = topCandidates[Math.floor(Math.random() * topCandidates.length)].p
     setCurrentProfile(profile)
     setSpinCount(c => c + 1)
     setMessages([{ text: `Hey! We just matched on Spin & Chat 🎉 How are you?`, mine: false, time: new Date().toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' }) }])

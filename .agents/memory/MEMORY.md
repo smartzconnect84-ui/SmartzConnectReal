@@ -9,6 +9,7 @@
 - [Schema evolution](schema-evolution.md) — column mismatches, repo SQL vs. live-DB drift on hand-edited tables, and Postgres 17 vs pg_dump v16 version-mismatch workaround.
 - [Integration audit fixes](integration-audit.md) — Full audit of OneSignal/GetStream/Jitsi/Turnstile; key fixes applied in audit pass v1.
 - [Completed unfinished tasks](completed-unfinished.md) — EmojiPicker, TurnstileWidget, invoice download added; GitHub push now uses gitPush() callback (not git CLI — auth fails).
+- [SpinChat smart matching](spin-smart-matching.md) — scoreMatch() scores by shared interests (10pts each) + country (5pts); top-3 candidates picked randomly to preserve spin feel; myInterests/myCountry fetched with isMounted cancel guard.
 - [Voice notes implementation](voice-notes.md) — MediaRecorder → Supabase 'voice-messages' bucket (public) → Stream attachment. Both ChatPage and GroupChatPage implemented with unmount cleanup.
 - [Call signaling state machine](call-signaling.md) — Full call system via call_notifications realtime; clear outgoingNotifIdRef on accepted to prevent 60s timer closing active calls.
 - [Production deployment](production-deployment.md) — edge functions use --use-api flag; DB on port 5432 (not 6543); admin_users.id = profile UUID; SUFY region needs confirmation.

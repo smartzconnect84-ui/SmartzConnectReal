@@ -1,10 +1,11 @@
-import { useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, useInView } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import {
   Tv, Play, Users, Gift, TrendingUp, Mic, Video, Crown, Zap,
-  Signal, Clapperboard,
+  Signal, Clapperboard, Eye, RefreshCw,
 } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
 
 const features = [
   { icon: Video,      title: 'Go Live Instantly',     desc: 'Stream to thousands of viewers across Africa with one tap. No equipment needed — just your phone.',  color: 'from-violet-500 to-purple-600' },
@@ -15,11 +16,86 @@ const features = [
   { icon: Crown,      title: 'Creator Monetisation',   desc: 'Subscriptions, tips, brand deals, and exclusive content — multiple income streams in one place.',     color: 'from-yellow-500 to-amber-600' },
 ]
 
+interface LiveStream {
+  id: string
+  title: string
+  category: string | null
+  viewer_count: number
+  thumbnail_url: string | null
+  creator_id: string
+  creator_name?: string
+  creator_avatar?: string | null
+}
+
 export default function SmartzTVPage() {
   const ref = useRef(null)
   const heroRef = useRef(null)
   const inView = useInView(ref, { once: true, margin: '-80px' })
   const heroIn = useInView(heroRef, { once: true })
+
+  const [liveStreams, setLiveStreams] = useState<LiveStream[]>([])
+  const [loadingStreams, setLoadingStreams] = useState(true)
+
+  // Internal loader — accepts a cancellation token for safe async teardown.
+  const loadLiveStreams = useCallback(async (sig: { cancelled: boolean }) => {
+    setLoadingStreams(true)
+    try {
+      const { data: rows, error } = await supabase
+        .from('livestreams')
+        .select('id, title, category, viewer_count, thumbnail_url, creator_id')
+        .eq('status', 'live')
+        .order('viewer_count', { ascending: false })
+        .limit(6)
+
+      if (sig.cancelled) return
+
+      if (!error && rows && rows.length > 0) {
+        // Resolve creator names separately (no FK constraint on livestreams.creator_id)
+        const creatorIds = [...new Set((rows as Array<{ creator_id: string }>).map(r => r.creator_id).filter(Boolean))]
+        let profileMap: Record<string, { full_name: string; avatar_url: string | null }> = {}
+        if (creatorIds.length) {
+          const { data: profiles } = await supabase
+            .from('profiles')
+            .select('id, full_name, avatar_url')
+            .in('id', creatorIds)
+          if (!sig.cancelled && profiles) {
+            profileMap = Object.fromEntries(
+              (profiles as Array<{ id: string; full_name: string; avatar_url: string | null }>)
+                .map(p => [p.id, p])
+            )
+          }
+        }
+        if (!sig.cancelled) {
+          setLiveStreams(
+            (rows as Array<{ id: string; title: string; category: string | null; viewer_count: number; thumbnail_url: string | null; creator_id: string }>)
+              .map(r => ({
+                ...r,
+                creator_name: profileMap[r.creator_id]?.full_name ?? 'Creator',
+                creator_avatar: profileMap[r.creator_id]?.avatar_url ?? null,
+              }))
+          )
+        }
+      } else if (!sig.cancelled) {
+        setLiveStreams([])
+      }
+    } catch {
+      if (!sig.cancelled) setLiveStreams([])
+    }
+    if (!sig.cancelled) setLoadingStreams(false)
+  }, [])
+
+  // Click handler for the refresh button — creates its own fresh cancellation token.
+  const handleRefresh = useCallback(() => {
+    const sig = { cancelled: false }
+    void loadLiveStreams(sig)
+    // No cleanup needed — the token is local and there's no unmount concern here.
+  }, [loadLiveStreams])
+
+  useEffect(() => {
+    const sig = { cancelled: false }
+    void loadLiveStreams(sig)
+    return () => { sig.cancelled = true }
+  }, [loadLiveStreams])
 
   return (
     <div className="dark:bg-[#080510] bg-gray-50 min-h-screen pt-[72px] sm:pt-20">
@@ -59,16 +135,82 @@ export default function SmartzTVPage() {
         </div>
       </section>
 
-      {/* ── Coming soon notice ── */}
+      {/* ── Live Streams or Coming Soon ── */}
       <section className="py-10 dark:bg-[#0D0A14] bg-white border-y dark:border-white/5 border-gray-100">
-        <div className="max-w-3xl mx-auto px-4 text-center">
-          <div className="flex items-center justify-center gap-3 mb-3">
-            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-            <span className="font-bold dark:text-white text-gray-900">Live streams will appear here once SmartzTV launches</span>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-2">
+              {!loadingStreams && liveStreams.length > 0 && (
+                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+              )}
+              <h2 className="font-display font-black text-xl dark:text-white text-gray-900">
+                {loadingStreams ? 'Loading streams…' : liveStreams.length > 0 ? `${liveStreams.length} Live Now` : 'Live Streams'}
+              </h2>
+            </div>
+            <button onClick={handleRefresh} className="p-2 rounded-xl dark:bg-white/5 bg-gray-100 hover:text-violet-500 transition-colors">
+              <RefreshCw className={`w-4 h-4 ${loadingStreams ? 'animate-spin text-violet-500' : ''}`} />
+            </button>
           </div>
-          <p className="text-sm dark:text-gray-400 text-gray-500">
-            SmartzTV is coming soon to SmartzConnect. Live streams, creator channels, and exclusive content — all in one place. Sign up now to be first in line.
-          </p>
+
+          {loadingStreams ? (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="dark:bg-white/5 bg-gray-100 rounded-2xl h-48 animate-pulse" />
+              ))}
+            </div>
+          ) : liveStreams.length > 0 ? (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {liveStreams.map((stream, i) => (
+                <motion.div key={stream.id}
+                  initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}>
+                  <Link to="/register"
+                    className="block group dark:bg-[#130E1E] bg-white rounded-2xl border dark:border-white/6 border-gray-200 overflow-hidden hover:shadow-xl hover:border-violet-500/30 transition-all">
+                    {/* Thumbnail */}
+                    <div className="relative h-36 dark:bg-violet-900/20 bg-violet-50 flex items-center justify-center overflow-hidden">
+                      {stream.thumbnail_url ? (
+                        <img src={stream.thumbnail_url} alt={stream.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                      ) : (
+                        <Tv className="w-10 h-10 text-violet-400/40" />
+                      )}
+                      {/* LIVE badge */}
+                      <div className="absolute top-2 left-2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-500 text-white text-[10px] font-bold shadow-lg">
+                        <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> LIVE
+                      </div>
+                      {/* Viewer count */}
+                      <div className="absolute bottom-2 right-2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/60 text-white text-[10px] font-semibold">
+                        <Eye className="w-2.5 h-2.5" /> {(stream.viewer_count || 0).toLocaleString()}
+                      </div>
+                    </div>
+                    {/* Info */}
+                    <div className="p-3">
+                      <p className="font-bold text-sm dark:text-white text-gray-900 line-clamp-1 mb-1">{stream.title || 'Live Stream'}</p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs dark:text-gray-400 text-gray-500">{stream.creator_name}</span>
+                        {stream.category && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-400">{stream.category}</span>
+                        )}
+                      </div>
+                    </div>
+                  </Link>
+                </motion.div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <div className="flex items-center justify-center gap-3 mb-3">
+                <Tv className="w-6 h-6 text-violet-400/50" />
+                <span className="font-bold dark:text-white text-gray-900">No streams live right now</span>
+              </div>
+              <p className="text-sm dark:text-gray-400 text-gray-500 max-w-md mx-auto mb-4">
+                SmartzTV is live! Check back soon to catch creators streaming music, comedy, tech talks, and more — or go live yourself.
+              </p>
+              <Link to="/register"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 text-white text-sm font-bold shadow-lg hover:opacity-90 transition-all">
+                <Signal className="w-4 h-4" /> Be the First to Go Live
+              </Link>
+            </div>
+          )}
         </div>
       </section>
 
