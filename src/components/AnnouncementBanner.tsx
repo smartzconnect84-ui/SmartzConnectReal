@@ -41,7 +41,7 @@ export default function AnnouncementBanner() {
       <div className="flex-1 overflow-hidden" style={{ height: 36 }}>
         <div
           className="flex items-center h-full"
-          style={{ animation: 'marquee 28s linear infinite', whiteSpace: 'nowrap', willChange: 'transform' }}
+          style={{ animation: 'marquee 26.6s linear infinite', whiteSpace: 'nowrap', willChange: 'transform' }}
         >
           <span className="text-[13px] font-semibold opacity-95 pr-20">{msg}</span>
           {activeAnnouncement.link_text && activeAnnouncement.link_url && (

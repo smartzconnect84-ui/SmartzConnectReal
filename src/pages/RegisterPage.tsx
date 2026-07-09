@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Loader2, Check, Globe, ArrowLeft } from 'lucide-react'
+import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Loader2, Check, Globe, ArrowLeft, Calendar, Camera } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { AuthInput, AuthError, AuthLabel } from '@/components/auth/AuthLayout'
 import TurnstileWidget from '@/components/TurnstileWidget'
@@ -23,7 +23,7 @@ const ALL_COUNTRIES = [
   'Estonia','Eswatini','Ethiopia','Fiji','Finland','France','Gabon','Gambia','Georgia','Germany',
   'Ghana','Greece','Grenada','Guatemala','Guinea','Guinea-Bissau','Guyana','Haiti','Honduras',
   'Hungary','Iceland','India','Indonesia','Iran','Iraq','Ireland','Israel','Italy','Jamaica',
-  'Japan','Jordan','Kazakhstan','Kenya','Kiribati','Kuwait','Kyrgyzstan','Laos','Latvia',
+  'Japan','Jordan','Kazakhstan','Kenya','Kiribati','Kosovo','Kuwait','Kyrgyzstan','Laos','Latvia',
   'Lebanon','Lesotho','Liberia','Libya','Liechtenstein','Lithuania','Luxembourg','Madagascar',
   'Malawi','Malaysia','Maldives','Mali','Malta','Marshall Islands','Mauritania','Mauritius',
   'Mexico','Micronesia','Moldova','Monaco','Mongolia','Montenegro','Morocco','Mozambique',
@@ -61,11 +61,28 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('')
   const [name, setName]         = useState('')
   const [country, setCountry]   = useState('')
+  const [dob, setDob]           = useState('')
+  const [avatarFile, setAvatarFile] = useState<File | null>(null)
+  const [avatarPreview, setAvatarPreview] = useState<string>('')
   const [showPw, setShowPw]     = useState(false)
   const [loading, setLoading]   = useState(false)
   const [error, setError]       = useState('')
   const [agreed, setAgreed]     = useState(false)
   const [turnstileToken, setTurnstileToken] = useState('')
+
+  // Must be at least 13 years old and DOB can't be in the future.
+  const MIN_AGE = 13
+  const today = new Date()
+  const maxDob = new Date(today.getFullYear() - MIN_AGE, today.getMonth(), today.getDate()).toISOString().slice(0, 10)
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setAvatarFile(file)
+    const reader = new FileReader()
+    reader.onload = () => setAvatarPreview(reader.result as string)
+    reader.readAsDataURL(file)
+  }
 
   const pwStrength = passwordStrength(password)
 
@@ -75,7 +92,7 @@ export default function RegisterPage() {
     setError('')
     setLoading(true)
     try {
-      const result = await signUp(email, password, name)
+      const result = await signUp(email, password, name, { dateOfBirth: dob, avatarFile })
       if (result.needsVerification) {
         navigate('/verify-email', { state: { email }, replace: true })
       } else {
@@ -318,9 +335,35 @@ export default function RegisterPage() {
 
                     {step === 2 && (
                       <>
-                        {/* Full name */}
+                        {/* Profile picture */}
                         <div>
-                          <AuthLabel htmlFor="reg-name">Full Name</AuthLabel>
+                          <AuthLabel htmlFor="reg-avatar">Profile Picture</AuthLabel>
+                          <label
+                            htmlFor="reg-avatar"
+                            className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.04] border border-white/[0.08] hover:border-purple-500/40 transition-all cursor-pointer"
+                          >
+                            <div className="w-12 h-12 rounded-full bg-white/[0.06] border border-white/10 flex items-center justify-center overflow-hidden flex-shrink-0">
+                              {avatarPreview
+                                ? <img src={avatarPreview} alt="Preview" className="w-full h-full object-cover" />
+                                : <Camera className="w-4.5 h-4.5 text-white/30" />}
+                            </div>
+                            <span className="text-sm text-white/60">
+                              {avatarFile ? avatarFile.name : 'Upload a real photo of yourself'}
+                            </span>
+                            <input
+                              id="reg-avatar"
+                              type="file"
+                              accept="image/*"
+                              onChange={handleAvatarChange}
+                              required
+                              className="sr-only"
+                            />
+                          </label>
+                        </div>
+
+                        {/* Full name (real name) */}
+                        <div>
+                          <AuthLabel htmlFor="reg-name">Real Name</AuthLabel>
                           <AuthInput
                             id="reg-name"
                             type="text"
@@ -331,6 +374,23 @@ export default function RegisterPage() {
                             autoComplete="name"
                             icon={<User className="w-4 h-4" />}
                           />
+                          <p className="mt-1.5 text-[10px] text-white/30">Use your real name — this helps keep SmartzConnect trustworthy.</p>
+                        </div>
+
+                        {/* Date of birth */}
+                        <div>
+                          <AuthLabel htmlFor="reg-dob">Date of Birth</AuthLabel>
+                          <AuthInput
+                            id="reg-dob"
+                            type="date"
+                            value={dob}
+                            onChange={e => setDob(e.target.value)}
+                            required
+                            max={maxDob}
+                            autoComplete="bday"
+                            icon={<Calendar className="w-4 h-4" />}
+                          />
+                          <p className="mt-1.5 text-[10px] text-white/30">You must be at least {MIN_AGE} years old to join.</p>
                         </div>
 
                         {/* Country */}
@@ -370,7 +430,11 @@ export default function RegisterPage() {
                     {/* Submit */}
                     <button
                       type="submit"
-                      disabled={loading || (step === 1 && (!agreed || (TURNSTILE_ENABLED && !turnstileToken)))}
+                      disabled={
+                        loading ||
+                        (step === 1 && (!agreed || (TURNSTILE_ENABLED && !turnstileToken))) ||
+                        (step === 2 && (!name.trim() || !country || !dob || !avatarFile))
+                      }
                       className="w-full py-3.5 rounded-xl bg-gradient-to-r from-purple-600 to-purple-500 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-purple-600/25 hover:shadow-purple-600/40 hover:from-purple-500 hover:to-purple-400 hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:shadow-none mt-1"
                     >
                       {loading

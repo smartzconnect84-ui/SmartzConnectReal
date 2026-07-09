@@ -25,7 +25,22 @@ interface SpinProfile {
   online: boolean
   lastSeenMs: number   // raw epoch ms — used to recompute online at spin time
   avatar_url: string | null
+  relationshipGoal: string
 }
+
+// Only these categories are eligible for Spin & Chat matching — dating should
+// never surface people who haven't opted into Friendship / Social / Dating.
+// Older profiles may still carry legacy relationship_goal values from earlier
+// schema revisions (casual/long_term/marriage/networking) — map those into the
+// three current buckets so existing users aren't silently dropped from the pool.
+const SPIN_ELIGIBLE_GOALS = new Set([
+  'friendship',
+  'social',
+  'dating',
+  'casual',      // legacy value → treated as "social"
+  'long_term',   // legacy value → treated as "dating"
+  'marriage',    // legacy value → treated as "dating"
+])
 type Phase = 'idle' | 'spinning' | 'matched' | 'chatting' | 'skipped'
 
 /** Score how well a candidate profile matches the current user's interests + country.
@@ -64,6 +79,7 @@ export default function SpinChatPage() {
   const [connectSaving, setConnectSaving] = useState(false)
   const [connectDone, setConnectDone] = useState(false)
   const [chatMode, setChatMode] = useState<'idle' | 'connecting' | 'live'>('idle')
+  const [noOnlineSpinners, setNoOnlineSpinners] = useState(false)
   // Current user's profile data for smart matching
   const [myInterests, setMyInterests] = useState<string[]>([])
   const [myCountry, setMyCountry] = useState('')
@@ -151,7 +167,7 @@ export default function SpinChatPage() {
     const fetchPool = async () => {
       let q = supabase
         .from('profiles')
-        .select('id, full_name, date_of_birth, avatar_url, country, bio, interests, last_seen')
+        .select('id, full_name, date_of_birth, avatar_url, country, bio, interests, last_seen, relationship_goal')
         .order('last_seen', { ascending: false })
         .limit(50)
 
@@ -182,9 +198,12 @@ export default function SpinChatPage() {
             online,
             lastSeenMs: p.last_seen ? new Date(p.last_seen).getTime() : 0,
             avatar_url: p.avatar_url || null,
+            relationshipGoal: String(p.relationship_goal || '').toLowerCase().trim(),
           }
         })
-        setPoolProfiles(mapped)
+        // Only surface people who've opted into Friendship / Social / Dating —
+        // keeps the spin pool aligned with what users actually signed up for.
+        setPoolProfiles(mapped.filter(p => SPIN_ELIGIBLE_GOALS.has(p.relationshipGoal)))
       }
     }
     fetchPool()
@@ -287,9 +306,11 @@ export default function SpinChatPage() {
     const presencePool = others.filter(p => spinActiveIds.has(p.id))
     // Priority 2: users seen within 5 minutes
     const onlinePool = others.filter(p => now - p.lastSeenMs < 300_000)
-    // Priority 3: anyone in the pool
-    const pool = presencePool.length > 0 ? presencePool : onlinePool.length > 0 ? onlinePool : others
-    if (pool.length === 0) { setPhase('idle'); return }
+    // Only connect to people who are actually online right now — never fall
+    // back to offline profiles, so Spin & Chat always feels "live".
+    const pool = presencePool.length > 0 ? presencePool : onlinePool
+    if (pool.length === 0) { setNoOnlineSpinners(true); setPhase('idle'); return }
+    setNoOnlineSpinners(false)
 
     // ── Smart matching: score by shared interests + country, pick from top-3 ──
     // Sorting by score descending; ties preserve original array order (stable sort).
@@ -387,10 +408,17 @@ export default function SpinChatPage() {
             <motion.div key="spin-screen" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               className="h-full flex flex-col items-center justify-center px-4 py-6 gap-5 sm:gap-8">
 
-              {poolProfiles.length === 0 && phase === 'idle' && (
+              {poolProfiles.length === 0 && phase === 'idle' && !noOnlineSpinners && (
                 <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-fuchsia-500/10 border border-fuchsia-500/20 text-xs text-fuchsia-400 font-semibold">
                   <span className="w-2 h-2 rounded-full bg-fuchsia-400 animate-pulse" />
                   Looking for users to match with…
+                </div>
+              )}
+
+              {noOnlineSpinners && phase === 'idle' && (
+                <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/10 border border-amber-500/20 text-xs text-amber-400 font-semibold text-center">
+                  <span className="w-2 h-2 rounded-full bg-amber-400" />
+                  No Live Spinners online right now — try again in a moment
                 </div>
               )}
 

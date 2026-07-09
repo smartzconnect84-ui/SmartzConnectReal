@@ -4,11 +4,13 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Image, Video, Send, Heart, MessageCircle, Share2, MoreHorizontal,
   Bookmark, TrendingUp, RefreshCw, MapPin, Plus, Smile,
-  Users, Calendar, Gift, ChevronRight, Wifi, Camera, X, PartyPopper
+  Users, Calendar, Gift, ChevronRight, Wifi, Camera, X, PartyPopper,
+  Link2, Trash2, Flag, Loader2
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { uploadToSufy } from '@/lib/sufy'
 import { useAuth } from '@/hooks/useAuth'
+import ReportBlockModal from '@/components/ReportBlockModal'
 
 // ── Types ───────────────────────────────────────────────────────────────────
 interface Post {
@@ -20,6 +22,8 @@ interface Post {
   location?: string
   time: string
   content: string
+  image_url?: string | null
+  video_url?: string | null
   likes: number
   comments: number
   shares: number
@@ -27,6 +31,7 @@ interface Post {
   saved: boolean
   verified?: boolean
   premium?: boolean
+  authorId?: string
 }
 
 interface Story {
@@ -72,6 +77,53 @@ const onlineContacts = [
 ]
 
 const defaultEmojis = ['👩🏾', '👨🏿', '👩🏽', '👨🏾', '👩🏿', '👨🏽']
+const EMOJI_PALETTE = [
+  '😀','😂','🥰','😍','😎','🤔','😢','😡','👍','🙏','🔥','💯',
+  '🎉','❤️','💕','😊','😉','🤩','😴','🥳','👏','💪','✨','🌟',
+]
+
+// ── Emoji picker popover — used in ComposeBox and the comment composer ──────
+function EmojiPicker({ onPick, onClose }: { onPick: (emoji: string) => void; onClose: () => void }) {
+  return (
+    <div className="absolute z-20 bottom-full mb-2 left-0 dark:bg-[#1A1428] bg-white border dark:border-white/10 border-gray-200 rounded-2xl shadow-xl p-2 grid grid-cols-6 gap-1 w-56">
+      {EMOJI_PALETTE.map(e => (
+        <button
+          key={e}
+          type="button"
+          onClick={() => { onPick(e); onClose() }}
+          className="text-lg leading-none p-1.5 rounded-lg dark:hover:bg-white/10 hover:bg-gray-100 transition-colors"
+        >
+          {e}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+// ── Location picker — uses browser geolocation + OpenStreetMap reverse geocoding (no API key needed) ──
+async function detectLocation(): Promise<string | null> {
+  if (!('geolocation' in navigator)) return null
+  const coords = await new Promise<GeolocationCoordinates | null>(resolve => {
+    navigator.geolocation.getCurrentPosition(
+      pos => resolve(pos.coords),
+      () => resolve(null),
+      { timeout: 8000 },
+    )
+  })
+  if (!coords) return null
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${coords.latitude}&lon=${coords.longitude}&zoom=10`,
+      { headers: { Accept: 'application/json' } },
+    )
+    if (!res.ok) return null
+    const data = await res.json()
+    const a = data?.address || {}
+    return a.city || a.town || a.village || a.state || data?.display_name || null
+  } catch {
+    return null
+  }
+}
 const storyGradients = [
   'from-pink-500 to-rose-600',
   'from-purple-500 to-violet-600',
@@ -303,21 +355,73 @@ function ComposeBox({
   const [open, setOpen] = useState(false)
   const [text, setText] = useState('')
   const [posting, setPosting] = useState(false)
+  const [mediaFile, setMediaFile] = useState<File | null>(null)
+  const [mediaPreview, setMediaPreview] = useState<string>('')
+  const [mediaKind, setMediaKind] = useState<'image' | 'video' | null>(null)
+  const [location, setLocation] = useState('')
+  const [locating, setLocating] = useState(false)
+  const [showEmoji, setShowEmoji] = useState(false)
   const { user: authUser } = useAuth()
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const pickMedia = (kind: 'image' | 'video') => {
+    setMediaKind(kind)
+    fileInputRef.current?.click()
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setMediaFile(file)
+    const reader = new FileReader()
+    reader.onload = () => setMediaPreview(reader.result as string)
+    reader.readAsDataURL(file)
+  }
+
+  const handleCheckIn = async () => {
+    if (location) { setLocation(''); return }
+    setLocating(true)
+    const place = await detectLocation()
+    setLocating(false)
+    setLocation(place || '')
+  }
+
+  const insertEmoji = (emoji: string) => setText(t => t + emoji)
 
   const handlePost = async () => {
-    if (!text.trim() || !authUser?.id) return
+    if ((!text.trim() && !mediaFile) || !authUser?.id) return
     setPosting(true)
-    const { error } = await supabase.from('posts').insert({ content: text, author_id: authUser.id, visibility: 'public' })
-    setPosting(false)
-    if (error) return // keep composer open so user can retry
-    setText('')
-    setOpen(false)
-    onPost()
+    try {
+      const updates: Record<string, any> = {
+        content: text,
+        author_id: authUser.id,
+        visibility: 'public',
+      }
+      if (location) updates.location = location
+      if (mediaFile) {
+        const url = await uploadToSufy(mediaFile, 'posts')
+        if (mediaKind === 'video') updates.video_url = url
+        else updates.image_url = url
+      }
+      const { error } = await supabase.from('posts').insert(updates)
+      if (error) return // keep composer open so user can retry
+      setText(''); setMediaFile(null); setMediaPreview(''); setMediaKind(null); setLocation('')
+      setOpen(false)
+      onPost()
+    } finally {
+      setPosting(false)
+    }
   }
 
   return (
     <div className="dark:bg-[#0D0A14] bg-white rounded-2xl border dark:border-white/6 border-gray-200 p-4 mb-3 shadow-sm">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept={mediaKind === 'video' ? 'video/*' : 'image/*'}
+        onChange={handleFileChange}
+        className="sr-only"
+      />
       <AnimatePresence mode="wait">
         {!open ? (
           <motion.div key="trigger" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
@@ -331,12 +435,12 @@ function ComposeBox({
             </button>
             <div className="flex items-center gap-1 mt-3 pt-3 border-t dark:border-white/6 border-gray-100">
               {[
-                { icon: Image,   label: 'Photo',  color: 'text-green-500' },
-                { icon: Video,   label: 'Video',  color: 'text-blue-500' },
-                { icon: Smile,   label: 'Feeling', color: 'text-amber-500' },
-                { icon: MapPin,  label: 'Check in', color: 'text-red-500' },
+                { icon: Image,   label: 'Photo',  color: 'text-green-500', act: () => { setOpen(true); setTimeout(() => pickMedia('image'), 50) } },
+                { icon: Video,   label: 'Video',  color: 'text-blue-500', act: () => { setOpen(true); setTimeout(() => pickMedia('video'), 50) } },
+                { icon: Smile,   label: 'Feeling', color: 'text-amber-500', act: () => { setOpen(true); setTimeout(() => setShowEmoji(true), 50) } },
+                { icon: MapPin,  label: 'Check in', color: 'text-red-500', act: () => { setOpen(true); setTimeout(handleCheckIn, 50) } },
               ].map(a => (
-                <button key={a.label} onClick={() => setOpen(true)}
+                <button key={a.label} onClick={a.act}
                   className="flex items-center gap-1.5 flex-1 justify-center py-1.5 rounded-xl dark:hover:bg-white/5 hover:bg-gray-100 transition-colors">
                   <a.icon className={`w-4 h-4 ${a.color}`} />
                   <span className="text-xs font-semibold dark:text-gray-400 text-gray-500 hidden sm:block">{a.label}</span>
@@ -359,20 +463,50 @@ function ComposeBox({
                 className="flex-1 bg-transparent text-sm dark:text-white text-gray-900 placeholder:dark:text-gray-500 placeholder:text-gray-400 resize-none focus:outline-none"
               />
             </div>
+
+            {mediaPreview && (
+              <div className="relative rounded-xl overflow-hidden dark:bg-black/20 bg-gray-100 max-h-56">
+                {mediaKind === 'video'
+                  ? <video src={mediaPreview} className="w-full max-h-56 object-cover" controls />
+                  : <img src={mediaPreview} alt="Upload preview" className="w-full max-h-56 object-cover" />}
+                <button
+                  onClick={() => { setMediaFile(null); setMediaPreview(''); setMediaKind(null) }}
+                  className="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/60 flex items-center justify-center text-white hover:bg-black/80"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+
+            {location && (
+              <div className="flex items-center gap-1.5 text-xs text-brand-pink font-semibold">
+                <MapPin className="w-3.5 h-3.5" /> {locating ? 'Detecting…' : location}
+                <button onClick={() => setLocation('')} className="dark:text-gray-500 text-gray-400 hover:text-red-400"><X className="w-3 h-3" /></button>
+              </div>
+            )}
+
             <div className="flex items-center justify-between pt-2 border-t dark:border-white/6 border-gray-100">
-              <div className="flex gap-1">
-                {[Image, Video, MapPin, Smile].map((Icon, i) => (
-                  <button key={i} className="p-2 rounded-xl dark:hover:bg-white/5 hover:bg-gray-100 transition-colors">
-                    <Icon className="w-4 h-4 dark:text-gray-400 text-gray-500" />
-                  </button>
-                ))}
+              <div className="flex gap-1 relative">
+                <button onClick={() => pickMedia('image')} title="Photo" className="p-2 rounded-xl dark:hover:bg-white/5 hover:bg-gray-100 transition-colors">
+                  <Image className="w-4 h-4 dark:text-gray-400 text-gray-500" />
+                </button>
+                <button onClick={() => pickMedia('video')} title="Video" className="p-2 rounded-xl dark:hover:bg-white/5 hover:bg-gray-100 transition-colors">
+                  <Video className="w-4 h-4 dark:text-gray-400 text-gray-500" />
+                </button>
+                <button onClick={handleCheckIn} title="Check in" className="p-2 rounded-xl dark:hover:bg-white/5 hover:bg-gray-100 transition-colors relative">
+                  {locating ? <Loader2 className="w-4 h-4 dark:text-gray-400 text-gray-500 animate-spin" /> : <MapPin className="w-4 h-4 dark:text-gray-400 text-gray-500" />}
+                </button>
+                <button onClick={() => setShowEmoji(s => !s)} title="Emoji" className="p-2 rounded-xl dark:hover:bg-white/5 hover:bg-gray-100 transition-colors relative">
+                  <Smile className="w-4 h-4 dark:text-gray-400 text-gray-500" />
+                </button>
+                {showEmoji && <EmojiPicker onPick={insertEmoji} onClose={() => setShowEmoji(false)} />}
               </div>
               <div className="flex gap-2">
-                <button onClick={() => { setOpen(false); setText('') }}
+                <button onClick={() => { setOpen(false); setText(''); setMediaFile(null); setMediaPreview(''); setLocation('') }}
                   className="px-3 py-1.5 rounded-xl dark:bg-white/5 bg-gray-100 text-xs font-semibold dark:text-gray-400 text-gray-600">
                   Cancel
                 </button>
-                <button onClick={handlePost} disabled={!text.trim() || posting}
+                <button onClick={handlePost} disabled={(!text.trim() && !mediaFile) || posting}
                   className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-love-gradient text-white text-xs font-bold disabled:opacity-50 shadow-md shadow-pink-500/20">
                   <Send className="w-3.5 h-3.5" />
                   {posting ? 'Posting…' : 'Post'}
@@ -386,8 +520,105 @@ function ComposeBox({
   )
 }
 
+// ── Render post text with @mentions highlighted (Tag feature) ──────────────
+// Post content only stores the @handle text (not the tagged user's UUID), and
+// there's no username-based lookup route yet, so mentions are styled but not
+// linked — avoids sending users to a dead/incorrect route.
+function renderContentWithTags(content: string) {
+  const parts = content.split(/(@[a-zA-Z0-9_]+)/g)
+  return parts.map((part, i) =>
+    part.startsWith('@')
+      ? <span key={i} className="text-brand-pink font-semibold">{part}</span>
+      : <span key={i}>{part}</span>
+  )
+}
+
+interface DbComment {
+  id: string
+  content: string
+  created_at: string
+  user_id: string
+  profile?: { full_name: string | null; avatar_url: string | null }
+}
+
 // ── Post Card ─────────────────────────────────────────────────────────────────
-function PostCard({ post, onLike, onSave }: { post: Post; onLike: (id: string) => void; onSave: (id: string) => void }) {
+function PostCard({ post, onLike, onSave, currentUserId }: {
+  post: Post
+  onLike: (id: string) => void
+  onSave: (id: string) => void
+  currentUserId?: string
+}) {
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [commentsOpen, setCommentsOpen] = useState(false)
+  const [comments, setComments] = useState<DbComment[]>([])
+  const [loadingComments, setLoadingComments] = useState(false)
+  const [commentText, setCommentText] = useState('')
+  const [localCommentCount, setLocalCommentCount] = useState(post.comments)
+  const [localShareCount, setLocalShareCount] = useState(post.shares)
+  const [copied, setCopied] = useState(false)
+  const [reportOpen, setReportOpen] = useState(false)
+  const isOwn = currentUserId && post.authorId === currentUserId
+
+  const loadComments = async () => {
+    setLoadingComments(true)
+    const { data } = await supabase
+      .from('post_comments')
+      .select('id, content, created_at, user_id')
+      .eq('post_id', post.id)
+      .order('created_at', { ascending: true })
+      .limit(50)
+    const rows = (data as any[]) || []
+    const userIds = [...new Set(rows.map(r => r.user_id))]
+    const profMap: Record<string, any> = {}
+    if (userIds.length) {
+      const { data: profs } = await supabase.from('profiles').select('id, full_name, avatar_url').in('id', userIds)
+      for (const p of (profs as any[]) || []) profMap[p.id] = p
+    }
+    setComments(rows.map(r => ({ ...r, profile: profMap[r.user_id] })))
+    setLoadingComments(false)
+  }
+
+  const toggleComments = () => {
+    const next = !commentsOpen
+    setCommentsOpen(next)
+    if (next && comments.length === 0) loadComments()
+  }
+
+  const submitComment = async () => {
+    if (!commentText.trim() || !currentUserId) return
+    const text = commentText.trim()
+    setCommentText('')
+    const { error } = await supabase.from('post_comments').insert({ post_id: post.id, user_id: currentUserId, content: text })
+    if (!error) {
+      setLocalCommentCount(c => c + 1)
+      loadComments()
+    }
+  }
+
+  const handleShare = async () => {
+    const url = `${window.location.origin}/app/post/${post.id}`
+    const shared = await (async () => {
+      if (navigator.share) {
+        try { await navigator.share({ url, title: 'SmartzConnect post' }); return true } catch { return false }
+      }
+      return false
+    })()
+    if (!shared) {
+      try { await navigator.clipboard.writeText(url); setCopied(true); setTimeout(() => setCopied(false), 2000) } catch { /* ignore */ }
+    }
+    if (currentUserId) {
+      const { error } = await supabase.from('post_shares').insert({ post_id: post.id, user_id: currentUserId, share_type: shared ? 'native' : 'copy_link' })
+      if (!error) setLocalShareCount(s => s + 1)
+    }
+  }
+
+  const handleDelete = async () => {
+    setMenuOpen(false)
+    if (!isOwn) return
+    await supabase.from('posts').update({ is_deleted: true }).eq('id', post.id)
+    window.location.reload()
+  }
+
   return (
     <div className="dark:bg-[#0D0A14] bg-white rounded-2xl border dark:border-white/6 border-gray-200 mb-3 overflow-hidden shadow-sm hover:shadow-md hover:dark:shadow-pink-500/5 transition-shadow">
       {/* Header */}
@@ -421,18 +652,55 @@ function PostCard({ post, onLike, onSave }: { post: Post; onLike: (id: string) =
             <span className="text-[11px] dark:text-gray-500 text-gray-400">{post.time}</span>
           </div>
         </div>
-        <button className="w-8 h-8 rounded-lg flex items-center justify-center dark:hover:bg-white/5 hover:bg-gray-100 transition-colors flex-shrink-0">
-          <MoreHorizontal className="w-4 h-4 dark:text-gray-500 text-gray-400" />
-        </button>
+        <div className="relative flex-shrink-0">
+          <button onClick={() => setMenuOpen(o => !o)}
+            className="w-8 h-8 rounded-lg flex items-center justify-center dark:hover:bg-white/5 hover:bg-gray-100 transition-colors">
+            <MoreHorizontal className="w-4 h-4 dark:text-gray-500 text-gray-400" />
+          </button>
+          <AnimatePresence>
+            {menuOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
+                <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}
+                  className="absolute z-20 right-0 top-full mt-1 w-44 dark:bg-[#1A1428] bg-white border dark:border-white/10 border-gray-200 rounded-xl shadow-xl overflow-hidden py-1">
+                  <button onClick={() => { handleShare(); setMenuOpen(false) }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold dark:text-gray-300 text-gray-700 dark:hover:bg-white/5 hover:bg-gray-50">
+                    <Link2 className="w-3.5 h-3.5" /> Copy link
+                  </button>
+                  {isOwn ? (
+                    <button onClick={handleDelete}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold text-red-500 dark:hover:bg-white/5 hover:bg-gray-50">
+                      <Trash2 className="w-3.5 h-3.5" /> Delete post
+                    </button>
+                  ) : (
+                    <button onClick={() => { setReportOpen(true); setMenuOpen(false) }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold text-red-500 dark:hover:bg-white/5 hover:bg-gray-50">
+                      <Flag className="w-3.5 h-3.5" /> Report post
+                    </button>
+                  )}
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
 
       {/* Content */}
       <div className="px-4 pb-3">
-        <p className="text-sm dark:text-gray-200 text-gray-800 leading-relaxed whitespace-pre-wrap">{post.content}</p>
+        <p className="text-sm dark:text-gray-200 text-gray-800 leading-relaxed whitespace-pre-wrap">{renderContentWithTags(post.content || '')}</p>
       </div>
 
+      {/* Media */}
+      {(post.image_url || post.video_url) && (
+        <div className="dark:bg-black/20 bg-gray-100 max-h-[420px] overflow-hidden">
+          {post.video_url
+            ? <video src={post.video_url} className="w-full max-h-[420px] object-cover" controls />
+            : <img src={post.image_url!} alt="" className="w-full max-h-[420px] object-cover" />}
+        </div>
+      )}
+
       {/* Stats row */}
-      {(post.likes > 0 || post.comments > 0) && (
+      {(post.likes > 0 || localCommentCount > 0) && (
         <div className="flex items-center justify-between px-4 py-1.5 text-[11px] dark:text-gray-500 text-gray-400">
           {post.likes > 0 && (
             <span className="flex items-center gap-1">
@@ -440,7 +708,7 @@ function PostCard({ post, onLike, onSave }: { post: Post; onLike: (id: string) =
               {post.likes.toLocaleString()}
             </span>
           )}
-          {post.comments > 0 && <span>{post.comments} comments</span>}
+          {localCommentCount > 0 && <span>{localCommentCount} comments</span>}
         </div>
       )}
 
@@ -453,19 +721,69 @@ function PostCard({ post, onLike, onSave }: { post: Post; onLike: (id: string) =
           <Heart className={`w-4 h-4 ${post.liked ? 'fill-current' : ''}`} />
           <span>Like</span>
         </motion.button>
-        <button className="flex items-center gap-1.5 px-3 py-2 rounded-xl dark:text-gray-400 text-gray-500 hover:text-brand-pink dark:hover:bg-white/5 hover:bg-gray-50 transition-colors text-xs font-semibold flex-1 justify-center">
+        <button onClick={toggleComments}
+          className={`flex items-center gap-1.5 px-3 py-2 rounded-xl transition-colors text-xs font-semibold flex-1 justify-center ${
+            commentsOpen ? 'text-brand-pink dark:bg-pink-500/10 bg-pink-50' : 'dark:text-gray-400 text-gray-500 hover:text-brand-pink dark:hover:bg-white/5 hover:bg-gray-50'
+          }`}>
           <MessageCircle className="w-4 h-4" />
           <span>Comment</span>
         </button>
-        <button className="flex items-center gap-1.5 px-3 py-2 rounded-xl dark:text-gray-400 text-gray-500 hover:text-brand-pink dark:hover:bg-white/5 hover:bg-gray-50 transition-colors text-xs font-semibold flex-1 justify-center">
+        <button onClick={handleShare}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-xl dark:text-gray-400 text-gray-500 hover:text-brand-pink dark:hover:bg-white/5 hover:bg-gray-50 transition-colors text-xs font-semibold flex-1 justify-center">
           <Share2 className="w-4 h-4" />
-          <span>Share</span>
+          <span>{copied ? 'Link copied!' : localShareCount > 0 ? `Share (${localShareCount})` : 'Share'}</span>
         </button>
         <button onClick={() => onSave(post.id)}
           className={`p-2 rounded-xl transition-all ${post.saved ? 'text-brand-pink dark:bg-pink-500/10 bg-pink-50' : 'dark:text-gray-400 text-gray-500 dark:hover:bg-white/5 hover:bg-gray-50'}`}>
           <Bookmark className={`w-4 h-4 ${post.saved ? 'fill-current' : ''}`} />
         </button>
       </div>
+
+      {/* Comments panel */}
+      <AnimatePresence>
+        {commentsOpen && (
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+            className="border-t dark:border-white/4 border-gray-50 px-4 py-3 space-y-3 overflow-hidden">
+            {loadingComments && <p className="text-xs dark:text-gray-500 text-gray-400">Loading comments…</p>}
+            {!loadingComments && comments.length === 0 && (
+              <p className="text-xs dark:text-gray-500 text-gray-400">No comments yet — be the first to reply.</p>
+            )}
+            {comments.map(c => (
+              <div key={c.id} className="flex items-start gap-2.5">
+                <div className="w-7 h-7 rounded-full dark:bg-white/8 bg-gray-100 flex-shrink-0 overflow-hidden flex items-center justify-center text-xs">
+                  {c.profile?.avatar_url ? <img src={c.profile.avatar_url} className="w-full h-full object-cover" /> : '👤'}
+                </div>
+                <div className="flex-1 min-w-0 dark:bg-white/5 bg-gray-50 rounded-xl px-3 py-2">
+                  <p className="text-[11px] font-bold dark:text-white text-gray-900">{c.profile?.full_name || 'Anonymous'}</p>
+                  <p className="text-xs dark:text-gray-300 text-gray-700 break-words">{c.content}</p>
+                </div>
+              </div>
+            ))}
+            {currentUserId && (
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  value={commentText}
+                  onChange={e => setCommentText(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') submitComment() }}
+                  placeholder="Write a comment…"
+                  className="flex-1 text-xs px-3 py-2 rounded-xl dark:bg-white/5 bg-gray-50 border dark:border-white/8 border-gray-200 focus:outline-none focus:border-brand-pink dark:text-white text-gray-900 placeholder:dark:text-gray-500 placeholder:text-gray-400"
+                />
+                <button onClick={submitComment} disabled={!commentText.trim()}
+                  className="p-2 rounded-xl bg-love-gradient text-white disabled:opacity-40">
+                  <Send className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <ReportBlockModal
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+        targetUserId={post.authorId}
+        targetName={post.author}
+      />
     </div>
   )
 }
@@ -641,7 +959,7 @@ export default function FeedPage() {
 
     const { data: postRows, error: postErr } = await supabase
       .from('posts')
-      .select('id, content, created_at, likes_count, comments_count, shares_count, location, author_id, visibility')
+      .select('id, content, image_url, video_url, created_at, likes_count, comments_count, shares_count, location, author_id, visibility')
       .eq('is_deleted', false)
       .order('created_at', { ascending: false })
       .limit(30)
@@ -679,6 +997,8 @@ export default function FeedPage() {
         location: p.location,
         time: new Date(p.created_at).toLocaleDateString('en', { month: 'short', day: 'numeric' }),
         content: p.content,
+        image_url: p.image_url,
+        video_url: p.video_url,
         likes: p.likes_count || 0,
         comments: p.comments_count || 0,
         shares: p.shares_count || 0,
@@ -686,6 +1006,7 @@ export default function FeedPage() {
         saved: savedSet.has(p.id),
         verified: profile?.is_verified,
         premium: profile?.subscription_tier === 'vip' || profile?.subscription_tier === 'premium',
+        authorId: p.author_id,
       }
     })
 
@@ -870,7 +1191,7 @@ export default function FeedPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.04, duration: 0.3 }}
             >
-              <PostCard post={post} onLike={toggleLike} onSave={toggleSave} />
+              <PostCard post={post} onLike={toggleLike} onSave={toggleSave} currentUserId={user?.id} />
             </motion.div>
           ))}
 

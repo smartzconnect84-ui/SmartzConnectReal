@@ -24,3 +24,5 @@
 - [Admin public TV broadcast](admin-public-tv.md) — is_admin_broadcast column on livestreams; livekit-public-token edge fn (no-verify-jwt) enforces DB check before issuing token; community streams locked behind login on public page.
 - [Live appearance theming](appearance-theming.md) — ThemeContext drives font/color/radius via CSS vars + html class; overrides in index.css must stay for theming to work.
 - [CEO staff management](ceo-staff-management.md) — full CRUD with column-fallback retry; CSV escape + formula neutralization; role responsibilities map in ROLE_META.
+- [Spin dating eligibility](spin-dating-eligibility.md) — Spin&Chat matches only relationship_goal friendship/social/dating; legacy values mapped in, keep SpinChatPage + ProfilePage dropdown in sync.
+- [Pending-profile-on-signup pattern](pending-profile-signup.md) — sufy-presign requires an authed session, so avatar/DOB captured at signup are stashed in localStorage and applied on first SIGNED_IN if email verification delays session issuance.

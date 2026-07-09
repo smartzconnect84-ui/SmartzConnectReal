@@ -448,7 +448,6 @@ export default function ProfilePage() {
                   {([
                     { icon: Briefcase,      label: 'Occupation',    key: 'occupation' as const,        placeholder: 'Your job or role' },
                     { icon: GraduationCap, label: 'Education',     key: 'education' as const,         placeholder: 'School or university' },
-                    { icon: Heart,          label: 'Looking for',   key: 'relationship_goal' as const, placeholder: 'e.g. Long-term, Friendship' },
                     { icon: MapPin,         label: 'Location',      key: 'location' as const,          placeholder: 'City, Country' },
                   ] as const).map(({ icon: Icon, label, key, placeholder }) => (
                     <div key={key} className="flex items-center gap-3">
@@ -470,6 +469,31 @@ export default function ProfilePage() {
                     </div>
                   ))}
 
+                  {/* Looking for — fixed category so Dating/Spin&Chat matching stays consistent */}
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-xl dark:bg-white/5 bg-gray-100 flex items-center justify-center flex-shrink-0">
+                      <Heart className="w-3.5 h-3.5 text-brand-pink" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] dark:text-gray-500 text-gray-400">Looking for</p>
+                      {editing ? (
+                        <select
+                          value={form.relationship_goal}
+                          onChange={e => setForm(f => ({ ...f, relationship_goal: e.target.value }))}
+                          className="text-sm dark:text-white text-gray-900 bg-transparent border-b dark:border-white/10 border-gray-200 focus:outline-none focus:border-brand-pink w-full appearance-none"
+                        >
+                          <option value="" className="dark:bg-[#130E1E]">Select…</option>
+                          <option value="friendship" className="dark:bg-[#130E1E]">Friendship</option>
+                          <option value="social" className="dark:bg-[#130E1E]">Social</option>
+                          <option value="dating" className="dark:bg-[#130E1E]">Dating</option>
+                        </select>
+                      ) : (
+                        <p className="text-sm dark:text-white text-gray-900 truncate capitalize">
+                          {form.relationship_goal || <span className="dark:text-gray-600 text-gray-400">—</span>}
+                        </p>
+                      )}
+                    </div>
+                  </div>
                   {editing && (
                     <>
                       <div className="flex items-center gap-3">

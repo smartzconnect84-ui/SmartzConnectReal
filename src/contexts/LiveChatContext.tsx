@@ -20,7 +20,9 @@ export const LiveChatContext = createContext<LiveChatContextType>({
 
 export function LiveChatProvider({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false)
-  const [dismissed, setDismissed] = useState(false)
+  // Chat launcher starts tucked away in the top-bar icon; the floating bubble/teaser
+  // only reappears once the user explicitly opens it (from the top-bar or shortcut).
+  const [dismissed, setDismissed] = useState(true)
   const [unreadCount, setUnreadCount] = useState(0)
   return (
     <LiveChatContext.Provider value={{ open, dismissed, setOpen, setDismissed, unreadCount, setUnreadCount }}>

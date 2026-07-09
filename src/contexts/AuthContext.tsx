@@ -11,7 +11,7 @@ interface AuthContextType {
   role: string
   isAdmin: boolean
   signIn: (email: string, password: string) => Promise<void>
-  signUp: (email: string, password: string, name?: string) => Promise<{ needsVerification: boolean }>
+  signUp: (email: string, password: string, name?: string, extra?: { dateOfBirth?: string; avatarFile?: File | null }) => Promise<{ needsVerification: boolean }>
   signOut: () => Promise<void>
   resetPassword: (email: string) => Promise<void>
   updatePassword: (newPassword: string) => Promise<void>
@@ -94,6 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Null on sign-in (DB unreachable) defaults to 'user'.
           setRole(resolved ?? 'user')
           linkOneSignalUser(uid)
+          if (session?.user?.email) applyPendingProfile(uid, undefined, session.user.email)
           // Request browser push permission after login. OneSignal won't
           // subscribe the user until permission is granted — without this call
           // the browser prompt never appears and no pushes are ever delivered.
@@ -142,12 +143,86 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  // ── Pending profile (DOB + avatar) captured at signup but only appliable once
+  // an authenticated session exists (avatar upload requires auth; email
+  // confirmation may delay that session past the signup call itself). ──
+  const PENDING_KEY_PREFIX = 'szc_pending_profile:'
+
+  const fileToDataUrl = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(reader.result as string)
+      reader.onerror = reject
+      reader.readAsDataURL(file)
+    })
+
+  const stashPendingProfile = async (email: string, extra?: { dateOfBirth?: string; avatarFile?: File | null }) => {
+    try {
+      const avatarDataUrl = extra?.avatarFile ? await fileToDataUrl(extra.avatarFile) : null
+      localStorage.setItem(
+        PENDING_KEY_PREFIX + email.toLowerCase(),
+        JSON.stringify({ dateOfBirth: extra?.dateOfBirth || null, avatarDataUrl }),
+      )
+    } catch {
+      // Non-fatal — worst case the user sets DOB/photo later from Settings.
+    }
+  }
+
+  const applyPendingProfile = async (
+    userId: string,
+    extra?: { dateOfBirth?: string; avatarFile?: File | null },
+    email?: string,
+  ) => {
+    try {
+      let dateOfBirth = extra?.dateOfBirth || null
+      let avatarFile: File | Blob | null = extra?.avatarFile ?? null
+      let stashKey: string | null = null
+
+      if (!avatarFile && email) {
+        stashKey = PENDING_KEY_PREFIX + email.toLowerCase()
+        const raw = localStorage.getItem(stashKey)
+        if (raw) {
+          const pending = JSON.parse(raw) as { dateOfBirth?: string | null; avatarDataUrl?: string | null }
+          dateOfBirth = dateOfBirth || pending.dateOfBirth || null
+          if (pending.avatarDataUrl) {
+            const res = await fetch(pending.avatarDataUrl)
+            avatarFile = await res.blob()
+          }
+        }
+      }
+
+      const updates: Record<string, any> = {}
+      if (dateOfBirth) updates.date_of_birth = dateOfBirth
+
+      if (avatarFile) {
+        const { uploadToSufy } = await import('@/lib/sufy')
+        const fileForUpload = avatarFile instanceof File
+          ? avatarFile
+          : new File([avatarFile], 'avatar.jpg', { type: (avatarFile as Blob).type || 'image/jpeg' })
+        updates.avatar_url = await uploadToSufy(fileForUpload, 'avatars')
+      }
+
+      if (Object.keys(updates).length > 0) {
+        await supabase.from('profiles').update(updates).eq('id', userId)
+      }
+
+      if (stashKey) localStorage.removeItem(stashKey)
+    } catch {
+      // Non-fatal — the account is created either way; user can retry from Settings.
+    }
+  }
+
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) throw error
   }
 
-  const signUp = async (email: string, password: string, name?: string) => {
+  const signUp = async (
+    email: string,
+    password: string,
+    name?: string,
+    extra?: { dateOfBirth?: string; avatarFile?: File | null },
+  ) => {
     // Only pass emailRedirectTo when on the production domain.
     // In dev/preview the Replit origin is not in Supabase's allowed redirect list
     // and will cause a "Redirect URL not allowed" rejection.
@@ -156,7 +231,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email,
       password,
       options: {
-        data: { full_name: name || '' },
+        data: { full_name: name || '', date_of_birth: extra?.dateOfBirth || null },
         ...(isProd ? { emailRedirectTo: `${window.location.origin}/auth/callback` } : {}),
       },
     })
@@ -183,8 +258,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     // If Supabase returned a session immediately (email confirmation is OFF in the project),
-    // sign in is complete — redirect straight to app.
-    if (data.session) return { needsVerification: false }
+    // sign in is complete: apply the profile picture + DOB now that we're authenticated.
+    if (data.session && data.user) {
+      await applyPendingProfile(data.user.id, extra)
+      return { needsVerification: false }
+    }
+
+    // Email confirmation is ON — no session yet, so the avatar upload (which requires
+    // auth) can't run now. Stash it locally and apply it once the user verifies & signs in.
+    if (extra?.avatarFile || extra?.dateOfBirth) {
+      await stashPendingProfile(email, extra)
+    }
 
     // Email confirmation is ON — user must click the link in their inbox.
     return { needsVerification: true }
