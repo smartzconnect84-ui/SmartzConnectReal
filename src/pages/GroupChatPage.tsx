@@ -73,7 +73,7 @@ export default function GroupChatPage() {
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages, othersTyping])
 
-  // Cleanup recording resources on unmount
+  // Cleanup recording resources and active Stream channel on unmount
   useEffect(() => {
     return () => {
       if (recordingTimerRef.current) clearInterval(recordingTimerRef.current)
@@ -81,6 +81,12 @@ export default function GroupChatPage() {
         mediaRecorderRef.current.stop()
       }
       Object.values(audioRefs.current).forEach(a => { a.pause(); a.src = '' })
+      // Unwatch the active Stream channel so event listeners are removed and
+      // the channel doesn't stay in a "watched" state after the user leaves.
+      if (channelRef.current) {
+        channelRef.current.stopWatching().catch(() => {})
+        channelRef.current = null
+      }
     }
   }, [])
 
@@ -159,14 +165,18 @@ export default function GroupChatPage() {
 
   // Open a group channel in GetStream
   const openRoom = async (room: Room) => {
-    // Cleanup previous channel event listeners
+    // Cleanup previous channel: remove listeners and stop watching so the
+    // channel is released from Stream's client-side watched-channels registry.
     if (channelRef.current) {
+      // Passing no handler removes all listeners for that event type (correct behaviour here).
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       channelRef.current.off('message.new' as any)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       channelRef.current.off('typing.start' as any)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       channelRef.current.off('typing.stop' as any)
+      channelRef.current.stopWatching().catch(() => {})
+      channelRef.current = null
     }
     setOthersTyping([])
 

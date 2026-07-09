@@ -68,7 +68,7 @@ export default function SpinChatPage() {
   const [myInterests, setMyInterests] = useState<string[]>([])
   const [myCountry, setMyCountry] = useState('')
   const controls = useAnimation()
-  const { startCall } = useLiveKitCall()
+  const { initiateCall } = useLiveKitCall()
   const { connected: streamConnected } = useContext(StreamContext)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const channelRef = useRef<any>(null)
@@ -192,12 +192,11 @@ export default function SpinChatPage() {
 
   const handleSpinCall = (type: 'video' | 'audio') => {
     if (!currentProfile) return
-    const roomId = `SmartzConnect-spin-${type}-${Date.now()}`
-    startCall({
-      roomId,
+    // Use initiateCall so the matched user receives an incoming-call alert via Supabase Realtime.
+    initiateCall({
+      contactId: currentProfile.id,
+      contactName: anonymous ? 'Anonymous Match' : currentProfile.name,
       type,
-      participantName: anonymous ? 'Anonymous Match' : currentProfile.name,
-      participantEmoji: anonymous ? '🎭' : currentProfile.emoji,
     })
   }
 

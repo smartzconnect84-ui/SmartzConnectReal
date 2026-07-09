@@ -66,10 +66,14 @@ export function getOrCreateDirectChannel(userId1: string, userId2: string) {
   })
 }
 
+// Note: GroupChatPage creates group channels directly via streamClient.channel('messaging', ...)
+// using the room's stream_channel_id or a derived `group-<id>` key. This helper aligns with
+// that pattern so any future callers use the same channel type (Stream 'team' channels are a
+// paid Enterprise feature; 'messaging' works for group rooms on all plans).
 export function getOrCreateGroupChannel(roomId: string, members: string[], name: string) {
   if (!streamClient) throw new Error('Stream chat is not configured (missing VITE_STREAM_API_KEY)')
-  const channelData = { name, members } as Record<string, unknown>
-  return streamClient.channel('team', roomId, channelData as any)
+  const chanId = `group-${roomId}`.slice(0, 60)
+  return streamClient.channel('messaging', chanId, { name, members } as any)
 }
 
 export default streamClient

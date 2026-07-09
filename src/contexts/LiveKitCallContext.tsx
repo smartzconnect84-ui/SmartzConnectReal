@@ -183,20 +183,25 @@ export function LiveKitCallProvider({ children }: { children: ReactNode }) {
       .select('id')
       .single()
 
-    if (notif?.id) {
-      outgoingNotifIdRef.current = notif.id
-      // Auto-mark missed after 60 s if callee never responds
-      missedTimerRef.current = setTimeout(async () => {
-        if (outgoingNotifIdRef.current === notif.id) {
-          await supabase.from('call_notifications')
-            .update({ status: 'missed' })
-            .eq('id', notif.id)
-            .eq('status', 'pending')
-          outgoingNotifIdRef.current = null
-          setActiveCall(null)
-        }
-      }, 60000)
+    if (!notif?.id) {
+      // Insert failed (DB down, RLS rejection, network error) — do not open the
+      // call UI because the callee will never receive an incoming-call alert.
+      console.error('initiateCall: call_notifications insert returned no id — call aborted. Check DB/RLS.')
+      return
     }
+
+    outgoingNotifIdRef.current = notif.id
+    // Auto-mark missed after 60 s if callee never responds
+    missedTimerRef.current = setTimeout(async () => {
+      if (outgoingNotifIdRef.current === notif.id) {
+        await supabase.from('call_notifications')
+          .update({ status: 'missed' })
+          .eq('id', notif.id)
+          .eq('status', 'pending')
+        outgoingNotifIdRef.current = null
+        setActiveCall(null)
+      }
+    }, 60000)
 
     startCall({
       roomId,
@@ -204,7 +209,7 @@ export function LiveKitCallProvider({ children }: { children: ReactNode }) {
       participantName: contactName,
       participantAvatar: contactAvatar,
       participantId: contactId,
-      notificationId: notif?.id,
+      notificationId: notif.id,
       isCaller: true,
     })
   }, [user?.id, startCall])

@@ -9,6 +9,7 @@ import {
   type RemoteParticipant, type LocalParticipant,
 } from 'livekit-client'
 import { useLiveKitCall } from '@/contexts/LiveKitCallContext'
+import { useStream } from '@/contexts/StreamContext'
 import { supabase } from '@/lib/supabase'
 
 function attachTrack(participant: LocalParticipant | RemoteParticipant, el: HTMLDivElement | null) {
@@ -25,6 +26,9 @@ function attachTrack(participant: LocalParticipant | RemoteParticipant, el: HTML
 
 export default function LiveKitCall() {
   const { activeCall, endCall, callDeclined, dismissDeclined } = useLiveKitCall()
+  // userName is the current user's own display name (fetched from their profile by StreamContext).
+  // It is used as the LiveKit participant identity/name — NOT the other person's name.
+  const { userName: myDisplayName } = useStream()
   const localVideoRef = useRef<HTMLDivElement>(null)
   const remoteVideoRef = useRef<HTMLDivElement>(null)
   const roomRef = useRef<Room | null>(null)
@@ -73,7 +77,9 @@ export default function LiveKitCall() {
         if (!accessToken) throw new Error('Not authenticated')
 
         const { data, error } = await supabase.functions.invoke('livekit-token', {
-          body: { room: activeCall.roomId, name: activeCall.participantName },
+          // Pass the current user's own display name as the LiveKit participant name,
+          // not the other participant's name. myDisplayName comes from the user's own profile.
+          body: { room: activeCall.roomId, name: myDisplayName || undefined },
         })
         if (error || !data?.token || !data?.wsUrl) throw new Error('LiveKit token unavailable')
         if (disposed) return

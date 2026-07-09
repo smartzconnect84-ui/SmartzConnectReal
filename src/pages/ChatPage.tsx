@@ -63,7 +63,7 @@ export default function ChatPage() {
   const { id } = useParams<{ id: string }>()
   const { user } = useAuth()
   const { connected } = useStream()
-  const { startCall } = useLiveKitCall()
+  const { initiateCall } = useLiveKitCall()
 
   const [messages, setMessages] = useState<Message[]>([])
   const [participant, setParticipant] = useState<Participant | null>(null)
@@ -237,13 +237,16 @@ export default function ChatPage() {
     }
   }, [connected, user?.id, id])
 
-  const makeRoomId = (type: 'video' | 'audio') => {
-    const sorted = [user?.id || 'a', id || 'b'].sort().join('-')
-    return `SmartzConnect-${type}-${sorted}`.replace(/[^a-zA-Z0-9-]/g, '')
-  }
-
   const handleCall = (type: 'video' | 'audio') => {
-    startCall({ roomId: makeRoomId(type), type, participantName: participant?.name || 'User', participantEmoji: participant?.emoji, participantAvatar: participant?.avatar_url })
+    if (!id) return
+    // Use initiateCall so a call_notification row is inserted and the callee
+    // receives an incoming-call alert via Supabase Realtime.
+    initiateCall({
+      contactId: id,
+      contactName: participant?.name || 'User',
+      contactAvatar: participant?.avatar_url,
+      type,
+    })
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {

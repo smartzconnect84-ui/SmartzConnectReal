@@ -219,7 +219,7 @@ function SwipeCard({ profile, onSwipe, isTop, stackIndex, onMessage, onFollow, o
 export default function DiscoverPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
-  const { startCall } = useLiveKitCall()
+  const { initiateCall } = useLiveKitCall()
   const [profiles, setProfiles] = useState<Profile[]>([])
   const [loading, setLoading] = useState(true)
   const [dbConnected, setDbConnected] = useState(false)
@@ -354,11 +354,12 @@ export default function DiscoverPage() {
   }
 
   const handleVideoCall = (profile: Profile) => {
-    startCall({ roomId: `sc-discover-video-${Date.now()}`, type: 'video', participantName: profile.name, participantEmoji: profile.emoji || '👤' })
+    // Use initiateCall so the other user receives an incoming-call notification via Realtime.
+    initiateCall({ contactId: String(profile.id), contactName: profile.name, type: 'video' })
   }
 
   const handleAudioCall = (profile: Profile) => {
-    startCall({ roomId: `sc-discover-audio-${Date.now()}`, type: 'audio', participantName: profile.name, participantEmoji: profile.emoji || '👤' })
+    initiateCall({ contactId: String(profile.id), contactName: profile.name, type: 'audio' })
   }
 
   return (

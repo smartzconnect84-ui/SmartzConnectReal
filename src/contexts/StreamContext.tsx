@@ -30,9 +30,13 @@ async function fetchStreamToken(userId: string, accessToken: string): Promise<st
       body: { userId },
       headers: { Authorization: `Bearer ${accessToken}` },
     })
-    if (error) return undefined
+    if (error) {
+      console.error('Stream token edge function error:', error.message)
+      return undefined
+    }
     return data?.token
-  } catch {
+  } catch (err) {
+    console.error('Stream token fetch failed (network or cold-start):', err)
     return undefined
   }
 }
@@ -142,8 +146,11 @@ export function StreamProvider({ children }: { children: ReactNode }) {
             clearInterval(heartbeatId)
           }
         }
-      } catch {
-        // Graceful degradation — Stream is optional
+      } catch (err) {
+        // Log the real error so configuration problems surface in devtools.
+        // Stream is not required for other app features, but silence here makes
+        // mis-configuration impossible to diagnose.
+        console.error('Stream initialization failed:', err)
       }
     }
 
