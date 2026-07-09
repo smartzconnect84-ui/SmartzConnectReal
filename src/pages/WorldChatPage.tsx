@@ -99,7 +99,7 @@ export default function WorldChatPage() {
           name: 'World Chat',
           // 'livestream' channels don't require explicit membership: any
           // authenticated user can watch and post.
-        })
+        } as Record<string, unknown>)
         try {
           await ch.watch()
         } catch (watchErr: any) {

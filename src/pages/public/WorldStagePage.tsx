@@ -132,6 +132,7 @@ export default function WorldStagePage() {
     supabase
       .from('worldstage_spotlights')
       .select('*')
+      .eq('is_active', true)
       .order('wins', { ascending: false })
       .limit(3)
       .then(({ data }) => { if (data) setSpotlights(data as WSSpotlight[]) })

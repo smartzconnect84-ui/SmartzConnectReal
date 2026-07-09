@@ -1,5 +1,18 @@
 import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { Clock } from 'lucide-react'
+
+function ComingSoon({ title }: { title: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 text-center">
+      <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center mb-5 shadow-lg">
+        <Clock className="w-8 h-8 text-white" />
+      </div>
+      <h2 className="text-2xl font-bold dark:text-white text-gray-900 mb-2">{title}</h2>
+      <p className="text-gray-500 dark:text-gray-400 max-w-sm">This feature is coming soon. Stay tuned for updates!</p>
+    </div>
+  )
+}
 import { ThemeProvider } from '@/contexts/ThemeContext'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { StreamProvider } from '@/contexts/StreamContext'
@@ -192,6 +205,10 @@ export default function App() {
                 <Route path="saved"         element={<SavedPostsPage />} />
                 <Route path="referrals"     element={<ReferralsPage />} />
                 <Route path="worldstage"    element={<WorldStageVotePage />} />
+                <Route path="pages"         element={<ComingSoon title="Pages" />} />
+                <Route path="events"        element={<ComingSoon title="Events" />} />
+                <Route path="jobs"          element={<ComingSoon title="Jobs" />} />
+                <Route path="learning"      element={<ComingSoon title="Learning" />} />
               </Route>
 
               {/* Admin Panel — role-gated: only admin/superadmin/ceo/moderator/support */}

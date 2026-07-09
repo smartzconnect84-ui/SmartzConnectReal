@@ -34,7 +34,10 @@ export default function ReferralsPage() {
       setCode(c)
       setReferrals(r)
       setPerks(p)
-      setLoading(false)
+    }).catch(err => {
+      console.error('ReferralsPage: failed to load data', err)
+    }).finally(() => {
+      if (isMounted) setLoading(false)
     })
     return () => { isMounted = false }
   }, [user?.id])
