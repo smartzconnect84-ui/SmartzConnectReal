@@ -31,7 +31,10 @@ The Vercel project (prj_SgfcXAUIfkcosqdz3sy2YtDtyAXm) is already configured with
 - **SmartzTV viewer (StreamModal)** — For live streams, connects to same LiveKit room as subscriber (no publishing). Remote video overlays the thumbnail when track arrives; "Connecting to stream…" spinner shown while waiting. Gracefully degrades if LiveKit not configured.
 - **handleGoLive** — Now uses `.select('id').single()` to get the inserted row's ID, then sets `broadcastData` to launch the broadcaster overlay.
 
+## Completed in fourth pass
+- **Language translator** (`src/components/TranslateButton.tsx`) — Reusable component using MyMemory free API (no key needed). Supports 12 languages (EN/FR/ES/AR/PT/SW/HA/YO/ZU/AM/IG/DE). Privacy-first: shows consent notice on first use (stored in localStorage `sc_translate_consent`). Features: request versioning + AbortController to prevent stale race, outside-click + Escape dropdown dismissal, retry on error. Wired into ChatPage, GroupChatPage (below text bubbles), and WorldChatPage (compact pill inside bubble).
+- **SpinChat Realtime Presence** (`src/pages/SpinChatPage.tsx`) — Supabase Realtime Presence channel `spin-chat-presence`. Users broadcast `{ user_id, joined_at }` on mount; cleanup calls `untrack()` + `removeChannel()`. Spin pool priority: (1) users actively on SpinChat via presence, (2) profiles seen <5 min ago, (3) all profiles. "On SpinChat" stat shows live presence count. `handlePresenceSync` memoized with `useCallback`.
+- **SmartzTV viewer count in open modal** (`src/pages/SmartzTVPage.tsx`) — Realtime `UPDATE` listener now calls both `setStreams` and `setSelectedStream` so viewer counts update live inside an open StreamModal, not just on the stream card list.
+
 ## Still remaining (not implemented)
-- Language translator (needs external API key)
-- Spin Chat: real peer-to-peer match routing (currently any authenticated user can be matched — no presence/availability system)
-- SmartzTV: viewer count increment via Realtime subscription
+- None — all previously logged unfinished tasks are now complete.

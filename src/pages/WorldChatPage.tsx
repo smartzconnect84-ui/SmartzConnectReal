@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase'
 import { streamClient } from '@/lib/stream'
 import type { Channel } from 'stream-chat'
 import EmojiPicker from '@/components/EmojiPicker'
+import TranslateButton from '@/components/TranslateButton'
 import { uploadToSufy } from '@/lib/sufy'
 
 const WORLD_CHANNEL_ID = 'smartz-worldchat-global'
@@ -430,6 +431,13 @@ export default function WorldChatPage() {
                       </div>
                     ))}
                     {msg.text && <p className="leading-relaxed whitespace-pre-wrap break-words">{msg.text}</p>}
+                    {msg.text && (
+                      <TranslateButton
+                        text={msg.text}
+                        compact
+                        className={mine ? 'opacity-70 hover:opacity-100' : ''}
+                      />
+                    )}
                   </div>
 
                   {/* Quick actions on hover */}

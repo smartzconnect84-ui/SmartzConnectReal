@@ -538,7 +538,7 @@ export default function SmartzTVPage() {
 
   useEffect(() => { fetchStreams() }, [])
 
-  // Realtime: update viewer counts on stream cards as they change in DB
+  // Realtime: update viewer counts on stream cards AND open modal as they change in DB
   useEffect(() => {
     const sub = supabase
       .channel('livestreams-view-counts')
@@ -548,19 +548,22 @@ export default function SmartzTVPage() {
         (payload: any) => {
           const updated = payload.new
           if (!updated?.id) return
+          const isLive = updated.status === 'live'
+          const vc = isLive ? (updated.viewer_count ?? 0) : 0
+          const viewStr = vc > 1000 ? `${(vc / 1000).toFixed(1)}K` : String(vc)
+
+          // Update stream card list
           setStreams(prev =>
             prev.map(s => {
               if (s.id !== String(updated.id)) return s
-              const isLive = updated.status === 'live'
-              // Non-live streams always display 0 viewers
-              const vc = isLive ? (updated.viewer_count ?? 0) : 0
-              return {
-                ...s,
-                views: vc > 1000 ? `${(vc / 1000).toFixed(1)}K` : String(vc),
-                live: isLive,
-              }
+              return { ...s, views: viewStr, live: isLive }
             })
           )
+          // Also update the open modal so viewer count is live
+          setSelectedStream(prev => {
+            if (!prev || prev.id !== String(updated.id)) return prev
+            return { ...prev, views: viewStr, live: isLive }
+          })
         }
       )
       .subscribe()

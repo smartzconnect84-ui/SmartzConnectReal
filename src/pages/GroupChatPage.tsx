@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useStream } from '@/contexts/StreamContext'
 import { streamClient } from '@/lib/stream'
 import EmojiPicker from '@/components/EmojiPicker'
+import TranslateButton from '@/components/TranslateButton'
 import type { Channel } from 'stream-chat'
 
 interface Room {
@@ -616,7 +617,15 @@ export default function GroupChatPage() {
                             <span className="underline underline-offset-2 truncate max-w-[160px]">{msg.fileName || 'File'}</span>
                           </a>
                         ) : (
-                          msg.text
+                          <>
+                            {msg.text}
+                            {msg.text && (
+                              <TranslateButton
+                                text={msg.text}
+                                className={`${msg.mine ? 'opacity-70 hover:opacity-100' : ''}`}
+                              />
+                            )}
+                          </>
                         )}
                       </div>
                       <p className={`text-[10px] mt-1 dark:text-gray-400 text-gray-400 ${msg.mine ? 'text-right' : ''}`}>{msg.time}</p>

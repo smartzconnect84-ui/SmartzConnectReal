@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useContext } from 'react'
+import { useState, useEffect, useRef, useContext, useCallback } from 'react'
 import { motion, AnimatePresence, useAnimation } from 'framer-motion'
 import { Zap, RefreshCw, Heart, X, MessageCircle, Shield, Globe, Sparkles, Send, Phone, Video, Database, CheckCircle2, Radio } from 'lucide-react'
 import { useLiveKitCall } from '@/contexts/LiveKitCallContext'
@@ -64,6 +64,49 @@ export default function SpinChatPage() {
   const { connected: streamConnected } = useContext(StreamContext)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const channelRef = useRef<any>(null)
+
+  // ── Supabase Realtime Presence: who's actively on SpinChat right now ──────
+  const [spinActiveIds, setSpinActiveIds] = useState<Set<string>>(new Set())
+  const presenceChannelRef = useRef<any>(null)
+
+  const handlePresenceSync = useCallback((channel: any) => {
+    const state = channel.presenceState<{ user_id: string }>()
+    const ids = new Set(
+      Object.values(state)
+        .flat()
+        .map((p: any) => p.user_id as string)
+        .filter(Boolean)
+    )
+    // Exclude self from the active count
+    ids.delete(user?.id ?? '')
+    setSpinActiveIds(ids)
+  }, [user?.id])
+
+  useEffect(() => {
+    if (!user?.id) return
+
+    const channel = supabase.channel('spin-chat-presence', {
+      config: { presence: { key: user.id } },
+    })
+
+    channel
+      .on('presence', { event: 'sync' }, () => handlePresenceSync(channel))
+      .on('presence', { event: 'join' }, () => handlePresenceSync(channel))
+      .on('presence', { event: 'leave' }, () => handlePresenceSync(channel))
+      .subscribe(async (status: string) => {
+        if (status === 'SUBSCRIBED') {
+          await channel.track({ user_id: user.id, joined_at: new Date().toISOString() })
+        }
+      })
+
+    presenceChannelRef.current = channel
+
+    return () => {
+      channel.untrack().catch(() => {})
+      supabase.removeChannel(channel)
+      presenceChannelRef.current = null
+    }
+  }, [user?.id, handlePresenceSync])
 
   // Mark current user as present in SpinChat and refresh every 2 min
   useEffect(() => {
@@ -210,8 +253,12 @@ export default function SpinChatPage() {
     // no extra DB round-trip). Self is always excluded from the pool.
     const now = Date.now()
     const others = poolProfiles.filter(p => p.id !== user?.id)
+    // Priority 1: users actively on SpinChat right now (Realtime Presence)
+    const presencePool = others.filter(p => spinActiveIds.has(p.id))
+    // Priority 2: users seen within 5 minutes
     const onlinePool = others.filter(p => now - p.lastSeenMs < 300_000)
-    const pool = onlinePool.length > 0 ? onlinePool : others
+    // Priority 3: anyone in the pool
+    const pool = presencePool.length > 0 ? presencePool : onlinePool.length > 0 ? onlinePool : others
     if (pool.length === 0) { setPhase('idle'); return }
     const profile = pool[Math.floor(Math.random() * pool.length)]
     setCurrentProfile(profile)
@@ -363,7 +410,7 @@ export default function SpinChatPage() {
               <div className="flex items-center gap-4 sm:gap-6 text-center">
                 {[
                   { icon: Globe, label: 'Countries', value: '54+', color: 'text-blue-500' },
-                  { icon: Heart, label: 'Online Now', value: poolProfiles.filter(p => p.online).length.toString() || '...' , color: 'text-pink-500' },
+                  { icon: Heart, label: 'On SpinChat', value: (spinActiveIds.size > 0 ? spinActiveIds.size : poolProfiles.filter(p => p.online).length).toString() || '0', color: 'text-pink-500' },
                   { icon: Shield, label: 'Safe', value: '100%', color: 'text-emerald-500' },
                 ].map(stat => (
                   <div key={stat.label} className="flex flex-col items-center gap-1">

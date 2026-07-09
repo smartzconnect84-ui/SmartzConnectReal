@@ -13,6 +13,7 @@ import { useStream } from '@/contexts/StreamContext'
 import { getOrCreateDirectChannel } from '@/lib/stream'
 import ReportBlockModal from '@/components/ReportBlockModal'
 import EmojiPicker from '@/components/EmojiPicker'
+import TranslateButton from '@/components/TranslateButton'
 import type { Channel } from 'stream-chat'
 
 interface Message {
@@ -554,7 +555,15 @@ export default function ChatPage() {
                         <span className="text-sm underline underline-offset-2 truncate max-w-[180px]">{msg.fileName || 'File'}</span>
                       </a>
                     ) : (
-                      <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.text}</p>
+                      <>
+                        <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.text}</p>
+                        {msg.text && (
+                          <TranslateButton
+                            text={msg.text}
+                            className={msg.mine ? 'opacity-70 hover:opacity-100' : ''}
+                          />
+                        )}
+                      </>
                     )}
                   </div>
 
