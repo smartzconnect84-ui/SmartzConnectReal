@@ -71,10 +71,20 @@ export function StreamProvider({ children }: { children: ReactNode }) {
         // Fetch once to confirm the edge function is reachable and to display
         // in context (e.g. for channel creation). Stream itself will use the
         // tokenProvider below so it can silently refresh on expiry (code 16).
-        const token = await fetchStreamToken(user.id, session.access_token)
+        // Retry up to 3 times with exponential backoff — edge functions can be
+        // cold-starting on first request after inactivity.
+        let token: string | undefined
+        for (let attempt = 0; attempt < 3 && !cancelled; attempt++) {
+          token = await fetchStreamToken(user.id, session.access_token)
+          if (token) break
+          if (attempt < 2) await new Promise(r => setTimeout(r, 1500 * (attempt + 1)))
+        }
         if (cancelled) return
 
-        if (!token) return
+        if (!token) {
+          console.error('Stream token unavailable after retries — chat features disabled')
+          return
+        }
 
         setUserToken(token)
 

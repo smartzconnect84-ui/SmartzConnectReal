@@ -495,16 +495,16 @@ export default function ChatPage() {
               <WifiOff className="w-8 h-8 dark:text-pink-400 text-gray-400" />
             </div>
             <div>
-              <p className="font-bold dark:text-gray-900 text-gray-900 mb-2">Chat not available</p>
+              <p className="font-bold dark:text-gray-900 text-gray-900 mb-2">Connection failed</p>
               <p className="text-sm dark:text-gray-500 text-gray-500 leading-relaxed max-w-xs">
-                Real-time messaging is not configured yet. Contact support or check back soon.
+                Could not connect to chat. Check your internet connection and try again.
               </p>
             </div>
             <button
               onClick={() => window.location.reload()}
               className="px-4 py-2 rounded-xl bg-love-gradient text-white text-xs font-bold shadow-md shadow-pink-500/20 hover:opacity-90 transition-opacity"
             >
-              Retry Connection
+              Retry
             </button>
           </div>
         ) : messages.length === 0 ? (

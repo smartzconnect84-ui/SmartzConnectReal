@@ -7,6 +7,7 @@ import {
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
 import { streamClient } from '@/lib/stream'
+import { useStream } from '@/contexts/StreamContext'
 import type { Channel } from 'stream-chat'
 import EmojiPicker from '@/components/EmojiPicker'
 import TranslateButton from '@/components/TranslateButton'
@@ -38,6 +39,7 @@ interface WCMessage {
 
 export default function WorldChatPage() {
   const { user } = useAuth()
+  const { connected: streamConnected } = useStream()
   const [channel, setChannel] = useState<Channel | null>(null)
   const [messages, setMessages] = useState<WCMessage[]>([])
   const [text, setText] = useState('')
@@ -52,6 +54,7 @@ export default function WorldChatPage() {
   const [uploading, setUploading] = useState(false)
   const [myProfile, setMyProfile] = useState<{ full_name: string; avatar_url?: string } | null>(null)
   const [voiceError, setVoiceError] = useState<string | null>(null)
+  const [connectFailed, setConnectFailed] = useState(false)
 
   const endRef = useRef<HTMLDivElement>(null)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -60,17 +63,30 @@ export default function WorldChatPage() {
 
   // Load my profile
   useEffect(() => {
-    if (!user) return
+    if (!user?.id) return
     supabase.from('profiles').select('full_name,avatar_url').eq('id', user.id).single()
       .then(({ data }) => { if (data) setMyProfile(data) })
-  }, [user])
+  }, [user?.id])
 
-  // Init channel
+  // Connection timeout: if Stream doesn't connect within 15 s, surface an error + retry button
   useEffect(() => {
-    if (!user || !streamClient) return
+    if (streamConnected) { setConnectFailed(false); return }
+    const t = setTimeout(() => setConnectFailed(true), 15000)
+    return () => clearTimeout(t)
+  }, [streamConnected])
+
+  // Init channel — wait until the Stream user is authenticated
+  useEffect(() => {
+    if (!user?.id || !streamClient || !streamConnected) return
     const client = streamClient
     let disposed = false
     let activeChannel: Channel | null = null
+
+    // Keep handler refs so we can remove them precisely on cleanup
+    let onNew: ((e: any) => void) | null = null
+    let onDeleted: ((e: any) => void) | null = null
+    let onUpdated: ((e: any) => void) | null = null
+    let onReaction: ((e: any) => void) | null = null
 
     const init = async () => {
       try {
@@ -89,17 +105,17 @@ export default function WorldChatPage() {
         setPinnedMessages(msgs.filter(m => m.pinned && !m.deleted))
         setOnlineCount(Object.keys(state.members || {}).length)
 
-        // Subscribe to events — capture ch in closure, not stale state
-        const onNew = (e: any) => {
+        // Build handlers and store refs for deterministic cleanup
+        onNew = (e: any) => {
           if (!e.message) return
           const msg = streamMsgToWC(e.message)
           setMessages(prev => prev.some(m => m.id === msg.id) ? prev : [...prev, msg])
         }
-        const onDeleted = (e: any) => {
+        onDeleted = (e: any) => {
           if (!e.message) return
           setMessages(prev => prev.filter(m => m.id !== e.message.id))
         }
-        const onUpdated = (e: any) => {
+        onUpdated = (e: any) => {
           if (!e.message) return
           const msg = streamMsgToWC(e.message)
           setMessages(prev => prev.map(m => m.id === msg.id ? msg : m))
@@ -109,7 +125,7 @@ export default function WorldChatPage() {
             setPinnedMessages(prev => prev.filter(m => m.id !== msg.id))
           }
         }
-        const onReaction = (e: any) => {
+        onReaction = (e: any) => {
           if (!e.message) return
           const msg = streamMsgToWC(e.message)
           setMessages(prev => prev.map(m => m.id === msg.id ? msg : m))
@@ -128,15 +144,22 @@ export default function WorldChatPage() {
     init()
     return () => {
       disposed = true
-      // Null out channel state so sendMessage cannot use a stopped channel
       setChannel(null)
       if (activeChannel) {
+        // Remove handlers before stopping — prevents duplicate subscriptions on re-init
+        if (onNew) activeChannel.off('message.new', onNew)
+        if (onDeleted) activeChannel.off('message.deleted', onDeleted)
+        if (onUpdated) activeChannel.off('message.updated', onUpdated)
+        if (onReaction) {
+          activeChannel.off('reaction.new', onReaction)
+          activeChannel.off('reaction.deleted', onReaction)
+        }
         activeChannel.stopWatching().catch(() => {})
       }
     }
   // streamClient is a module-level singleton; exclude it from deps to avoid spurious re-runs
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user])
+  }, [user?.id, streamConnected])
 
   // Auto-scroll
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
@@ -359,7 +382,29 @@ export default function WorldChatPage() {
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2" onClick={() => setContextMsg(null)}>
-        {messages.length === 0 && (
+        {!streamConnected && (
+          <div className="flex flex-col items-center justify-center h-full gap-4 py-16">
+            {connectFailed ? (
+              <>
+                <Globe className="w-10 h-10 text-gray-300" />
+                <div className="text-center">
+                  <p className="font-bold dark:text-white text-gray-900 mb-1">Connection failed</p>
+                  <p className="text-sm dark:text-gray-400 text-gray-500">Check your connection and try again.</p>
+                </div>
+                <button onClick={() => window.location.reload()}
+                  className="px-4 py-2 rounded-xl bg-love-gradient text-white text-xs font-bold shadow-md shadow-pink-500/20 hover:opacity-90 transition-opacity">
+                  Retry
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="w-8 h-8 rounded-full border-2 border-pink-500/30 border-t-pink-500 animate-spin" />
+                <p className="text-sm dark:text-gray-400 text-gray-500">Connecting to World Chat…</p>
+              </>
+            )}
+          </div>
+        )}
+        {streamConnected && messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full gap-3 py-16">
             <div className="w-16 h-16 rounded-3xl bg-love-gradient flex items-center justify-center text-3xl shadow-lg shadow-pink-500/20">🌍</div>
             <p className="font-display font-black text-lg dark:text-white text-gray-900">World Chat</p>

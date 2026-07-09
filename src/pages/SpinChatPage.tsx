@@ -177,8 +177,8 @@ export default function SpinChatPage() {
             flag: '🌍',
             interests: p.interests
               ? (Array.isArray(p.interests) ? p.interests.slice(0, 3) : String(p.interests).split(',').map((s: string) => s.trim()).slice(0, 3))
-              : ['Connect', 'Chat', 'Meet'],
-            bio: p.bio || 'Looking for amazing connections! 💕',
+              : [],
+            bio: p.bio || '',
             online,
             lastSeenMs: p.last_seen ? new Date(p.last_seen).getTime() : 0,
             avatar_url: p.avatar_url || null,
@@ -388,10 +388,10 @@ export default function SpinChatPage() {
             <motion.div key="spin-screen" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               className="h-full flex flex-col items-center justify-center px-4 py-6 gap-5 sm:gap-8">
 
-              {!dbConnected && poolProfiles.length === 0 && phase === 'idle' && (
+              {poolProfiles.length === 0 && phase === 'idle' && (
                 <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-fuchsia-500/10 border border-fuchsia-500/20 text-xs text-fuchsia-400 font-semibold">
                   <span className="w-2 h-2 rounded-full bg-fuchsia-400 animate-pulse" />
-                  Waiting for live users — connect your Supabase to enable Spin & Chat
+                  Looking for users to match with…
                 </div>
               )}
 
@@ -498,7 +498,7 @@ export default function SpinChatPage() {
                     </div>
                   </div>
                 </div>
-                {!anonymous && <p className="text-xs dark:text-gray-400 text-gray-500 mt-3 leading-relaxed">{currentProfile.bio}</p>}
+                {!anonymous && currentProfile.bio && <p className="text-xs dark:text-gray-400 text-gray-500 mt-3 leading-relaxed">{currentProfile.bio}</p>}
               </motion.div>
 
               {/* Call + Follow buttons */}
