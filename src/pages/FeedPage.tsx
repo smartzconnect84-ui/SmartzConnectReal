@@ -561,21 +561,27 @@ function PostCard({ post, onLike, onSave, currentUserId }: {
 
   const loadComments = async () => {
     setLoadingComments(true)
-    const { data } = await supabase
-      .from('post_comments')
-      .select('id, content, created_at, user_id')
-      .eq('post_id', post.id)
-      .order('created_at', { ascending: true })
-      .limit(50)
-    const rows = (data as any[]) || []
-    const userIds = [...new Set(rows.map(r => r.user_id))]
-    const profMap: Record<string, any> = {}
-    if (userIds.length) {
-      const { data: profs } = await supabase.from('profiles').select('id, full_name, avatar_url').in('id', userIds)
-      for (const p of (profs as any[]) || []) profMap[p.id] = p
+    try {
+      const { data, error } = await supabase
+        .from('post_comments')
+        .select('id, content, created_at, user_id')
+        .eq('post_id', post.id)
+        .order('created_at', { ascending: true })
+        .limit(50)
+      if (error) throw error
+      const rows = (data as any[]) || []
+      const userIds = [...new Set(rows.map(r => r.user_id))]
+      const profMap: Record<string, any> = {}
+      if (userIds.length) {
+        const { data: profs } = await supabase.from('profiles').select('id, full_name, avatar_url').in('id', userIds)
+        for (const p of (profs as any[]) || []) profMap[p.id] = p
+      }
+      setComments(rows.map(r => ({ ...r, profile: profMap[r.user_id] })))
+    } catch (err) {
+      console.error('Failed to load comments', err)
+    } finally {
+      setLoadingComments(false)
     }
-    setComments(rows.map(r => ({ ...r, profile: profMap[r.user_id] })))
-    setLoadingComments(false)
   }
 
   const toggleComments = () => {
@@ -588,7 +594,9 @@ function PostCard({ post, onLike, onSave, currentUserId }: {
     if (!commentText.trim() || !currentUserId) return
     const text = commentText.trim()
     setCommentText('')
-    const { error } = await supabase.from('post_comments').insert({ post_id: post.id, user_id: currentUserId, content: text })
+    // post_comments.author_id is NOT NULL in the live schema; user_id is kept in
+    // sync alongside it for compatibility with older queries/policies.
+    const { error } = await supabase.from('post_comments').insert({ post_id: post.id, author_id: currentUserId, user_id: currentUserId, content: text })
     if (!error) {
       setLocalCommentCount(c => c + 1)
       loadComments()
