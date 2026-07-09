@@ -17,3 +17,4 @@
 - [Superadmin accounts](superadmin-accounts.md) — ceo@smartzconnect.com and shedrickknungehn@gmail.com created with role=superadmin in profiles; admin_users.role='ceo' (constraint only allows admin/super_admin/ceo/moderator).
 - [Integration audit 2026-07](integration-audit-2026-07.md) — real bugs vs. false positives found auditing GetStream/LiveKit/Supabase/OneSignal/SUFY; check live DB/deployed functions before "fixing" naming mismatches.
 - [Livestreams schema & PostgREST joins](livestreams-schema.md) — column names differ from code (creator_id/viewer_count/gifts_earned); no FKs so joins must be done separately; atomic gifts RPC created; LK broadcaster timeout pattern.
+- [Exchange rates utility](exchange-rates-utility.md) — fetchRates() singleton; _inflight must clear on ALL paths incl. cache-hit; AbortSignal.timeout not safe cross-env; use manual AbortController.

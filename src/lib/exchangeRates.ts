@@ -39,55 +39,69 @@ interface CacheEntry {
   timestamp: number
 }
 
+function readCache(): (CacheEntry & { fresh: boolean }) | null {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY)
+    if (!raw) return null
+    const entry: CacheEntry = JSON.parse(raw)
+    return { ...entry, fresh: Date.now() - entry.timestamp < CACHE_TTL }
+  } catch {
+    return null
+  }
+}
+
+function writeCache(rates: Record<string, number>) {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ rates, timestamp: Date.now() }))
+  } catch { /* storage full — skip */ }
+}
+
+/** fetch with a manual timeout fallback for environments without AbortSignal.timeout */
+async function fetchWithTimeout(url: string, ms: number): Promise<Response> {
+  const controller = new AbortController()
+  const id = setTimeout(() => controller.abort(), ms)
+  try {
+    return await fetch(url, { signal: controller.signal })
+  } finally {
+    clearTimeout(id)
+  }
+}
+
 // Singleton in-flight promise so concurrent callers share one request
 let _inflight: Promise<Record<string, number>> | null = null
 
 /**
- * Returns exchange rates from USD. Prefers fresh API data, falls back to
- * 24-h cached data, then to hardcoded fallback rates.
+ * Returns exchange rates keyed from USD.
+ * Prefers fresh (< 24 h) localStorage cache, then tries the live API,
+ * then falls back to stale cache, and finally to hardcoded rates.
  */
 export async function fetchRates(): Promise<Record<string, number>> {
   if (_inflight) return _inflight
 
   _inflight = (async (): Promise<Record<string, number>> => {
-    try {
-      // Serve from localStorage cache if still fresh
-      const raw = localStorage.getItem(CACHE_KEY)
-      if (raw) {
-        const entry: CacheEntry = JSON.parse(raw)
-        if (Date.now() - entry.timestamp < CACHE_TTL) {
-          return { ...FALLBACK_RATES, ...entry.rates }
-        }
-      }
-    } catch { /* corrupt cache — ignore */ }
+    // 1. Serve from fresh localStorage cache
+    const cached = readCache()
+    if (cached?.fresh) {
+      _inflight = null
+      return { ...FALLBACK_RATES, ...cached.rates }
+    }
 
+    // 2. Fetch live rates
     try {
-      const res = await fetch('https://open.er-api.com/v6/latest/USD', {
-        signal: AbortSignal.timeout(6000),
-      })
+      const res = await fetchWithTimeout('https://open.er-api.com/v6/latest/USD', 6000)
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const json = await res.json()
-      if (!json?.rates || typeof json.rates !== 'object') throw new Error('Bad response shape')
+      if (!json?.rates || typeof json.rates !== 'object') throw new Error('Unexpected response shape')
 
       const rates: Record<string, number> = json.rates
-      try {
-        localStorage.setItem(CACHE_KEY, JSON.stringify({ rates, timestamp: Date.now() } satisfies CacheEntry))
-      } catch { /* storage full — skip caching */ }
-
+      writeCache(rates)
       _inflight = null
-      // API rates override fallbacks for any currency it returns
       return { ...FALLBACK_RATES, ...rates }
     } catch {
       _inflight = null
-      // Network unavailable or rate-limited — return latest cached or fallback
-      try {
-        const raw = localStorage.getItem(CACHE_KEY)
-        if (raw) {
-          const entry: CacheEntry = JSON.parse(raw)
-          return { ...FALLBACK_RATES, ...entry.rates }
-        }
-      } catch { /* ignore */ }
-      return FALLBACK_RATES
+      // 3. Fall back to stale cache if any, otherwise hardcoded rates
+      if (cached) return { ...FALLBACK_RATES, ...cached.rates }
+      return { ...FALLBACK_RATES }
     }
   })()
 
