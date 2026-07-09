@@ -4,7 +4,7 @@ import {
   Home, User, Users, MessageCircle, Bell, Video, Phone,
   Heart, Users2, FileText, Calendar, ShoppingBag, Briefcase,
   BookOpen, Tv, Car, Zap, Crown, Settings, HelpCircle,
-  Sun, Moon, LogOut, Globe
+  Sun, Moon, LogOut, Globe, Bookmark
 } from 'lucide-react'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useAuth } from '@/hooks/useAuth'
@@ -49,6 +49,7 @@ const exploreNav: NavItemDef[] = [
 ]
 
 const bottomNav: NavItemDef[] = [
+  { path: '/app/saved',    icon: Bookmark,   label: 'Saved Posts' },
   { path: '/app/settings', icon: Settings,   label: 'Settings' },
   { path: '/app/help',     icon: HelpCircle, label: 'Help & Support' },
 ]

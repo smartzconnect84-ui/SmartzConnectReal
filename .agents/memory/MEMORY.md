@@ -27,3 +27,5 @@
 - [CEO staff management](ceo-staff-management.md) — full CRUD with column-fallback retry; CSV escape + formula neutralization; role responsibilities map in ROLE_META.
 - [Spin dating eligibility](spin-dating-eligibility.md) — Spin&Chat matches only relationship_goal friendship/social/dating; legacy values mapped in, keep SpinChatPage + ProfilePage dropdown in sync.
 - [Pending-profile-on-signup pattern](pending-profile-signup.md) — sufy-presign requires an authed session, so avatar/DOB captured at signup are stashed in localStorage and applied on first SIGNED_IN if email verification delays session issuance.
+- [Text stories & LiveKit toggles](text-stories-livekit.md) — text stories need mediaType/textContent/bgColor in ViewStory + all setViewing calls; LiveKit mute/camera must compute next state FIRST then pass !nextState to SDK.
+- [Feature additions 2026-07](feature-additions-2026-07.md) — new pages: HelpSupportPage (/app/help), SavedPostsPage (/app/saved); new schema: post_reactions (emoji reactions), team_members, text_content/bg_color on stories; Google sign-in added to RegisterPage step 1; Admin SmartzTV broadcaster added with Go Live button.

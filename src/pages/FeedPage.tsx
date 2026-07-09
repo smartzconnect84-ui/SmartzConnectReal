@@ -82,6 +82,17 @@ const EMOJI_PALETTE = [
   '🎉','❤️','💕','😊','😉','🤩','😴','🥳','👏','💪','✨','🌟',
 ]
 
+const REACTION_EMOJIS = ['❤️', '🔥', '😂', '😮', '😢', '👏']
+
+const TEXT_STORY_BG_OPTIONS = [
+  { label: 'Pink',    value: 'from-pink-500 to-rose-600',      text: 'text-white' },
+  { label: 'Purple',  value: 'from-purple-500 to-violet-600',  text: 'text-white' },
+  { label: 'Blue',    value: 'from-sky-500 to-blue-600',       text: 'text-white' },
+  { label: 'Green',   value: 'from-emerald-500 to-teal-600',   text: 'text-white' },
+  { label: 'Amber',   value: 'from-amber-500 to-orange-600',   text: 'text-white' },
+  { label: 'Dark',    value: 'from-gray-800 to-gray-950',      text: 'text-white' },
+]
+
 // ── Emoji picker popover — used in ComposeBox and the comment composer ──────
 function EmojiPicker({ onPick, onClose }: { onPick: (emoji: string) => void; onClose: () => void }) {
   return (
@@ -164,6 +175,8 @@ interface DbStory {
   author_id: string
   media_url: string
   media_type: string
+  text_content?: string | null
+  bg_color?: string | null
   expires_at: string
   profile?: { full_name: string | null; avatar_url: string | null; username: string | null }
 }
@@ -174,6 +187,9 @@ interface ViewStory {
   name: string
   avatar: string | null
   mediaUrl: string
+  mediaType?: string
+  textContent?: string | null
+  bgColor?: string | null
   isOwn?: boolean
 }
 
@@ -184,13 +200,36 @@ function StoriesBar({ user }: { user: { id?: string; email?: string } | null }) 
   const [uploading, setUploading] = useState(false)
   const [viewing, setViewing] = useState<ViewStory | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
+  const [showTextStory, setShowTextStory] = useState(false)
+  const [textContent, setTextContent] = useState('')
+  const [textBg, setTextBg] = useState(TEXT_STORY_BG_OPTIONS[0].value)
+  const [postingTextStory, setPostingTextStory] = useState(false)
+
+  const handleTextStorySubmit = async () => {
+    if (!textContent.trim() || !user?.id) return
+    setPostingTextStory(true)
+    try {
+      await supabase.from('stories').insert({
+        user_id: user.id,
+        media_url: '',
+        media_type: 'text',
+        text_content: textContent.trim(),
+        bg_color: textBg,
+        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      })
+      setShowTextStory(false)
+      setTextContent('')
+      await loadStories()
+    } catch { /* ignore */ }
+    setPostingTextStory(false)
+  }
 
   const loadStories = useCallback(async () => {
     // stories.user_id has no FK to profiles, so PostgREST join would silently
     // return null. Fetch stories first, then hydrate profiles separately.
     const { data: rows } = await supabase
       .from('stories')
-      .select('id,user_id,media_url,media_type,expires_at')
+      .select('id,user_id,media_url,media_type,text_content,bg_color,expires_at')
       .gt('expires_at', new Date().toISOString())
       .order('created_at', { ascending: false })
       .limit(20)
@@ -206,6 +245,8 @@ function StoriesBar({ user }: { user: { id?: string; email?: string } | null }) 
     setDbStories(rows.map((r: any) => ({
       ...r,
       author_id: r.user_id,            // keep author_id alias for rendering
+      text_content: r.text_content ?? null,
+      bg_color: r.bg_color ?? null,
       profiles: profMap[r.user_id] ?? null,
     })) as any)
   }, [])
@@ -262,10 +303,17 @@ function StoriesBar({ user }: { user: { id?: string; email?: string } | null }) 
             <X className="w-5 h-5 text-white" />
           </button>
           <div className="max-w-sm w-full mx-4 rounded-2xl overflow-hidden">
-            {viewing.mediaUrl.match(/\.(mp4|webm|mov)$/i)
-              ? <video src={viewing.mediaUrl} autoPlay controls className="w-full" />
-              : <img src={viewing.mediaUrl} alt="Story" className="w-full object-contain max-h-[80vh]" />
-            }
+            {viewing.mediaType === 'text' ? (
+              <div className={`w-full h-[360px] bg-gradient-to-br ${viewing.bgColor || 'from-pink-500 to-rose-600'} flex items-center justify-center p-8`}>
+                <p className="text-white text-center font-bold text-2xl leading-snug break-words">
+                  {viewing.textContent || ''}
+                </p>
+              </div>
+            ) : viewing.mediaUrl.match(/\.(mp4|webm|mov)$/i) ? (
+              <video src={viewing.mediaUrl} autoPlay controls className="w-full" />
+            ) : (
+              <img src={viewing.mediaUrl} alt="Story" className="w-full object-contain max-h-[80vh]" />
+            )}
             <div className="bg-black/60 p-3 flex items-center gap-2">
               <div className="w-8 h-8 rounded-full bg-love-gradient flex items-center justify-center text-white text-sm font-bold overflow-hidden">
                 {viewing.avatar ? <img src={viewing.avatar} alt="" className="w-full h-full object-cover" /> : viewing.name[0]}
@@ -279,12 +327,61 @@ function StoriesBar({ user }: { user: { id?: string; email?: string } | null }) 
       <div className="dark:bg-[#0D0A14] bg-white rounded-2xl border dark:border-white/6 border-gray-200 mb-3 shadow-sm overflow-hidden">
         <div ref={scrollRef} className="flex gap-3 px-4 py-3.5 overflow-x-auto scrollbar-none" style={{ scrollbarWidth: 'none' }}>
 
+          {/* Text story modal */}
+          <AnimatePresence>
+            {showTextStory && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+                onClick={() => setShowTextStory(false)}>
+                <motion.div initial={{ scale: 0.92 }} animate={{ scale: 1 }} exit={{ scale: 0.92 }}
+                  onClick={e => e.stopPropagation()}
+                  className="w-full max-w-sm dark:bg-[#0D0A14] bg-white rounded-2xl overflow-hidden shadow-2xl border dark:border-white/8 border-gray-200">
+                  {/* Preview */}
+                  <div className={`h-44 bg-gradient-to-br ${textBg} flex items-center justify-center p-6`}>
+                    <p className="text-white text-center font-bold text-lg leading-snug break-words">
+                      {textContent || 'Your story text here…'}
+                    </p>
+                  </div>
+                  <div className="p-4 space-y-3">
+                    <textarea
+                      value={textContent}
+                      onChange={e => setTextContent(e.target.value)}
+                      placeholder="What's on your mind?"
+                      rows={3}
+                      maxLength={200}
+                      className="w-full px-3 py-2.5 rounded-xl dark:bg-white/5 bg-gray-50 border dark:border-white/8 border-gray-200 text-sm dark:text-white text-gray-900 focus:outline-none resize-none"
+                    />
+                    {/* BG color picker */}
+                    <div className="flex gap-2">
+                      {TEXT_STORY_BG_OPTIONS.map(opt => (
+                        <button key={opt.value} onClick={() => setTextBg(opt.value)}
+                          className={`w-8 h-8 rounded-full bg-gradient-to-br ${opt.value} flex-shrink-0 transition-transform ${textBg === opt.value ? 'scale-125 ring-2 ring-white ring-offset-2 ring-offset-gray-100 dark:ring-offset-[#0D0A14]' : ''}`}
+                          title={opt.label} />
+                      ))}
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={() => setShowTextStory(false)}
+                        className="flex-1 py-2.5 rounded-xl dark:bg-white/5 bg-gray-100 text-sm font-semibold dark:text-gray-300 text-gray-700">
+                        Cancel
+                      </button>
+                      <button onClick={handleTextStorySubmit} disabled={!textContent.trim() || postingTextStory}
+                        className="flex-1 py-2.5 rounded-xl bg-love-gradient text-white text-sm font-bold disabled:opacity-50 flex items-center justify-center gap-2">
+                        {postingTextStory ? <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : null}
+                        {postingTextStory ? 'Posting…' : 'Share Story'}
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {/* Own story / add story */}
           <div className="flex flex-col items-center gap-1.5 flex-shrink-0 group">
             <div className="relative">
               <button
                 onClick={() => myStory
-                  ? setViewing({ id: myStory.id, authorId: myStory.author_id, name: 'Your Story', avatar: null, mediaUrl: myStory.media_url })
+                  ? setViewing({ id: myStory.id, authorId: myStory.author_id, name: 'Your Story', avatar: null, mediaUrl: myStory.media_url, mediaType: myStory.media_type, textContent: myStory.text_content, bgColor: myStory.bg_color })
                   : storyInputRef.current?.click()
                 }
                 disabled={uploading}
@@ -307,13 +404,24 @@ function StoriesBar({ user }: { user: { id?: string; email?: string } | null }) 
             </span>
           </div>
 
+          {/* Text story button */}
+          {!myStory && (
+            <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
+              <button onClick={() => setShowTextStory(true)}
+                className="w-14 h-14 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg border-2 dark:border-[#0D0A14] border-white hover:scale-105 transition-transform">
+                <span className="text-xl">Aa</span>
+              </button>
+              <span className="text-[10px] font-semibold dark:text-gray-400 text-gray-500 max-w-[56px] truncate text-center">Text Story</span>
+            </div>
+          )}
+
           {/* Others' stories */}
           {othersStories.map((story, idx) => {
             const profile = (story as any).profiles as { full_name: string | null; avatar_url: string | null; username: string | null } | null
             const name = profile?.full_name || profile?.username || 'User'
             return (
               <button key={story.id}
-                onClick={() => setViewing({ id: story.id, authorId: story.author_id, name, avatar: profile?.avatar_url ?? null, mediaUrl: story.media_url })}
+                onClick={() => setViewing({ id: story.id, authorId: story.author_id, name, avatar: profile?.avatar_url ?? null, mediaUrl: story.media_url, mediaType: story.media_type, textContent: story.text_content, bgColor: story.bg_color })}
                 className="flex flex-col items-center gap-1.5 flex-shrink-0 group">
                 <div className="relative">
                   <div className="absolute -inset-0.5 rounded-full bg-love-gradient" />
@@ -557,7 +665,44 @@ function PostCard({ post, onLike, onSave, currentUserId }: {
   const [localShareCount, setLocalShareCount] = useState(post.shares)
   const [copied, setCopied] = useState(false)
   const [reportOpen, setReportOpen] = useState(false)
+  const [reactions, setReactions] = useState<Record<string, number>>({})
+  const [myReaction, setMyReaction] = useState<string | null>(null)
   const isOwn = currentUserId && post.authorId === currentUserId
+
+  // Fetch emoji reactions for this post
+  useEffect(() => {
+    let mounted = true
+    supabase.from('post_reactions').select('emoji').eq('post_id', post.id)
+      .then(({ data }) => {
+        if (!mounted) return
+        const counts: Record<string, number> = {}
+        for (const r of (data as any[]) || []) counts[r.emoji] = (counts[r.emoji] || 0) + 1
+        setReactions(counts)
+      })
+    if (currentUserId) {
+      supabase.from('post_reactions').select('emoji').eq('post_id', post.id).eq('user_id', currentUserId).maybeSingle()
+        .then(({ data }) => { if (mounted) setMyReaction((data as any)?.emoji || null) })
+    }
+    return () => { mounted = false }
+  }, [post.id, currentUserId])
+
+  const handleReaction = async (emoji: string) => {
+    if (!currentUserId) return
+    if (myReaction === emoji) {
+      setMyReaction(null)
+      setReactions(prev => ({ ...prev, [emoji]: Math.max(0, (prev[emoji] || 0) - 1) }))
+      await supabase.from('post_reactions').delete().eq('post_id', post.id).eq('user_id', currentUserId).eq('emoji', emoji)
+    } else {
+      if (myReaction) {
+        setReactions(prev => ({ ...prev, [myReaction]: Math.max(0, (prev[myReaction] || 0) - 1) }))
+        await supabase.from('post_reactions').delete().eq('post_id', post.id).eq('user_id', currentUserId)
+      }
+      setMyReaction(emoji)
+      setReactions(prev => ({ ...prev, [emoji]: (prev[emoji] || 0) + 1 }))
+      await supabase.from('post_reactions').insert({ post_id: post.id, user_id: currentUserId, emoji })
+        .then(() => {})
+    }
+  }
 
   const loadComments = async () => {
     setLoadingComments(true)
@@ -719,6 +864,23 @@ function PostCard({ post, onLike, onSave, currentUserId }: {
           {localCommentCount > 0 && <span>{localCommentCount} comments</span>}
         </div>
       )}
+
+      {/* Emoji Reaction bar */}
+      <div className="flex items-center gap-0.5 px-3 py-1.5 border-t dark:border-white/4 border-gray-50 overflow-x-auto scrollbar-none">
+        {REACTION_EMOJIS.map(emoji => (
+          <button key={emoji} onClick={() => handleReaction(emoji)}
+            className={`flex items-center gap-0.5 px-2 py-1 rounded-xl text-sm transition-all flex-shrink-0 ${
+              myReaction === emoji
+                ? 'dark:bg-pink-500/15 bg-pink-50 scale-110'
+                : 'dark:hover:bg-white/5 hover:bg-gray-50 opacity-60 hover:opacity-100'
+            }`}>
+            <span>{emoji}</span>
+            {(reactions[emoji] || 0) > 0 && (
+              <span className="text-[10px] font-bold dark:text-gray-400 text-gray-600 ml-0.5">{reactions[emoji]}</span>
+            )}
+          </button>
+        ))}
+      </div>
 
       {/* Actions */}
       <div className="flex items-center px-2 py-1.5 border-t dark:border-white/4 border-gray-50 gap-0.5">

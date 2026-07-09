@@ -1,12 +1,162 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Tv, Eye, CheckCircle, XCircle, Play, Users, Search, Loader2,
   Plus, Edit2, Trash2, Share2, UserPlus, Radio, X, Save,
-  ExternalLink, Filter, RefreshCw, Crown, Globe
+  ExternalLink, Filter, RefreshCw, Crown, Globe, Mic, MicOff, Video, VideoOff, PhoneOff
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
+import { Room, RoomEvent, Track, type LocalParticipant } from 'livekit-client'
+
+/** Attach all video tracks from a participant to a div */
+function attachLKTrack(participant: LocalParticipant, el: HTMLDivElement | null) {
+  if (!el) return
+  el.innerHTML = ''
+  participant.videoTrackPublications.forEach(pub => {
+    if (pub.track && pub.kind === Track.Kind.Video) {
+      const v = pub.track.attach()
+      v.className = 'w-full h-full object-cover'
+      el.appendChild(v)
+    }
+  })
+}
+
+interface BroadcastData { streamId: string; title: string }
+
+function AdminBroadcaster({ data, onEnd }: { data: BroadcastData; onEnd: () => void }) {
+  const localVideoRef = useRef<HTMLDivElement>(null)
+  const roomRef = useRef<Room | null>(null)
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const [connected, setConnected] = useState(false)
+  const [muted, setMuted] = useState(false)
+  const [cameraOff, setCameraOff] = useState(false)
+  const [viewers, setViewers] = useState(0)
+  const [duration, setDuration] = useState(0)
+  const [lkError, setLkError] = useState('')
+
+  useEffect(() => {
+    let disposed = false
+    const room = new Room({ adaptiveStream: true, dynacast: true })
+    roomRef.current = room
+    const timeoutId = setTimeout(() => {
+      if (!disposed) { room.disconnect(); setLkError('Connection timed out. Check your camera/mic permissions.') }
+    }, 20000)
+    const connect = async () => {
+      try {
+        const { data: tkData, error } = await supabase.functions.invoke('livekit-token', {
+          body: { room: `smartz-tv-${data.streamId}`, name: 'Admin Broadcaster' },
+        })
+        if (error || !tkData?.token || !tkData?.wsUrl) throw new Error('LiveKit token unavailable')
+        if (disposed) return
+        clearTimeout(timeoutId)
+        await room.connect(tkData.wsUrl, tkData.token)
+        if (disposed) { room.disconnect(); return }
+        await room.localParticipant.setCameraEnabled(true)
+        await room.localParticipant.setMicrophoneEnabled(true)
+        attachLKTrack(room.localParticipant, localVideoRef.current)
+        setConnected(true)
+        setViewers(room.remoteParticipants.size)
+        timerRef.current = setInterval(() => setDuration(d => d + 1), 1000)
+        room.on(RoomEvent.LocalTrackPublished, () => attachLKTrack(room.localParticipant, localVideoRef.current))
+        const syncViewers = () => {
+          const c = room.remoteParticipants.size
+          setViewers(c)
+          supabase.from('livestreams').update({ viewer_count: c }).eq('id', data.streamId).then(() => {})
+        }
+        room.on(RoomEvent.ParticipantConnected, syncViewers)
+        room.on(RoomEvent.ParticipantDisconnected, syncViewers)
+      } catch (err: any) {
+        clearTimeout(timeoutId)
+        if (!disposed) setLkError(err?.message || 'Could not start broadcast')
+      }
+    }
+    connect()
+    return () => {
+      disposed = true
+      clearTimeout(timeoutId)
+      if (timerRef.current) clearInterval(timerRef.current)
+      room.disconnect()
+    }
+  }, [data.streamId])
+
+  const handleEnd = useCallback(async () => {
+    if (timerRef.current) clearInterval(timerRef.current)
+    roomRef.current?.disconnect()
+    await supabase.from('livestreams').update({ status: 'ended', viewer_count: 0 }).eq('id', data.streamId)
+    onEnd()
+  }, [data.streamId, onEnd])
+
+  const fmt = (s: number) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex flex-col bg-black">
+      {/* Video area */}
+      <div ref={localVideoRef} className="flex-1 bg-black relative">
+        {!connected && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
+            {lkError ? (
+              <>
+                <div className="text-5xl">⚠️</div>
+                <p className="text-white font-semibold text-center px-6">{lkError}</p>
+                <button onClick={handleEnd} className="px-6 py-2.5 rounded-xl bg-red-500 text-white font-bold">End Stream</button>
+              </>
+            ) : (
+              <>
+                <div className="w-10 h-10 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <p className="text-white/60 text-sm">Connecting to broadcast…</p>
+              </>
+            )}
+          </div>
+        )}
+        {connected && (
+          <>
+            {/* Live indicator */}
+            <div className="absolute top-4 left-4 flex items-center gap-2">
+              <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-500 text-white text-xs font-black">
+                <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> LIVE
+              </span>
+              <span className="px-2.5 py-1.5 rounded-full bg-black/50 text-white text-xs font-mono">{fmt(duration)}</span>
+            </div>
+            {/* Viewers */}
+            <div className="absolute top-4 right-4 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/50 text-white text-xs font-semibold">
+              <Eye className="w-3.5 h-3.5" /> {viewers} viewers
+            </div>
+            {/* Stream title */}
+            <div className="absolute bottom-20 left-0 right-0 px-4">
+              <p className="text-white font-bold text-sm truncate">{data.title}</p>
+              <p className="text-white/60 text-xs">Admin Broadcast</p>
+            </div>
+          </>
+        )}
+      </div>
+      {/* Controls */}
+      <div className="flex items-center justify-center gap-4 p-5 bg-black/90">
+        <button onClick={async () => {
+            const nextMuted = !muted
+            setMuted(nextMuted)
+            await roomRef.current?.localParticipant.setMicrophoneEnabled(!nextMuted)
+          }}
+          className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${muted ? 'bg-red-500' : 'bg-white/15'}`}>
+          {muted ? <MicOff className="w-5 h-5 text-white" /> : <Mic className="w-5 h-5 text-white" />}
+        </button>
+        <button onClick={handleEnd}
+          className="w-16 h-16 rounded-full bg-red-500 flex items-center justify-center shadow-xl shadow-red-500/40">
+          <PhoneOff className="w-7 h-7 text-white" />
+        </button>
+        <button onClick={async () => {
+            const nextCameraOff = !cameraOff
+            setCameraOff(nextCameraOff)
+            await roomRef.current?.localParticipant.setCameraEnabled(!nextCameraOff)
+          }}
+          className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${cameraOff ? 'bg-red-500' : 'bg-white/15'}`}>
+          {cameraOff ? <VideoOff className="w-5 h-5 text-white" /> : <Video className="w-5 h-5 text-white" />}
+        </button>
+      </div>
+    </motion.div>
+  )
+}
 
 interface Stream {
   id: string; title: string; creator: string; creatorId: string; creatorAvatar: string
@@ -352,6 +502,7 @@ export default function AdminSmartzTV() {
   const [deleting, setDeleting] = useState(false)
   const [shareToast, setShareToast] = useState<string | null>(null)
   const [view, setView] = useState<'manage' | 'livetv'>('manage')
+  const [broadcastData, setBroadcastData] = useState<BroadcastData | null>(null)
 
   const fetchStreams = async () => {
     setLoading(true)
@@ -466,8 +617,25 @@ export default function AdminSmartzTV() {
     }
   }
 
+  const handleGoLive = async (stream: Stream) => {
+    // Update stream status to 'live' in DB, then launch broadcaster
+    await supabase.from('livestreams').update({ status: 'live' }).eq('id', stream.id)
+    setBroadcastData({ streamId: stream.id, title: stream.title })
+    fetchStreams()
+  }
+
   return (
     <div className="p-4 sm:p-6 space-y-5 relative">
+      {/* Broadcaster overlay */}
+      <AnimatePresence>
+        {broadcastData && (
+          <AdminBroadcaster
+            data={broadcastData}
+            onEnd={() => { setBroadcastData(null); fetchStreams() }}
+          />
+        )}
+      </AnimatePresence>
+
       {/* Share toast */}
       <AnimatePresence>
         {shareToast && (
@@ -633,12 +801,43 @@ export default function AdminSmartzTV() {
                     </button>
 
                     {v.status === 'pending' ? (
-                      <div className="flex gap-2">
-                        <button onClick={() => updateStatus(v.id, 'approved')} className="flex-1 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-500 text-xs font-bold border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors flex items-center justify-center gap-1">
-                          <CheckCircle className="w-3 h-3" /> Approve
+                      <div className="space-y-1.5">
+                        <div className="flex gap-2">
+                          <button onClick={() => updateStatus(v.id, 'approved')} className="flex-1 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-500 text-xs font-bold border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors flex items-center justify-center gap-1">
+                            <CheckCircle className="w-3 h-3" /> Approve
+                          </button>
+                          <button onClick={() => updateStatus(v.id, 'rejected')} className="flex-1 py-1.5 rounded-xl bg-red-500/10 text-red-500 text-xs font-bold border border-red-500/20 hover:bg-red-500/20 transition-colors flex items-center justify-center gap-1">
+                            <XCircle className="w-3 h-3" /> Reject
+                          </button>
+                        </div>
+                        {v.isAdminCreated && (
+                          <button onClick={() => handleGoLive(v)}
+                            className="w-full py-2 rounded-xl bg-love-gradient text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-md shadow-pink-500/20 hover:opacity-90 transition-opacity">
+                            <Radio className="w-3.5 h-3.5" /> Go Live Now
+                          </button>
+                        )}
+                      </div>
+                    ) : v.status === 'approved' && v.isAdminCreated ? (
+                      <div className="space-y-1.5">
+                        <button onClick={() => handleGoLive(v)}
+                          className="w-full py-2 rounded-xl bg-love-gradient text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-md shadow-pink-500/20 hover:opacity-90 transition-opacity">
+                          <Radio className="w-3.5 h-3.5" /> Go Live
                         </button>
-                        <button onClick={() => updateStatus(v.id, 'rejected')} className="flex-1 py-1.5 rounded-xl bg-red-500/10 text-red-500 text-xs font-bold border border-red-500/20 hover:bg-red-500/20 transition-colors flex items-center justify-center gap-1">
-                          <XCircle className="w-3 h-3" /> Reject
+                        <button onClick={() => window.open('/app/smartztv', '_blank')}
+                          className="w-full py-1.5 rounded-xl dark:bg-white/5 bg-gray-100 dark:text-gray-400 text-gray-600 text-xs font-semibold flex items-center justify-center gap-1 hover:text-brand-pink transition-colors">
+                          <ExternalLink className="w-3.5 h-3.5" /> View on TV
+                        </button>
+                      </div>
+                    ) : v.status === 'live' ? (
+                      <div className="space-y-1.5">
+                        <button onClick={() => setBroadcastData({ streamId: v.id, title: v.title })}
+                          className="w-full py-2 rounded-xl bg-red-500/15 text-red-500 text-xs font-bold border border-red-500/30 flex items-center justify-center gap-1.5 hover:bg-red-500/25 transition-colors">
+                          <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                          Resume Broadcast
+                        </button>
+                        <button onClick={() => window.open('/app/smartztv', '_blank')}
+                          className="w-full py-1.5 rounded-xl dark:bg-white/5 bg-gray-100 dark:text-gray-400 text-gray-600 text-xs font-semibold flex items-center justify-center gap-1 hover:text-brand-pink transition-colors">
+                          <ExternalLink className="w-3.5 h-3.5" /> View on TV
                         </button>
                       </div>
                     ) : (

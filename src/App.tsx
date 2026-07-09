@@ -52,6 +52,8 @@ import SubscriptionsPage   from '@/pages/SubscriptionsPage'
 import FriendsPage         from '@/pages/FriendsPage'
 import CallsPage           from '@/pages/CallsPage'
 import SettingsPage        from '@/pages/SettingsPage'
+import HelpSupportPage     from '@/pages/HelpSupportPage'
+import SavedPostsPage      from '@/pages/SavedPostsPage'
 
 import SmartzTVPublicPage  from '@/pages/public/SmartzTVPage'
 import SmartzRidePage      from '@/pages/public/SmartzRidePage'
@@ -181,6 +183,8 @@ export default function App() {
                 <Route path="calls"         element={<CallsPage />} />
                 <Route path="calls/video"   element={<CallsPage defaultMode="video" />} />
                 <Route path="calls/audio"   element={<CallsPage defaultMode="audio" />} />
+                <Route path="help"          element={<HelpSupportPage />} />
+                <Route path="saved"         element={<SavedPostsPage />} />
               </Route>
 
               {/* Admin Panel — role-gated: only admin/superadmin/ceo/moderator/support */}

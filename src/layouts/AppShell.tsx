@@ -5,7 +5,7 @@ import {
   Home, User, Users, MessageCircle, Bell, Video, Phone,
   Heart, Users2, FileText, Calendar, ShoppingBag, Briefcase,
   BookOpen, Tv, Car, Zap, Crown, Settings, HelpCircle,
-  Sun, Moon, LogOut, Globe
+  Sun, Moon, LogOut, Globe, Bookmark
 } from 'lucide-react'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useAuth } from '@/hooks/useAuth'
@@ -55,6 +55,7 @@ const drawerSections = [
   {
     section: 'Account',
     items: [
+      { path: '/app/saved',    icon: Bookmark,   label: 'Saved Posts',   badge: null as string | null, color: '' },
       { path: '/app/settings', icon: Settings,   label: 'Settings',      badge: null as string | null, color: '' },
       { path: '/app/help',     icon: HelpCircle, label: 'Help & Support', badge: null as string | null, color: '' },
     ],
