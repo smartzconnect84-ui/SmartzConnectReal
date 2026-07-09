@@ -18,7 +18,7 @@ interface AnnouncementContextType {
   announcements: Announcement[]
   activeAnnouncement: Announcement | null
   bannerEnabled: boolean
-  setBannerEnabled: (v: boolean) => void
+  setBannerEnabled: (v: boolean) => Promise<void>
   refetch: () => Promise<void>
   // Admin actions
   addAnnouncement: (a: Omit<Announcement, 'id' | 'created_at'>) => Promise<void>
@@ -27,7 +27,6 @@ interface AnnouncementContextType {
   toggleAnnouncement: (id: string, active: boolean) => Promise<void>
 }
 
-const BANNER_ENABLED_KEY = 'sc-banner-enabled'
 const LOCAL_ANN_KEY = 'sc-local-announcements'
 
 const AnnouncementContext = createContext<AnnouncementContextType>({
@@ -44,16 +43,51 @@ const AnnouncementContext = createContext<AnnouncementContextType>({
 
 export function AnnouncementProvider({ children }: { children: React.ReactNode }) {
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
-  const [bannerEnabled, setBannerEnabledState] = useState<boolean>(() => {
-    const stored = localStorage.getItem(BANNER_ENABLED_KEY)
-    return stored === null ? true : stored === 'true'
-  })
+  // Default true; real value loaded from platform_settings on mount
+  const [bannerEnabled, setBannerEnabledState] = useState<boolean>(true)
   const [useLocal, setUseLocal] = useState(false)
 
-  const setBannerEnabled = useCallback((v: boolean) => {
-    setBannerEnabledState(v)
-    localStorage.setItem(BANNER_ENABLED_KEY, String(v))
+  // ── Global banner toggle — read/write platform_settings ──────────────────
+
+  const loadBannerSetting = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('platform_settings')
+        .select('value')
+        .eq('key', 'banner_enabled')
+        .maybeSingle()
+      if (!error && data !== null) {
+        setBannerEnabledState(data.value === true || data.value === 'true')
+      }
+    } catch { /* table may not exist yet — leave default true */ }
   }, [])
+
+  const setBannerEnabled = useCallback(async (v: boolean) => {
+    setBannerEnabledState(v)
+    try {
+      await supabase
+        .from('platform_settings')
+        .upsert({ key: 'banner_enabled', value: v, updated_at: new Date().toISOString() }, { onConflict: 'key' })
+    } catch { /* ignore */ }
+  }, [])
+
+  // Subscribe to realtime changes so all clients see the toggle immediately
+  useEffect(() => {
+    loadBannerSetting()
+
+    const ch = supabase
+      .channel('platform_settings:banner')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'platform_settings', filter: 'key=eq.banner_enabled' }, (payload: any) => {
+        if (payload.new?.value !== undefined) {
+          setBannerEnabledState(payload.new.value === true || payload.new.value === 'true')
+        }
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(ch) }
+  }, [loadBannerSetting])
+
+  // ── Announcements ────────────────────────────────────────────────────────
 
   const loadLocalAnnouncements = useCallback((): Announcement[] => {
     try {
@@ -75,8 +109,6 @@ export function AnnouncementProvider({ children }: { children: React.ReactNode }
       .order('created_at', { ascending: false })
 
     if (error) {
-      // Only fall back to localStorage when the table genuinely doesn't exist.
-      // Other errors (network, RLS, etc.) are transient — don't silently fork state.
       const isTableMissing =
         error.message?.includes('does not exist') ||
         error.message?.includes('relation') ||
@@ -87,7 +119,6 @@ export function AnnouncementProvider({ children }: { children: React.ReactNode }
         setUseLocal(true)
         setAnnouncements(loadLocalAnnouncements())
       }
-      // For all other errors: leave state unchanged, don't overwrite with stale localStorage
       return
     }
     setUseLocal(false)
@@ -95,6 +126,17 @@ export function AnnouncementProvider({ children }: { children: React.ReactNode }
   }, [loadLocalAnnouncements])
 
   useEffect(() => { refetch() }, [refetch])
+
+  // Realtime subscription for new/updated announcements
+  useEffect(() => {
+    const ch = supabase
+      .channel('system_announcements:realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'system_announcements' }, () => {
+        refetch()
+      })
+      .subscribe()
+    return () => { supabase.removeChannel(ch) }
+  }, [refetch])
 
   const addAnnouncement = useCallback(async (a: Omit<Announcement, 'id' | 'created_at'>) => {
     if (useLocal) {

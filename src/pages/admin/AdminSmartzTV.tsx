@@ -14,6 +14,7 @@ interface Stream {
   status: 'pending' | 'approved' | 'rejected' | 'live'
   thumbnail: string; submitted: string; description?: string; scheduledAt?: string
   isAdminCreated?: boolean; invitedCreator?: string
+  isAdminBroadcast?: boolean
 }
 
 interface UserResult {
@@ -356,7 +357,7 @@ export default function AdminSmartzTV() {
     setLoading(true)
     const { data: rows, error } = await supabase
       .from('livestreams')
-      .select('id, title, category, description, thumbnail_url, viewer_count, status, moderation_status, created_at, creator_id, is_admin_created, scheduled_at')
+      .select('id, title, category, description, thumbnail_url, viewer_count, status, moderation_status, created_at, creator_id, is_admin_created, is_admin_broadcast, scheduled_at')
       .order('created_at', { ascending: false })
       .limit(80)
 
@@ -385,6 +386,7 @@ export default function AdminSmartzTV() {
           submitted: isLive ? 'Live now' : (v.scheduled_at ? `Scheduled: ${new Date(v.scheduled_at).toLocaleDateString()}` : timeAgo(v.created_at)),
           description: v.description,
           isAdminCreated: v.is_admin_created,
+          isAdminBroadcast: v.is_admin_broadcast ?? false,
         }
       })
       setList(mapped)
@@ -444,6 +446,12 @@ export default function AdminSmartzTV() {
     setList(prev => prev.filter(v => v.id !== deleteId))
     setDeleteId(null)
     setDeleting(false)
+  }
+
+  const handleToggleAdminBroadcast = async (stream: Stream) => {
+    const next = !stream.isAdminBroadcast
+    setList(prev => prev.map(v => v.id === stream.id ? { ...v, isAdminBroadcast: next } : v))
+    await supabase.from('livestreams').update({ is_admin_broadcast: next }).eq('id', stream.id)
   }
 
   const handleShare = (stream: Stream) => {
@@ -610,6 +618,19 @@ export default function AdminSmartzTV() {
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
+
+                    {/* Public TV broadcast toggle */}
+                    <button
+                      onClick={() => handleToggleAdminBroadcast(v)}
+                      className={`w-full py-1.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 mb-2 transition-all border ${
+                        v.isAdminBroadcast
+                          ? 'bg-violet-500/15 text-violet-400 border-violet-500/30 hover:bg-violet-500/25'
+                          : 'dark:bg-white/5 bg-gray-100 dark:text-gray-400 text-gray-600 border-transparent hover:text-violet-500'
+                      }`}
+                    >
+                      <Globe className="w-3.5 h-3.5" />
+                      {v.isAdminBroadcast ? '📺 On Public TV' : 'Publish to Public TV'}
+                    </button>
 
                     {v.status === 'pending' ? (
                       <div className="flex gap-2">

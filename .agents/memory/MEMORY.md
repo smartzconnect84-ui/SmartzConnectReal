@@ -20,6 +20,7 @@
 - [Livestreams schema & PostgREST joins](livestreams-schema.md) — column names differ from code (creator_id/viewer_count/gifts_earned); no FKs so joins must be done separately; atomic gifts RPC created; LK broadcaster timeout pattern.
 - [Exchange rates utility](exchange-rates-utility.md) — fetchRates() singleton; _inflight must clear on ALL paths incl. cache-hit; AbortSignal.timeout not safe cross-env; use manual AbortController.
 - [DB migration 2026-07](db-migration-2026-07.md) — live DB confirmed; psql works, Mgmt API blocked from Replit (CF 1010); backup_cron needs dashboard.
-- [Announcement banner system](announcement-banner.md) — Supabase table fallback only on table-missing errors; dismiss tracks by ID; SQL migration in supabase/announcements_migration.sql.
+- [Announcement banner system](announcement-banner.md) — bannerEnabled now global (platform_settings table, realtime); Supabase table fallback only on table-missing errors; dismiss tracks by ID.
+- [Admin public TV broadcast](admin-public-tv.md) — is_admin_broadcast column on livestreams; livekit-public-token edge fn (no-verify-jwt) enforces DB check before issuing token; community streams locked behind login on public page.
 - [Live appearance theming](appearance-theming.md) — ThemeContext drives font/color/radius via CSS vars + html class; overrides in index.css must stay for theming to work.
 - [CEO staff management](ceo-staff-management.md) — full CRUD with column-fallback retry; CSV escape + formula neutralization; role responsibilities map in ROLE_META.

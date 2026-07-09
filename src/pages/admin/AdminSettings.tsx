@@ -537,14 +537,13 @@ export default function AdminSettings() {
             )}
           </div>
 
-          {/* SQL tip */}
-          <div className="flex items-start gap-3 p-4 rounded-2xl dark:bg-blue-500/8 bg-blue-50 border dark:border-blue-500/15 border-blue-200">
-            <Info className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
+          {/* Info note */}
+          <div className="flex items-start gap-3 p-4 rounded-2xl dark:bg-emerald-500/8 bg-emerald-50 border dark:border-emerald-500/15 border-emerald-200">
+            <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-xs font-bold dark:text-blue-400 text-blue-600">Persistent storage</p>
-              <p className="text-xs dark:text-blue-400/70 text-blue-600/70 mt-0.5">
-                For announcements to persist across all user sessions, run the SQL migration in <code className="font-mono bg-blue-500/10 px-1 rounded">supabase/announcements_migration.sql</code> in your Supabase SQL editor.
-                Until then, announcements are stored locally in this browser.
+              <p className="text-xs font-bold dark:text-emerald-400 text-emerald-700">Live across all devices</p>
+              <p className="text-xs dark:text-emerald-400/70 text-emerald-700/70 mt-0.5">
+                The banner toggle and all announcements are stored in your Supabase database. Changes apply instantly — all users and admins see them in real time, on any device.
               </p>
             </div>
           </div>

@@ -3,18 +3,24 @@ import { motion, useInView } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import {
   Tv, Play, Users, Gift, TrendingUp, Mic, Video, Crown, Zap,
-  Signal, Clapperboard, Eye, RefreshCw,
+  Signal, Clapperboard, Eye, RefreshCw, Radio, Loader2, Volume2, VolumeX,
+  Maximize2, Globe,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { Room, RoomEvent, Track } from 'livekit-client'
 
-const features = [
-  { icon: Video,      title: 'Go Live Instantly',     desc: 'Stream to thousands of viewers across Africa with one tap. No equipment needed — just your phone.',  color: 'from-violet-500 to-purple-600' },
-  { icon: Gift,       title: 'Earn from Gifts',        desc: 'Fans send virtual gifts during your streams. Convert them to real cash via Mobile Money.',             color: 'from-pink-500 to-rose-600' },
-  { icon: Users,      title: 'Build Your Fanbase',     desc: 'Grow a loyal community of followers who tune in for your content every day.',                         color: 'from-blue-500 to-indigo-600' },
-  { icon: TrendingUp, title: 'Trending Discovery',     desc: 'Get featured on the Trending page and reach millions of new viewers organically.',                     color: 'from-amber-500 to-orange-600' },
-  { icon: Mic,        title: 'Audio Rooms',            desc: 'Host live audio conversations, debates, and Q&As with your community.',                               color: 'from-emerald-500 to-teal-600' },
-  { icon: Crown,      title: 'Creator Monetisation',   desc: 'Subscriptions, tips, brand deals, and exclusive content — multiple income streams in one place.',     color: 'from-yellow-500 to-amber-600' },
-]
+// ── Types ──────────────────────────────────────────────────────────────────────
+
+interface AdminBroadcast {
+  id: string
+  title: string
+  category: string | null
+  viewer_count: number
+  thumbnail_url: string | null
+  creator_id: string
+  creator_name: string
+  is_admin_broadcast: boolean
+}
 
 interface LiveStream {
   id: string
@@ -27,6 +33,388 @@ interface LiveStream {
   creator_avatar?: string | null
 }
 
+const features = [
+  { icon: Video,      title: 'Go Live Instantly',     desc: 'Stream to thousands of viewers across Africa with one tap. No equipment needed — just your phone.',  color: 'from-violet-500 to-purple-600' },
+  { icon: Gift,       title: 'Earn from Gifts',        desc: 'Fans send virtual gifts during your streams. Convert them to real cash via Mobile Money.',             color: 'from-pink-500 to-rose-600' },
+  { icon: Users,      title: 'Build Your Fanbase',     desc: 'Grow a loyal community of followers who tune in for your content every day.',                         color: 'from-blue-500 to-indigo-600' },
+  { icon: TrendingUp, title: 'Trending Discovery',     desc: 'Get featured on the Trending page and reach millions of new viewers organically.',                     color: 'from-amber-500 to-orange-600' },
+  { icon: Mic,        title: 'Audio Rooms',            desc: 'Host live audio conversations, debates, and Q&As with your community.',                               color: 'from-emerald-500 to-teal-600' },
+  { icon: Crown,      title: 'Creator Monetisation',   desc: 'Subscriptions, tips, brand deals, and exclusive content — multiple income streams in one place.',     color: 'from-yellow-500 to-amber-600' },
+]
+
+// ── Public Live TV Player ──────────────────────────────────────────────────────
+
+function PublicLiveTVPlayer({ broadcast }: { broadcast: AdminBroadcast }) {
+  const videoRef = useRef<HTMLDivElement>(null)
+  const roomRef = useRef<Room | null>(null)
+  const [connected, setConnected] = useState(false)
+  const [muted, setMuted] = useState(true) // start muted to comply with autoplay policies
+  const [lkError, setLkError] = useState('')
+  const [connecting, setConnecting] = useState(true)
+
+  useEffect(() => {
+    let disposed = false
+    const room = new Room({ adaptiveStream: true })
+    roomRef.current = room
+
+    const connect = async () => {
+      setConnecting(true)
+      try {
+        // Call the public token edge function using the anon key directly
+        // (no user auth required — this is a viewer-only public token)
+        const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL as string || '').replace(/\/$/, '')
+        const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string
+
+        if (!supabaseUrl || !anonKey) {
+          setLkError('Stream configuration not ready.')
+          setConnecting(false)
+          return
+        }
+
+        const res = await fetch(`${supabaseUrl}/functions/v1/livekit-public-token`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': anonKey,
+          },
+          body: JSON.stringify({ room: `smartz-tv-${broadcast.id}` }),
+        })
+
+        if (!res.ok) {
+          // Function not deployed yet — show thumbnail fallback silently
+          setConnecting(false)
+          return
+        }
+
+        const { token, wsUrl, error } = await res.json()
+        if (error || !token || !wsUrl) {
+          setConnecting(false)
+          return
+        }
+
+        if (disposed) return
+
+        await room.connect(wsUrl, token)
+        if (disposed) { room.disconnect(); return }
+
+        // Render remote broadcaster tracks
+        const render = () => {
+          if (!videoRef.current || disposed) return
+          videoRef.current.innerHTML = ''
+          let rendered = 0
+          room.remoteParticipants.forEach(p => {
+            p.videoTrackPublications.forEach(pub => {
+              if (pub.track && pub.kind === Track.Kind.Video) {
+                const v = pub.track.attach()
+                v.className = 'w-full h-full object-cover'
+                v.muted = muted
+                videoRef.current!.appendChild(v)
+                rendered++
+              }
+            })
+          })
+          setConnected(rendered > 0)
+        }
+
+        render()
+        room.on(RoomEvent.TrackSubscribed, render)
+        room.on(RoomEvent.TrackUnsubscribed, render)
+        room.on(RoomEvent.ParticipantConnected, render)
+      } catch {
+        if (!disposed) setConnecting(false)
+      }
+      if (!disposed) setConnecting(false)
+    }
+
+    connect()
+
+    return () => {
+      disposed = true
+      room.disconnect()
+      roomRef.current = null
+    }
+  }, [broadcast.id])
+
+  // Sync mute state to video elements
+  useEffect(() => {
+    if (!videoRef.current) return
+    videoRef.current.querySelectorAll('video').forEach(v => { v.muted = muted })
+  }, [muted])
+
+  const handleFullscreen = () => {
+    const el = videoRef.current?.closest('.lk-player-wrap') as HTMLElement | null
+    el?.requestFullscreen?.()
+  }
+
+  return (
+    <div className="lk-player-wrap relative w-full aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl shadow-black/50 border border-violet-500/20">
+      {/* Thumbnail behind the video */}
+      {broadcast.thumbnail_url && (
+        <img
+          src={broadcast.thumbnail_url}
+          alt={broadcast.title}
+          className={`absolute inset-0 w-full h-full object-cover transition-opacity ${connected ? 'opacity-0' : 'opacity-100'}`}
+        />
+      )}
+      {!broadcast.thumbnail_url && !connected && (
+        <div className="absolute inset-0 flex items-center justify-center dark:bg-violet-950/30 bg-violet-100/30">
+          <Tv className="w-16 h-16 text-violet-400/30" />
+        </div>
+      )}
+
+      {/* Live video overlay */}
+      <div
+        ref={videoRef}
+        className={`absolute inset-0 [&>video]:w-full [&>video]:h-full [&>video]:object-cover transition-opacity ${connected ? 'opacity-100' : 'opacity-0'}`}
+      />
+
+      {/* Connecting indicator */}
+      {connecting && !connected && !lkError && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/60">
+          <Loader2 className="w-8 h-8 text-violet-400 animate-spin" />
+          <p className="text-sm text-white/70">Connecting to live stream…</p>
+        </div>
+      )}
+
+      {/* Error / no signal */}
+      {lkError && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/70 px-6 text-center">
+          <Tv className="w-10 h-10 text-white/30" />
+          <p className="text-sm text-white/60">{lkError}</p>
+        </div>
+      )}
+
+      {/* HUD overlay */}
+      <div className="absolute inset-0 pointer-events-none">
+        {/* Top bar */}
+        <div className="absolute top-0 left-0 right-0 flex items-center justify-between p-3 bg-gradient-to-b from-black/70 to-transparent">
+          <div className="flex items-center gap-2">
+            <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-500 text-white text-[11px] font-black">
+              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> LIVE
+            </span>
+            {broadcast.category && (
+              <span className="px-2 py-0.5 rounded-full bg-black/50 text-white text-[10px] font-semibold backdrop-blur-sm">
+                {broadcast.category}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/50 text-white text-[11px] backdrop-blur-sm">
+            <Eye className="w-3 h-3" /> {(broadcast.viewer_count || 0).toLocaleString()}
+          </div>
+        </div>
+
+        {/* Bottom info */}
+        <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 to-transparent">
+          <div className="flex items-end justify-between">
+            <div>
+              <p className="text-white font-bold text-sm leading-tight drop-shadow-lg line-clamp-1">{broadcast.title}</p>
+              <p className="text-white/60 text-[11px] mt-0.5">{broadcast.creator_name}</p>
+            </div>
+            {/* Controls (pointer-events on) */}
+            <div className="flex items-center gap-1.5 pointer-events-auto">
+              <button
+                onClick={() => setMuted(m => !m)}
+                className="w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/70 transition-colors"
+              >
+                {muted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+              </button>
+              <button
+                onClick={handleFullscreen}
+                className="w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/70 transition-colors"
+              >
+                <Maximize2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Admin Broadcasts Section ────────────────────────────────────────────────────
+
+function AdminLiveTVSection() {
+  const [broadcasts, setBroadcasts] = useState<AdminBroadcast[]>([])
+  const [loading, setLoading] = useState(true)
+  const [selected, setSelected] = useState<AdminBroadcast | null>(null)
+
+  const load = useCallback(async (sig: { cancelled: boolean }) => {
+    setLoading(true)
+    try {
+      const { data: rows, error } = await supabase
+        .from('livestreams')
+        .select('id, title, category, viewer_count, thumbnail_url, creator_id, is_admin_broadcast')
+        .eq('is_admin_broadcast', true)
+        .eq('status', 'live')
+        .order('viewer_count', { ascending: false })
+        .limit(10)
+
+      if (sig.cancelled) return
+
+      if (!error && rows && rows.length > 0) {
+        // Resolve creator profiles separately
+        const ids = [...new Set((rows as any[]).map(r => r.creator_id).filter(Boolean))]
+        let nameMap: Record<string, string> = {}
+        if (ids.length) {
+          const { data: profiles } = await supabase.from('profiles').select('id, full_name').in('id', ids)
+          if (!sig.cancelled && profiles) {
+            nameMap = Object.fromEntries((profiles as any[]).map(p => [p.id, p.full_name]))
+          }
+        }
+        if (!sig.cancelled) {
+          const list = (rows as any[]).map(r => ({
+            ...r,
+            creator_name: nameMap[r.creator_id] || 'SmartzTV',
+          }))
+          setBroadcasts(list)
+          setSelected(list[0] || null)
+        }
+      } else if (!sig.cancelled) {
+        setBroadcasts([])
+        setSelected(null)
+      }
+    } catch {
+      if (!sig.cancelled) { setBroadcasts([]); setSelected(null) }
+    }
+    if (!sig.cancelled) setLoading(false)
+  }, [])
+
+  useEffect(() => {
+    const sig = { cancelled: false }
+    void load(sig)
+
+    // Auto-refresh every 30 s
+    const interval = setInterval(() => {
+      const innerSig = { cancelled: false }
+      void load(innerSig)
+    }, 30000)
+
+    return () => { sig.cancelled = true; clearInterval(interval) }
+  }, [load])
+
+  if (loading) {
+    return (
+      <section className="py-10 dark:bg-[#06030f] bg-violet-950/5 border-y dark:border-violet-900/20 border-violet-200/30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
+            <h2 className="font-display font-black text-xl dark:text-white text-gray-900">SmartzTV Live</h2>
+          </div>
+          <div className="h-64 sm:h-96 dark:bg-white/5 bg-gray-100 rounded-2xl animate-pulse" />
+        </div>
+      </section>
+    )
+  }
+
+  if (broadcasts.length === 0) {
+    return (
+      <section className="py-10 dark:bg-[#06030f] bg-violet-950/5 border-y dark:border-violet-900/20 border-violet-200/30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-3 mb-6">
+            <Globe className="w-5 h-5 text-violet-400" />
+            <h2 className="font-display font-black text-xl dark:text-white text-gray-900">SmartzTV Live</h2>
+          </div>
+          <div className="rounded-2xl dark:bg-[#0e0820] bg-violet-50 border dark:border-violet-900/30 border-violet-200/50 p-10 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-violet-500/10 flex items-center justify-center mx-auto mb-4">
+              <Tv className="w-7 h-7 text-violet-400" />
+            </div>
+            <h3 className="font-bold text-lg dark:text-white text-gray-900 mb-2">No Official Broadcast Right Now</h3>
+            <p className="text-sm dark:text-gray-400 text-gray-500 max-w-md mx-auto mb-5">
+              Our official live channel is currently offline. Check back soon — or join the platform to watch thousands of creators streaming live right now.
+            </p>
+            <Link to="/register"
+              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 text-white font-semibold text-sm shadow-lg hover:opacity-90 transition-all">
+              <Play className="w-4 h-4" fill="white" /> Join & Watch Community Streams
+            </Link>
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  return (
+    <section className="py-10 dark:bg-[#06030f] bg-violet-950/5 border-y dark:border-violet-900/20 border-violet-200/30">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Section header */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
+            <h2 className="font-display font-black text-xl dark:text-white text-gray-900">
+              📺 SmartzTV Live
+            </h2>
+            <span className="px-2 py-0.5 rounded-full bg-red-500/15 text-red-500 text-[11px] font-black border border-red-500/25">
+              OFFICIAL
+            </span>
+          </div>
+          <button onClick={() => { const sig = { cancelled: false }; void load(sig) }}
+            className="p-2 rounded-xl dark:bg-white/5 bg-gray-100 hover:text-violet-500 transition-colors">
+            <RefreshCw className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className={`grid gap-4 ${broadcasts.length > 1 ? 'lg:grid-cols-[1fr_280px]' : ''}`}>
+          {/* Main player */}
+          <div>
+            {selected && <PublicLiveTVPlayer broadcast={selected} />}
+          </div>
+
+          {/* Channel list (when multiple broadcasts) */}
+          {broadcasts.length > 1 && (
+            <div className="dark:bg-[#0e0820] bg-white rounded-2xl border dark:border-white/6 border-gray-200 overflow-hidden">
+              <div className="flex items-center gap-2 px-4 py-3 border-b dark:border-white/5 border-gray-100">
+                <Radio className="w-4 h-4 text-violet-400" />
+                <p className="font-bold text-sm dark:text-white text-gray-900">Channels</p>
+                <span className="ml-auto text-xs dark:text-gray-500 text-gray-400">{broadcasts.length} live</span>
+              </div>
+              <div className="overflow-y-auto max-h-[360px]">
+                {broadcasts.map(b => (
+                  <button key={b.id} onClick={() => setSelected(b)}
+                    className={`w-full flex items-center gap-3 p-3 text-left transition-colors border-b dark:border-white/4 border-gray-50 last:border-0 ${
+                      selected?.id === b.id ? 'dark:bg-violet-500/10 bg-violet-50' : 'dark:hover:bg-white/5 hover:bg-gray-50'
+                    }`}>
+                    <div className="w-14 h-10 rounded-lg dark:bg-white/10 bg-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden relative">
+                      {b.thumbnail_url
+                        ? <img src={b.thumbnail_url} alt={b.title} className="w-full h-full object-cover" />
+                        : <Tv className="w-5 h-5 text-violet-400/40" />}
+                      <span className="absolute top-0.5 left-0.5 w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-semibold dark:text-white text-gray-900 truncate">{b.title}</p>
+                      <p className="text-[10px] dark:text-gray-400 text-gray-500 flex items-center gap-0.5 mt-0.5">
+                        <Eye className="w-2.5 h-2.5" /> {(b.viewer_count || 0).toLocaleString()}
+                      </p>
+                    </div>
+                    {selected?.id === b.id && (
+                      <div className="w-1.5 h-1.5 rounded-full bg-violet-500 flex-shrink-0" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* CTA below player */}
+        <div className="mt-4 flex items-center justify-between flex-wrap gap-3 p-4 rounded-2xl dark:bg-violet-500/5 bg-violet-50/80 border dark:border-violet-500/10 border-violet-200/50">
+          <div className="flex items-center gap-2">
+            <Signal className="w-4 h-4 text-violet-500" />
+            <p className="text-sm dark:text-gray-300 text-gray-700 font-medium">
+              Want to watch <strong>community streams</strong> or go live yourself?
+            </p>
+          </div>
+          <Link to="/register"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 text-white text-sm font-bold hover:opacity-90 transition-opacity">
+            <Zap className="w-3.5 h-3.5" /> Join Free
+          </Link>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ── Main Page ─────────────────────────────────────────────────────────────────
+
 export default function SmartzTVPage() {
   const ref = useRef(null)
   const heroRef = useRef(null)
@@ -36,43 +424,39 @@ export default function SmartzTVPage() {
   const [liveStreams, setLiveStreams] = useState<LiveStream[]>([])
   const [loadingStreams, setLoadingStreams] = useState(true)
 
-  // Internal loader — accepts a cancellation token for safe async teardown.
+  // Community (non-admin) streams for the teaser section
   const loadLiveStreams = useCallback(async (sig: { cancelled: boolean }) => {
     setLoadingStreams(true)
     try {
       const { data: rows, error } = await supabase
         .from('livestreams')
-        .select('id, title, category, viewer_count, thumbnail_url, creator_id')
+        .select('id, title, category, viewer_count, thumbnail_url, creator_id, is_admin_broadcast')
         .eq('status', 'live')
+        .or('is_admin_broadcast.is.null,is_admin_broadcast.eq.false')
         .order('viewer_count', { ascending: false })
         .limit(6)
 
       if (sig.cancelled) return
 
       if (!error && rows && rows.length > 0) {
-        // Resolve creator names separately (no FK constraint on livestreams.creator_id)
-        const creatorIds = [...new Set((rows as Array<{ creator_id: string }>).map(r => r.creator_id).filter(Boolean))]
+        const creatorIds = [...new Set((rows as any[]).map(r => r.creator_id).filter(Boolean))]
         let profileMap: Record<string, { full_name: string; avatar_url: string | null }> = {}
         if (creatorIds.length) {
           const { data: profiles } = await supabase
-            .from('profiles')
-            .select('id, full_name, avatar_url')
-            .in('id', creatorIds)
+            .from('profiles').select('id, full_name, avatar_url').in('id', creatorIds)
           if (!sig.cancelled && profiles) {
             profileMap = Object.fromEntries(
-              (profiles as Array<{ id: string; full_name: string; avatar_url: string | null }>)
-                .map(p => [p.id, p])
+              (profiles as any[]).map(p => [p.id, p])
             )
           }
         }
         if (!sig.cancelled) {
           setLiveStreams(
-            (rows as Array<{ id: string; title: string; category: string | null; viewer_count: number; thumbnail_url: string | null; creator_id: string }>)
-              .map(r => ({
-                ...r,
-                creator_name: profileMap[r.creator_id]?.full_name ?? 'Creator',
-                creator_avatar: profileMap[r.creator_id]?.avatar_url ?? null,
-              }))
+            (rows as any[]).map(r => ({
+              ...r,
+              creator_name: profileMap[r.creator_id]?.full_name ?? 'Creator',
+              creator_avatar: profileMap[r.creator_id]?.avatar_url ?? null,
+            }))
           )
         }
       } else if (!sig.cancelled) {
@@ -84,11 +468,9 @@ export default function SmartzTVPage() {
     if (!sig.cancelled) setLoadingStreams(false)
   }, [])
 
-  // Click handler for the refresh button — creates its own fresh cancellation token.
   const handleRefresh = useCallback(() => {
     const sig = { cancelled: false }
     void loadLiveStreams(sig)
-    // No cleanup needed — the token is local and there's no unmount concern here.
   }, [loadLiveStreams])
 
   useEffect(() => {
@@ -102,7 +484,6 @@ export default function SmartzTVPage() {
 
       {/* ── Hero ── */}
       <section ref={heroRef}>
-        {/* Hero image */}
         <div className="w-full overflow-hidden">
           <motion.img
             src="/smartz-tv-hero.png"
@@ -114,8 +495,6 @@ export default function SmartzTVPage() {
             transition={{ duration: 0.7 }}
           />
         </div>
-
-        {/* CTA buttons */}
         <div className="dark:bg-[#0a0520]/90 bg-violet-50/70 border-t-2 border-violet-500/25 py-6 px-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -125,7 +504,7 @@ export default function SmartzTVPage() {
           >
             <Link to="/register"
               className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 text-white font-semibold text-sm shadow-lg shadow-violet-500/30 hover:shadow-violet-500/50 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
-              <Play className="w-4 h-4" fill="white" /> Watch Live
+              <Play className="w-4 h-4" fill="white" /> Watch Community Streams
             </Link>
             <Link to="/register"
               className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl dark:bg-violet-900/30 bg-white border dark:border-violet-500/20 border-violet-300/50 dark:text-violet-200 text-violet-800 font-semibold text-sm hover:dark:bg-violet-900/50 hover:bg-violet-100 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
@@ -135,7 +514,10 @@ export default function SmartzTVPage() {
         </div>
       </section>
 
-      {/* ── Live Streams or Coming Soon ── */}
+      {/* ── Official Live TV (admin broadcasts only) ── */}
+      <AdminLiveTVSection />
+
+      {/* ── Community Live Streams (teaser — full access behind login) ── */}
       <section className="py-10 dark:bg-[#0D0A14] bg-white border-y dark:border-white/5 border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between mb-6">
@@ -144,8 +526,13 @@ export default function SmartzTVPage() {
                 <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
               )}
               <h2 className="font-display font-black text-xl dark:text-white text-gray-900">
-                {loadingStreams ? 'Loading streams…' : liveStreams.length > 0 ? `${liveStreams.length} Live Now` : 'Live Streams'}
+                {loadingStreams ? 'Loading…' : liveStreams.length > 0
+                  ? `${liveStreams.length} Community Streams`
+                  : 'Community Streams'}
               </h2>
+              <span className="px-2 py-0.5 text-[10px] font-black rounded-full dark:bg-white/5 bg-gray-100 dark:text-gray-400 text-gray-600 border dark:border-white/6 border-gray-200">
+                🔒 Login to Watch
+              </span>
             </div>
             <button onClick={handleRefresh} className="p-2 rounded-xl dark:bg-white/5 bg-gray-100 hover:text-violet-500 transition-colors">
               <RefreshCw className={`w-4 h-4 ${loadingStreams ? 'animate-spin text-violet-500' : ''}`} />
@@ -165,7 +552,6 @@ export default function SmartzTVPage() {
                   initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}>
                   <Link to="/register"
                     className="block group dark:bg-[#130E1E] bg-white rounded-2xl border dark:border-white/6 border-gray-200 overflow-hidden hover:shadow-xl hover:border-violet-500/30 transition-all">
-                    {/* Thumbnail */}
                     <div className="relative h-36 dark:bg-violet-900/20 bg-violet-50 flex items-center justify-center overflow-hidden">
                       {stream.thumbnail_url ? (
                         <img src={stream.thumbnail_url} alt={stream.title}
@@ -173,16 +559,19 @@ export default function SmartzTVPage() {
                       ) : (
                         <Tv className="w-10 h-10 text-violet-400/40" />
                       )}
-                      {/* LIVE badge */}
+                      {/* Blur overlay — locked for public */}
+                      <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-violet-600/90 text-white text-xs font-bold">
+                          🔒 Join to Watch
+                        </div>
+                      </div>
                       <div className="absolute top-2 left-2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-500 text-white text-[10px] font-bold shadow-lg">
                         <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> LIVE
                       </div>
-                      {/* Viewer count */}
                       <div className="absolute bottom-2 right-2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/60 text-white text-[10px] font-semibold">
                         <Eye className="w-2.5 h-2.5" /> {(stream.viewer_count || 0).toLocaleString()}
                       </div>
                     </div>
-                    {/* Info */}
                     <div className="p-3">
                       <p className="font-bold text-sm dark:text-white text-gray-900 line-clamp-1 mb-1">{stream.title || 'Live Stream'}</p>
                       <div className="flex items-center justify-between">
@@ -200,7 +589,7 @@ export default function SmartzTVPage() {
             <div className="text-center py-8">
               <div className="flex items-center justify-center gap-3 mb-3">
                 <Tv className="w-6 h-6 text-violet-400/50" />
-                <span className="font-bold dark:text-white text-gray-900">No streams live right now</span>
+                <span className="font-bold dark:text-white text-gray-900">No community streams live right now</span>
               </div>
               <p className="text-sm dark:text-gray-400 text-gray-500 max-w-md mx-auto mb-4">
                 SmartzTV is live! Check back soon to catch creators streaming music, comedy, tech talks, and more — or go live yourself.
@@ -245,7 +634,6 @@ export default function SmartzTVPage() {
       <section className="py-16 sm:py-20 px-4">
         <div className="max-w-3xl mx-auto">
           <div className="rounded-3xl overflow-hidden relative shadow-2xl bg-gradient-to-br from-[#0e0720] via-[#160830] to-[#200a40] border border-violet-500/20">
-            {/* Decorative icons */}
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
               <div className="absolute top-6 left-8 opacity-10"><Tv className="w-20 h-20 text-violet-300" /></div>
               <div className="absolute bottom-6 right-8 opacity-10"><Crown className="w-20 h-20 text-pink-300" /></div>
