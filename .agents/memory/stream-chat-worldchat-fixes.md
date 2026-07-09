@@ -28,7 +28,7 @@ description: Root causes and fixes for chat endless-loading; WorldChat channel t
 - `SUPABASE_SERVICE_ROLE_KEY` — needed for stream_tokens upsert cache
 
 ## Deployment Blocker
-Supabase Management API returns 401 for the PAT `[REDACTED-PAT]`. Can't deploy edge functions or set secrets via CLI/API from Replit. Must be done via Supabase dashboard.
+Supabase Management API returns 401 for the stored PAT when called from Replit. Can't deploy edge functions or set secrets via CLI/API from Replit. Must be done via Supabase dashboard.
 
 **How to apply:** When edge function changes needed, go to supabase.com/dashboard → Edge Functions → stream-token → Deploy. Or create a GitHub Actions workflow (requires `workflow` scope PAT).
 
