@@ -220,7 +220,8 @@ function StoriesBar({ user, onStoriesLoaded }: { user: { id?: string; email?: st
     setPostingTextStory(true)
     try {
       await supabase.from('stories').insert({
-        user_id: user.id,
+        author_id: user.id,   // NOT NULL in original schema
+        user_id: user.id,     // alias added in schema_patch_v1
         media_url: '',
         media_type: 'text',
         text_content: textContent.trim(),
@@ -274,7 +275,8 @@ function StoriesBar({ user, onStoriesLoaded }: { user: { id?: string; email?: st
       const publicUrl = await uploadToSufy(file, 'stories')
       const isVideo = file.type.startsWith('video/')
       await supabase.from('stories').insert({
-        user_id: user.id,           // live DB column is user_id (not author_id)
+        author_id: user.id,   // NOT NULL in original schema
+        user_id: user.id,     // alias added in schema_patch_v1
         media_url: publicUrl,
         media_type: isVideo ? 'video' : 'image',
         expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),

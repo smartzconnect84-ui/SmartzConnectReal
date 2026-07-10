@@ -71,14 +71,42 @@ export async function unlinkOneSignalUser() {
 
 export async function requestNotificationPermission(): Promise<boolean> {
   if (!appId) return false
-  // Wait for the SDK to be ready (important for calls that happen right after login)
+
+  const hasNativeApi = typeof window !== 'undefined' && 'Notification' in window
+  const nativePerm = () => (hasNativeApi ? (window as any).Notification.permission : 'denied')
+
+  // First try the native browser API directly — it's instant and works regardless of
+  // whether OneSignal SDK initialised (e.g. domain not yet whitelisted in OneSignal).
+  if (hasNativeApi && nativePerm() === 'default') {
+    try {
+      const result = await Promise.race<NotificationPermission>([
+        (window as any).Notification.requestPermission(),
+        new Promise<NotificationPermission>(resolve => setTimeout(() => resolve('default'), 12000)),
+      ])
+      if (result !== 'default') {
+        // Native dialog answered — also nudge OneSignal so it picks up the change
+        const os = (window as any).OneSignal
+        if (os?.Notifications?.requestPermission) {
+          os.Notifications.requestPermission().catch(() => {})
+        }
+        return result === 'granted'
+      }
+    } catch {
+      // Firefox throws if called outside a user gesture — fall through to OneSignal path
+    }
+  }
+
+  // Fallback: use the OneSignal SDK wrapper (needed on some browsers)
   const os = await waitForOneSignal()
-  if (!os) return false
+  if (!os) return nativePerm() === 'granted'
   try {
-    await os.Notifications.requestPermission()
-    return os.Notifications.permission === true
+    await Promise.race([
+      os.Notifications.requestPermission(),
+      new Promise(resolve => setTimeout(resolve, 12000)),
+    ])
+    return os.Notifications.permission === true || nativePerm() === 'granted'
   } catch {
-    return false
+    return nativePerm() === 'granted'
   }
 }
 

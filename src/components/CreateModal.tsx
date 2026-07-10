@@ -401,7 +401,8 @@ function StoryModal({ onClose }: { onClose: () => void }) {
       return
     }
     const { error: insertErr } = await supabase.from('stories').insert({
-      user_id: user.id,
+      author_id: user.id,   // NOT NULL in original schema
+      user_id: user.id,     // alias added in schema_patch_v1
       media_url: publicUrl,
       media_type: file.type.startsWith('video/') ? 'video' : 'image',
       expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),

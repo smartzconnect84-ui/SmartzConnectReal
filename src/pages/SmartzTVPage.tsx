@@ -34,7 +34,7 @@ interface Stream {
   id: string; title: string; creator: string; creatorId: string; creatorEmoji: string; avatar_url?: string
   views: string; likes: number; duration: string; category: string; emoji: string
   live: boolean; trending: boolean; gifts: number; verified: boolean; vip: boolean
-  thumbnail_url?: string
+  thumbnail_url?: string; isAdminBroadcast?: boolean
 }
 
 // ── Broadcaster component ─────────────────────────────────────────────────
@@ -614,6 +614,7 @@ function StreamCommentsModal({ stream, userId, onClose }: {
 export default function SmartzTVPage() {
   const { user } = useAuth()
   const [streams, setStreams] = useState<Stream[]>([])
+  const [adminLiveBanner, setAdminLiveBanner] = useState<Stream | null>(null)
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [activeCategory, setActiveCategory] = useState('All')
@@ -636,13 +637,41 @@ export default function SmartzTVPage() {
   const [deletingStream, setDeletingStream] = useState(false)
   const [shareToast, setShareToast] = useState<string | null>(null)
 
+  // Dedicated query for admin broadcast — not subject to top-20 limit so the
+  // banner always appears even if the admin stream has 0 viewers yet.
+  const fetchAdminBanner = async () => {
+    const { data } = await supabase
+      .from('livestreams')
+      .select('id, title, category, status, viewer_count, gifts_earned, thumbnail_url, creator_id, is_admin_broadcast')
+      .eq('is_admin_broadcast', true)
+      .eq('status', 'live')
+      .limit(1)
+      .maybeSingle()
+    if (!data) { setAdminLiveBanner(null); return }
+    const { data: prof } = await supabase
+      .from('profiles')
+      .select('full_name, avatar_url')
+      .eq('id', data.creator_id)
+      .maybeSingle()
+    const vc = data.viewer_count || 0
+    setAdminLiveBanner({
+      id: String(data.id), title: data.title || 'SmartzTV Live', creator: prof?.full_name || 'SmartzTV',
+      creatorId: String(data.creator_id || ''), creatorEmoji: '📺', avatar_url: prof?.avatar_url,
+      views: vc > 1000 ? `${(vc / 1000).toFixed(1)}K` : String(vc), likes: 0, duration: 'LIVE',
+      category: data.category || 'Live', emoji: '📺', live: true, trending: false,
+      gifts: data.gifts_earned || 0, verified: false, vip: false,
+      thumbnail_url: data.thumbnail_url, isAdminBroadcast: true,
+    })
+  }
+
   const fetchStreams = async () => {
     setLoading(true)
+    fetchAdminBanner()   // independent — runs in parallel with the main list
     try {
       // Fetch streams — no FK on creator_id so profiles join is done separately
       const { data: rows, error } = await supabase
         .from('livestreams')
-        .select('id, title, category, status, viewer_count, gifts_earned, thumbnail_url, created_at, creator_id')
+        .select('id, title, category, status, viewer_count, gifts_earned, thumbnail_url, created_at, creator_id, is_admin_broadcast')
         .order('viewer_count', { ascending: false })
         .limit(20)
 
@@ -685,6 +714,7 @@ export default function SmartzTVPage() {
           verified: profile?.is_verified || false,
           vip: profile?.subscription_tier === 'vip',
           thumbnail_url: s.thumbnail_url,
+          isAdminBroadcast: s.is_admin_broadcast ?? false,
         }
       }))
     } catch {
@@ -695,10 +725,10 @@ export default function SmartzTVPage() {
 
   useEffect(() => { fetchStreams() }, [])
 
-  // Realtime: update viewer counts on stream cards AND open modal as they change in DB
+  // Realtime: update viewer counts + detect admin going live + new streams
   useEffect(() => {
     const sub = supabase
-      .channel('livestreams-view-counts')
+      .channel('livestreams-realtime')
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'livestreams' },
@@ -709,18 +739,30 @@ export default function SmartzTVPage() {
           const vc = isLive ? (updated.viewer_count ?? 0) : 0
           const viewStr = vc > 1000 ? `${(vc / 1000).toFixed(1)}K` : String(vc)
 
-          // Update stream card list
-          setStreams(prev =>
-            prev.map(s => {
+          // If this touches an admin broadcast, refresh the dedicated banner query
+          if (updated.is_admin_broadcast) fetchAdminBanner()
+
+          setStreams(prev => {
+            const exists = prev.some(s => s.id === String(updated.id))
+            if (!exists) { fetchStreams(); return prev }
+            return prev.map(s => {
               if (s.id !== String(updated.id)) return s
-              return { ...s, views: viewStr, live: isLive }
+              return { ...s, views: viewStr, live: isLive, isAdminBroadcast: updated.is_admin_broadcast ?? s.isAdminBroadcast }
             })
-          )
-          // Also update the open modal so viewer count is live
+          })
           setSelectedStream(prev => {
             if (!prev || prev.id !== String(updated.id)) return prev
-            return { ...prev, views: viewStr, live: isLive }
+            return { ...prev, views: String(vc), live: isLive }
           })
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'livestreams' },
+        (payload: any) => {
+          fetchStreams()
+          // If the new stream is an admin broadcast, refresh banner immediately
+          if (payload.new?.is_admin_broadcast) fetchAdminBanner()
         }
       )
       .subscribe()
@@ -901,6 +943,52 @@ export default function SmartzTVPage() {
       {/* Watch Tab */}
       {activeTab === 'watch' && (
         <div className="px-4 py-4">
+          {/* ── Admin Broadcast Banner ─────────────────────────────────── */}
+          {adminLiveBanner && (() => {
+            const adminLive = adminLiveBanner
+            return (
+              <motion.button
+                key={adminLive.id}
+                initial={{ opacity: 0, y: -12 }}
+                animate={{ opacity: 1, y: 0 }}
+                onClick={() => setSelectedStream(adminLive)}
+                className="w-full mb-5 rounded-2xl overflow-hidden border-2 border-red-500/60 shadow-xl shadow-red-500/20 relative cursor-pointer group"
+              >
+                {/* Background */}
+                <div className="absolute inset-0 bg-gradient-to-br from-red-900/90 via-pink-900/80 to-purple-900/90" />
+                {adminLive.thumbnail_url && (
+                  <img src={adminLive.thumbnail_url} alt={adminLive.title}
+                    className="absolute inset-0 w-full h-full object-cover opacity-20 group-hover:opacity-30 transition-opacity" />
+                )}
+
+                {/* Content */}
+                <div className="relative p-4 flex items-center gap-4">
+                  {/* Pulsing live dot */}
+                  <div className="w-14 h-14 rounded-2xl bg-red-500 flex items-center justify-center flex-shrink-0 shadow-lg shadow-red-500/40">
+                    <Tv className="w-7 h-7 text-white" />
+                  </div>
+                  <div className="flex-1 min-w-0 text-left">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-red-500 text-white text-[10px] font-black">
+                        <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> LIVE NOW
+                      </span>
+                      <span className="text-[10px] text-white/60 font-semibold">📺 Official Broadcast</span>
+                    </div>
+                    <p className="font-black text-white text-sm leading-tight truncate">{adminLive.title}</p>
+                    <p className="text-xs text-white/60 mt-0.5 flex items-center gap-1">
+                      <Eye className="w-3 h-3" /> {adminLive.views} watching — tap to watch live
+                    </p>
+                  </div>
+                  <div className="flex-shrink-0">
+                    <div className="w-9 h-9 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center group-hover:bg-white/20 transition-colors">
+                      <Play className="w-4 h-4 text-white fill-white" />
+                    </div>
+                  </div>
+                </div>
+              </motion.button>
+            )
+          })()}
+
           {loading ? (
             <div className="flex flex-col items-center justify-center py-16 gap-3">
               <div className="w-10 h-10 rounded-full border-2 border-pink-500/30 border-t-pink-500 animate-spin" />

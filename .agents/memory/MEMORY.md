@@ -30,3 +30,6 @@
 - [Text stories & LiveKit toggles](text-stories-livekit.md) — text stories need mediaType/textContent/bgColor in ViewStory + all setViewing calls; LiveKit mute/camera must compute next state FIRST then pass !nextState to SDK.
 - [Feature additions 2026-07](feature-additions-2026-07.md) — new pages: HelpSupportPage (/app/help), SavedPostsPage (/app/saved); new schema: post_reactions (emoji reactions), team_members, text_content/bg_color on stories; Google sign-in added to RegisterPage step 1; Admin SmartzTV broadcaster added with Go Live button.
 - [v15 completion & Vercel readiness](v15-vercel-readiness.md) — build blocker fixed (Stream Chat ChannelData name cast); ReferralsPage Promise.all gets catch+finally; WorldStage public page filters is_active; sidebar ghost routes (/app/pages|events|jobs|learning) now render ComingSoon.
+- [Stream Chat CSP](stream-chat-csp.md) — Stream SDK uses chat.stream-io-api.com not api.stream-io-api.com; CSP must use wildcard *.stream-io-api.com + edge.getstream.io.
+- [Vercel deployment](vercel-deployment.md) — use --archive=tgz flag; buildCommand must be pnpm run build; project/org IDs and domain alias recorded.
+- [Schema v15 SQL bugs fixed](schema-v15-fix.md) — referral_code column missing before unique index; dollar-quoting used $; not $; fixed via schema_v15_fix.sql.
