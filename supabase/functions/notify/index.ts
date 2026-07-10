@@ -117,7 +117,9 @@ serve(async (req) => {
         const res = await fetch('https://onesignal.com/api/v1/notifications', {
           method: 'POST',
           headers: {
-            'Authorization': `Basic ${oneSignalKey}`,
+            // OneSignal's current REST API keys use the "Key" auth scheme,
+            // not the legacy "Basic" scheme (see send-push for details).
+            'Authorization': `Key ${oneSignalKey}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(payload),

@@ -15,6 +15,7 @@
  */
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { StreamChat } from 'https://esm.sh/stream-chat@8?target=deno'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -45,9 +46,12 @@ serve(async (req) => {
     const signature = req.headers.get('x-signature') || ''
     const streamSecret = Deno.env.get('STREAM_API_SECRET') || Deno.env.get('STREAM_SECRET') || ''
 
-    // Verify signature if secret is configured
-    if (streamSecret && signature) {
-      const valid = await verifyStreamSignature(bodyText, signature, streamSecret)
+    // Verify signature whenever a secret is configured. A missing header on
+    // a secret-configured deployment must be rejected, not silently allowed
+    // through — otherwise anyone can forge webhook posts by omitting the
+    // x-signature header entirely.
+    if (streamSecret) {
+      const valid = !!signature && await verifyStreamSignature(bodyText, signature, streamSecret)
       if (!valid) {
         return new Response(JSON.stringify({ error: 'Invalid signature' }), {
           status: 401,
@@ -88,11 +92,30 @@ serve(async (req) => {
     // SmartzConnect uses "messaging:sortedId1!sortedId2" format. But Stream also
     // sends member list in some events. Use the members if available, otherwise
     // fall back to querying Supabase profiles.
-    const members: string[] = (event.members || [])
+    let members: string[] = (event.members || [])
       .map((m: any) => m.user_id || m.user?.id || '')
       .filter((id: string) => id && id !== senderId)
 
-    // If no members in payload, skip (WorldChat livestream channels, etc.)
+    // Many Stream webhook payloads (e.g. plain `message.new`) omit `members`.
+    // Fall back to querying the channel directly via the Stream server SDK
+    // so DM pushes aren't silently dropped whenever that field is absent.
+    if (members.length === 0 && channelId) {
+      const streamKey    = Deno.env.get('STREAM_API_KEY') || Deno.env.get('VITE_STREAM_API_KEY')
+      const streamSecret2 = Deno.env.get('STREAM_API_SECRET') || Deno.env.get('STREAM_SECRET')
+      if (streamKey && streamSecret2) {
+        try {
+          const serverClient = StreamChat.getInstance(streamKey, streamSecret2)
+          const channel = serverClient.channel(channelType, channelId)
+          const state = await channel.query({ members: { limit: 100 } as any })
+          members = Object.keys(state.members || {}).filter((id) => id && id !== senderId)
+        } catch (lookupErr) {
+          console.error('stream-webhook member lookup failed:', lookupErr)
+        }
+      }
+    }
+
+    // Livestream/WorldChat channels (and any channel we still can't resolve
+    // members for) have no addressable DM recipient — skip those, not DMs.
     if (members.length === 0) {
       return new Response(JSON.stringify({ received: true, skipped: 'no_members' }), {
         status: 200,
@@ -121,7 +144,9 @@ serve(async (req) => {
         await fetch('https://onesignal.com/api/v1/notifications', {
           method: 'POST',
           headers: {
-            'Authorization': `Basic ${oneSignalKey}`,
+            // OneSignal's current REST API keys use the "Key" auth scheme,
+            // not the legacy "Basic" scheme (see send-push for details).
+            'Authorization': `Key ${oneSignalKey}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({

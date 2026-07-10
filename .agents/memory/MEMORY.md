@@ -36,3 +36,5 @@
 - [Framer Motion TypeScript typing](framer-motion-typing.md) — type:'spring' widens to string; annotate variant objects as Variants; add `as const` to type field in spread-prop helper functions.
 - [Push notification architecture](push-notification-architecture.md) — always use notifyUser() (real OS push), never raw notifications.insert(); admin-only types gated by admin_users check.
 - [Push notification completeness](push-notification-completeness.md) — DB-trigger events (matches, payments) need notify_push_internal() via pg_net with a REVOKEd, secret-decoupled helper, not raw inserts.
+- [OneSignal auth scheme consistency](onesignal-auth-scheme.md) — every OneSignal call must use "Key <key>" (not "Basic"); stream-webhook needs member-lookup fallback + mandatory signature check.
+- [users vs profiles ID mismatch](users-profiles-id-mismatch.md) — users.id is a separate numeric/table PK; the auth UUID is users.auth_id. profiles.id IS the auth UUID. Any push/admin fan-out must use the UUID field.

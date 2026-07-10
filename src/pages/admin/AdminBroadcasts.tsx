@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Megaphone, RefreshCw, Plus } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { notifyUser } from '@/lib/notify'
 
 interface Ad {
   id: number
@@ -47,21 +48,83 @@ export default function AdminBroadcasts() {
 
   useEffect(() => { fetchData() }, [])
 
+  // Resolve which profile IDs belong to the selected audience segment so the
+  // broadcast can actually be pushed to devices, not just logged to a table.
+  const resolveAudienceIds = async (segment: string): Promise<{ ids: string[]; resolutionFailed: boolean }> => {
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString()
+    // `users.id` is a separate numeric app-table PK, NOT the profile/auth UUID
+    // that `send-push` expects — the actual auth UUID lives in `users.auth_id`.
+    // `profiles.id` IS the auth UUID directly.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let query: any = supabase.from('profiles').select('id')
+    let idField: 'id' | 'auth_id' = 'id'
+    if (segment === 'premium') { query = supabase.from('users').select('auth_id').eq('subscription_tier', 'premium'); idField = 'auth_id' }
+    else if (segment === 'vip') { query = supabase.from('users').select('auth_id').eq('subscription_tier', 'vip'); idField = 'auth_id' }
+    else if (segment === 'free') { query = supabase.from('users').select('auth_id').or('subscription_tier.eq.free,subscription_tier.is.null'); idField = 'auth_id' }
+    else if (segment === 'inactive') { query = supabase.from('profiles').select('id').lt('last_seen', sevenDaysAgo); idField = 'id' }
+    const { data, error } = await query
+    if (error) {
+      console.warn('[AdminBroadcasts] failed to resolve audience ids:', error)
+      return { ids: [], resolutionFailed: true }
+    }
+    const ids = (data || [])
+      .map((row: Record<string, string | null>) => row[idField])
+      .filter((id: string | null): id is string => !!id)
+    return { ids, resolutionFailed: false }
+  }
+
   const sendBroadcast = async () => {
     if (!form.title || !form.body) return
     setSending(true)
-    await supabase.from('broadcast_messages').insert({
-      title: form.title,
-      body: form.body,
-      target_audience: form.target_audience,
-      sent_by_name: 'Admin',
-      recipient_count: { all: userCount, premium: segmentCounts.premium, vip: segmentCounts.vip, free: segmentCounts.free, inactive: segmentCounts.inactive }[form.target_audience] ?? userCount,
-      sent_at: new Date().toISOString(),
-    })
-    await fetchData()
-    setShowCompose(false)
-    setForm({ title: '', body: '', target_audience: 'all' })
-    setSending(false)
+    try {
+      const { ids: recipientIds, resolutionFailed } = await resolveAudienceIds(form.target_audience)
+
+      if (resolutionFailed) {
+        // Don't silently fall back to an estimated count when we couldn't even
+        // look up recipients — that would record a broadcast as "sent" to
+        // thousands of users while zero pushes actually went out.
+        alert('Failed to resolve recipients for this audience. Broadcast was not sent — please try again.')
+        return
+      }
+
+      // Fan out real OS push notifications to every recipient in the segment.
+      // Chunked to avoid firing thousands of concurrent requests at once, and
+      // counted so the persisted row reflects actual delivery, not just intent.
+      let delivered = 0
+      const CHUNK_SIZE = 25
+      for (let i = 0; i < recipientIds.length; i += CHUNK_SIZE) {
+        const chunk = recipientIds.slice(i, i + CHUNK_SIZE)
+        const results = await Promise.allSettled(chunk.map(userId => notifyUser({
+          userId,
+          type: 'announcement',
+          title: form.title,
+          message: form.body,
+          emoji: '📢',
+        })))
+        delivered += results.filter(r => r.status === 'fulfilled' && r.value === true).length
+      }
+      if (recipientIds.length > 0 && delivered === 0) {
+        console.warn('[AdminBroadcasts] push fan-out delivered to 0 of', recipientIds.length, 'recipients')
+      }
+
+      await supabase.from('broadcast_messages').insert({
+        title: form.title,
+        body: form.body,
+        target_audience: form.target_audience,
+        sent_by_name: 'Admin',
+        recipient_count: delivered,
+        sent_at: new Date().toISOString(),
+      })
+
+      await fetchData()
+      setShowCompose(false)
+      setForm({ title: '', body: '', target_audience: 'all' })
+    } catch (err) {
+      console.error('[AdminBroadcasts] sendBroadcast failed:', err)
+      alert('Failed to send broadcast. Please try again.')
+    } finally {
+      setSending(false)
+    }
   }
 
   const audienceOptions = [
