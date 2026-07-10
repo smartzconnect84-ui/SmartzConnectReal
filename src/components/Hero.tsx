@@ -1,37 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-import { motion, AnimatePresence, type Variants } from 'framer-motion'
-import {
-  ArrowRight, ChevronDown, X,
-  ShoppingBag, Car, Package, Megaphone,
-  Tv, Heart, Users, Zap,
-} from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { ArrowRight } from 'lucide-react'
 import { cmsList } from '@/lib/contentSync'
 import DownloadAppButton from '@/components/DownloadAppButton'
-
-/* ── Data for Explore panel ───────────────────────────────────────────── */
-const businessFeatures = [
-  { label: 'SmartzMarket',   href: '/smartzmarket',    icon: ShoppingBag, desc: 'Buy & sell anything',        color: 'text-amber-400',  bg: 'bg-amber-400/10' },
-  { label: 'SmartzRide',     href: '/smartzride',      icon: Car,         desc: 'Ride-hailing across Africa', color: 'text-emerald-400', bg: 'bg-emerald-400/10' },
-  { label: 'SmartzDelivery', href: '/smartzdelivery',  icon: Package,     desc: 'Fast local delivery',        color: 'text-blue-400',    bg: 'bg-blue-400/10' },
-  { label: 'SmartzAds',      href: '/smartzads',       icon: Megaphone,   desc: 'Advertise to millions',      color: 'text-orange-400',  bg: 'bg-orange-400/10' },
-]
-const socialFeatures = [
-  { label: 'SmartzSocial',  href: '/app/feed',      icon: Users,  desc: 'Your social feed',            color: 'text-violet-400',  bg: 'bg-violet-400/10' },
-  { label: 'SmartzDating',  href: '/app/discover',  icon: Heart,  desc: 'Match & connect',             color: 'text-pink-400',    bg: 'bg-pink-400/10' },
-  { label: 'SmartzTV',      href: '/smartztv',      icon: Tv,     desc: 'Live streams & creator hub',  color: 'text-purple-400',  bg: 'bg-purple-400/10' },
-  { label: 'Spin & Chat',   href: '/app/spin',      icon: Zap,    desc: 'Random instant connections',  color: 'text-fuchsia-400', bg: 'bg-fuchsia-400/10' },
-]
-
-const panelVariants: Variants = {
-  hidden: { opacity: 0, y: -12, scale: 0.97 },
-  visible: { opacity: 1, y: 0, scale: 1, transition: { type: 'spring', damping: 22, stiffness: 300 } },
-  exit:    { opacity: 0, y: -8, scale: 0.97, transition: { duration: 0.18 } },
-}
-const itemVariants: Variants = {
-  hidden:  { opacity: 0, x: -10 },
-  visible: (i: number) => ({ opacity: 1, x: 0, transition: { delay: i * 0.04, type: 'spring' as const, stiffness: 280 } }),
-}
 
 /* ── Slide types ──────────────────────────────────────────────────────── */
 interface Slide {
@@ -82,7 +54,6 @@ export default function Hero() {
   const [current, setCurrent] = useState(0)
   const [isPlaying, setIsPlaying] = useState(true)
   const [activeSlides, setActiveSlides] = useState<Slide[]>(slides)
-  const [exploreOpen, setExploreOpen] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -166,102 +137,6 @@ export default function Hero() {
                 Join Now! <ArrowRight className="w-4 h-4" />
               </Link>
             </motion.div>
-
-            {/* Explore — Red */}
-            <div className="relative">
-              <motion.button
-                onClick={() => setExploreOpen(v => !v)}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.97 }}
-                transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-                className="inline-flex items-center gap-2 px-6 sm:px-8 py-3 sm:py-3.5 rounded-xl text-white font-semibold text-sm sm:text-base transition-all"
-                style={{ background: 'linear-gradient(135deg, #DC2626 0%, #991B1B 100%)', boxShadow: '0 8px 28px rgba(220,38,38,0.38)' }}
-              >
-                Explore
-                <motion.span animate={{ rotate: exploreOpen ? 180 : 0 }} transition={{ type: 'spring', stiffness: 300 }}>
-                  <ChevronDown className="w-4 h-4" />
-                </motion.span>
-              </motion.button>
-
-              {/* ── Explore mega-panel ── */}
-              <AnimatePresence>
-                {exploreOpen && (
-                  <>
-                    {/* backdrop */}
-                    <div className="fixed inset-0 z-20" onClick={() => setExploreOpen(false)} />
-                    <motion.div
-                      variants={panelVariants} initial="hidden" animate="visible" exit="exit"
-                      className="absolute left-0 top-[calc(100%+10px)] z-30 w-[min(480px,90vw)] rounded-2xl overflow-hidden shadow-2xl shadow-black/60"
-                      style={{ background: 'rgba(13,11,26,0.92)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.1)' }}
-                    >
-                      <div className="flex items-center justify-between px-4 py-3 border-b border-white/8">
-                        <p className="text-xs font-black tracking-widest text-white/50 uppercase">Explore Features</p>
-                        <button onClick={() => setExploreOpen(false)} className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors">
-                          <X className="w-3 h-3 text-white/50" />
-                        </button>
-                      </div>
-
-                      <div className="p-3 grid grid-cols-2 gap-3">
-                        {/* Business column */}
-                        <div>
-                          <p className="text-[10px] font-black tracking-widest text-amber-400/80 uppercase px-2 mb-2">Business</p>
-                          {businessFeatures.map((item, i) => {
-                            const Icon = item.icon
-                            return (
-                              <motion.div key={item.href} custom={i} variants={itemVariants} initial="hidden" animate="visible">
-                                <Link
-                                  to={item.href} onClick={() => setExploreOpen(false)}
-                                  className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-white/8 transition-all group"
-                                >
-                                  <div className={`w-7 h-7 rounded-lg ${item.bg} flex items-center justify-center flex-shrink-0`}>
-                                    <Icon className={`w-3.5 h-3.5 ${item.color}`} />
-                                  </div>
-                                  <div>
-                                    <p className="text-xs font-bold text-white group-hover:text-amber-300 transition-colors">{item.label}</p>
-                                    <p className="text-[10px] text-white/40">{item.desc}</p>
-                                  </div>
-                                </Link>
-                              </motion.div>
-                            )
-                          })}
-                        </div>
-
-                        {/* Social column */}
-                        <div>
-                          <p className="text-[10px] font-black tracking-widest text-purple-400/80 uppercase px-2 mb-2">Social</p>
-                          {socialFeatures.map((item, i) => {
-                            const Icon = item.icon
-                            return (
-                              <motion.div key={item.href} custom={i + 4} variants={itemVariants} initial="hidden" animate="visible">
-                                <Link
-                                  to={item.href} onClick={() => setExploreOpen(false)}
-                                  className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-white/8 transition-all group"
-                                >
-                                  <div className={`w-7 h-7 rounded-lg ${item.bg} flex items-center justify-center flex-shrink-0`}>
-                                    <Icon className={`w-3.5 h-3.5 ${item.color}`} />
-                                  </div>
-                                  <div>
-                                    <p className="text-xs font-bold text-white group-hover:text-purple-300 transition-colors">{item.label}</p>
-                                    <p className="text-[10px] text-white/40">{item.desc}</p>
-                                  </div>
-                                </Link>
-                              </motion.div>
-                            )
-                          })}
-                        </div>
-                      </div>
-
-                      <div className="px-3 pb-3">
-                        <Link to="/#services" onClick={() => setExploreOpen(false)}
-                          className="block w-full py-2.5 rounded-xl text-center text-xs font-bold text-white/60 hover:text-white border border-white/8 hover:border-white/20 transition-all">
-                          View All 8 Products →
-                        </Link>
-                      </div>
-                    </motion.div>
-                  </>
-                )}
-              </AnimatePresence>
-            </div>
 
             {/* Download App — Green */}
             <DownloadAppButton variant="green" />

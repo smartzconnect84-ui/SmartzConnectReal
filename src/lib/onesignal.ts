@@ -110,6 +110,31 @@ export async function requestNotificationPermission(): Promise<boolean> {
   }
 }
 
+/** Play a Web Audio chime in-app (no external audio file required). */
+export function playNotificationSound(soft = false) {
+  try {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)()
+    const now = ctx.currentTime
+    const vol = soft ? 0.15 : 0.28
+    const freqs = soft ? [660] : [880, 1318.51]
+    freqs.forEach((freq, i) => {
+      const osc  = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+      osc.type = 'sine'
+      osc.frequency.value = freq
+      const t0 = now + i * 0.13
+      gain.gain.setValueAtTime(0, t0)
+      gain.gain.linearRampToValueAtTime(vol, t0 + 0.01)
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.55)
+      osc.start(t0)
+      osc.stop(t0 + 0.56)
+    })
+    setTimeout(() => ctx.close(), 1300)
+  } catch { /* autoplay policy or SSR */ }
+}
+
 export async function sendPushNotification({
   userId,
   title,

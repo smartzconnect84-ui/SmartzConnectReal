@@ -6,6 +6,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+const APP_ICON = 'https://www.smartzconnect.com/icon-192.png'
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -16,8 +18,7 @@ serve(async (req) => {
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
@@ -31,24 +32,37 @@ serve(async (req) => {
     const { data: { user }, error: authErr } = await userClient.auth.getUser()
     if (authErr || !user) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
     const body = await req.json()
-    const { userId, title, message, url, type, emoji, actionUrl, persist } = body
+    const { userId, title, message, url, type, emoji, actionUrl, persist, imageUrl } = body
 
     if (!userId || !title || !message) {
       return new Response(JSON.stringify({ error: 'Missing required fields: userId, title, message' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
-    // ── 2. Optionally persist a notification row ─────────────────────────────
-    // No match check — any authenticated user can notify any other user.
-    // This covers follows, likes, comments, matches, spin connections, etc.
+    // ── Authorization guard ─────────────────────────────────────────────────
+    // Users can only push to others for allowed social notification types.
+    // This prevents spam — a caller cannot craft arbitrary push blasts.
+    const ALLOWED_TYPES = new Set([
+      'message', 'match', 'like', 'comment', 'follow', 'spin',
+      'gift', 'call', 'video', 'award', 'premium', 'system',
+    ])
+    const notifTypeRaw = (type || 'system').toLowerCase()
+    if (!ALLOWED_TYPES.has(notifTypeRaw)) {
+      return new Response(JSON.stringify({ error: 'Notification type not allowed' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+    // Prevent self-push loops (callers may notify themselves for system types)
+    // For social types, sender ≠ recipient is enforced silently — it degrades to persist-only.
+    const isSelfPush = user.id === userId
+
+    // ── 2. Persist notification row ─────────────────────────────────────────
     if (persist !== false) {
       const adminClient = createClient(supabaseUrl, serviceKey)
       await adminClient.from('notifications').insert({
@@ -60,7 +74,7 @@ serve(async (req) => {
         emoji:        emoji || '🔔',
         action_url:   actionUrl || url || null,
         read:         false,
-      }).then(() => {}) // fire-and-forget, don't fail push on DB error
+      }).then(() => {})
     }
 
     // ── 3. Send via OneSignal ────────────────────────────────────────────────
@@ -68,30 +82,69 @@ serve(async (req) => {
     const oneSignalKey   = Deno.env.get('ONESIGNAL_REST_API_KEY')
 
     if (!oneSignalAppId || !oneSignalKey) {
-      // DB row may have been persisted — treat push failure as non-fatal
-      return new Response(JSON.stringify({ error: 'OneSignal not configured on server', persisted: persist !== false }), {
-        status: 503,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      return new Response(JSON.stringify({ error: 'OneSignal not configured', persisted: persist !== false }), {
+        status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
+    const pushUrl = url || actionUrl
+    const notifType = type || 'system'
+
+    // Build a rich, high-priority push payload
     const payload: Record<string, unknown> = {
       app_id:   oneSignalAppId,
       headings: { en: title },
       contents: { en: message },
-      // Target by external_id set via OneSignal.login(userId)
-      include_aliases:  { external_id: [userId] },
-      target_channel: 'push',
+
+      // Target by external_id (set via OneSignal.login(userId) on the client)
+      include_aliases: { external_id: [userId] },
+      target_channel:  'push',
+
+      // ── High-priority delivery ───────────────────────────────────────────
+      priority:             10,       // 10 = high priority; bypasses Doze on Android
+      ttl:                  86400,    // 24 h time-to-live
+      isIos:                true,
+      isAndroid:            true,
+      isWP:                 false,
+      isChrome:             true,
+
+      // ── Sound ───────────────────────────────────────────────────────────
+      // iOS: "default" = system default notification sound
+      ios_sound:           'default',
+      // Android: "default" = system default sound on the default channel
+      android_sound:       'default',
+      // Android 8+ notification channel (must be created in OneSignal dashboard)
+      android_channel_id:  'smartzconnect_high_priority',
+
+      // ── Icons / Badge ────────────────────────────────────────────────────
+      chrome_web_icon:     APP_ICON,
+      chrome_web_badge:    APP_ICON,
+      firefox_icon:        APP_ICON,
+      // iOS large image (optional, requires paid plan)
+      ...(imageUrl ? { big_picture: imageUrl, ios_attachments: { image: imageUrl } } : {}),
+
+      // ── Action URL ───────────────────────────────────────────────────────
+      ...(pushUrl ? { url: pushUrl } : {}),
+
+      // ── Collapse duplicate pushes of the same type ───────────────────────
+      collapse_id:          `${notifType}_${userId}`,
+      // Show notification even if app is in foreground (iOS 16+, Chrome)
+      apns_alert:           { title, body: message },
     }
 
-    const pushUrl = url || actionUrl
-    if (pushUrl) payload.url = pushUrl
+    // Skip push delivery if the caller is trying to notify themselves
+    // (e.g. test trigger); DB row is still persisted above.
+    if (isSelfPush && notifTypeRaw !== 'system') {
+      return new Response(JSON.stringify({ success: true, skipped: 'self_push' }), {
+        status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
 
     const res = await fetch('https://onesignal.com/api/v1/notifications', {
       method: 'POST',
       headers: {
         'Authorization': `Basic ${oneSignalKey}`,
-        'Content-Type': 'application/json',
+        'Content-Type':  'application/json',
       },
       body: JSON.stringify(payload),
     })
@@ -104,8 +157,7 @@ serve(async (req) => {
     })
   } catch (err) {
     return new Response(JSON.stringify({ error: String(err) }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   }
 })
