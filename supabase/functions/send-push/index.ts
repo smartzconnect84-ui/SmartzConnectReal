@@ -206,7 +206,11 @@ serve(async (req) => {
     const res = await fetch('https://onesignal.com/api/v1/notifications', {
       method: 'POST',
       headers: {
-        'Authorization': `Basic ${oneSignalKey}`,
+        // OneSignal's current REST API keys (created after their 2024 key
+        // migration) are authenticated with the "Key" scheme, not the old
+        // "Basic" scheme — using "Basic" against a new-format key returns a
+        // generic "Access denied" with no further detail.
+        'Authorization': `Key ${oneSignalKey}`,
         'Content-Type':  'application/json',
       },
       body: JSON.stringify(payload),
