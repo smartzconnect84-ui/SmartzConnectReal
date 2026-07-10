@@ -6,7 +6,7 @@
 -- NOTE: admin_users.id is a surrogate UUID PK; the auth UID lives in auth_id.
 -- Also checks profiles.role as a fallback so admin roles set there also work.
 CREATE OR REPLACE FUNCTION is_admin()
-RETURNS BOOLEAN LANGUAGE plpgsql SECURITY DEFINER AS $
+RETURNS BOOLEAN LANGUAGE plpgsql SECURITY DEFINER AS $$
 BEGIN
   RETURN EXISTS (
     SELECT 1 FROM admin_users WHERE auth_id = auth.uid()
@@ -14,7 +14,7 @@ BEGIN
     SELECT 1 FROM profiles WHERE id = auth.uid() AND role IN ('admin','superadmin','ceo','moderator','support')
   );
 END;
-$;
+$$;
 
 -- ── Admin policies for livestreams ────────────────────────────────────────
 -- Admins can update ANY livestream (e.g. approve, moderate, edit)
@@ -50,7 +50,7 @@ CREATE POLICY "stream_comments_update" ON stream_comments
     -- Stream owner can moderate comments on their stream
     EXISTS (
       SELECT 1 FROM livestreams
-      WHERE livestreams.id::TEXT = stream_comments.stream_id
+      WHERE livestreams.id = stream_comments.stream_id
         AND livestreams.creator_id = auth.uid()
     )
     OR

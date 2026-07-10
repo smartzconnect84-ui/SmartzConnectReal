@@ -73,7 +73,49 @@ alter table public.worldstage_spotlights add column if not exists avatar_url tex
 
 -- ── platform_files: add user_id alias for uploaded_by ────────────────────────
 alter table public.platform_files add column if not exists user_id uuid;
-update public.platform_files set user_id = uploaded_by where user_id is null;
+update public.platform_files set user_id = uploaded_by::uuid
+  where user_id is null and uploaded_by is not null
+    and uploaded_by ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$';
+
+-- matches
+do $$ begin create policy "matches_select_own" on public.matches for select using (auth.uid() = user1_id or auth.uid() = user2_id); exception when duplicate_object then null; end $$;
+do $$ begin create policy "matches_insert_own" on public.matches for insert with check (auth.uid() = user1_id); exception when duplicate_object then null; end $$;
+do $$ begin create policy "matches_update_own" on public.matches for update using (auth.uid() = user1_id or auth.uid() = user2_id); exception when duplicate_object then null; end $$;
+
+-- posts
+do $$ begin create policy "posts_select_public" on public.posts for select using (not is_deleted); exception when duplicate_object then null; end $$;
+do $$ begin create policy "posts_insert_own"    on public.posts for insert with check (auth.uid() = user_id); exception when duplicate_object then null; end $$;
+do $$ begin create policy "posts_update_own"    on public.posts for update using (auth.uid() = user_id); exception when duplicate_object then null; end $$;
+do $$ begin create policy "posts_delete_own"    on public.posts for delete using (auth.uid() = user_id); exception when duplicate_object then null; end $$;
+
+-- post_comments
+do $$ begin create policy "post_comments_select" on public.post_comments for select using (not is_deleted); exception when duplicate_object then null; end $$;
+do $$ begin create policy "post_comments_insert" on public.post_comments for insert with check (auth.uid() = user_id); exception when duplicate_object then null; end $$;
+do $$ begin create policy "post_comments_delete" on public.post_comments for delete using (auth.uid() = user_id); exception when duplicate_object then null; end $$;
+
+-- stories
+do $$ begin create policy "stories_insert_own" on public.stories for insert with check (auth.uid() = user_id); exception when duplicate_object then null; end $$;
+do $$ begin create policy "stories_delete_own" on public.stories for delete using (auth.uid() = user_id); exception when duplicate_object then null; end $$;
+
+-- anonymous_chats
+do $$ begin create policy "anon_chats_own" on public.anonymous_chats for all using (auth.uid() = user1_id or auth.uid() = user2_id); exception when duplicate_object then null; end $$;
+
+-- group_rooms
+do $$ begin create policy "group_rooms_select_public" on public.group_rooms for select using (is_public = true); exception when duplicate_object then null; end $$;
+do $$ begin create policy "group_rooms_insert_auth"   on public.group_rooms for insert with check (auth.uid() = created_by); exception when duplicate_object then null; end $$;
+do $$ begin create policy "group_rooms_update_own"    on public.group_rooms for update using (auth.uid() = created_by); exception when duplicate_object then null; end $$;
+
+-- group_messages
+do $$ begin create policy "group_messages_select" on public.group_messages for select using (not is_deleted); exception when duplicate_object then null; end $$;
+
+-- drivers
+do $$ begin create policy "drivers_insert_own" on public.drivers for insert with check (auth.uid() = user_id); exception when duplicate_object then null; end $$;
+do $$ begin create policy "drivers_update_own" on public.drivers for update using (auth.uid() = user_id); exception when duplicate_object then null; end $$;
+
+-- platform_files
+do $$ begin create policy "files_select_own" on public.platform_files for select using (auth.uid() = user_id or is_public); exception when duplicate_object then null; end $$;
+do $$ begin create policy "files_insert_own" on public.platform_files for insert with check (auth.uid() = user_id); exception when duplicate_object then null; end $$;
+do $$ begin create policy "files_delete_own" on public.platform_files for delete using (auth.uid() = user_id); exception when duplicate_object then null; end $$;
 
 -- ── Re-apply RLS policies that failed due to missing columns ─────────────────
 
@@ -117,9 +159,89 @@ do $$ begin create policy "files_select_own" on public.platform_files for select
 do $$ begin create policy "files_insert_own" on public.platform_files for insert with check (auth.uid() = user_id); exception when duplicate_object then null; end $$;
 do $$ begin create policy "files_delete_own" on public.platform_files for delete using (auth.uid() = user_id); exception when duplicate_object then null; end $$;
 
--- ── Final table summary ───────────────────────────────────────────────────────
-select table_name, count(*) as columns
-from information_schema.columns
-where table_schema = 'public'
-group by table_name
-order by table_name;
+;
+
+-- ── Re-apply RLS policies that failed due to missing columns ─────────────────
+
+-- matches
+do $$ begin create policy "matches_select_own" on public.matches for select using (auth.uid() = user1_id or auth.uid() = user2_id); exception when duplicate_object then null; end $$;
+do $$ begin create policy "matches_insert_own" on public.matches for insert with check (auth.uid() = user1_id); exception when duplicate_object then null; end $$;
+do $$ begin create policy "matches_update_own" on public.matches for update using (auth.uid() = user1_id or auth.uid() = user2_id); exception when duplicate_object then null; end $$;
+
+-- posts
+do $$ begin create policy "posts_select_public" on public.posts for select using (not is_deleted); exception when duplicate_object then null; end $$;
+do $$ begin create policy "posts_insert_own"    on public.posts for insert with check (auth.uid() = user_id); exception when duplicate_object then null; end $$;
+do $$ begin create policy "posts_update_own"    on public.posts for update using (auth.uid() = user_id); exception when duplicate_object then null; end $$;
+do $$ begin create policy "posts_delete_own"    on public.posts for delete using (auth.uid() = user_id); exception when duplicate_object then null; end $$;
+
+-- post_comments
+do $$ begin create policy "post_comments_select" on public.post_comments for select using (not is_deleted); exception when duplicate_object then null; end $$;
+do $$ begin create policy "post_comments_insert" on public.post_comments for insert with check (auth.uid() = user_id); exception when duplicate_object then null; end $$;
+do $$ begin create policy "post_comments_delete" on public.post_comments for delete using (auth.uid() = user_id); exception when duplicate_object then null; end $$;
+
+-- stories
+do $$ begin create policy "stories_insert_own" on public.stories for insert with check (auth.uid() = user_id); exception when duplicate_object then null; end $$;
+do $$ begin create policy "stories_delete_own" on public.stories for delete using (auth.uid() = user_id); exception when duplicate_object then null; end $$;
+
+-- anonymous_chats
+do $$ begin create policy "anon_chats_own" on public.anonymous_chats for all using (auth.uid() = user1_id or auth.uid() = user2_id); exception when duplicate_object then null; end $$;
+
+-- group_rooms
+do $$ begin create policy "group_rooms_select_public" on public.group_rooms for select using (is_public = true); exception when duplicate_object then null; end $$;
+do $$ begin create policy "group_rooms_insert_auth"   on public.group_rooms for insert with check (auth.uid() = created_by); exception when duplicate_object then null; end $$;
+do $$ begin create policy "group_rooms_update_own"    on public.group_rooms for update using (auth.uid() = created_by); exception when duplicate_object then null; end $$;
+
+-- group_messages
+do $$ begin create policy "group_messages_select" on public.group_messages for select using (not is_deleted); exception when duplicate_object then null; end $$;
+
+-- drivers
+do $$ begin create policy "drivers_insert_own" on public.drivers for insert with check (auth.uid() = user_id); exception when duplicate_object then null; end $$;
+do $$ begin create policy "drivers_update_own" on public.drivers for update using (auth.uid() = user_id); exception when duplicate_object then null; end $$;
+
+-- platform_files
+do $$ begin create policy "files_select_own" on public.platform_files for select using (auth.uid() = user_id or is_public); exception when duplicate_object then null; end $$;
+do $$ begin create policy "files_insert_own" on public.platform_files for insert with check (auth.uid() = user_id); exception when duplicate_object then null; end $$;
+do $$ begin create policy "files_delete_own" on public.platform_files for delete using (auth.uid() = user_id); exception when duplicate_object then null; end $$;
+
+-- ── Re-apply RLS policies that failed due to missing columns ─────────────────
+
+-- matches
+do $$ begin create policy "matches_select_own" on public.matches for select using (auth.uid() = user1_id or auth.uid() = user2_id); exception when duplicate_object then null; end $$;
+do $$ begin create policy "matches_insert_own" on public.matches for insert with check (auth.uid() = user1_id); exception when duplicate_object then null; end $$;
+do $$ begin create policy "matches_update_own" on public.matches for update using (auth.uid() = user1_id or auth.uid() = user2_id); exception when duplicate_object then null; end $$;
+
+-- posts
+do $$ begin create policy "posts_select_public" on public.posts for select using (not is_deleted); exception when duplicate_object then null; end $$;
+do $$ begin create policy "posts_insert_own"    on public.posts for insert with check (auth.uid() = user_id); exception when duplicate_object then null; end $$;
+do $$ begin create policy "posts_update_own"    on public.posts for update using (auth.uid() = user_id); exception when duplicate_object then null; end $$;
+do $$ begin create policy "posts_delete_own"    on public.posts for delete using (auth.uid() = user_id); exception when duplicate_object then null; end $$;
+
+-- post_comments
+do $$ begin create policy "post_comments_select" on public.post_comments for select using (not is_deleted); exception when duplicate_object then null; end $$;
+do $$ begin create policy "post_comments_insert" on public.post_comments for insert with check (auth.uid() = user_id); exception when duplicate_object then null; end $$;
+do $$ begin create policy "post_comments_delete" on public.post_comments for delete using (auth.uid() = user_id); exception when duplicate_object then null; end $$;
+
+-- stories
+do $$ begin create policy "stories_insert_own" on public.stories for insert with check (auth.uid() = user_id); exception when duplicate_object then null; end $$;
+do $$ begin create policy "stories_delete_own" on public.stories for delete using (auth.uid() = user_id); exception when duplicate_object then null; end $$;
+
+-- anonymous_chats
+do $$ begin create policy "anon_chats_own" on public.anonymous_chats for all using (auth.uid() = user1_id or auth.uid() = user2_id); exception when duplicate_object then null; end $$;
+
+-- group_rooms
+do $$ begin create policy "group_rooms_select_public" on public.group_rooms for select using (is_public = true); exception when duplicate_object then null; end $$;
+do $$ begin create policy "group_rooms_insert_auth"   on public.group_rooms for insert with check (auth.uid() = created_by); exception when duplicate_object then null; end $$;
+do $$ begin create policy "group_rooms_update_own"    on public.group_rooms for update using (auth.uid() = created_by); exception when duplicate_object then null; end $$;
+
+-- group_messages
+do $$ begin create policy "group_messages_select" on public.group_messages for select using (not is_deleted); exception when duplicate_object then null; end $$;
+
+-- drivers
+do $$ begin create policy "drivers_insert_own" on public.drivers for insert with check (auth.uid() = user_id); exception when duplicate_object then null; end $$;
+do $$ begin create policy "drivers_update_own" on public.drivers for update using (auth.uid() = user_id); exception when duplicate_object then null; end $$;
+
+-- platform_files
+do $$ begin create policy "files_select_own" on public.platform_files for select using (auth.uid() = user_id or is_public); exception when duplicate_object then null; end $$;
+do $$ begin create policy "files_insert_own" on public.platform_files for insert with check (auth.uid() = user_id); exception when duplicate_object then null; end $$;
+do $$ begin create policy "files_delete_own" on public.platform_files for delete using (auth.uid() = user_id); exception when duplicate_object then null; end $$;
+

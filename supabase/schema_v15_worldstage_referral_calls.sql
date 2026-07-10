@@ -142,7 +142,7 @@ exception when undefined_column or undefined_table then
   -- because of a best-effort notification insert failing.
   null;
 end;
-$;
+$$;
 
 -- confirm_referral must only ever run via the email-verification trigger
 -- below (which executes with the definer's privileges regardless of grants),
@@ -154,7 +154,7 @@ revoke all on function public.confirm_referral(uuid) from public, authenticated,
 -- Link a freshly-registered profile to its referrer's code (called by the
 -- client right after signup with the code captured from the invite link).
 create or replace function public.apply_referral_code(p_user_id uuid, p_code text)
-returns void language plpgsql security definer set search_path = public as $
+returns void language plpgsql security definer set search_path = public as $$
 declare
   v_referrer uuid;
 begin
@@ -174,7 +174,7 @@ begin
     values (v_referrer, p_user_id, 'pending')
     on conflict (referred_id) do nothing;
 end;
-$;
+$$;
 
 revoke all on function public.apply_referral_code(uuid, text) from public;
 grant execute on function public.apply_referral_code(uuid, text) to authenticated;

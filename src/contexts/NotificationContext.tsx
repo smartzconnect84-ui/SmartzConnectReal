@@ -5,7 +5,7 @@
  * share one realtime subscription and one unread count rather than each
  * subscribing independently and potentially disagreeing.
  */
-import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react'
+import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 
