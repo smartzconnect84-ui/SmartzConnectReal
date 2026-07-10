@@ -288,7 +288,7 @@ function StreamModal({ stream, onClose, onJoinAsGuest }: {
         .maybeSingle().then(({ data }) => { if (data) setFollowing(true) })
     }
     supabase.from('post_reactions').select('id').eq('post_id', stream.id).eq('user_id', user.id).eq('emoji', '❤️')
-      .maybeSingle().then(({ data }) => { if (data) setLiked(true) }).catch(() => {})
+      .maybeSingle().then(({ data }) => { if (data) setLiked(true) })
   }, [user?.id, stream.id, stream.creatorId])
 
   const toggleFollow = async () => {
@@ -318,9 +318,9 @@ function StreamModal({ stream, onClose, onJoinAsGuest }: {
     setLiked(next)
     setLikeCount(c => next ? c + 1 : Math.max(0, c - 1))
     if (next) {
-      supabase.from('post_reactions').insert({ post_id: stream.id, user_id: user.id, emoji: '❤️' }).then(() => {}).catch(() => {})
+      void supabase.from('post_reactions').insert({ post_id: stream.id, user_id: user.id, emoji: '❤️' })
     } else {
-      supabase.from('post_reactions').delete().eq('post_id', stream.id).eq('user_id', user.id).eq('emoji', '❤️').then(() => {}).catch(() => {})
+      void supabase.from('post_reactions').delete().eq('post_id', stream.id).eq('user_id', user.id).eq('emoji', '❤️')
     }
   }
 
