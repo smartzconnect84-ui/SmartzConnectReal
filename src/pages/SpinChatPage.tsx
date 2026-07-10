@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { StreamContext } from '@/contexts/StreamContext'
 import { getOrCreateDirectChannel } from '@/lib/stream'
-import { sendPushNotification } from '@/lib/onesignal'
+import { notifyUser } from '@/lib/notify'
 
 const defaultEmojis = ['👩🏾', '👨🏿', '👩🏽', '👨🏾', '👩🏿', '👨🏽']
 
@@ -366,25 +366,16 @@ export default function SpinChatPage() {
         source: 'spin_chat',
       }, { onConflict: 'swiper_id,swiped_id' })
 
-      // Notify the matched user
+      // Persist + push in one call (fire-and-forget)
       const myProfile = await supabase.from('profiles').select('full_name').eq('id', user.id).single()
       const myName = myProfile.data?.full_name || 'Someone'
-      supabase.from('notifications').insert({
-        user_id: currentProfile.id,
-        type: 'spin',
-        title: `${myName} wants to connect!`,
-        body: `You were matched on Spin & Chat. Say hi! 🎡`,
-        emoji: '⚡',
-        action_url: `/app/chat/${user.id}`,
-        from_user_id: user.id,
-        read: false,
-      }).then(() => {})
-
-      sendPushNotification({
+      notifyUser({
         userId: currentProfile.id,
+        type: 'spin',
         title: `${myName} wants to connect! ⚡`,
-        message: 'You were matched on Spin & Chat. Open the app to chat!',
-        url: `${window.location.origin}/app/chat/${user.id}`,
+        message: 'You were matched on Spin & Chat. Say hi! 🎡',
+        actionUrl: `/app/chat/${user.id}`,
+        emoji: '⚡',
       }).catch(() => {})
     } catch {
       // Silently continue — connect is a soft action
@@ -568,7 +559,7 @@ export default function SpinChatPage() {
                 <button onClick={async () => {
                   if (!user || !currentProfile) return
                   await supabase.from('follows').insert({ follower_id: user.id, following_id: currentProfile.id })
-                  await supabase.from('notifications').insert({ user_id: currentProfile.id, type: 'follow', from_user_id: user.id }).then(() => {})
+                  notifyUser({ userId: currentProfile.id, type: 'follow', title: 'New Follower', message: 'Someone from Spin & Chat started following you!', actionUrl: `/app/user/${user.id}`, emoji: '👤' }).catch(() => {})
                 }}
                   className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-fuchsia-500/10 border border-fuchsia-500/20 text-fuchsia-500 font-semibold text-xs hover:bg-fuchsia-500/20 transition-colors">
                   <Zap className="w-3.5 h-3.5" /> Follow

@@ -4,7 +4,7 @@ import { Search, UserPlus, UserMinus, Users, UserCheck, Loader2, MessageCircle }
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
-import { sendPushNotification } from '@/lib/onesignal'
+import { notifyUser } from '@/lib/notify'
 
 interface Profile {
   id: string
@@ -170,26 +170,16 @@ export default function FriendsPage() {
       await supabase.from('follows').insert({ follower_id: user.id, following_id: targetId })
       setFollowingIds(prev => new Set([...prev, targetId]))
 
-      // In-app notification row
+      // Persist + push in one call (fire-and-forget)
       const myProfile = await supabase.from('profiles').select('full_name').eq('id', user.id).single()
       const myName = myProfile.data?.full_name || 'Someone'
-      supabase.from('notifications').insert({
-        user_id: targetId,
+      notifyUser({
+        userId: targetId,
         type: 'follow',
         title: `${myName} followed you`,
-        body: 'Tap to see their profile',
-        emoji: '👤',
-        action_url: `/app/user/${user.id}`,
-        from_user_id: user.id,
-        read: false,
-      }).then(() => {})
-
-      // Push notification (fire-and-forget)
-      sendPushNotification({
-        userId: targetId,
-        title: `${myName} followed you`,
         message: 'You have a new follower on SmartzConnect!',
-        url: `${window.location.origin}/app/user/${user.id}`,
+        actionUrl: `/app/user/${user.id}`,
+        emoji: '👤',
       }).catch(() => {})
     }
     const toggle = (p: Profile) => p.id === targetId ? { ...p, isFollowing: !isCurrentlyFollowing } : p

@@ -26,7 +26,9 @@ export default function TopNavBar({ unreadMessages, unreadNotifs, onMenuToggle, 
   const { setOpen, setDismissed, setUnreadCount, unreadCount, dismissed } = useLiveChat()
   const [searchFocused, setSearchFocused] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [searchExpanded, setSearchExpanded] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
+  const searchInputRef = useRef<HTMLInputElement>(null)
   const [profileData, setProfileData] = useState<{ full_name?: string; avatar_url?: string; subscription_tier?: string } | null>(null)
   const profileRef = useRef<HTMLDivElement>(null)
 
@@ -80,8 +82,76 @@ export default function TopNavBar({ unreadMessages, unreadNotifs, onMenuToggle, 
         </span>
       </Link>
 
-      {/* Search */}
-      <div className={`flex-1 max-w-xs md:max-w-sm mx-2 md:mx-auto relative transition-all duration-300 ${searchFocused ? 'max-w-md' : ''}`}>
+      {/* Search — desktop: always-visible inline; mobile: icon-only until tapped */}
+
+      {/* Mobile search icon button (hidden on sm+) */}
+      <button
+        onClick={() => {
+          setProfileOpen(false) // close any competing overlay first
+          setSearchExpanded(true)
+          setTimeout(() => searchInputRef.current?.focus(), 50)
+        }}
+        className="sm:hidden w-9 h-9 rounded-xl dark:bg-white/5 bg-gray-100 flex items-center justify-center flex-shrink-0 hover:bg-pink-500/10 transition-colors"
+        aria-label="Search"
+        aria-expanded={searchExpanded}
+        aria-controls="mobile-search-overlay"
+      >
+        <Search className="w-4 h-4 dark:text-gray-500 text-gray-400" />
+      </button>
+
+      {/* Mobile expanded search overlay — z-[60] so it always sits above the
+          profile dropdown (z-50) and any other in-header overlay. */}
+      <AnimatePresence>
+        {searchExpanded && (
+          <motion.div
+            id="mobile-search-overlay"
+            key="mobile-search"
+            role="search"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="sm:hidden absolute inset-x-0 top-0 h-14 z-[60] flex items-center gap-2 px-3 dark:bg-[#0D0A14] bg-white border-b dark:border-white/6 border-gray-100"
+          >
+            <div className="flex-1 flex items-center gap-2 px-3 py-2 rounded-xl dark:bg-[#1C1530] bg-gray-100 border dark:border-brand-pink/40 border-brand-pink/40 shadow-lg shadow-pink-500/10">
+              <Search className="w-4 h-4 flex-shrink-0 text-brand-pink" />
+              <input
+                ref={searchInputRef}
+                type="text"
+                placeholder="Search SmartzConnect…"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                onFocus={() => setSearchFocused(true)}
+                onKeyDown={e => {
+                  if (e.key === 'Escape') { setSearchExpanded(false); setSearchFocused(false) }
+                }}
+                onBlur={() => {
+                  setSearchFocused(false)
+                  // Delay so a tap on the adjacent clear/close button still registers
+                  // before the overlay unmounts.
+                  setTimeout(() => { setSearchExpanded(false) }, 150)
+                }}
+                className="flex-1 bg-transparent text-sm dark:text-white text-gray-900 placeholder:dark:text-gray-500 placeholder:text-gray-400 focus:outline-none min-w-0"
+              />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery('')} className="flex-shrink-0">
+                  <X className="w-3.5 h-3.5 dark:text-gray-500 text-gray-400" />
+                </button>
+              )}
+            </div>
+            <button
+              onClick={() => { setSearchExpanded(false); setSearchQuery('') }}
+              aria-label="Close search"
+              className="w-9 h-9 rounded-xl dark:bg-white/5 bg-gray-100 flex items-center justify-center flex-shrink-0 hover:bg-pink-500/10 transition-colors"
+            >
+              <X className="w-4 h-4 dark:text-gray-400 text-gray-600" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Desktop search (hidden on mobile) */}
+      <div className={`hidden sm:block flex-1 max-w-xs md:max-w-sm mx-2 md:mx-auto relative transition-all duration-300 ${searchFocused ? 'max-w-md' : ''}`}>
         <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition-all duration-200 ${
           searchFocused
             ? 'dark:bg-[#1C1530] bg-white dark:border-brand-pink/40 border-brand-pink/40 shadow-lg shadow-pink-500/10'
@@ -154,7 +224,7 @@ export default function TopNavBar({ unreadMessages, unreadNotifs, onMenuToggle, 
         {/* Profile dropdown */}
         <div ref={profileRef} className="relative ml-0.5">
           <button
-            onClick={() => setProfileOpen(p => !p)}
+            onClick={() => { setSearchExpanded(false); setProfileOpen(p => !p) }}
             className="flex items-center gap-1.5 px-2 py-1.5 rounded-xl hover:dark:bg-white/5 hover:bg-gray-100 transition-colors"
           >
             <div className="w-7 h-7 rounded-full bg-love-gradient flex items-center justify-center text-white text-xs font-bold overflow-hidden flex-shrink-0">

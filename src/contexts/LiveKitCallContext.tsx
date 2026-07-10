@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useCallback, useEffect, useRef } f
 import type { ReactNode } from 'react'
 import { supabase } from '@/lib/supabase'
 import { AuthContext } from '@/contexts/AuthContext'
+import { notifyUser } from '@/lib/notify'
 
 export type CallType = 'video' | 'audio'
 
@@ -136,6 +137,8 @@ export function LiveKitCallProvider({ children }: { children: ReactNode }) {
           setCallDeclined(true)
           // Auto-dismiss after 4 s
           setTimeout(() => setCallDeclined(false), 4000)
+          // Note: the decline push to the caller is sent once, from the callee's
+          // own client in declineCall() below — do not duplicate it here.
         }
       })
       .subscribe()
@@ -201,6 +204,15 @@ export function LiveKitCallProvider({ children }: { children: ReactNode }) {
           .eq('status', 'pending')
         outgoingNotifIdRef.current = null
         setActiveCall(null)
+        // Notify callee that they missed a call (timeout path)
+        notifyUser({
+          userId: contactId,
+          type: 'missed_call',
+          title: 'Missed Call 📞',
+          message: `You missed a ${type} call. Tap to call back.`,
+          actionUrl: `/app/user/${user.id}`,
+          emoji: '📞',
+        }).catch(() => {})
       }
     }, 60000)
 
@@ -270,12 +282,22 @@ export function LiveKitCallProvider({ children }: { children: ReactNode }) {
   // ── declineCall — callee side ─────────────────────────────────────────────
   const declineCall = useCallback(async () => {
     if (!incomingCall) return
+    const snap = incomingCall
     await supabase.from('call_notifications')
       .update({ status: 'declined' })
-      .eq('id', incomingCall.notificationId)
+      .eq('id', snap.notificationId)
       .eq('status', 'pending')   // guard against caller already cancelling
     setIncomingCall(null)
-  }, [incomingCall])
+    // Notify the caller that callee actively declined (callee-side path)
+    notifyUser({
+      userId: snap.fromId,
+      type: 'missed_call',
+      title: 'Call Declined 📵',
+      message: `${user?.email?.split('@')[0] || 'Someone'} declined your call.`,
+      actionUrl: user?.id ? `/app/user/${user.id}` : '/app',
+      emoji: '📵',
+    }).catch(() => {})
+  }, [incomingCall, user?.id, user?.email])
 
   const dismissDeclined = useCallback(() => setCallDeclined(false), [])
 

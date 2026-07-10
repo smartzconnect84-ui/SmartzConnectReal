@@ -8,6 +8,7 @@ import {
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { Room, RoomEvent, Track, type LocalParticipant } from 'livekit-client'
+import { notifyUser } from '@/lib/notify'
 
 /** Attach all video tracks from a participant to a div */
 function attachLKTrack(participant: LocalParticipant, el: HTMLDivElement | null) {
@@ -351,14 +352,18 @@ function InviteModal({ streamId, streamTitle, onClose }: {
     setSearching(false)
   }
 
-  const handleInvite = async (user: UserResult) => {
-    await supabase.from('livestreams').update({ invited_creator_id: user.id }).eq('id', streamId)
-    await supabase.from('notifications').insert({
-      user_id: user.id,
-      type: 'stream_invite',
-      message: `You've been invited to stream: "${streamTitle}"`,
-    }).then(() => {})
-    setInvited(user.full_name)
+  const handleInvite = async (invitedUser: UserResult) => {
+    await supabase.from('livestreams').update({ invited_creator_id: invitedUser.id }).eq('id', streamId)
+    // Persist + push in one call (fire-and-forget)
+    notifyUser({
+      userId: invitedUser.id,
+      type: 'smartztv',
+      title: '📺 SmartzTV Stream Invite',
+      message: `You've been invited to go live for: "${streamTitle}"`,
+      actionUrl: '/app/smartztv',
+      emoji: '📺',
+    }).catch(() => {})
+    setInvited(invitedUser.full_name)
   }
 
   return (
@@ -623,6 +628,21 @@ export default function AdminSmartzTV() {
     await supabase.from('livestreams').update({ status: 'live' }).eq('id', stream.id)
     setBroadcastData({ streamId: stream.id, title: stream.title })
     fetchStreams()
+    // NOTE: Broad fan-out push to all users for SmartzTV going live is out of scope here
+    // (would require a OneSignal "Send to Segment" API call or a DB insert-select fan-out).
+    // The in-app badge updates via realtime subscription in AppShell.tsx.
+    // Notify the invited creator if any (already persisted above via handleInvite).
+    // For the admin broadcaster themselves, fire a self-notify as a system confirmation.
+    if (user?.id) {
+      notifyUser({
+        userId: user.id,
+        type: 'system',
+        title: '📺 Stream is LIVE',
+        message: `"${stream.title}" is now live on SmartzTV!`,
+        actionUrl: '/app/smartztv',
+        emoji: '📺',
+      }).catch(() => {})
+    }
   }
 
   return (

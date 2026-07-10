@@ -4,6 +4,7 @@ import { Play, Heart, Eye, Search, Flame, TrendingUp, Radio, Gift, X, Tv, Crown,
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { uploadToSufy } from '@/lib/sufy'
+import { notifyUser } from '@/lib/notify'
 import { Room, RoomEvent, Track, type LocalParticipant, type RemoteParticipant } from 'livekit-client'
 
 /** Render all video tracks from a participant into a div */
@@ -244,7 +245,15 @@ function StreamModal({ stream, onClose }: { stream: Stream; onClose: () => void 
       setFollowing(false)
     } else {
       await supabase.from('follows').insert({ follower_id: user.id, following_id: stream.creatorId })
-      await supabase.from('notifications').insert({ user_id: stream.creatorId, type: 'follow', from_user_id: user.id }).then(() => {})
+      // Persist + push in one call (fire-and-forget)
+      notifyUser({
+        userId: stream.creatorId,
+        type: 'follow',
+        title: 'New Follower on SmartzTV',
+        message: 'Someone started following you from SmartzTV!',
+        actionUrl: `/app/user/${user.id}`,
+        emoji: '📺',
+      }).catch(() => {})
       setFollowing(true)
     }
     setFollowLoading(false)
@@ -865,6 +874,18 @@ export default function SmartzTVPage() {
       setLiveThumbnailUrl('')
       fetchStreams()
       setBroadcastData({ streamId: String(row.id), title })
+      // Self-confirmation push (system type bypasses self-push guard)
+      // NOTE: Broad fan-out to all followers is out of scope — would require a
+      // DB insert-select fan-out into notifications + a OneSignal "Send to Segment"
+      // call in the edge function. Recommend as a follow-up server-side job.
+      notifyUser({
+        userId: user.id,
+        type: 'system',
+        title: '📺 You\'re Live!',
+        message: `"${title}" is now streaming on SmartzTV!`,
+        actionUrl: '/app/smartztv',
+        emoji: '📺',
+      }).catch(() => {})
     }
     setGoingLive(false)
   }

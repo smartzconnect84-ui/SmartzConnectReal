@@ -10,6 +10,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
 import { useLiveKitCall } from '@/contexts/LiveKitCallContext'
 import { streamClient } from '@/lib/stream'
+import { notifyUser } from '@/lib/notify'
 
 interface UserProfile {
   id: string
@@ -107,14 +108,15 @@ export default function UserProfilePage() {
       await supabase.from('follows').insert({ follower_id: user.id, following_id: userId })
       setIsFollowing(true)
       setStats(s => s ? { ...s, followers: s.followers + 1 } : s)
-      // Notify the followed user
-      await supabase.from('notifications').insert({
-        user_id: userId,
+      // Notify the followed user (persists DB row + fires real OS push)
+      notifyUser({
+        userId,
         type: 'follow',
         title: 'New Follower',
-        body: `${myProfile?.full_name || 'Someone'} started following you`,
-        data: { follower_id: user.id },
-      })
+        message: `${myProfile?.full_name || 'Someone'} started following you`,
+        actionUrl: `/app/user/${user.id}`,
+        emoji: '👤',
+      }).catch(() => {})
     }
     setFollowLoading(false)
   }

@@ -5,6 +5,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { useLiveKitCall } from '@/contexts/LiveKitCallContext'
+import { notifyUser } from '@/lib/notify'
 
 interface Profile {
   id: number | string
@@ -320,6 +321,15 @@ export default function DiscoverPage() {
         )
         setShowMatch(profile)
         setTimeout(() => setShowMatch(null), 4000)
+        // Notify the other user of a dating match (fire-and-forget)
+        notifyUser({
+          userId: String(profile.id),
+          type: 'dating',
+          title: "It's a Match! 💕",
+          message: `You and ${profile.name} liked each other on Discover!`,
+          actionUrl: `/app/chat/${user.id}`,
+          emoji: '💕',
+        }).catch(() => {})
       }
 
       if (dir === 'super') {
@@ -350,7 +360,15 @@ export default function DiscoverPage() {
   const handleFollow = async (profileId: string | number) => {
     if (!user) return
     await supabase.from('follows').insert({ follower_id: user.id, following_id: String(profileId) })
-    await supabase.from('notifications').insert({ user_id: String(profileId), type: 'follow', from_user_id: user.id }).then(() => {})
+    // Persist + push in one call (fire-and-forget)
+    notifyUser({
+      userId: String(profileId),
+      type: 'follow',
+      title: 'New Follower',
+      message: 'Someone on Discover liked you and started following!',
+      actionUrl: `/app/user/${user.id}`,
+      emoji: '💕',
+    }).catch(() => {})
   }
 
   const handleVideoCall = (profile: Profile) => {

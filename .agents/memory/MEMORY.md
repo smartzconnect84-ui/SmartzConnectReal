@@ -34,3 +34,4 @@
 - [Vercel deployment](vercel-deployment.md) — use --archive=tgz flag; buildCommand must be pnpm run build; project/org IDs and domain alias recorded.
 - [Schema v15 SQL bugs fixed](schema-v15-fix.md) — referral_code column missing before unique index; dollar-quoting used $; not $; fixed via schema_v15_fix.sql.
 - [Framer Motion TypeScript typing](framer-motion-typing.md) — type:'spring' widens to string; annotate variant objects as Variants; add `as const` to type field in spread-prop helper functions.
+- [Push notification architecture](push-notification-architecture.md) — always use notifyUser() (real OS push), never raw notifications.insert(); admin-only types gated by admin_users check.

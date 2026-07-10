@@ -3,7 +3,8 @@ import { useParams, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ArrowLeft, Phone, Video, MoreVertical, Send, Paperclip,
-  Mic, MicOff, Check, CheckCheck, Play, Pause, Flag, X, Loader2, WifiOff, Square
+  Mic, MicOff, Check, CheckCheck, Play, Pause, Flag, X, Loader2, WifiOff, Square,
+  Reply, Sticker, Search
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { uploadToSufy } from '@/lib/sufy'
@@ -11,10 +12,25 @@ import { useAuth } from '@/hooks/useAuth'
 import { useLiveKitCall } from '@/contexts/LiveKitCallContext'
 import { useStream } from '@/contexts/StreamContext'
 import { getOrCreateDirectChannel } from '@/lib/stream'
+import { streamClient } from '@/lib/stream'
 import ReportBlockModal from '@/components/ReportBlockModal'
 import EmojiPicker from '@/components/EmojiPicker'
 import TranslateButton from '@/components/TranslateButton'
+import MessageActionMenu from '@/components/chat/MessageActionMenu'
 import type { Channel } from 'stream-chat'
+
+interface ReactionCount {
+  emoji: string
+  count: number
+  iMine: boolean
+}
+
+interface QuotedMsg {
+  id: string
+  text: string
+  authorName: string
+  type: 'text' | 'voice' | 'image' | 'file'
+}
 
 interface Message {
   id: string
@@ -27,7 +43,9 @@ interface Message {
   imageUrl?: string
   fileUrl?: string
   fileName?: string
-  reaction?: string
+  deleted?: boolean
+  reactions?: ReactionCount[]
+  quotedMsg?: QuotedMsg
 }
 
 interface Participant {
@@ -38,7 +56,47 @@ interface Participant {
   avatar_url?: string
 }
 
-const reactions = ['❤️', '😂', '😮', '😢', '👍', '🔥']
+interface ForwardContact {
+  id: string
+  name: string
+  avatar?: string
+}
+
+// Stickers as large emoji tiles
+const STICKERS = [
+  '😍','🥰','😘','💕','🔥','✨','🎉','🙈',
+  '💯','😂','🤣','😭','👀','🫶','💪','🌸',
+  '🥺','😎','🤩','💀',
+]
+
+function mapReactions(m: any, myId: string): ReactionCount[] {
+  const counts: Record<string, { count: number; iMine: boolean }> = {}
+  if (m.reaction_counts) {
+    for (const [emoji, count] of Object.entries(m.reaction_counts as Record<string, number>)) {
+      counts[emoji] = { count, iMine: false }
+    }
+  }
+  if (m.own_reactions) {
+    for (const r of (m.own_reactions as any[])) {
+      if (counts[r.type]) counts[r.type].iMine = true
+      else counts[r.type] = { count: 1, iMine: true }
+    }
+  }
+  return Object.entries(counts).map(([emoji, v]) => ({ emoji, count: v.count, iMine: v.iMine }))
+}
+
+function mapQuotedMsg(m: any): QuotedMsg | undefined {
+  const qm = m.quoted_message
+  if (!qm) return undefined
+  const attach = qm.attachments?.[0]
+  const type = attach?.type === 'voice' ? 'voice' : attach?.type === 'image' ? 'image' : attach ? 'file' : 'text'
+  return {
+    id: qm.id,
+    text: qm.text || (type === 'voice' ? '🎙️ Voice message' : type === 'image' ? '🖼️ Image' : type === 'file' ? '📎 File' : ''),
+    authorName: qm.user?.name || qm.user?.id?.slice(0, 8) || 'User',
+    type,
+  }
+}
 
 function mapStreamMessage(m: any, myId: string): Message {
   const attach = m.attachments?.[0]
@@ -56,6 +114,9 @@ function mapStreamMessage(m: any, myId: string): Message {
     imageUrl:  isImage ? (attach?.image_url || attach?.asset_url) : undefined,
     fileUrl:   isFile  ? attach?.asset_url : undefined,
     fileName:  (isImage || isFile) ? (attach?.title || attach?.fallback) : undefined,
+    deleted: m.deleted_at != null || m.type === 'deleted',
+    reactions: mapReactions(m, myId),
+    quotedMsg: mapQuotedMsg(m),
   }
 }
 
@@ -71,8 +132,8 @@ export default function ChatPage() {
   const [uploadingFile, setUploadingFile] = useState(false)
   const [connectTimeout, setConnectTimeout] = useState(false)
   const [input, setInput] = useState('')
-  const [showReactions, setShowReactions] = useState<string | null>(null)
   const [showEmoji, setShowEmoji] = useState(false)
+  const [showStickers, setShowStickers] = useState(false)
   const [sending, setSending] = useState(false)
   const [showReport, setShowReport] = useState(false)
   const [showMenu, setShowMenu] = useState(false)
@@ -81,7 +142,26 @@ export default function ChatPage() {
   const [recordingTime, setRecordingTime] = useState(0)
   const [uploadingVoice, setUploadingVoice] = useState(false)
   const [playingId, setPlayingId] = useState<string | null>(null)
-  const [voiceError, setVoiceError] = useState<string | null>(null)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
+
+  // Action menu state
+  const [actionMenuMsgId, setActionMenuMsgId] = useState<string | null>(null)
+
+  // Reaction picker state
+  const [reactionPickerMsgId, setReactionPickerMsgId] = useState<string | null>(null)
+
+  // Reply state
+  const [replyingTo, setReplyingTo] = useState<QuotedMsg | null>(null)
+
+  // Forward state
+  const [forwardMsg, setForwardMsg] = useState<Message | null>(null)
+  const [forwardContacts, setForwardContacts] = useState<ForwardContact[]>([])
+  const [forwardSearch, setForwardSearch] = useState('')
+  const [forwardLoading, setForwardLoading] = useState(false)
+  const [forwarding, setForwarding] = useState(false)
+
+  // Long-press support for mobile
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const bottomRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -92,11 +172,15 @@ export default function ChatPage() {
   const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const audioRefs = useRef<Record<string, HTMLAudioElement>>({})
 
+  const showError = (msg: string) => {
+    setErrorMsg(msg)
+    setTimeout(() => setErrorMsg(null), 4000)
+  }
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, otherTyping])
 
-  // Cleanup recording resources on unmount
   useEffect(() => {
     return () => {
       if (recordingTimerRef.current) clearInterval(recordingTimerRef.current)
@@ -107,7 +191,6 @@ export default function ChatPage() {
     }
   }, [])
 
-  // Load participant profile — also subscribe to realtime presence updates
   useEffect(() => {
     if (!id) return
     supabase
@@ -128,7 +211,6 @@ export default function ChatPage() {
         })
       })
 
-    // Subscribe to realtime presence updates for this participant
     const presenceSub = supabase
       .channel(`presence:${id}`)
       .on('postgres_changes', {
@@ -148,7 +230,6 @@ export default function ChatPage() {
     return () => { supabase.removeChannel(presenceSub) }
   }, [id])
 
-  // Connection timeout — if GetStream doesn't connect in 10 s, stop the spinner
   useEffect(() => {
     if (connected) { setConnectTimeout(false); return }
     const t = setTimeout(() => {
@@ -158,7 +239,6 @@ export default function ChatPage() {
     return () => clearTimeout(t)
   }, [connected])
 
-  // GetStream channel: watch + realtime messaging + typing + read receipts
   useEffect(() => {
     if (!connected || !user?.id || !id) return
 
@@ -171,8 +251,6 @@ export default function ChatPage() {
         const state = await channel.watch()
         if (cancelled) return
         setMessages((state.messages || []).map(m => mapStreamMessage(m, user.id!)))
-
-        // Mark channel as read immediately on open
         channel.markRead().catch(() => {})
       } catch (err) {
         console.error('Stream channel init:', err)
@@ -184,22 +262,36 @@ export default function ChatPage() {
     const handleNew = (event: any) => {
       if (cancelled || !event.message) return
       const m = event.message
-      if (m.user?.id === user.id) return // handled optimistically
+      if (m.user?.id === user.id) return
       setMessages(prev => {
         if (prev.some(msg => msg.id === m.id)) return prev
         return [...prev, mapStreamMessage(m, user.id!)]
       })
-      // Mark as read when message arrives and we're in the chat
       channel.markRead().catch(() => {})
+    }
+
+    const handleUpdated = (event: any) => {
+      if (cancelled || !event.message) return
+      const m = event.message
+      setMessages(prev => prev.map(msg =>
+        msg.id === m.id ? { ...mapStreamMessage(m, user.id!), mine: msg.mine } : msg
+      ))
+    }
+
+    const handleDeleted = (event: any) => {
+      if (cancelled || !event.message) return
+      const m = event.message
+      setMessages(prev => prev.map(msg =>
+        msg.id === m.id ? { ...msg, deleted: true, text: '' } : msg
+      ))
     }
 
     const handleReaction = (event: any) => {
       if (cancelled || !event.message) return
       const m = event.message
-      const latest = m.latest_reactions?.[0]
-      if (latest) {
-        setMessages(prev => prev.map(msg => msg.id === m.id ? { ...msg, reaction: latest.type } : msg))
-      }
+      setMessages(prev => prev.map(msg =>
+        msg.id === m.id ? { ...msg, reactions: mapReactions(m, user.id!) } : msg
+      ))
     }
 
     const handleTypingStart = (event: any) => {
@@ -214,12 +306,14 @@ export default function ChatPage() {
 
     const handleRead = (event: any) => {
       if (cancelled || event.user?.id === user.id) return
-      // Other person read our messages — mark all mine as read
       setMessages(prev => prev.map(m => m.mine ? { ...m, status: 'read' } : m))
     }
 
     channel.on('message.new', handleNew)
+    channel.on('message.updated', handleUpdated)
+    channel.on('message.deleted', handleDeleted)
     channel.on('reaction.new', handleReaction)
+    channel.on('reaction.deleted', handleReaction)
     channel.on('typing.start', handleTypingStart)
     channel.on('typing.stop', handleTypingStop)
     channel.on('message.read', handleRead)
@@ -227,11 +321,13 @@ export default function ChatPage() {
     return () => {
       cancelled = true
       channel.off('message.new', handleNew)
+      channel.off('message.updated', handleUpdated)
+      channel.off('message.deleted', handleDeleted)
       channel.off('reaction.new', handleReaction)
+      channel.off('reaction.deleted', handleReaction)
       channel.off('typing.start', handleTypingStart)
       channel.off('typing.stop', handleTypingStop)
       channel.off('message.read', handleRead)
-      // Null out ref so in-flight sends from a previous mount don't proceed
       channelRef.current = null
       setOtherTyping(false)
     }
@@ -239,8 +335,6 @@ export default function ChatPage() {
 
   const handleCall = (type: 'video' | 'audio') => {
     if (!id) return
-    // Use initiateCall so a call_notification row is inserted and the callee
-    // receives an incoming-call alert via Supabase Realtime.
     initiateCall({
       contactId: id,
       contactName: participant?.name || 'User',
@@ -253,7 +347,6 @@ export default function ChatPage() {
     setInput(e.target.value)
     if (channelRef.current && connected) {
       channelRef.current.keystroke().catch(() => {})
-      // Auto-stop typing after 3 s of inactivity
       if (typingStopRef.current) clearTimeout(typingStopRef.current)
       typingStopRef.current = setTimeout(() => {
         channelRef.current?.stopTyping().catch(() => {})
@@ -261,15 +354,13 @@ export default function ChatPage() {
     }
   }
 
-  const send = useCallback(async () => {
-    const text = input.trim()
+  const send = useCallback(async (overrideText?: string, extraPayload?: Record<string, any>) => {
+    const text = (overrideText ?? input).trim()
     if (!text || !channelRef.current || !connected || !user?.id) return
 
-    // Stop typing indicator
     if (typingStopRef.current) clearTimeout(typingStopRef.current)
     try { await channelRef.current.stopTyping() } catch {}
 
-    // Use a client-side temp ID only for optimistic UI; Stream will assign its own server ID.
     const clientId = `client-${user.id.replace(/-/g, '').slice(0, 12)}-${Date.now()}`
     const optimistic: Message = {
       id: clientId,
@@ -278,14 +369,20 @@ export default function ChatPage() {
       mine: true,
       status: 'sent',
       type: 'text',
+      quotedMsg: replyingTo ?? undefined,
     }
     setMessages(prev => [...prev, optimistic])
-    setInput('')
+    if (!overrideText) setInput('')
+    const replyRef = replyingTo
+    setReplyingTo(null)
     setSending(true)
 
     try {
-      const response = await channelRef.current.sendMessage({ text } as any)
-      // Replace the optimistic message with the server-confirmed message ID
+      const payload: any = { text, ...extraPayload }
+      if (replyRef?.id) {
+        payload.quoted_message_id = replyRef.id
+      }
+      const response = await channelRef.current.sendMessage(payload)
       const serverId = response.message?.id
       setMessages(prev => prev.map(m =>
         m.id === clientId
@@ -294,20 +391,102 @@ export default function ChatPage() {
       ))
     } catch (err: any) {
       console.error('Send error:', err)
-      // Remove the failed optimistic message and surface an error
       setMessages(prev => prev.filter(m => m.id !== clientId))
-      setVoiceError(err?.message || 'Failed to send message. Please try again.')
-      setTimeout(() => setVoiceError(null), 4000)
-      setInput(text) // restore input so user can retry
+      showError(err?.message || 'Failed to send message. Please try again.')
+      if (!overrideText) setInput(text)
     } finally {
       setSending(false)
     }
-  }, [input, connected, user?.id])
+  }, [input, connected, user?.id, replyingTo])
 
   const addReaction = async (msgId: string, emoji: string) => {
-    setMessages(prev => prev.map(m => m.id === msgId ? { ...m, reaction: emoji } : m))
-    setShowReactions(null)
-    try { await channelRef.current?.sendReaction(msgId, { type: emoji }) } catch {}
+    setReactionPickerMsgId(null)
+    const msg = messages.find(m => m.id === msgId)
+    const existing = msg?.reactions?.find(r => r.emoji === emoji && r.iMine)
+    try {
+      if (existing) {
+        // Toggle off: remove own reaction
+        setMessages(prev => prev.map(m => {
+          if (m.id !== msgId) return m
+          const updated = (m.reactions || [])
+            .map(r => r.emoji === emoji ? { ...r, count: r.count - 1, iMine: false } : r)
+            .filter(r => r.count > 0)
+          return { ...m, reactions: updated }
+        }))
+        await channelRef.current?.deleteReaction(msgId, emoji)
+      } else {
+        setMessages(prev => prev.map(m => {
+          if (m.id !== msgId) return m
+          const existing2 = (m.reactions || []).find(r => r.emoji === emoji)
+          const updated = existing2
+            ? (m.reactions || []).map(r => r.emoji === emoji ? { ...r, count: r.count + 1, iMine: true } : r)
+            : [...(m.reactions || []), { emoji, count: 1, iMine: true }]
+          return { ...m, reactions: updated }
+        }))
+        await channelRef.current?.sendReaction(msgId, { type: emoji })
+      }
+    } catch (err) {
+      console.error('Reaction error:', err)
+    }
+  }
+
+  const deleteMessage = async (msgId: string) => {
+    // Optimistically mark deleted
+    setMessages(prev => prev.map(m => m.id === msgId ? { ...m, deleted: true, text: '' } : m))
+    try {
+      await streamClient?.deleteMessage(msgId)
+    } catch (err: any) {
+      console.error('Delete error:', err)
+      // Revert
+      setMessages(prev => prev.map(m => m.id === msgId ? { ...m, deleted: false } : m))
+      showError(err?.message || 'Could not delete message.')
+    }
+  }
+
+  // Load contacts for forward picker
+  const openForward = async (msg: Message) => {
+    setForwardMsg(msg)
+    if (forwardContacts.length > 0) return
+    setForwardLoading(true)
+    try {
+      const { data } = await supabase
+        .from('follows')
+        .select('following_id, profiles:following_id(id, full_name, avatar_url)')
+        .eq('follower_id', user?.id)
+        .limit(30)
+      const list: ForwardContact[] = (data ?? [])
+        .map((f: any) => f.profiles)
+        .filter(Boolean)
+        .map((p: any) => ({ id: p.id, name: p.full_name || 'User', avatar: p.avatar_url }))
+      setForwardContacts(list)
+    } catch (err) {
+      console.error('Forward contacts error:', err)
+    }
+    setForwardLoading(false)
+  }
+
+  const forwardTo = async (contact: ForwardContact) => {
+    if (!forwardMsg || !user?.id || !streamClient) return
+    setForwarding(true)
+    try {
+      const targetChan = getOrCreateDirectChannel(user.id, contact.id)
+      await targetChan.watch()
+      const payload: any = { text: forwardMsg.text || '' }
+      if (forwardMsg.type === 'voice' && forwardMsg.audioUrl) {
+        payload.attachments = [{ type: 'voice', asset_url: forwardMsg.audioUrl, url: forwardMsg.audioUrl }]
+      } else if (forwardMsg.type === 'image' && forwardMsg.imageUrl) {
+        payload.attachments = [{ type: 'image', asset_url: forwardMsg.imageUrl, image_url: forwardMsg.imageUrl, title: forwardMsg.fileName }]
+      } else if (forwardMsg.type === 'file' && forwardMsg.fileUrl) {
+        payload.attachments = [{ type: 'file', asset_url: forwardMsg.fileUrl, title: forwardMsg.fileName }]
+      }
+      await targetChan.sendMessage(payload)
+      setForwardMsg(null)
+      setForwardSearch('')
+    } catch (err: any) {
+      console.error('Forward error:', err)
+      showError(err?.message || 'Failed to forward message.')
+    }
+    setForwarding(false)
   }
 
   const handleFileAttach = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -346,15 +525,13 @@ export default function ChatPage() {
       setMessages(prev => prev.map(m => m.id === clientId ? { ...m, status: 'delivered' } : m))
     } catch (err: any) {
       console.error('File upload error:', err)
-      setVoiceError(err?.message || 'File upload failed. Please try again.')
-      setTimeout(() => setVoiceError(null), 4000)
+      showError(err?.message || 'File upload failed. Please try again.')
     }
     setUploadingFile(false)
   }
 
   const toggleRecording = async () => {
     if (isRecording) {
-      // Stop recording
       mediaRecorderRef.current?.stop()
       if (recordingTimerRef.current) clearInterval(recordingTimerRef.current)
       setIsRecording(false)
@@ -410,8 +587,7 @@ export default function ChatPage() {
       recordingTimerRef.current = setInterval(() => setRecordingTime(t => t + 1), 1000)
     } catch (err) {
       console.error('Microphone access denied:', err)
-      setVoiceError('Microphone access denied. Allow mic access and try again.')
-      setTimeout(() => setVoiceError(null), 4000)
+      showError('Microphone access denied. Allow mic access and try again.')
     }
   }
 
@@ -429,9 +605,28 @@ export default function ChatPage() {
     setPlayingId(msgId)
   }
 
+  const sendSticker = async (emoji: string) => {
+    setShowStickers(false)
+    await send(emoji)
+  }
+
   const fmtTime = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
 
+  const handleMsgLongPress = (msgId: string) => {
+    longPressTimer.current = setTimeout(() => {
+      setActionMenuMsgId(msgId)
+    }, 500)
+  }
+
+  const cancelLongPress = () => {
+    if (longPressTimer.current) clearTimeout(longPressTimer.current)
+  }
+
   const person = participant
+
+  const filteredForwardContacts = forwardContacts.filter(c =>
+    c.name.toLowerCase().includes(forwardSearch.toLowerCase())
+  )
 
   return (
     <div className="h-full flex flex-col dark:bg-pink-50 bg-gray-50 relative">
@@ -484,7 +679,10 @@ export default function ChatPage() {
       )}
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2" onClick={() => { setShowReactions(null); setShowEmoji(false) }}>
+      <div
+        className="flex-1 overflow-y-auto px-4 py-4 space-y-2"
+        onClick={() => { setActionMenuMsgId(null); setReactionPickerMsgId(null); setShowEmoji(false); setShowStickers(false) }}
+      >
         {loading ? (
           <div className="flex flex-col items-center justify-center h-full gap-3">
             <div className="w-8 h-8 rounded-full border-2 border-pink-500/30 border-t-pink-500 animate-spin" />
@@ -525,15 +723,34 @@ export default function ChatPage() {
             <div key={msg.id}>
               <div className={`flex ${msg.mine ? 'justify-end' : 'justify-start'} group relative`}>
                 <div className="max-w-[80%] relative">
+                  {/* Message bubble */}
                   <div
-                    onClick={e => { e.stopPropagation(); setShowReactions(showReactions === msg.id ? null : msg.id) }}
-                    className={`px-4 py-2.5 rounded-2xl cursor-pointer ${
+                    onMouseDown={() => handleMsgLongPress(msg.id)}
+                    onMouseUp={cancelLongPress}
+                    onMouseLeave={cancelLongPress}
+                    onTouchStart={() => handleMsgLongPress(msg.id)}
+                    onTouchEnd={cancelLongPress}
+                    onContextMenu={e => { e.preventDefault(); setActionMenuMsgId(msg.id) }}
+                    onClick={e => { e.stopPropagation(); setActionMenuMsgId(actionMenuMsgId === msg.id ? null : msg.id) }}
+                    className={`px-4 py-2.5 rounded-2xl cursor-pointer select-none ${
                       msg.mine
                         ? 'bg-love-gradient text-white rounded-br-sm'
                         : 'dark:bg-white dark:border dark:border-pink-200 bg-gray-100 dark:text-gray-900 text-gray-900 rounded-bl-sm dark:shadow-sm'
                     }`}
                   >
-                    {msg.type === 'voice' ? (
+                    {/* Quoted reply block */}
+                    {msg.quotedMsg && !msg.deleted && (
+                      <div className={`mb-2 pl-2 border-l-2 ${msg.mine ? 'border-white/50' : 'border-pink-400'} opacity-80`}>
+                        <p className={`text-[10px] font-semibold mb-0.5 ${msg.mine ? 'text-white/80' : 'text-pink-500'}`}>
+                          {msg.quotedMsg.authorName}
+                        </p>
+                        <p className="text-xs truncate opacity-90">{msg.quotedMsg.text || '📎 Attachment'}</p>
+                      </div>
+                    )}
+
+                    {msg.deleted ? (
+                      <p className="text-sm italic opacity-60">This message was deleted</p>
+                    ) : msg.type === 'voice' ? (
                       <div className="flex items-center gap-2 min-w-[140px]">
                         <button
                           onClick={e => { e.stopPropagation(); if (msg.audioUrl) toggleAudio(msg.id, msg.audioUrl) }}
@@ -570,8 +787,58 @@ export default function ChatPage() {
                     )}
                   </div>
 
-                  {msg.reaction && (
-                    <div className={`absolute -bottom-2 ${msg.mine ? 'left-2' : 'right-2'} text-lg`}>{msg.reaction}</div>
+                  {/* Action menu */}
+                  <MessageActionMenu
+                    open={actionMenuMsgId === msg.id}
+                    isMine={msg.mine}
+                    onClose={() => setActionMenuMsgId(null)}
+                    onDelete={msg.mine && !msg.deleted ? () => deleteMessage(msg.id) : undefined}
+                    onForward={() => openForward(msg)}
+                    onReply={() => {
+                      setReplyingTo({
+                        id: msg.id,
+                        text: msg.deleted ? 'Deleted message' : (msg.text || (msg.type === 'voice' ? '🎙️ Voice message' : msg.type === 'image' ? '🖼️ Image' : '📎 File')),
+                        authorName: msg.mine ? (user?.user_metadata?.full_name || 'You') : (participant?.name || 'User'),
+                        type: msg.type,
+                      })
+                    }}
+                    onReact={() => setReactionPickerMsgId(msg.id)}
+                    align={msg.mine ? 'right' : 'left'}
+                  />
+
+                  {/* Reaction picker */}
+                  <AnimatePresence>
+                    {reactionPickerMsgId === msg.id && (
+                      <div
+                        className={`absolute ${msg.mine ? 'right-0' : 'left-0'} -top-14 z-20`}
+                        onClick={e => e.stopPropagation()}
+                      >
+                        <EmojiPicker
+                          onSelect={emoji => addReaction(msg.id, emoji)}
+                          onClose={() => setReactionPickerMsgId(null)}
+                        />
+                      </div>
+                    )}
+                  </AnimatePresence>
+
+                  {/* Aggregated reactions */}
+                  {!msg.deleted && msg.reactions && msg.reactions.length > 0 && (
+                    <div className={`flex flex-wrap gap-1 mt-1 ${msg.mine ? 'justify-end' : 'justify-start'}`}>
+                      {msg.reactions.map(r => (
+                        <button
+                          key={r.emoji}
+                          onClick={e => { e.stopPropagation(); addReaction(msg.id, r.emoji) }}
+                          className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-xs border transition-colors ${
+                            r.iMine
+                              ? 'bg-pink-100 border-pink-300 text-pink-700'
+                              : 'bg-white border-gray-200 dark:border-pink-200 dark:bg-white text-gray-700 dark:text-gray-700'
+                          }`}
+                        >
+                          <span>{r.emoji}</span>
+                          {r.count > 1 && <span className="font-semibold">{r.count}</span>}
+                        </button>
+                      ))}
+                    </div>
                   )}
 
                   <div className={`flex items-center gap-1 mt-1 ${msg.mine ? 'justify-end' : ''}`}>
@@ -585,18 +852,6 @@ export default function ChatPage() {
                     )}
                   </div>
                 </div>
-
-                <AnimatePresence>
-                  {showReactions === msg.id && (
-                    <motion.div initial={{ opacity: 0, scale: 0.8, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.8 }}
-                      onClick={e => e.stopPropagation()}
-                      className={`absolute ${msg.mine ? 'right-0' : 'left-0'} -top-12 z-10 flex gap-1 dark:bg-white bg-white rounded-2xl p-2 shadow-xl border dark:border-pink-200 border-gray-100`}>
-                      {reactions.map(r => (
-                        <button key={r} onClick={() => addReaction(msg.id, r)} className="text-xl hover:scale-125 transition-transform">{r}</button>
-                      ))}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
               </div>
             </div>
           ))
@@ -636,16 +891,38 @@ export default function ChatPage() {
         </AnimatePresence>
       </div>
 
-      {/* Recording indicator / error */}
+      {/* Sticker Picker */}
       <AnimatePresence>
-        {voiceError && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
-            className="absolute bottom-20 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 px-4 py-2.5 dark:bg-white bg-white rounded-2xl shadow-xl border dark:border-red-200 border-red-200 whitespace-nowrap max-w-xs">
-            <span className="text-xs font-semibold text-red-500">{voiceError}</span>
-            <button onClick={() => setVoiceError(null)} className="text-gray-400 hover:text-red-500 ml-1"><X className="w-3.5 h-3.5" /></button>
+        {showStickers && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            className="absolute bottom-16 left-3 z-50 dark:bg-white bg-white rounded-2xl shadow-xl border dark:border-pink-200 border-gray-100 p-3"
+            onClick={e => e.stopPropagation()}
+          >
+            <p className="text-xs font-semibold dark:text-gray-500 text-gray-500 mb-2">Stickers</p>
+            <div className="grid grid-cols-5 gap-1">
+              {STICKERS.map(s => (
+                <button key={s} onClick={() => sendSticker(s)} className="text-4xl w-12 h-12 flex items-center justify-center rounded-xl hover:bg-pink-50 dark:hover:bg-pink-50 transition-colors">
+                  {s}
+                </button>
+              ))}
+            </div>
           </motion.div>
         )}
-        {isRecording && !voiceError && (
+      </AnimatePresence>
+
+      {/* Error toast */}
+      <AnimatePresence>
+        {errorMsg && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
+            className="absolute bottom-20 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 px-4 py-2.5 dark:bg-white bg-white rounded-2xl shadow-xl border dark:border-red-200 border-red-200 whitespace-nowrap max-w-xs">
+            <span className="text-xs font-semibold text-red-500">{errorMsg}</span>
+            <button onClick={() => setErrorMsg(null)} className="text-gray-400 hover:text-red-500 ml-1"><X className="w-3.5 h-3.5" /></button>
+          </motion.div>
+        )}
+        {isRecording && !errorMsg && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
             className="absolute bottom-20 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 px-4 py-2.5 dark:bg-white bg-white rounded-2xl shadow-xl border dark:border-red-200 border-red-100 whitespace-nowrap">
             <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
@@ -655,11 +932,35 @@ export default function ChatPage() {
         )}
       </AnimatePresence>
 
+      {/* Reply preview strip */}
+      <AnimatePresence>
+        {replyingTo && (
+          <motion.div
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 4 }}
+            className="px-4 py-2 dark:bg-white bg-white border-t dark:border-pink-200 border-gray-100 flex items-center gap-3"
+          >
+            <Reply className="w-4 h-4 text-pink-400 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold text-pink-500 truncate">{replyingTo.authorName}</p>
+              <p className="text-xs dark:text-gray-600 text-gray-600 truncate">{replyingTo.text || '📎 Attachment'}</p>
+            </div>
+            <button onClick={() => setReplyingTo(null)} className="text-gray-400 hover:text-red-500 flex-shrink-0">
+              <X className="w-4 h-4" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Input bar */}
       <div className="px-3 py-3 dark:bg-white bg-white border-t dark:border-pink-200 border-gray-100 flex-shrink-0">
         <input ref={fileInputRef} type="file" accept="image/*,.pdf,.doc,.docx,.txt,.zip,.mp4,.mov" className="hidden" onChange={handleFileAttach} />
         <div className="flex items-center gap-2 dark:bg-pink-50 dark:border dark:border-pink-200 bg-gray-100 border border-transparent rounded-2xl px-3 py-2 focus-within:dark:border-pink-400">
-          <button onClick={() => setShowEmoji(!showEmoji)} className="text-lg hover:scale-110 transition-transform">😊</button>
+          <button onClick={() => { setShowEmoji(!showEmoji); setShowStickers(false) }} className="text-lg hover:scale-110 transition-transform">😊</button>
+          <button onClick={() => { setShowStickers(!showStickers); setShowEmoji(false) }} className="hover:scale-110 transition-transform">
+            <Sticker className="w-4 h-4 dark:text-gray-400 text-gray-400 hover:text-brand-pink transition-colors" />
+          </button>
           <input value={input} onChange={handleInputChange} onKeyDown={e => e.key === 'Enter' && !e.shiftKey && send()}
             placeholder={connected ? 'Message…' : 'Connecting…'} disabled={!connected || isRecording}
             className="flex-1 bg-transparent text-sm dark:text-gray-900 text-gray-900 placeholder:dark:text-gray-400 placeholder:text-gray-400 focus:outline-none disabled:opacity-50" />
@@ -674,13 +975,77 @@ export default function ChatPage() {
             >
               {uploadingVoice ? <Loader2 className="w-4 h-4 animate-spin text-brand-pink" /> : isRecording ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
             </button>
-            <button onClick={send} disabled={!input.trim() || sending || !connected || isRecording || uploadingFile}
+            <button onClick={() => send()} disabled={!input.trim() || sending || !connected || isRecording || uploadingFile}
               className="w-8 h-8 rounded-xl bg-love-gradient flex items-center justify-center disabled:opacity-40 hover:opacity-90 transition-all ml-1">
               {sending ? <Loader2 className="w-3.5 h-3.5 text-white animate-spin" /> : <Send className="w-3.5 h-3.5 text-white" />}
             </button>
           </div>
         </div>
       </div>
+
+      {/* Forward Modal */}
+      <AnimatePresence>
+        {forwardMsg && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4"
+            onClick={() => setForwardMsg(null)}
+          >
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 30 }}
+              onClick={e => e.stopPropagation()}
+              className="dark:bg-white bg-white rounded-t-3xl sm:rounded-3xl w-full sm:max-w-sm overflow-hidden"
+            >
+              <div className="flex items-center justify-between px-5 py-4 border-b dark:border-pink-200 border-gray-100">
+                <h2 className="font-display font-black text-base dark:text-gray-900 text-gray-900">Forward to…</h2>
+                <button onClick={() => setForwardMsg(null)} className="w-8 h-8 rounded-xl dark:bg-pink-100 bg-gray-100 flex items-center justify-center">
+                  <X className="w-4 h-4 dark:text-gray-700 text-gray-600" />
+                </button>
+              </div>
+              <div className="px-4 py-3 border-b dark:border-pink-100 border-gray-100">
+                <div className="flex items-center gap-2 dark:bg-pink-50 bg-gray-100 rounded-xl px-3 py-2">
+                  <Search className="w-4 h-4 dark:text-gray-400 text-gray-400" />
+                  <input
+                    value={forwardSearch}
+                    onChange={e => setForwardSearch(e.target.value)}
+                    placeholder="Search contacts…"
+                    className="flex-1 bg-transparent text-sm dark:text-gray-900 text-gray-900 placeholder:dark:text-gray-400 placeholder:text-gray-400 focus:outline-none"
+                  />
+                </div>
+              </div>
+              <div className="max-h-64 overflow-y-auto">
+                {forwardLoading ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="w-5 h-5 animate-spin text-pink-400" />
+                  </div>
+                ) : filteredForwardContacts.length === 0 ? (
+                  <p className="text-sm dark:text-gray-500 text-gray-500 text-center py-8">No contacts found</p>
+                ) : (
+                  filteredForwardContacts.map(c => (
+                    <button
+                      key={c.id}
+                      onClick={() => forwardTo(c)}
+                      disabled={forwarding}
+                      className="flex items-center gap-3 w-full px-4 py-3 hover:dark:bg-pink-50 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                    >
+                      <div className="w-9 h-9 rounded-full dark:bg-pink-100 bg-gray-100 flex items-center justify-center text-lg overflow-hidden flex-shrink-0">
+                        {c.avatar ? <img src={c.avatar} alt={c.name} className="w-full h-full object-cover" /> : '👤'}
+                      </div>
+                      <span className="text-sm font-medium dark:text-gray-900 text-gray-900 text-left">{c.name}</span>
+                      {forwarding && <Loader2 className="w-4 h-4 animate-spin text-pink-400 ml-auto" />}
+                    </button>
+                  ))
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

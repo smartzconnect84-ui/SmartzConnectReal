@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Mic, MicOff, Video, VideoOff, PhoneOff, Minimize2, Maximize2,
   Wifi, WifiOff, MonitorUp, PhoneIncoming, Pause, Play, Sparkles, UserPlus, X,
+  Volume2, VolumeX,
 } from 'lucide-react'
 import {
   Room, RoomEvent, Track, ConnectionQuality,
@@ -12,9 +13,17 @@ import { useLiveKitCall } from '@/contexts/LiveKitCallContext'
 import { useStream } from '@/contexts/StreamContext'
 import { supabase } from '@/lib/supabase'
 import { startRinging, stopRinging, playConnected, playCallEnded, playMuteToggle } from '@/lib/callSounds'
+import { getDominantColor } from '@/lib/dominantColor'
+
+// Keeps a live set of all remote <audio> elements so we can route them to
+// the chosen audio output device when the speaker toggle changes.
+const remoteAudioEls = new Set<HTMLAudioElement>()
 
 function attachTrack(participant: LocalParticipant | RemoteParticipant, el: HTMLDivElement | null) {
   if (!el) return
+  // Prune any audio elements this tile previously held before wiping the DOM,
+  // so remoteAudioEls never accumulates stale/detached refs across re-attaches.
+  el.querySelectorAll('audio').forEach(a => remoteAudioEls.delete(a as HTMLAudioElement))
   el.innerHTML = ''
   participant.videoTrackPublications.forEach(pub => {
     if (pub.track && pub.kind === Track.Kind.Video) {
@@ -34,6 +43,7 @@ function attachTrack(participant: LocalParticipant | RemoteParticipant, el: HTML
         audioEl.autoplay = true
         audioEl.style.display = 'none'
         el.appendChild(audioEl)
+        remoteAudioEls.add(audioEl)
       }
     })
   }
@@ -65,6 +75,8 @@ export default function LiveKitCall() {
   const roomRef = useRef<Room | null>(null)
   const videoCallRowRef = useRef<string | null>(null)  // video_calls.id
   const callStartRef = useRef<number>(0)
+  // Cache dominant colors per avatar URL to avoid re-computing every render
+  const colorCacheRef = useRef<Map<string, string>>(new Map())
 
   const [muted, setMuted] = useState(false)
   const [cameraOff, setCameraOff] = useState(false)
@@ -80,6 +92,9 @@ export default function LiveKitCall() {
   const [showInvite, setShowInvite] = useState(false)
   const [contacts, setContacts] = useState<{ id: string; name: string; avatar?: string }[]>([])
   const [remoteParticipants, setRemoteParticipants] = useState<RemoteParticipant[]>([])
+  const [speakerOn, setSpeakerOn] = useState(true)
+  const [speakerNote, setSpeakerNote] = useState<string | null>(null)
+  const [themeColor, setThemeColor] = useState('#EC4899')
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const preHoldMicRef = useRef(false)
   const preHoldCamRef = useRef(false)
@@ -96,6 +111,8 @@ export default function LiveKitCall() {
       setRemoteJoined(false)
       setOnHold(false)
       setFilter(VIDEO_FILTERS[0])
+      setSpeakerOn(true)
+      setSpeakerNote(null)
       callStartRef.current = Date.now()
     } else {
       stopRinging()
@@ -106,6 +123,27 @@ export default function LiveKitCall() {
       if (timerRef.current) clearInterval(timerRef.current)
     }
   }, [activeCall?.roomId])
+
+  // Extract dominant color from participant avatar for the call theme
+  useEffect(() => {
+    if (!activeCall?.participantAvatar) {
+      setThemeColor('#EC4899')
+      return
+    }
+    const url = activeCall.participantAvatar
+    if (colorCacheRef.current.has(url)) {
+      setThemeColor(colorCacheRef.current.get(url)!)
+      return
+    }
+    let cancelled = false
+    getDominantColor(url).then(color => {
+      if (!cancelled) {
+        colorCacheRef.current.set(url, color)
+        setThemeColor(color)
+      }
+    })
+    return () => { cancelled = true }
+  }, [activeCall?.participantAvatar])
 
   // Caller-side ringing: play while connected to room but remote hasn't joined yet
   useEffect(() => {
@@ -235,6 +273,8 @@ export default function LiveKitCall() {
 
     return () => {
       disposed = true
+      // Clean up remote audio element tracking on room disconnect
+      remoteAudioEls.clear()
       // Update video_calls row with ended status + duration
       if (videoCallRowRef.current) {
         const durationSecs = Math.floor((Date.now() - callStartRef.current) / 1000)
@@ -336,6 +376,63 @@ export default function LiveKitCall() {
     }
   }, [screenSharing])
 
+  const handleToggleSpeaker = useCallback(async () => {
+    const next = !speakerOn
+    setSpeakerOn(next)
+    setSpeakerNote(null)
+
+    // Feature-detect setSinkId support
+    const testEl = document.createElement('audio')
+    const supportsSinkId = typeof (testEl as any).setSinkId === 'function'
+
+    if (!supportsSinkId || !navigator.mediaDevices?.enumerateDevices) {
+      setSpeakerNote('Speaker routing isn\'t supported in this browser.')
+      return
+    }
+
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices()
+      const audioOutputs = devices.filter(d => d.kind === 'audiooutput')
+
+      if (audioOutputs.length === 0) {
+        setSpeakerNote('No audio output devices found.')
+        return
+      }
+
+      // When switching to "speaker on": prefer a device labelled "speaker"
+      // (common on mobile browsers). Otherwise fall back to the default device.
+      // When switching to "earpiece/off": prefer a device labelled "earpiece".
+      let targetDevice: MediaDeviceInfo | undefined
+
+      if (next) {
+        // speakerOn = true — route to loudspeaker
+        targetDevice =
+          audioOutputs.find(d => /speaker/i.test(d.label)) ??
+          audioOutputs.find(d => d.deviceId === 'default') ??
+          audioOutputs[0]
+      } else {
+        // speakerOn = false — route to earpiece/headset
+        targetDevice =
+          audioOutputs.find(d => /earpiece|receiver/i.test(d.label)) ??
+          audioOutputs.find(d => d.deviceId === 'default') ??
+          audioOutputs[0]
+      }
+
+      if (!targetDevice) return
+
+      const sinkId = targetDevice.deviceId
+      const promises: Promise<void>[] = []
+      remoteAudioEls.forEach(el => {
+        if ((el as any).setSinkId) {
+          promises.push((el as any).setSinkId(sinkId).catch(() => {}))
+        }
+      })
+      await Promise.all(promises)
+    } catch {
+      setSpeakerNote('Could not change audio output device.')
+    }
+  }, [speakerOn])
+
   const handleEndCall = () => {
     playCallEnded()
     roomRef.current?.disconnect()
@@ -346,6 +443,11 @@ export default function LiveKitCall() {
     quality === ConnectionQuality.Excellent ? 'Excellent' :
     quality === ConnectionQuality.Good ? 'Good' :
     quality === ConnectionQuality.Poor ? 'Poor' : '—'
+
+  // Build theme CSS variables for ambient call styling
+  const themeStyle: React.CSSProperties = {
+    ['--call-theme-color' as string]: themeColor,
+  }
 
   return (
     <>
@@ -360,6 +462,7 @@ export default function LiveKitCall() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50"
+                style={{ background: `radial-gradient(ellipse at 50% 0%, ${themeColor}22 0%, transparent 60%), rgba(0,0,0,0.70)` }}
               />
             )}
 
@@ -372,16 +475,29 @@ export default function LiveKitCall() {
               }
               exit={{ opacity: 0, scale: 0.9 }}
               transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+              style={themeStyle}
               className={`fixed z-50 dark:bg-[#0D0A14] bg-gray-900 flex flex-col shadow-2xl overflow-hidden
                 ${minimized
-                  ? 'bottom-5 right-5 w-60 h-40 rounded-2xl border dark:border-pink-500/20 border-gray-700'
-                  : 'inset-2 sm:inset-6 lg:inset-12 rounded-3xl border dark:border-pink-500/20 border-gray-700'
+                  ? 'bottom-5 right-5 w-60 h-40 rounded-2xl border border-[color:var(--call-theme-color)]/30'
+                  : 'inset-2 sm:inset-6 lg:inset-12 rounded-3xl border border-[color:var(--call-theme-color)]/30'
                 }`}
             >
+              {/* Ambient top glow accent */}
+              {!minimized && (
+                <div
+                  className="absolute inset-x-0 top-0 h-32 pointer-events-none z-0"
+                  style={{ background: `radial-gradient(ellipse at 50% 0%, ${themeColor}20 0%, transparent 70%)` }}
+                />
+              )}
+
               {/* Top bar */}
-              <div className="flex items-center justify-between px-4 py-3 bg-black/40 backdrop-blur-sm flex-shrink-0">
+              <div className="flex items-center justify-between px-4 py-3 bg-black/40 backdrop-blur-sm flex-shrink-0 relative z-10"
+                style={{ borderBottom: `1px solid ${themeColor}22` }}
+              >
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-9 h-9 rounded-full bg-love-gradient flex items-center justify-center text-lg flex-shrink-0 overflow-hidden">
+                  <div className="w-9 h-9 rounded-full flex items-center justify-center text-lg flex-shrink-0 overflow-hidden"
+                    style={{ background: `linear-gradient(135deg, ${themeColor}99, ${themeColor}44)`, boxShadow: `0 0 0 2px ${themeColor}55` }}
+                  >
                     {activeCall.participantAvatar
                       ? <img src={activeCall.participantAvatar} alt="" className="w-full h-full object-cover" />
                       : (activeCall.participantEmoji || '👤')}
@@ -462,7 +578,9 @@ export default function LiveKitCall() {
                 {!remoteJoined && connected && (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/60">
                     <div className="text-center">
-                      <div className="w-14 h-14 rounded-full bg-love-gradient flex items-center justify-center text-2xl mx-auto mb-3 overflow-hidden">
+                      <div className="w-14 h-14 rounded-full flex items-center justify-center text-2xl mx-auto mb-3 overflow-hidden"
+                        style={{ background: `linear-gradient(135deg, ${themeColor}99, ${themeColor}44)`, boxShadow: `0 0 20px ${themeColor}40` }}
+                      >
                         {activeCall.participantAvatar
                           ? <img src={activeCall.participantAvatar} alt="" className="w-full h-full object-cover" />
                           : (activeCall.participantEmoji || '👤')}
@@ -487,7 +605,8 @@ export default function LiveKitCall() {
                 {!minimized && activeCall.type === 'video' && (
                   <div
                     ref={localVideoRef}
-                    className="absolute bottom-4 right-4 w-24 h-32 sm:w-32 sm:h-44 rounded-2xl overflow-hidden border-2 border-brand-pink/60 shadow-xl bg-black/70 [&>video]:w-full [&>video]:h-full [&>video]:object-cover z-10"
+                    className="absolute bottom-4 right-4 w-24 h-32 sm:w-32 sm:h-44 rounded-2xl overflow-hidden shadow-xl bg-black/70 [&>video]:w-full [&>video]:h-full [&>video]:object-cover z-10"
+                    style={{ border: `2px solid ${themeColor}99` }}
                   />
                 )}
 
@@ -561,63 +680,85 @@ export default function LiveKitCall() {
 
               {/* Bottom controls */}
               {!minimized && (
-                <div className="flex items-center justify-center gap-3 px-4 py-4 bg-black/40 backdrop-blur-sm flex-shrink-0">
+                <div className="flex flex-col items-center gap-1 px-4 pt-3 pb-4 bg-black/40 backdrop-blur-sm flex-shrink-0 relative z-10"
+                  style={{ borderTop: `1px solid ${themeColor}22` }}
+                >
+                  <div className="flex items-center justify-center gap-3">
 
-                  {/* Mute — only appears once the other party has joined */}
-                  {remoteJoined && (
+                    {/* Mute — only appears once the other party has joined */}
+                    {remoteJoined && (
+                      <button
+                        onClick={handleToggleMute}
+                        title={muted ? 'Unmute' : 'Mute'}
+                        className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${muted ? 'bg-red-500 shadow-lg shadow-red-500/30' : 'bg-white/15 hover:bg-white/25'}`}
+                      >
+                        {muted ? <MicOff className="w-5 h-5 text-white" /> : <Mic className="w-5 h-5 text-white" />}
+                      </button>
+                    )}
+
                     <button
-                      onClick={handleToggleMute}
-                      title={muted ? 'Unmute' : 'Mute'}
-                      className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${muted ? 'bg-red-500 shadow-lg shadow-red-500/30' : 'bg-white/15 hover:bg-white/25'}`}
+                      onClick={handleEndCall}
+                      className="w-16 h-16 rounded-full bg-red-500 flex items-center justify-center shadow-2xl shadow-red-500/50 hover:bg-red-600 transition-colors hover:scale-105 active:scale-95"
                     >
-                      {muted ? <MicOff className="w-5 h-5 text-white" /> : <Mic className="w-5 h-5 text-white" />}
+                      <PhoneOff className="w-6 h-6 text-white" />
                     </button>
-                  )}
 
-                  <button
-                    onClick={handleEndCall}
-                    className="w-16 h-16 rounded-full bg-red-500 flex items-center justify-center shadow-2xl shadow-red-500/50 hover:bg-red-600 transition-colors hover:scale-105 active:scale-95"
-                  >
-                    <PhoneOff className="w-6 h-6 text-white" />
-                  </button>
+                    {activeCall.type === 'video' && connected && (
+                      <button
+                        onClick={handleToggleCamera}
+                        className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${cameraOff ? 'bg-red-500 shadow-lg shadow-red-500/30' : 'bg-white/15 hover:bg-white/25'}`}
+                      >
+                        {cameraOff ? <VideoOff className="w-5 h-5 text-white" /> : <Video className="w-5 h-5 text-white" />}
+                      </button>
+                    )}
 
-                  {activeCall.type === 'video' && connected && (
+                    {connected && (
+                      <button
+                        onClick={handleToggleScreenShare}
+                        className={`hidden sm:flex w-12 h-12 rounded-full items-center justify-center transition-all ${screenSharing ? 'shadow-lg' : 'bg-white/15 hover:bg-white/25'}`}
+                        style={screenSharing ? { background: themeColor, boxShadow: `0 4px 15px ${themeColor}50` } : undefined}
+                      >
+                        <MonitorUp className="w-5 h-5 text-white" />
+                      </button>
+                    )}
+
+                    {/* Hold — only appears once the other party has joined */}
+                    {remoteJoined && (
+                      <button
+                        onClick={handleToggleHold}
+                        title={onHold ? 'Resume call' : 'Hold call'}
+                        className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${onHold ? 'bg-amber-500 shadow-lg shadow-amber-500/30' : 'bg-white/15 hover:bg-white/25'}`}
+                      >
+                        {onHold ? <Play className="w-5 h-5 text-white" /> : <Pause className="w-5 h-5 text-white" />}
+                      </button>
+                    )}
+
+                    {activeCall.type === 'video' && connected && (
+                      <button
+                        onClick={() => setShowFilters(v => !v)}
+                        title="Video filters"
+                        className={`hidden sm:flex w-12 h-12 rounded-full items-center justify-center transition-all ${showFilters ? 'shadow-lg' : 'bg-white/15 hover:bg-white/25'}`}
+                        style={showFilters ? { background: themeColor, boxShadow: `0 4px 15px ${themeColor}50` } : undefined}
+                      >
+                        <Sparkles className="w-5 h-5 text-white" />
+                      </button>
+                    )}
+
+                    {/* Speaker / Handsfree toggle */}
                     <button
-                      onClick={handleToggleCamera}
-                      className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${cameraOff ? 'bg-red-500 shadow-lg shadow-red-500/30' : 'bg-white/15 hover:bg-white/25'}`}
+                      onClick={handleToggleSpeaker}
+                      title={speakerOn ? 'Switch to earpiece' : 'Switch to speaker'}
+                      className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${speakerOn ? 'bg-white/15 hover:bg-white/25' : 'bg-white/5 hover:bg-white/15'}`}
                     >
-                      {cameraOff ? <VideoOff className="w-5 h-5 text-white" /> : <Video className="w-5 h-5 text-white" />}
+                      {speakerOn
+                        ? <Volume2 className="w-5 h-5 text-white" />
+                        : <VolumeX className="w-5 h-5 text-white/50" />}
                     </button>
-                  )}
+                  </div>
 
-                  {connected && (
-                    <button
-                      onClick={handleToggleScreenShare}
-                      className={`hidden sm:flex w-12 h-12 rounded-full items-center justify-center transition-all ${screenSharing ? 'bg-brand-pink shadow-lg shadow-pink-500/30' : 'bg-white/15 hover:bg-white/25'}`}
-                    >
-                      <MonitorUp className="w-5 h-5 text-white" />
-                    </button>
-                  )}
-
-                  {/* Hold — only appears once the other party has joined */}
-                  {remoteJoined && (
-                    <button
-                      onClick={handleToggleHold}
-                      title={onHold ? 'Resume call' : 'Hold call'}
-                      className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${onHold ? 'bg-amber-500 shadow-lg shadow-amber-500/30' : 'bg-white/15 hover:bg-white/25'}`}
-                    >
-                      {onHold ? <Play className="w-5 h-5 text-white" /> : <Pause className="w-5 h-5 text-white" />}
-                    </button>
-                  )}
-
-                  {activeCall.type === 'video' && connected && (
-                    <button
-                      onClick={() => setShowFilters(v => !v)}
-                      title="Video filters"
-                      className={`hidden sm:flex w-12 h-12 rounded-full items-center justify-center transition-all ${showFilters ? 'bg-brand-pink shadow-lg shadow-pink-500/30' : 'bg-white/15 hover:bg-white/25'}`}
-                    >
-                      <Sparkles className="w-5 h-5 text-white" />
-                    </button>
+                  {/* Speaker unsupported note */}
+                  {speakerNote && (
+                    <p className="text-[10px] text-white/40 mt-0.5 text-center">{speakerNote}</p>
                   )}
                 </div>
               )}

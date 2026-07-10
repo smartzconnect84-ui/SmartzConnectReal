@@ -51,12 +51,34 @@ serve(async (req) => {
     const ALLOWED_TYPES = new Set([
       'message', 'match', 'like', 'comment', 'follow', 'spin',
       'gift', 'call', 'video', 'award', 'premium', 'system',
+      // Extended types
+      'missed_call', 'story', 'reel', 'post', 'friend_request',
+      'job', 'marketplace', 'worldstage', 'announcement', 'broadcast',
+      'smartztv', 'learning', 'dating', 'group_message', 'stream_invite',
     ])
     const notifTypeRaw = (type || 'system').toLowerCase()
     if (!ALLOWED_TYPES.has(notifTypeRaw)) {
       return new Response(JSON.stringify({ error: 'Notification type not allowed' }), {
         status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
+    }
+
+    // Broadcast-style types can fan out to arbitrary users and are reserved for
+    // admin-triggered actions (go-live, publish, announce). Require the caller
+    // to be a recognized admin/staff account to prevent spam/impersonation.
+    const ADMIN_ONLY_TYPES = new Set(['announcement', 'broadcast', 'worldstage', 'smartztv', 'learning'])
+    if (ADMIN_ONLY_TYPES.has(notifTypeRaw)) {
+      const adminCheckClient = createClient(supabaseUrl, serviceKey)
+      const { data: adminRow } = await adminCheckClient
+        .from('admin_users')
+        .select('id')
+        .eq('id', user.id)
+        .maybeSingle()
+      if (!adminRow) {
+        return new Response(JSON.stringify({ error: 'Admin privileges required for this notification type' }), {
+          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
     }
     // Prevent self-push loops (callers may notify themselves for system types)
     // For social types, sender ≠ recipient is enforced silently — it degrades to persist-only.

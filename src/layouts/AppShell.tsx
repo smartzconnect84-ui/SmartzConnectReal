@@ -109,7 +109,19 @@ export default function AppShell() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` }, fetchCounts)
       .subscribe()
 
-    return () => { mounted = false; supabase.removeChannel(ch) }
+    // Re-fetch when internet returns or tab becomes visible — the realtime
+    // subscription may have missed events while offline / backgrounded.
+    const handleOnline = () => { if (mounted) fetchCounts() }
+    const handleVisibility = () => { if (mounted && document.visibilityState === 'visible') fetchCounts() }
+    window.addEventListener('online', handleOnline)
+    document.addEventListener('visibilitychange', handleVisibility)
+
+    return () => {
+      mounted = false
+      supabase.removeChannel(ch)
+      window.removeEventListener('online', handleOnline)
+      document.removeEventListener('visibilitychange', handleVisibility)
+    }
   }, [user?.id])
 
   return (
