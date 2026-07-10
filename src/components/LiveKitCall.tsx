@@ -95,6 +95,9 @@ export default function LiveKitCall() {
   const [speakerOn, setSpeakerOn] = useState(true)
   const [speakerNote, setSpeakerNote] = useState<string | null>(null)
   const [themeColor, setThemeColor] = useState('#EC4899')
+  const [avatarLoadFailed, setAvatarLoadFailed] = useState(false)
+  // Whether any remote participant has a live video track enabled
+  const [remoteHasVideo, setRemoteHasVideo] = useState(false)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const preHoldMicRef = useRef(false)
   const preHoldCamRef = useRef(false)
@@ -109,10 +112,12 @@ export default function LiveKitCall() {
       setMinimized(false)
       setConnected(false)
       setRemoteJoined(false)
+      setRemoteHasVideo(false)
       setOnHold(false)
       setFilter(VIDEO_FILTERS[0])
       setSpeakerOn(true)
       setSpeakerNote(null)
+      setAvatarLoadFailed(false)
       callStartRef.current = Date.now()
     } else {
       stopRinging()
@@ -189,8 +194,6 @@ export default function LiveKitCall() {
 
         // Pre-flight: request mic permission before connecting so the browser
         // permission dialog shows before LiveKit tries to publish tracks.
-        // This ensures the user has a chance to grant access; without this
-        // some browsers block `setMicrophoneEnabled` silently mid-call.
         if (navigator.mediaDevices?.getUserMedia) {
           try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false })
@@ -202,8 +205,6 @@ export default function LiveKitCall() {
         if (disposed) return
 
         const { data, error } = await supabase.functions.invoke('livekit-token', {
-          // Pass the current user's own display name as the LiveKit participant name,
-          // not the other participant's name. myDisplayName comes from the user's own profile.
           body: { room: activeCall.roomId, name: myDisplayName || undefined },
         })
         if (error || !data?.token || !data?.wsUrl) throw new Error('LiveKit token unavailable')
@@ -211,9 +212,6 @@ export default function LiveKitCall() {
 
         await room.connect(data.wsUrl, data.token)
 
-        // startAudio() unblocks audio playback on browsers/iOS that apply autoplay
-        // restrictions. Must be called after connect and preferably within the call
-        // answer user-gesture chain so the browser allows it.
         try { await room.startAudio() } catch { /* best-effort — non-critical */ }
 
         await room.localParticipant.setMicrophoneEnabled(true)
@@ -225,8 +223,8 @@ export default function LiveKitCall() {
 
         // Record call in video_calls table (only caller inserts, to avoid duplicate)
         if (activeCall.isCaller && activeCall.participantId) {
-          const { data: sessionData } = await supabase.auth.getSession()
-          const userId = sessionData.session?.user?.id
+          const { data: sessionData2 } = await supabase.auth.getSession()
+          const userId = sessionData2.session?.user?.id
           if (userId) {
             const { data: vc } = await supabase.from('video_calls').insert({
               caller_id: userId,
@@ -240,11 +238,21 @@ export default function LiveKitCall() {
           }
         }
 
+        const checkRemoteHasVideo = () => {
+          const hasVideo = Array.from(room.remoteParticipants.values()).some(p =>
+            Array.from(p.videoTrackPublications.values()).some(
+              pub => pub.track && pub.kind === Track.Kind.Video && !pub.isMuted
+            )
+          )
+          setRemoteHasVideo(hasVideo)
+        }
+
         const syncRemoteTiles = () => {
           const list = Array.from(room.remoteParticipants.values())
           setRemoteParticipants(list)
           list.forEach(p => attachTrack(p, remoteTileRefs.current.get(p.identity) ?? null))
           setRemoteJoined(list.length > 0)
+          checkRemoteHasVideo()
         }
 
         syncRemoteTiles()
@@ -252,6 +260,8 @@ export default function LiveKitCall() {
         room.on(RoomEvent.TrackSubscribed, syncRemoteTiles)
         room.on(RoomEvent.TrackUnsubscribed, syncRemoteTiles)
         room.on(RoomEvent.ParticipantConnected, syncRemoteTiles)
+        room.on(RoomEvent.TrackMuted, checkRemoteHasVideo)
+        room.on(RoomEvent.TrackUnmuted, checkRemoteHasVideo)
         room.on(RoomEvent.LocalTrackPublished, () => {
           attachTrack(room.localParticipant, localVideoRef.current)
           if (localVideoRef.current) localVideoRef.current.style.filter = filter.css
@@ -290,9 +300,7 @@ export default function LiveKitCall() {
     }
   }, [activeCall?.roomId])
 
-  // Re-apply the chosen visual filter whenever it changes (local preview only —
-  // a true server-side/outgoing filter would require a canvas track processor;
-  // this is a lightweight local styling pass).
+  // Re-apply the chosen visual filter whenever it changes
   useEffect(() => {
     if (localVideoRef.current) localVideoRef.current.style.filter = filter.css
   }, [filter])
@@ -368,7 +376,6 @@ export default function LiveKitCall() {
       await room.localParticipant.setScreenShareEnabled(next)
       setScreenSharing(next)
     } catch (err) {
-      // Ignore the browser's own "Share cancelled" rejection, but surface real failures.
       const message = err instanceof Error ? err.message : String(err)
       if (!/permission denied|cancel/i.test(message)) {
         console.error('Screen share failed:', err)
@@ -381,7 +388,6 @@ export default function LiveKitCall() {
     setSpeakerOn(next)
     setSpeakerNote(null)
 
-    // Feature-detect setSinkId support
     const testEl = document.createElement('audio')
     const supportsSinkId = typeof (testEl as any).setSinkId === 'function'
 
@@ -399,19 +405,14 @@ export default function LiveKitCall() {
         return
       }
 
-      // When switching to "speaker on": prefer a device labelled "speaker"
-      // (common on mobile browsers). Otherwise fall back to the default device.
-      // When switching to "earpiece/off": prefer a device labelled "earpiece".
       let targetDevice: MediaDeviceInfo | undefined
 
       if (next) {
-        // speakerOn = true — route to loudspeaker
         targetDevice =
           audioOutputs.find(d => /speaker/i.test(d.label)) ??
           audioOutputs.find(d => d.deviceId === 'default') ??
           audioOutputs[0]
       } else {
-        // speakerOn = false — route to earpiece/headset
         targetDevice =
           audioOutputs.find(d => /earpiece|receiver/i.test(d.label)) ??
           audioOutputs.find(d => d.deviceId === 'default') ??
@@ -449,6 +450,13 @@ export default function LiveKitCall() {
     ['--call-theme-color' as string]: themeColor,
   }
 
+  // Determine whether to show the audio-call / camera-off avatar backdrop.
+  // Show it when:
+  //   - audio-only call (type === 'audio'), OR
+  //   - video call but the remote has no live video track (camera off / connecting)
+  // Hide it only when the remote actually has live video streaming.
+  const showAvatarBackdrop = !remoteHasVideo
+
   return (
     <>
       {/* ── Active call window ─────────────────────────────────────────── */}
@@ -476,17 +484,48 @@ export default function LiveKitCall() {
               exit={{ opacity: 0, scale: 0.9 }}
               transition={{ type: 'spring', stiffness: 300, damping: 30 }}
               style={themeStyle}
-              className={`fixed z-50 dark:bg-[#0D0A14] bg-gray-900 flex flex-col shadow-2xl overflow-hidden
+              className={`fixed z-50 flex flex-col shadow-2xl overflow-hidden
                 ${minimized
                   ? 'bottom-5 right-5 w-60 h-40 rounded-2xl border border-[color:var(--call-theme-color)]/30'
                   : 'inset-2 sm:inset-6 lg:inset-12 rounded-3xl border border-[color:var(--call-theme-color)]/30'
                 }`}
             >
-              {/* Ambient top glow accent */}
+              {/* ── Full-screen avatar backdrop (audio-only or camera off) ── */}
+              {/* This is the base layer — always rendered so the screen is never black.
+                  When remote video is live, it sits behind the video tiles.           */}
+              <div className="absolute inset-0 z-0 overflow-hidden">
+                {activeCall.participantAvatar && !avatarLoadFailed ? (
+                  <>
+                    {/* Full-bleed profile picture — lightly softened, not darkened, so the
+                        caller/callee photo stays clearly visible full-screen. */}
+                    <img
+                      src={activeCall.participantAvatar}
+                      alt=""
+                      onError={() => setAvatarLoadFailed(true)}
+                      className="absolute inset-0 w-full h-full object-cover"
+                      style={{ filter: 'blur(6px) brightness(0.9) saturate(1.15)', transform: 'scale(1.05)' }}
+                    />
+                    {/* Faint gradient only at the very top/bottom for control legibility —
+                        keeps the middle of the photo bright and clear. */}
+                    <div
+                      className="absolute inset-0"
+                      style={{ background: `linear-gradient(to bottom, rgba(0,0,0,0.35) 0%, transparent 22%, transparent 72%, rgba(0,0,0,0.55) 100%)` }}
+                    />
+                  </>
+                ) : (
+                  /* Fallback solid dark gradient when no avatar available */
+                  <div
+                    className="absolute inset-0"
+                    style={{ background: `linear-gradient(135deg, ${themeColor}33 0%, #0D0A14 60%, #0a0812 100%)` }}
+                  />
+                )}
+              </div>
+
+              {/* Ambient top glow accent — sits above the backdrop */}
               {!minimized && (
                 <div
-                  className="absolute inset-x-0 top-0 h-32 pointer-events-none z-0"
-                  style={{ background: `radial-gradient(ellipse at 50% 0%, ${themeColor}20 0%, transparent 70%)` }}
+                  className="absolute inset-x-0 top-0 h-32 pointer-events-none z-[1]"
+                  style={{ background: `radial-gradient(ellipse at 50% 0%, ${themeColor}28 0%, transparent 70%)` }}
                 />
               )}
 
@@ -558,50 +597,91 @@ export default function LiveKitCall() {
                 </div>
               </div>
 
-              {/* Video area — grid supports unlimited conference participants */}
-              <div className={`flex-1 relative bg-black overflow-hidden ${minimized ? 'rounded-b-2xl' : ''}`}>
-                <div className={`absolute inset-0 grid gap-0.5 ${
-                  remoteParticipants.length <= 1 ? 'grid-cols-1' :
-                  remoteParticipants.length <= 4 ? 'grid-cols-2' : 'grid-cols-3'
-                }`}>
-                  {remoteParticipants.map(p => (
-                    <div key={p.identity} className="relative w-full h-full bg-black/50 flex items-center justify-center overflow-hidden">
-                      <div
-                        ref={el => { if (el) remoteTileRefs.current.set(p.identity, el); else remoteTileRefs.current.delete(p.identity) }}
-                        className="w-full h-full flex items-center justify-center [&>video]:w-full [&>video]:h-full [&>video]:object-cover"
-                      />
-                      <span className="absolute bottom-1.5 left-1.5 text-[10px] font-bold text-white bg-black/50 px-1.5 py-0.5 rounded-md">{p.name || p.identity}</span>
-                    </div>
-                  ))}
-                </div>
+              {/* Video/avatar area */}
+              <div className={`flex-1 relative overflow-hidden ${minimized ? 'rounded-b-2xl' : ''}`}>
 
-                {!remoteJoined && connected && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/60">
-                    <div className="text-center">
-                      <div className="w-14 h-14 rounded-full flex items-center justify-center text-2xl mx-auto mb-3 overflow-hidden"
-                        style={{ background: `linear-gradient(135deg, ${themeColor}99, ${themeColor}44)`, boxShadow: `0 0 20px ${themeColor}40` }}
-                      >
-                        {activeCall.participantAvatar
-                          ? <img src={activeCall.participantAvatar} alt="" className="w-full h-full object-cover" />
-                          : (activeCall.participantEmoji || '👤')}
+                {/* Remote video tiles — rendered above the avatar backdrop */}
+                {remoteParticipants.length > 0 && (
+                  <div className={`absolute inset-0 grid gap-0.5 z-[2] ${
+                    remoteParticipants.length <= 1 ? 'grid-cols-1' :
+                    remoteParticipants.length <= 4 ? 'grid-cols-2' : 'grid-cols-3'
+                  }`}>
+                    {remoteParticipants.map(p => (
+                      <div key={p.identity} className="relative w-full h-full flex items-center justify-center overflow-hidden">
+                        <div
+                          ref={el => { if (el) remoteTileRefs.current.set(p.identity, el); else remoteTileRefs.current.delete(p.identity) }}
+                          className="w-full h-full flex items-center justify-center [&>video]:w-full [&>video]:h-full [&>video]:object-cover"
+                        />
+                        <span className="absolute bottom-1.5 left-1.5 text-[10px] font-bold text-white bg-black/50 px-1.5 py-0.5 rounded-md z-10">{p.name || p.identity}</span>
                       </div>
-                      <p className="text-sm text-white/80 font-semibold">
-                        {activeCall.isCaller ? `Ringing ${activeCall.participantName}…` : `Joining…`}
-                      </p>
+                    ))}
+                  </div>
+                )}
+
+                {/* Avatar call card — shown when no live remote video (audio call, camera off, or connecting) */}
+                {showAvatarBackdrop && !minimized && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center z-[3] pointer-events-none">
+                    <div className="flex flex-col items-center gap-5">
+                      {/* Large avatar with animated ring */}
+                      <div className="relative flex items-center justify-center">
+                        {remoteJoined && (
+                          <div
+                            className="absolute w-44 h-44 rounded-full animate-ping opacity-20"
+                            style={{ background: `radial-gradient(circle, ${themeColor} 0%, transparent 70%)`, animationDuration: '2.4s' }}
+                          />
+                        )}
+                        <div
+                          className="relative w-32 h-32 rounded-full overflow-hidden shadow-2xl"
+                          style={{ boxShadow: `0 0 0 4px ${themeColor}66, 0 0 40px ${themeColor}44` }}
+                        >
+                          {activeCall.participantAvatar && !avatarLoadFailed ? (
+                            <img
+                              src={activeCall.participantAvatar}
+                              alt={activeCall.participantName}
+                              onError={() => setAvatarLoadFailed(true)}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div
+                              className="w-full h-full flex items-center justify-center text-5xl"
+                              style={{ background: `linear-gradient(135deg, ${themeColor}88, ${themeColor}44)` }}
+                            >
+                              {activeCall.participantEmoji || '👤'}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Name */}
+                      <div className="text-center px-6">
+                        <p className="text-2xl font-bold text-white drop-shadow-lg">{activeCall.participantName}</p>
+                        <p className="text-sm text-white/70 mt-1 font-medium drop-shadow">
+                          {!connected
+                            ? 'Connecting…'
+                            : !remoteJoined
+                              ? (activeCall.isCaller ? 'Ringing…' : 'Joining…')
+                              : onHold
+                                ? 'On hold'
+                                : activeCall.type === 'audio'
+                                  ? '🎙️ Audio call'
+                                  : '📷 Camera off'}
+                        </p>
+                        {remoteJoined && !onHold && (
+                          <p className="text-lg font-mono text-white/80 mt-1 drop-shadow">{formatDuration(duration)}</p>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}
 
+                {/* Connecting spinner — shown before LiveKit connects */}
                 {!connected && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/80">
-                    <div className="text-center">
-                      <div className="w-8 h-8 border-2 border-pink-500/30 border-t-brand-pink rounded-full animate-spin mx-auto mb-3" />
-                      <p className="text-xs text-white/60">Connecting…</p>
-                    </div>
+                  <div className="absolute inset-0 flex items-center justify-center z-[4]">
+                    <div className="w-8 h-8 border-2 border-white/20 border-t-white/80 rounded-full animate-spin" />
                   </div>
                 )}
 
-                {/* Local self-view PiP */}
+                {/* Local self-view PiP — video call only, always on top */}
                 {!minimized && activeCall.type === 'video' && (
                   <div
                     ref={localVideoRef}
@@ -610,8 +690,9 @@ export default function LiveKitCall() {
                   />
                 )}
 
+                {/* On-hold overlay */}
                 {onHold && !minimized && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/70 z-20">
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-[5]">
                     <div className="text-center">
                       <Pause className="w-10 h-10 text-amber-400 mx-auto mb-2" />
                       <p className="text-sm font-bold text-white">Call on hold</p>

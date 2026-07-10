@@ -46,13 +46,14 @@ ALTER TABLE cms_pages   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE site_assets ENABLE ROW LEVEL SECURITY;
 
 -- Helper: is the current user an admin/staff account (mirrors admin_users table)?
-CREATE OR REPLACE FUNCTION is_admin_user() RETURNS boolean AS $$
+-- NOTE: admin_users.id is a surrogate PK; the auth UID lives in auth_id.
+CREATE OR REPLACE FUNCTION is_admin_user() RETURNS boolean AS $
   SELECT EXISTS (
-    SELECT 1 FROM admin_users au WHERE au.id = auth.uid()
+    SELECT 1 FROM admin_users au WHERE au.auth_id = auth.uid()
     UNION
-    SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role IN ('admin', 'superadmin', 'ceo', 'moderator')
+    SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role IN ('admin', 'superadmin', 'ceo', 'moderator', 'support')
   );
-$$ LANGUAGE sql SECURITY DEFINER STABLE;
+$ LANGUAGE sql SECURITY DEFINER STABLE;
 
 DROP POLICY IF EXISTS "public read site_config" ON site_config;
 CREATE POLICY "public read site_config" ON site_config FOR SELECT TO anon, authenticated USING (true);

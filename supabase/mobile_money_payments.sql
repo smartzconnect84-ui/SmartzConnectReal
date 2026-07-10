@@ -47,13 +47,13 @@ CREATE POLICY "Users can submit mobile money payments"
 CREATE POLICY "Admins can view all mobile money payments"
   ON mobile_money_payments FOR SELECT
   USING (
-    EXISTS (SELECT 1 FROM admin_users WHERE id = auth.uid())
+    EXISTS (SELECT 1 FROM admin_users WHERE auth_id = auth.uid())
   );
 
 CREATE POLICY "Admins can update payment status"
   ON mobile_money_payments FOR UPDATE
   USING (
-    EXISTS (SELECT 1 FROM admin_users WHERE id = auth.uid())
+    EXISTS (SELECT 1 FROM admin_users WHERE auth_id = auth.uid())
   );
 
 -- Enable Realtime for payment status updates

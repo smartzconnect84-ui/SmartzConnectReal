@@ -12,10 +12,14 @@ const STORAGE_KEY = 'szc_switchable_accounts'
 // Only these admin identities may be offered in the switcher, regardless of
 // what happens to be cached — this is a UX allow-list, not a security
 // boundary (RLS/role checks still gate actual admin access server-side).
+// Order matters: ceo@smartzconnect.com is the primary account and is always
+// listed/preferred first in the switcher UI and auto-redirect logic.
 export const SWITCHABLE_ADMIN_EMAILS = [
   'ceo@smartzconnect.com',
   'shedrickknungehn@gmail.com',
 ]
+
+export const PRIMARY_ADMIN_EMAIL = SWITCHABLE_ADMIN_EMAILS[0]
 
 export interface SwitchableAccount {
   email: string

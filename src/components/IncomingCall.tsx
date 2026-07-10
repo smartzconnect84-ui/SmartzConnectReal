@@ -7,6 +7,9 @@ import { startRinging, stopRinging } from '@/lib/callSounds'
 export default function IncomingCall() {
   const { incomingCall, acceptCall, declineCall } = useLiveKitCall()
   const [timeLeft, setTimeLeft] = useState(60)
+  const [avatarFailed, setAvatarFailed] = useState(false)
+
+  useEffect(() => { if (incomingCall) setAvatarFailed(false) }, [incomingCall?.notificationId])
 
   // Ring while an incoming call is waiting
   useEffect(() => {
@@ -67,8 +70,8 @@ export default function IncomingCall() {
               <div className="absolute w-32 h-32 rounded-full bg-brand-pink/15 animate-ping" style={{ animationDuration: '1.6s' }} />
               <div className="absolute w-40 h-40 rounded-full bg-brand-pink/8 animate-pulse" style={{ animationDuration: '2s' }} />
               <div className="relative w-24 h-24 rounded-full overflow-hidden ring-4 ring-brand-pink/50 bg-love-gradient flex items-center justify-center shadow-2xl shadow-brand-pink/30">
-                {incomingCall.fromAvatar
-                  ? <img src={incomingCall.fromAvatar} alt="" className="w-full h-full object-cover" />
+                {incomingCall.fromAvatar && !avatarFailed
+                  ? <img src={incomingCall.fromAvatar} alt="" onError={() => setAvatarFailed(true)} className="w-full h-full object-cover" />
                   : <span className="text-4xl">👤</span>
                 }
               </div>

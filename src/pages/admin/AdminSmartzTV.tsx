@@ -508,6 +508,7 @@ export default function AdminSmartzTV() {
   const [shareToast, setShareToast] = useState<string | null>(null)
   const [view, setView] = useState<'manage' | 'livetv'>('manage')
   const [broadcastData, setBroadcastData] = useState<BroadcastData | null>(null)
+  const [goLiveError, setGoLiveError] = useState<string | null>(null)
 
   const fetchStreams = async () => {
     setLoading(true)
@@ -624,8 +625,27 @@ export default function AdminSmartzTV() {
   }
 
   const handleGoLive = async (stream: Stream) => {
-    // Update stream status to 'live' in DB, then launch broadcaster
-    await supabase.from('livestreams').update({ status: 'live' }).eq('id', stream.id)
+    setGoLiveError(null)
+    // Update stream status to 'live' and ensure is_admin_broadcast is set so the
+    // public SmartzTV page (which filters on is_admin_broadcast=true AND status=live)
+    // immediately shows this stream. This update is RLS-gated (is_admin()) — if it
+    // silently fails (stale session, RLS drift), the admin would otherwise see the
+    // broadcaster UI open while the public page never shows them as live. Always
+    // check the error/returned row before opening the broadcaster.
+    const { data: updated, error } = await supabase
+      .from('livestreams')
+      .update({ status: 'live', is_admin_broadcast: true })
+      .eq('id', stream.id)
+      .select('id')
+    if (error || !updated || updated.length === 0) {
+      console.error('handleGoLive: failed to mark stream live', error)
+      setGoLiveError(
+        error?.message?.includes('permission') || error?.code === '42501'
+          ? 'You are not authorised to go live (admin permission check failed). Please re-sign in and try again.'
+          : (error?.message || 'Could not go live — the stream status was not updated. Please try again.')
+      )
+      return
+    }
     setBroadcastData({ streamId: stream.id, title: stream.title })
     fetchStreams()
     // NOTE: Broad fan-out push to all users for SmartzTV going live is out of scope here
@@ -663,6 +683,17 @@ export default function AdminSmartzTV() {
           <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
             className="fixed top-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-xl bg-emerald-500 text-white text-sm font-semibold shadow-lg">
             Link copied for "{shareToast}"
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Go Live error toast */}
+      <AnimatePresence>
+        {goLiveError && (
+          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+            className="fixed top-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-2.5 rounded-xl bg-red-500 text-white text-sm font-semibold shadow-lg max-w-md">
+            <span className="flex-1">{goLiveError}</span>
+            <button onClick={() => setGoLiveError(null)} className="text-white/80 hover:text-white text-lg leading-none">×</button>
           </motion.div>
         )}
       </AnimatePresence>

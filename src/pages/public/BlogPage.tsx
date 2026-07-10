@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence, type Variants } from 'framer-motion'
 import { Link } from 'react-router-dom'
-import { Search, Calendar, Clock, ArrowRight, TrendingUp, BookOpen, Heart, RefreshCw, Sparkles } from 'lucide-react'
+import { Search, Calendar, Clock, ArrowRight, TrendingUp, BookOpen, Heart, RefreshCw, Sparkles, ExternalLink } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
 const categories = ['All', 'Product', 'Dating Tips', 'Tech', 'Culture', 'Business', 'SmartzTV', 'Community']
@@ -11,6 +11,14 @@ interface Post {
   title: string; excerpt?: string; author?: string; author_emoji?: string
   author_role?: string; date?: string; read_time?: string; tags?: string[]
   views?: string; likes?: number; image_url?: string
+}
+
+interface ActiveAd {
+  id: string
+  title: string
+  image_url: string | null
+  target_url: string | null
+  advertiser: string
 }
 
 /* ── shared spring ─────────────────────────────────────────────────────── */
@@ -35,6 +43,20 @@ export default function BlogPage() {
   const [dbConnected, setDbConnected] = useState(false)
   const [search, setSearch] = useState('')
   const [activeCategory, setActiveCategory] = useState('All')
+  const [activeAds, setActiveAds] = useState<ActiveAd[]>([])
+
+  // Fetch active ad campaigns to display in the blog sidebar/banner
+  useEffect(() => {
+    supabase
+      .from('ad_campaigns')
+      .select('id, title, image_url, target_url, advertiser')
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(4)
+      .then(({ data }) => {
+        if (data) setActiveAds(data as ActiveAd[])
+      })
+  }, [])
 
   const fetchPosts = async () => {
     setLoading(true)
@@ -128,6 +150,35 @@ export default function BlogPage() {
           </div>
         </div>
       </section>
+
+      {/* ── Live Ad Banner (from ad_campaigns table) ── */}
+      {activeAds.length > 0 && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+          <div className={`grid gap-4 ${activeAds.length === 1 ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'}`}>
+            {activeAds.slice(0, 2).map(ad => (
+              ad.image_url ? (
+                <motion.div key={ad.id}
+                  initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                  className="rounded-2xl overflow-hidden border border-white/8 shadow-lg">
+                  {ad.target_url ? (
+                    <a href={ad.target_url} target="_blank" rel="noreferrer" className="block relative group">
+                      <img src={ad.image_url} alt={ad.title} className="w-full object-cover max-h-48 group-hover:scale-105 transition-transform duration-500" />
+                      <div className="absolute bottom-2 right-2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/50 text-white text-[10px] font-bold">
+                        <ExternalLink className="w-2.5 h-2.5" /> Sponsored
+                      </div>
+                    </a>
+                  ) : (
+                    <div className="relative">
+                      <img src={ad.image_url} alt={ad.title} className="w-full object-cover max-h-48" />
+                      <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded-full bg-black/50 text-white text-[10px] font-bold">Sponsored</div>
+                    </div>
+                  )}
+                </motion.div>
+              ) : null
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
 

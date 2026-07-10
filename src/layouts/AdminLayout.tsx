@@ -5,12 +5,16 @@ import {
   LayoutDashboard, Users, CreditCard, Flag, BarChart3, Megaphone,
   ShoppingBag, Tv, Car, FileText, Shield, Settings, ChevronLeft,
   ChevronRight, Bell, Search, Moon, Sun, LogOut, Crown,
-  Users2, ScrollText, Menu, X, Map, MessageCircle, BookOpen, Layout as LayoutIcon, Zap, Trophy
+  Users2, ScrollText, Menu, X, Map, MessageCircle, BookOpen, Layout as LayoutIcon, Zap, Trophy,
+  Check
 } from 'lucide-react'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useLiveChat } from '@/contexts/LiveChatContext'
+import { useNotifications } from '@/contexts/NotificationContext'
 import AnnouncementBanner from '@/components/AnnouncementBanner'
 import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/hooks/useAuth'
+import { listSwitchableAccounts, switchToAccount, PRIMARY_ADMIN_EMAIL, type SwitchableAccount } from '@/lib/accountSwitcher'
 const logoImg = '/logo.png'
 
 // Scroll speed multiplier for the admin panel's main content (+15% faster than default)
@@ -50,12 +54,52 @@ export default function AdminLayout() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const { theme, toggleTheme } = useTheme()
   const { dismissed, setOpen, setDismissed, unreadCount, setUnreadCount } = useLiveChat()
+  const { notifications, unreadCount: notifUnread, markRead, markAllRead } = useNotifications()
   const navigate = useNavigate()
   const mainRef = useRef<HTMLElement>(null)
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<GlobalSearchResult[]>([])
   const [searching, setSearching] = useState(false)
+  const [bellOpen, setBellOpen] = useState(false)
+  const bellRef = useRef<HTMLDivElement>(null)
+  const { user } = useAuth()
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false)
+  const [switchingAccount, setSwitchingAccount] = useState<string | null>(null)
+  const [switchableAccounts, setSwitchableAccounts] = useState<SwitchableAccount[]>([])
+  const [switchAccountError, setSwitchAccountError] = useState<string | null>(null)
+  const accountMenuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => { setSwitchableAccounts(listSwitchableAccounts()) }, [user?.id])
+
+  const handleQuickSwitchAccount = async (email: string) => {
+    if (email.toLowerCase() === user?.email?.toLowerCase()) { setAccountMenuOpen(false); return }
+    setSwitchingAccount(email)
+    setSwitchAccountError(null)
+    try {
+      await switchToAccount(email)
+      window.location.assign('/admin')
+    } catch (err: any) {
+      setSwitchableAccounts(listSwitchableAccounts())
+      setSwitchAccountError(err?.message || 'Could not switch accounts. Please sign in again.')
+    } finally {
+      setSwitchingAccount(null)
+    }
+  }
+
+  // Close bell dropdown when clicking outside
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (bellRef.current && !bellRef.current.contains(e.target as Node)) {
+        setBellOpen(false)
+      }
+      if (accountMenuRef.current && !accountMenuRef.current.contains(e.target as Node)) {
+        setAccountMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
 
   // +15% faster wheel scroll inside the admin main content area
   useEffect(() => {
@@ -235,8 +279,8 @@ export default function AdminLayout() {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
 
         {/* Top bar */}
-        <header className="flex items-center justify-between px-4 sm:px-6 py-3 dark:bg-[#080510] bg-white border-b dark:border-white/6 border-gray-200 flex-shrink-0 z-10">
-          <div className="flex items-center gap-3">
+        <header className="flex items-center justify-between gap-4 px-4 sm:px-6 lg:px-8 py-3.5 min-h-[64px] dark:bg-[#080510] bg-white border-b dark:border-white/6 border-gray-200 flex-shrink-0 z-10 shadow-sm dark:shadow-black/20">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
             <button onClick={() => setMobileOpen(true)} className="md:hidden w-8 h-8 rounded-lg dark:bg-white/5 bg-gray-100 flex items-center justify-center">
               <Menu className="w-4 h-4 dark:text-gray-400 text-gray-600" />
             </button>
@@ -272,7 +316,7 @@ export default function AdminLayout() {
               )}
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5 sm:gap-3 flex-shrink-0">
             {/* Live Chat icon — shown in admin topbar when dismissed */}
             {dismissed && (
               <button
@@ -286,16 +330,154 @@ export default function AdminLayout() {
                 )}
               </button>
             )}
-            <button className="relative w-8 h-8 rounded-xl dark:bg-white/5 bg-gray-100 flex items-center justify-center hover:bg-pink-500/10 transition-colors">
-              <Bell className="w-4 h-4 dark:text-gray-400 text-gray-600" />
-              <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-brand-pink" />
-            </button>
-            <div className="flex items-center gap-2 pl-2 border-l dark:border-white/8 border-gray-200">
-              <div className="w-8 h-8 rounded-xl bg-love-gradient flex items-center justify-center text-sm">👑</div>
-              <div className="hidden sm:block">
-                <p className="text-sm font-bold dark:text-white text-gray-900 leading-none">Super Admin</p>
-                <p className="text-[11px] dark:text-gray-500 text-gray-400">admin@smartzconnect.com</p>
-              </div>
+            {/* Notification bell — wired to NotificationContext */}
+            <div ref={bellRef} className="relative">
+              <button
+                onClick={() => setBellOpen(o => !o)}
+                title="Notifications"
+                className="relative w-8 h-8 rounded-xl dark:bg-white/5 bg-gray-100 flex items-center justify-center hover:bg-pink-500/10 transition-colors"
+              >
+                <Bell className="w-4 h-4 dark:text-gray-400 text-gray-600" />
+                {notifUnread > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-brand-pink text-white text-[8px] font-black flex items-center justify-center">
+                    {notifUnread > 9 ? '9+' : notifUnread}
+                  </span>
+                )}
+              </button>
+
+              <AnimatePresence>
+                {bellOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -8, scale: 0.96 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute right-0 top-full mt-2 w-80 dark:bg-[#130E1E] bg-white rounded-2xl border dark:border-white/8 border-gray-200 shadow-2xl shadow-black/40 overflow-hidden z-50"
+                  >
+                    {/* Header */}
+                    <div className="flex items-center justify-between px-4 py-3 border-b dark:border-white/6 border-gray-100">
+                      <p className="text-sm font-bold dark:text-white text-gray-900">Notifications</p>
+                      {notifUnread > 0 && (
+                        <button
+                          onClick={() => { markAllRead(); }}
+                          className="flex items-center gap-1 text-[11px] text-brand-pink hover:text-pink-400 font-semibold transition-colors"
+                        >
+                          <Check className="w-3 h-3" /> Mark all read
+                        </button>
+                      )}
+                    </div>
+
+                    {/* List */}
+                    <div className="max-h-80 overflow-y-auto">
+                      {notifications.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-10 gap-2">
+                          <Bell className="w-7 h-7 dark:text-gray-600 text-gray-400" />
+                          <p className="text-xs dark:text-gray-500 text-gray-400">No notifications yet</p>
+                        </div>
+                      ) : (
+                        notifications.slice(0, 15).map(n => (
+                          <button
+                            key={n.id}
+                            onClick={() => {
+                              markRead(n.id)
+                              if (n.action_url) navigate(n.action_url)
+                              setBellOpen(false)
+                            }}
+                            className={`w-full text-left flex items-start gap-3 px-4 py-3 border-b dark:border-white/5 border-gray-100 last:border-0 transition-colors hover:dark:bg-white/5 hover:bg-gray-50 ${!n.read ? 'dark:bg-[#1A1228]/60' : ''}`}
+                          >
+                            <span className="text-lg flex-shrink-0 mt-0.5">{n.emoji}</span>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <p className={`text-xs font-semibold truncate ${!n.read ? 'dark:text-white text-gray-900' : 'dark:text-gray-300 text-gray-700'}`}>
+                                  {n.title}
+                                </p>
+                                {!n.read && <span className="w-1.5 h-1.5 rounded-full bg-brand-pink flex-shrink-0" />}
+                              </div>
+                              <p className="text-[11px] dark:text-gray-500 text-gray-400 truncate mt-0.5">{n.body}</p>
+                            </div>
+                          </button>
+                        ))
+                      )}
+                    </div>
+
+                    {/* Footer */}
+                    <div className="px-4 py-2.5 border-t dark:border-white/6 border-gray-100">
+                      <button
+                        onClick={() => { navigate('/app/notifications'); setBellOpen(false) }}
+                        className="text-xs text-brand-pink hover:text-pink-400 font-semibold transition-colors"
+                      >
+                        View all notifications →
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+            <div ref={accountMenuRef} className="relative pl-3 sm:pl-4 ml-1 border-l dark:border-white/8 border-gray-200">
+              <button
+                onClick={() => setAccountMenuOpen(o => !o)}
+                className="flex items-center gap-2.5 rounded-xl px-1 py-1 hover:dark:bg-white/5 hover:bg-gray-50 transition-colors"
+              >
+                <div className="w-8 h-8 rounded-xl bg-love-gradient flex items-center justify-center text-sm flex-shrink-0">👑</div>
+                <div className="hidden md:block leading-tight text-left">
+                  <p className="text-sm font-bold dark:text-white text-gray-900 leading-none">Super Admin</p>
+                  <p className="text-[11px] dark:text-gray-500 text-gray-400 mt-0.5 truncate max-w-[160px]">{user?.email || 'admin@smartzconnect.com'}</p>
+                </div>
+              </button>
+
+              <AnimatePresence>
+                {accountMenuOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -8, scale: 0.96 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute right-0 top-full mt-2 w-64 dark:bg-[#130E1E] bg-white rounded-2xl border dark:border-white/8 border-gray-200 shadow-2xl shadow-black/40 overflow-hidden z-50"
+                  >
+                    <div className="px-4 py-3 border-b dark:border-white/6 border-gray-100">
+                      <p className="text-xs font-bold dark:text-white text-gray-900">Switch account</p>
+                      <p className="text-[10px] dark:text-gray-500 text-gray-400 mt-0.5">Signed in accounts on this device</p>
+                    </div>
+                    <div className="py-1.5">
+                      {switchAccountError && (
+                        <p className="text-[11px] text-red-500 px-4 pb-2">{switchAccountError}</p>
+                      )}
+                      {switchableAccounts.length === 0 && (
+                        <p className="text-[11px] dark:text-gray-500 text-gray-400 px-4 py-3">No other saved accounts yet. Sign in once with a password to enable quick switching.</p>
+                      )}
+                      {switchableAccounts.map(acc => {
+                        const isCurrent = acc.email.toLowerCase() === user?.email?.toLowerCase()
+                        return (
+                          <button
+                            key={acc.email}
+                            onClick={() => handleQuickSwitchAccount(acc.email)}
+                            disabled={switchingAccount === acc.email}
+                            className="w-full flex items-center gap-2.5 px-4 py-2.5 hover:dark:bg-white/5 hover:bg-gray-50 transition-colors text-left disabled:opacity-60"
+                          >
+                            <div className="w-7 h-7 rounded-lg bg-love-gradient flex items-center justify-center text-xs flex-shrink-0 overflow-hidden">
+                              {acc.avatarUrl ? <img src={acc.avatarUrl} className="w-full h-full object-cover" /> : '👤'}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs font-semibold dark:text-white text-gray-900 truncate">
+                                {acc.fullName || acc.email}
+                                {acc.email.toLowerCase() === PRIMARY_ADMIN_EMAIL && (
+                                  <span className="ml-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-500 align-middle">PRIMARY</span>
+                                )}
+                              </p>
+                              <p className="text-[10px] dark:text-gray-500 text-gray-400 truncate">{acc.email}</p>
+                            </div>
+                            {isCurrent ? (
+                              <Check className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
+                            ) : switchingAccount === acc.email ? (
+                              <span className="text-[10px] dark:text-gray-500 text-gray-400 flex-shrink-0">Switching…</span>
+                            ) : null}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
         </header>

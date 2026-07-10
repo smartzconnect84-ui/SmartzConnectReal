@@ -10,6 +10,7 @@ import {
 import { useTheme } from '@/contexts/ThemeContext'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
+import { useNotifications } from '@/contexts/NotificationContext'
 import TopNavBar from '@/layouts/TopNavBar'
 import LeftSidebar from '@/layouts/LeftSidebar'
 import CreateModal from '@/components/CreateModal'
@@ -78,49 +79,43 @@ export default function AppShell() {
   const location = useLocation()
   const { signOut, user } = useAuth()
   const { theme, toggleTheme } = useTheme()
+  const { unreadCount: unreadNotifs } = useNotifications()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [unreadMessages, setUnreadMessages] = useState(0)
-  const [unreadNotifs, setUnreadNotifs] = useState(0)
 
   const isActive = (path: string) => location.pathname.startsWith(path)
 
   // Close drawer on navigation
   useEffect(() => { setDrawerOpen(false) }, [location.pathname])
 
-  // Realtime unread counts
+  // Realtime unread message count (notifications come from NotificationContext)
   useEffect(() => {
     if (!user?.id) return
     let mounted = true
 
-    const fetchCounts = async () => {
-      const [msgRes, notifRes] = await Promise.all([
-        supabase.from('messages').select('id', { count: 'exact', head: true }).eq('receiver_id', user.id).eq('read', false),
-        supabase.from('notifications').select('id', { count: 'exact', head: true }).eq('user_id', user.id).eq('read', false),
-      ])
+    const fetchMessageCount = async () => {
+      const { count } = await supabase
+        .from('messages')
+        .select('id', { count: 'exact', head: true })
+        .eq('receiver_id', user.id)
+        .eq('read', false)
       if (!mounted) return
-      setUnreadMessages(msgRes.count ?? 0)
-      setUnreadNotifs(notifRes.count ?? 0)
+      setUnreadMessages(count ?? 0)
     }
 
-    fetchCounts()
+    fetchMessageCount()
 
-    const ch = supabase.channel('shell:unread')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages',      filter: `receiver_id=eq.${user.id}` }, fetchCounts)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` }, fetchCounts)
+    const ch = supabase.channel('shell:unread-msgs')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages', filter: `receiver_id=eq.${user.id}` }, fetchMessageCount)
       .subscribe()
 
-    // Re-fetch when internet returns or tab becomes visible — the realtime
-    // subscription may have missed events while offline / backgrounded.
-    const handleOnline = () => { if (mounted) fetchCounts() }
-    const handleVisibility = () => { if (mounted && document.visibilityState === 'visible') fetchCounts() }
+    const handleOnline = () => { if (mounted) fetchMessageCount() }
     window.addEventListener('online', handleOnline)
-    document.addEventListener('visibilitychange', handleVisibility)
 
     return () => {
       mounted = false
       supabase.removeChannel(ch)
       window.removeEventListener('online', handleOnline)
-      document.removeEventListener('visibilitychange', handleVisibility)
     }
   }, [user?.id])
 

@@ -257,7 +257,7 @@ CREATE POLICY "Authenticated users can create reports"
 -- ============================================================
 CREATE POLICY "Admins can see admin users"
   ON admin_users FOR SELECT USING (
-    EXISTS (SELECT 1 FROM admin_users WHERE id = auth.uid())
+    EXISTS (SELECT 1 FROM admin_users WHERE auth_id = auth.uid())
   );
 
 -- ============================================================
@@ -265,12 +265,12 @@ CREATE POLICY "Admins can see admin users"
 -- ============================================================
 CREATE POLICY "Admins can see audit logs"
   ON audit_logs FOR SELECT USING (
-    EXISTS (SELECT 1 FROM admin_users WHERE id = auth.uid())
+    EXISTS (SELECT 1 FROM admin_users WHERE auth_id = auth.uid())
   );
 
 CREATE POLICY "Admins can create audit logs"
   ON audit_logs FOR INSERT WITH CHECK (
-    EXISTS (SELECT 1 FROM admin_users WHERE id = auth.uid())
+    EXISTS (SELECT 1 FROM admin_users WHERE auth_id = auth.uid())
   );
 
 -- ============================================================
@@ -278,10 +278,10 @@ CREATE POLICY "Admins can create audit logs"
 -- ============================================================
 CREATE POLICY "Settings are readable by admins"
   ON settings FOR SELECT USING (
-    EXISTS (SELECT 1 FROM admin_users WHERE id = auth.uid())
+    EXISTS (SELECT 1 FROM admin_users WHERE auth_id = auth.uid())
   );
 
 CREATE POLICY "Settings are writable by super admins"
   ON settings FOR ALL USING (
-    EXISTS (SELECT 1 FROM admin_users WHERE id = auth.uid() AND role IN ('super_admin','ceo'))
+    EXISTS (SELECT 1 FROM admin_users au WHERE au.auth_id = auth.uid() AND au.role IN ('superadmin','ceo'))
   );

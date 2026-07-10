@@ -9,6 +9,7 @@ import {
 const logoImg = '/logo.png'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useLiveChat } from '@/contexts/LiveChatContext'
+import { useAuth } from '@/hooks/useAuth'
 
 const businessItems = [
   { label: 'SmartzMarket',    href: '/smartzmarket',   icon: ShoppingBag, desc: 'Buy & sell anything',         color: 'text-amber-400' },
@@ -73,6 +74,9 @@ function DropdownMenu({ items, onClose }: DropdownMenuProps) {
 export default function Navbar() {
   const { theme, toggleTheme } = useTheme()
   const { dismissed, setOpen, setDismissed, unreadCount, setUnreadCount } = useLiveChat()
+  const { session, isAdmin } = useAuth()
+  const isSignedIn = !!session
+  const dashboardHref = isAdmin ? '/admin' : '/app/feed'
   const location = useLocation()
   const [scrolled, setScrolled] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -223,21 +227,22 @@ export default function Navbar() {
 
               {/* Auth buttons — desktop */}
               <div className="hidden sm:flex items-center gap-2">
-                {/* Sign In — Purple */}
+                {/* Sign In (Purple) — auto-switches to Dashboard (Blue) once signed in */}
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.96 }} transition={{ type: 'spring', stiffness: 400 }}>
                   <Link
-                    to="/login"
+                    to={isSignedIn ? dashboardHref : '/login'}
                     className="px-5 py-2 rounded-xl text-sm font-bold text-white transition-all"
-                    style={{
-                      background: 'linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%)',
-                      boxShadow: '0 4px 16px rgba(124,58,237,0.35)',
-                    }}
+                    style={isSignedIn
+                      ? { background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)', boxShadow: '0 4px 16px rgba(37,99,235,0.35)' }
+                      : { background: 'linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%)', boxShadow: '0 4px 16px rgba(124,58,237,0.35)' }
+                    }
                   >
-                    Sign in
+                    {isSignedIn ? 'Dashboard' : 'Sign in'}
                   </Link>
                 </motion.div>
 
-                {/* Join Now — Pink */}
+                {/* Join Now — Pink (hidden once already signed in) */}
+                {!isSignedIn && (
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.96 }} transition={{ type: 'spring', stiffness: 400 }}>
                   <Link
                     to="/register"
@@ -250,6 +255,7 @@ export default function Navbar() {
                     Join Now!
                   </Link>
                 </motion.div>
+                )}
               </div>
 
               {/* Mobile menu button */}
@@ -371,16 +377,21 @@ export default function Navbar() {
                 )}
 
                 <div className="flex gap-2 px-2 pb-1">
-                  {/* Sign In — Purple */}
-                  <Link to="/login" className="flex-1 py-2.5 rounded-xl text-center text-sm font-bold text-white transition-all"
-                    style={{ background: 'linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%)', boxShadow: '0 4px 12px rgba(124,58,237,0.30)' }}>
-                    Sign in
+                  {/* Sign In (Purple) — auto-switches to Dashboard (Blue) once signed in */}
+                  <Link to={isSignedIn ? dashboardHref : '/login'} className="flex-1 py-2.5 rounded-xl text-center text-sm font-bold text-white transition-all"
+                    style={isSignedIn
+                      ? { background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)', boxShadow: '0 4px 12px rgba(37,99,235,0.30)' }
+                      : { background: 'linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%)', boxShadow: '0 4px 12px rgba(124,58,237,0.30)' }
+                    }>
+                    {isSignedIn ? 'Dashboard' : 'Sign in'}
                   </Link>
-                  {/* Join Now — Pink */}
+                  {/* Join Now — Pink (hidden once already signed in) */}
+                  {!isSignedIn && (
                   <Link to="/register" className="flex-1 py-2.5 rounded-xl text-center text-sm font-bold text-white transition-all"
                     style={{ background: 'linear-gradient(135deg, #EC4899 0%, #BE185D 100%)', boxShadow: '0 4px 12px rgba(236,72,153,0.30)' }}>
                     Join Now!
                   </Link>
+                  )}
                 </div>
               </div>
             </motion.div>

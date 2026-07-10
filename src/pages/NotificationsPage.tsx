@@ -1,13 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Bell, Heart, MessageCircle, Users, Zap, Check, Trash2, RefreshCw, Database } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
-import { useAuth } from '@/hooks/useAuth'
-
-interface Notification {
-  id: string; type: 'match' | 'like' | 'message' | 'group' | 'system' | 'promo' | 'spin'
-  title: string; body: string; time: string; read: boolean; emoji: string; action?: string
-}
+import { Bell, Heart, MessageCircle, Users, Zap, Check, Trash2, RefreshCw } from 'lucide-react'
+import { useNotifications } from '@/contexts/NotificationContext'
 
 const tabs = [
   { key: 'all',     label: 'All',      icon: Bell },
@@ -28,128 +22,10 @@ const typeConfig: Record<string, { color: string; bg: string }> = {
 }
 
 export default function NotificationsPage() {
-  const { user } = useAuth()
-  const [notifications, setNotifications] = useState<Notification[]>([])
+  const { notifications, unreadCount, loading, markRead, markAllRead, deleteNotification, refresh } = useNotifications()
   const [activeTab, setActiveTab] = useState('all')
-  const [loading, setLoading] = useState(true)
-  const [dbConnected, setDbConnected] = useState(false)
 
-  // ── Realtime: Postgres Changes on notifications ─────────────────────────
-  useEffect(() => {
-    if (!user?.id) return
-
-    const channel = supabase
-      .channel(`notifications:${user.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${user.id}`,
-        },
-        (payload) => {
-          const n = payload.new as any
-          const mapped: Notification = {
-            id: String(n.id),
-            type: n.type || 'system',
-            title: n.title || 'Notification',
-            body: n.body || n.message || '',
-            time: new Date(n.created_at).toLocaleDateString(),
-            read: n.read ?? false,
-            emoji: n.emoji || '🔔',
-            action: n.action_url,
-          }
-          setNotifications(prev => [mapped, ...prev])
-          setDbConnected(true)
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${user.id}`,
-        },
-        (payload) => {
-          const n = payload.new as any
-          setNotifications(prev =>
-            prev.map(notif => notif.id === String(n.id) ? { ...notif, read: n.read } : notif)
-          )
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'DELETE',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${user.id}`,
-        },
-        (payload) => {
-          const old = payload.old as any
-          setNotifications(prev => prev.filter(notif => notif.id !== String(old.id)))
-        }
-      )
-      .subscribe()
-
-    return () => { supabase.removeChannel(channel) }
-  }, [user?.id])
-
-  const fetchNotifications = async () => {
-    setLoading(true)
-    const { data, error } = await supabase
-      .from('notifications')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(50)
-
-    if (error) {
-      setDbConnected(false)
-      setNotifications([])
-    } else {
-      setDbConnected(true)
-      const mapped: Notification[] = (data || []).map((n: any) => ({
-        id: String(n.id),
-        type: n.type || 'system',
-        title: n.title || 'Notification',
-        body: n.body || n.message || '',
-        time: new Date(n.created_at).toLocaleDateString(),
-        read: n.read ?? false,
-        emoji: n.emoji || '🔔',
-        action: n.action_url,
-      }))
-      setNotifications(mapped)
-    }
-    setLoading(false)
-  }
-
-  useEffect(() => { fetchNotifications() }, [])
-
-  const unreadCount = notifications.filter(n => !n.read).length
   const filtered = notifications.filter(n => activeTab === 'all' || n.type === activeTab)
-
-  const markAllRead = async () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })))
-    if (dbConnected && user?.id) {
-      await supabase.from('notifications').update({ read: true }).eq('user_id', user.id).eq('read', false)
-    }
-  }
-
-  const deleteNotif = async (id: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== id))
-    if (dbConnected) {
-      await supabase.from('notifications').delete().eq('id', id)
-    }
-  }
-
-  const markRead = async (id: string) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n))
-    if (dbConnected) {
-      await supabase.from('notifications').update({ read: true }).eq('id', id)
-    }
-  }
 
   return (
     <div className="h-full overflow-y-auto dark:bg-[#0A0710] bg-gray-50">
@@ -164,7 +40,7 @@ export default function NotificationsPage() {
             )}
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={fetchNotifications}
+            <button onClick={refresh}
               className="w-9 h-9 rounded-xl dark:bg-white/5 bg-white border dark:border-white/8 border-gray-200 flex items-center justify-center hover:text-brand-pink transition-colors">
               <RefreshCw className="w-4 h-4 dark:text-gray-400 text-gray-600" />
             </button>
@@ -200,21 +76,8 @@ export default function NotificationsPage() {
           </div>
         )}
 
-        {/* DB not connected */}
-        {!loading && !dbConnected && (
-          <div className="flex flex-col items-center justify-center py-20 gap-4">
-            <div className="w-16 h-16 rounded-3xl dark:bg-white/5 bg-gray-100 flex items-center justify-center">
-              <Database className="w-8 h-8 dark:text-gray-600 text-gray-400" />
-            </div>
-            <div className="text-center">
-              <p className="font-bold dark:text-white text-gray-900 mb-1">Not connected to database</p>
-              <p className="text-sm dark:text-gray-400 text-gray-500">Configure your Supabase credentials to see real notifications</p>
-            </div>
-          </div>
-        )}
-
         {/* Empty state */}
-        {!loading && dbConnected && filtered.length === 0 && (
+        {!loading && filtered.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <div className="w-16 h-16 rounded-3xl bg-love-soft flex items-center justify-center">
               <Bell className="w-8 h-8 text-brand-pink" />
@@ -227,11 +90,12 @@ export default function NotificationsPage() {
         )}
 
         {/* Notification list */}
-        {!loading && dbConnected && (
+        {!loading && filtered.length > 0 && (
           <div className="space-y-2">
             <AnimatePresence>
               {filtered.map((n, i) => {
                 const cfg = typeConfig[n.type] || typeConfig.system
+                const timeLabel = new Date(n.created_at).toLocaleDateString()
                 return (
                   <motion.div key={n.id}
                     initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: -100 }}
@@ -251,11 +115,11 @@ export default function NotificationsPage() {
                           {n.title}
                           {!n.read && <span className="inline-block ml-2 w-2 h-2 rounded-full bg-brand-pink" />}
                         </p>
-                        <span className="text-[10px] dark:text-gray-600 text-gray-400 flex-shrink-0 mt-0.5">{n.time}</span>
+                        <span className="text-[10px] dark:text-gray-600 text-gray-400 flex-shrink-0 mt-0.5">{timeLabel}</span>
                       </div>
                       <p className="text-xs dark:text-gray-400 text-gray-500 mt-0.5 leading-relaxed line-clamp-2">{n.body}</p>
                     </div>
-                    <button onClick={e => { e.stopPropagation(); deleteNotif(n.id) }}
+                    <button onClick={e => { e.stopPropagation(); deleteNotification(n.id) }}
                       className="w-7 h-7 rounded-lg dark:bg-white/5 bg-gray-100 flex items-center justify-center hover:bg-red-500/10 hover:text-red-400 transition-all flex-shrink-0">
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
