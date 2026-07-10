@@ -16,3 +16,12 @@ if (splash) {
   splash.style.opacity = '0'
   setTimeout(() => splash.remove(), 420)
 }
+
+// Register PWA service worker (skipped in dev to avoid stale-cache issues)
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker
+      .register('/sw.js', { scope: '/' })
+      .catch(err => console.warn('[SW] Registration failed:', err))
+  })
+}

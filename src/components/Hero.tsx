@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowRight, Play } from 'lucide-react'
 import { cmsList } from '@/lib/contentSync'
+import DownloadAppButton from '@/components/DownloadAppButton'
 
 interface Slide {
   badge: string
@@ -268,6 +269,7 @@ export default function Hero() {
               <Play className="w-4 h-4 fill-white" />
               Explore
             </Link>
+            <DownloadAppButton variant="secondary" />
           </motion.div>
 
           {/* Trust badges */}
