@@ -422,7 +422,64 @@ CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION handle_new_user();
 
+-- Shared helper: fire a real OS push from a SQL trigger via the send-push
+-- edge function (pg_net), authenticated with a shared internal secret so it
+-- doesn't need a user session. Best-effort — swallows errors so a push
+-- outage never blocks the underlying INSERT/UPDATE that triggered it.
+-- Requires pg_net (CREATE EXTENSION IF NOT EXISTS pg_net;) and:
+--   ALTER DATABASE postgres SET app.supabase_url = 'https://YOUR_PROJECT.supabase.co';
+--   ALTER DATABASE postgres SET app.internal_push_secret = 'A_RANDOM_SECRET';
+-- `app.internal_push_secret` MUST be a distinct, randomly generated value —
+-- never the service-role key — set as the send-push function's
+-- INTERNAL_PUSH_SECRET secret. Keeping it separate means a leak of one does
+-- not also compromise full database/service-role access.
+CREATE OR REPLACE FUNCTION notify_push_internal(
+  p_user_id UUID,
+  p_type TEXT,
+  p_title TEXT,
+  p_message TEXT,
+  p_action_url TEXT DEFAULT NULL
+) RETURNS VOID AS $$
+DECLARE
+  v_url TEXT := current_setting('app.supabase_url', true);
+  v_key TEXT := current_setting('app.internal_push_secret', true);
+BEGIN
+  IF v_url IS NULL OR v_key IS NULL OR v_url = '' OR v_key = '' THEN
+    RETURN; -- not configured on this environment; skip silently
+  END IF;
+  PERFORM net.http_post(
+    url     := v_url || '/functions/v1/send-push',
+    headers := jsonb_build_object(
+      'Content-Type',    'application/json',
+      'x-internal-secret', v_key
+    ),
+    body    := jsonb_build_object(
+      'userId', p_user_id,
+      'type', p_type,
+      'title', p_title,
+      'message', p_message,
+      'actionUrl', p_action_url,
+      'persist', false
+    )
+  );
+EXCEPTION WHEN OTHERS THEN
+  -- Never let a push failure break the caller's transaction
+  NULL;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Lock down: this helper must only ever be called from other SECURITY
+-- DEFINER trigger functions (which run as their owner), never directly by
+-- app users — it holds the service-role secret used to authenticate to the
+-- send-push edge function. Revoke public RPC access explicitly.
+REVOKE ALL ON FUNCTION notify_push_internal(UUID, TEXT, TEXT, TEXT, TEXT) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION notify_push_internal(UUID, TEXT, TEXT, TEXT, TEXT) FROM anon, authenticated;
+
 -- Auto-create match when mutual like
+-- NOTE: this trigger also fires a real OS push (via the send-push edge
+-- function over pg_net) so matches made server-side get the same
+-- OneSignal delivery as client-triggered notifyUser() calls. See the
+-- notify_push_internal() setup notes above for required DB settings.
 CREATE OR REPLACE FUNCTION check_mutual_like()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -434,11 +491,15 @@ BEGIN
     VALUES (LEAST(NEW.liker_id, NEW.liked_id), GREATEST(NEW.liker_id, NEW.liked_id))
     ON CONFLICT DO NOTHING;
 
-    -- Notify both users
+    -- Notify both users (in-app row)
     INSERT INTO notifications (user_id, type, title, body, data)
     VALUES
       (NEW.liker_id, 'match', 'New Match! 💕', 'You have a new match!', jsonb_build_object('match_user_id', NEW.liked_id)),
       (NEW.liked_id, 'match', 'New Match! 💕', 'You have a new match!', jsonb_build_object('match_user_id', NEW.liker_id));
+
+    -- Fire real OS push for both users (best-effort; never blocks the like)
+    PERFORM notify_push_internal(NEW.liker_id, 'match', 'New Match! 💕', 'You have a new match!', '/app/messages');
+    PERFORM notify_push_internal(NEW.liked_id, 'match', 'New Match! 💕', 'You have a new match!', '/app/messages');
   END IF;
   RETURN NEW;
 END;

@@ -18,32 +18,33 @@ interface NavItemDef {
   label: string
   badge?: string | null
   color?: string
+  tourId?: string
 }
 
 const mainNav: NavItemDef[] = [
-  { path: '/app/feed',          icon: Home,          label: 'Home' },
-  { path: '/app/profile',       icon: User,          label: 'Profile' },
-  { path: '/app/friends',       icon: Users,         label: 'Friends',       badge: null as string | null },
-  { path: '/app/matches',        icon: MessageCircle, label: 'Messages' },
-  { path: '/app/notifications', icon: Bell,          label: 'Notifications' },
+  { path: '/app/feed',          icon: Home,          label: 'Home', tourId: 'nav-feed' },
+  { path: '/app/profile',       icon: User,          label: 'Profile', tourId: 'nav-profile' },
+  { path: '/app/friends',       icon: Users,         label: 'Friends',       badge: null as string | null, tourId: 'nav-friends' },
+  { path: '/app/matches',        icon: MessageCircle, label: 'Messages', tourId: 'nav-messages' },
+  { path: '/app/notifications', icon: Bell,          label: 'Notifications', tourId: 'nav-notifications' },
 ]
 
 const callsNav: NavItemDef[] = [
-  { path: '/app/calls/video',   icon: Video,         label: 'Video Calls',   color: 'text-blue-400' },
-  { path: '/app/calls/audio',   icon: Phone,         label: 'Audio Calls',   color: 'text-green-400' },
+  { path: '/app/calls/video',   icon: Video,         label: 'Video Calls',   color: 'text-blue-400', tourId: 'nav-video-call' },
+  { path: '/app/calls/audio',   icon: Phone,         label: 'Audio Calls',   color: 'text-green-400', tourId: 'nav-audio-call' },
 ]
 
 const exploreNav: NavItemDef[] = [
   { path: '/app/worldchat',     icon: Globe,         label: 'World Chat',    color: 'text-cyan-500' },
-  { path: '/app/discover',      icon: Heart,         label: 'Dating',        color: 'text-pink-500' },
-  { path: '/app/groups',        icon: Users2,        label: 'Groups',        color: 'text-purple-500' },
+  { path: '/app/discover',      icon: Heart,         label: 'Dating',        color: 'text-pink-500', tourId: 'nav-discover' },
+  { path: '/app/groups',        icon: Users2,        label: 'Groups',        color: 'text-purple-500', tourId: 'nav-groups' },
   { path: '/app/pages',         icon: FileText,      label: 'Pages',         color: 'text-sky-500' },
   { path: '/app/events',        icon: Calendar,      label: 'Events',        color: 'text-orange-500' },
-  { path: '/app/marketplace',   icon: ShoppingBag,   label: 'Marketplace',   color: 'text-amber-500' },
+  { path: '/app/marketplace',   icon: ShoppingBag,   label: 'Marketplace',   color: 'text-amber-500', tourId: 'nav-marketplace' },
   { path: '/app/jobs',          icon: Briefcase,     label: 'Jobs',          color: 'text-teal-500' },
   { path: '/app/learning',      icon: BookOpen,      label: 'Learning',      color: 'text-indigo-500' },
-  { path: '/app/smartztv',      icon: Tv,            label: 'SmartzTV',      color: 'text-violet-500' },
-  { path: '/app/ride',          icon: Car,           label: 'Ride',          color: 'text-emerald-500' },
+  { path: '/app/smartztv',      icon: Tv,            label: 'SmartzTV',      color: 'text-violet-500', tourId: 'nav-smartztv' },
+  { path: '/app/ride',          icon: Car,           label: 'Ride',          color: 'text-emerald-500', tourId: 'nav-ride' },
   { path: '/app/spin',          icon: Zap,           label: 'Spin Chat',     color: 'text-fuchsia-500' },
   { path: '/app/worldstage',    icon: Trophy,        label: 'World Stage',   color: 'text-amber-500' },
   { path: '/app/subscriptions', icon: Crown,         label: 'Premium',       color: 'text-yellow-500' },
@@ -52,8 +53,8 @@ const exploreNav: NavItemDef[] = [
 const bottomNav: NavItemDef[] = [
   { path: '/app/referrals', icon: Gift,       label: 'Invite & Earn' },
   { path: '/app/saved',    icon: Bookmark,   label: 'Saved Posts' },
-  { path: '/app/settings', icon: Settings,   label: 'Settings' },
-  { path: '/app/help',     icon: HelpCircle, label: 'Help & Support' },
+  { path: '/app/settings', icon: Settings,   label: 'Settings', tourId: 'nav-settings' },
+  { path: '/app/help',     icon: HelpCircle, label: 'Help & Support', tourId: 'nav-help' },
 ]
 
 interface LeftSidebarProps {
@@ -75,6 +76,7 @@ function NavRow({
     <Link
       to={item.path}
       title={item.label}
+      data-tour={item.tourId}
       className={`flex items-center justify-center lg:justify-start gap-3 px-2 lg:px-3 py-2.5 rounded-xl transition-all group relative ${
         active
           ? 'bg-love-gradient text-white shadow-md shadow-pink-500/20'

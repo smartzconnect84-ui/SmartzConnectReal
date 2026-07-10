@@ -35,3 +35,4 @@
 - [Schema v15 SQL bugs fixed](schema-v15-fix.md) — referral_code column missing before unique index; dollar-quoting used $; not $; fixed via schema_v15_fix.sql.
 - [Framer Motion TypeScript typing](framer-motion-typing.md) — type:'spring' widens to string; annotate variant objects as Variants; add `as const` to type field in spread-prop helper functions.
 - [Push notification architecture](push-notification-architecture.md) — always use notifyUser() (real OS push), never raw notifications.insert(); admin-only types gated by admin_users check.
+- [Push notification completeness](push-notification-completeness.md) — DB-trigger events (matches, payments) need notify_push_internal() via pg_net with a REVOKEd, secret-decoupled helper, not raw inserts.

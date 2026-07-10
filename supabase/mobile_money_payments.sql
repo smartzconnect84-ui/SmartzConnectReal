@@ -86,7 +86,7 @@ BEGIN
     -- Update profile subscription tier
     UPDATE profiles SET subscription_tier = NEW.plan_id WHERE id = NEW.user_id;
 
-    -- Send notification
+    -- Send notification (in-app row)
     INSERT INTO notifications (user_id, type, title, body, data)
     VALUES (
       NEW.user_id,
@@ -94,6 +94,15 @@ BEGIN
       '🎉 Subscription Activated!',
       'Your ' || INITCAP(NEW.plan_id) || ' plan is now active. Enjoy your premium features!',
       jsonb_build_object('plan', NEW.plan_id, 'payment_id', NEW.id)
+    );
+
+    -- Fire real OS push (see notify_push_internal in schema.sql)
+    PERFORM notify_push_internal(
+      NEW.user_id,
+      'premium',
+      '🎉 Subscription Activated!',
+      'Your ' || INITCAP(NEW.plan_id) || ' plan is now active. Enjoy your premium features!',
+      '/app/settings/subscription'
     );
   END IF;
   RETURN NEW;

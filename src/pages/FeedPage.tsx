@@ -8,6 +8,7 @@ import {
   Link2, Trash2, Flag, Loader2
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { notifyUser } from '@/lib/notify'
 import { uploadToSufy } from '@/lib/sufy'
 import { useAuth } from '@/hooks/useAuth'
 import ReportBlockModal from '@/components/ReportBlockModal'
@@ -715,10 +716,22 @@ function PostCard({ post, onLike, onSave, currentUserId, storyData, onViewStory 
         setReactions(prev => ({ ...prev, [myReaction]: Math.max(0, (prev[myReaction] || 0) - 1) }))
         await supabase.from('post_reactions').delete().eq('post_id', post.id).eq('user_id', currentUserId)
       }
+      // Only notify on a fresh reaction (myReaction was null), not when a user
+      // switches between emoji on the same post — avoids a push per switch.
+      const isFreshReaction = !myReaction
       setMyReaction(emoji)
       setReactions(prev => ({ ...prev, [emoji]: (prev[emoji] || 0) + 1 }))
-      await supabase.from('post_reactions').insert({ post_id: post.id, user_id: currentUserId, emoji })
-        .then(() => {})
+      const { error } = await supabase.from('post_reactions').insert({ post_id: post.id, user_id: currentUserId, emoji })
+      if (!error && isFreshReaction && post.authorId && post.authorId !== currentUserId) {
+        notifyUser({
+          userId: post.authorId,
+          type: 'like',
+          title: 'New reaction',
+          message: `Someone reacted ${emoji} to your post`,
+          actionUrl: `/app/post/${post.id}`,
+          emoji,
+        })
+      }
     }
   }
 
@@ -763,6 +776,16 @@ function PostCard({ post, onLike, onSave, currentUserId, storyData, onViewStory 
     if (!error) {
       setLocalCommentCount(c => c + 1)
       loadComments()
+      if (post.authorId && post.authorId !== currentUserId) {
+        notifyUser({
+          userId: post.authorId,
+          type: 'comment',
+          title: 'New comment 💬',
+          message: text.length > 80 ? `${text.slice(0, 80)}…` : text,
+          actionUrl: `/app/post/${post.id}`,
+          emoji: '💬',
+        })
+      }
     }
   }
 
@@ -1286,7 +1309,17 @@ export default function FeedPage() {
     const nowLiked = !post.liked
     setPosts(prev => prev.map(p => p.id === id ? { ...p, liked: nowLiked, likes: nowLiked ? p.likes + 1 : p.likes - 1 } : p))
     if (nowLiked) {
-      await supabase.from('post_likes').insert({ post_id: id, user_id: user.id })
+      const { error } = await supabase.from('post_likes').insert({ post_id: id, user_id: user.id })
+      if (!error && post.authorId && post.authorId !== user.id) {
+        notifyUser({
+          userId: post.authorId,
+          type: 'like',
+          title: 'New like ❤️',
+          message: 'Someone liked your post',
+          actionUrl: `/app/post/${id}`,
+          emoji: '❤️',
+        })
+      }
     } else {
       await supabase.from('post_likes').delete().eq('post_id', id).eq('user_id', user.id)
     }

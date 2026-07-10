@@ -14,26 +14,39 @@ serve(async (req) => {
   }
 
   try {
-    // ── 1. Authenticate caller ───────────────────────────────────────────────
-    const authHeader = req.headers.get('Authorization')
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
-
     const supabaseUrl  = Deno.env.get('SUPABASE_URL')!
     const supabaseAnon = Deno.env.get('SUPABASE_ANON_KEY')!
     const serviceKey   = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
-    const userClient = createClient(supabaseUrl, supabaseAnon, {
-      global: { headers: { Authorization: authHeader } },
-    })
-    const { data: { user }, error: authErr } = await userClient.auth.getUser()
-    if (authErr || !user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    // ── 1. Authenticate caller ───────────────────────────────────────────────
+    // Two supported callers:
+    //  a) an authenticated end-user (normal client-side notifyUser() calls)
+    //  b) a trusted internal caller (Postgres triggers via pg_net, e.g. mutual
+    //     likes / payment activation) authenticated with a shared secret header.
+    //     Internal calls are attributed to `system` (no from_user_id) and skip
+    //     the per-user allow/self-push checks below.
+    const authHeader     = req.headers.get('Authorization')
+    const internalSecret = req.headers.get('x-internal-secret')
+    const expectedSecret = Deno.env.get('INTERNAL_PUSH_SECRET')
+    const isInternalCall = !!expectedSecret && internalSecret === expectedSecret
+
+    let user: { id: string } | null = null
+    if (!isInternalCall) {
+      if (!authHeader) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      const userClient = createClient(supabaseUrl, supabaseAnon, {
+        global: { headers: { Authorization: authHeader } },
       })
+      const { data: { user: authedUser }, error: authErr } = await userClient.auth.getUser()
+      if (authErr || !authedUser) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      user = authedUser
     }
 
     const body = await req.json()
@@ -75,12 +88,12 @@ serve(async (req) => {
     // admin-triggered actions (go-live, publish, announce). Require the caller
     // to be a recognized admin/staff account to prevent spam/impersonation.
     const ADMIN_ONLY_TYPES = new Set(['announcement', 'broadcast', 'worldstage', 'smartztv', 'learning'])
-    if (ADMIN_ONLY_TYPES.has(notifTypeRaw)) {
+    if (!isInternalCall && ADMIN_ONLY_TYPES.has(notifTypeRaw)) {
       const adminCheckClient = createClient(supabaseUrl, serviceKey)
       const { data: adminRow } = await adminCheckClient
         .from('admin_users')
         .select('id')
-        .eq('id', user.id)
+        .eq('id', user!.id)
         .maybeSingle()
       if (!adminRow) {
         return new Response(JSON.stringify({ error: 'Admin privileges required for this notification type' }), {
@@ -90,7 +103,7 @@ serve(async (req) => {
     }
     // Prevent self-push loops (callers may notify themselves for system types)
     // For social types, sender ≠ recipient is enforced silently — it degrades to persist-only.
-    const isSelfPush = user.id === userId
+    const isSelfPush = !isInternalCall && user!.id === userId
 
     // Reject pushes to non-existent recipients — a valid session should not be
     // enough to blast arbitrary/random UUIDs; the target must be a real user.
@@ -109,11 +122,15 @@ serve(async (req) => {
     }
 
     // ── 2. Persist notification row ─────────────────────────────────────────
-    if (persist !== false) {
+    // Internal (trigger-originated) calls already persisted their own row in
+    // SQL before invoking this function — persist defaults to false for them
+    // to avoid a duplicate notifications row; pass persist:true to override.
+    const shouldPersist = isInternalCall ? persist === true : persist !== false
+    if (shouldPersist) {
       const adminClient = createClient(supabaseUrl, serviceKey)
       await adminClient.from('notifications').insert({
         user_id:      userId,
-        from_user_id: user.id,
+        from_user_id: isInternalCall ? null : user!.id,
         type:         type || 'system',
         title,
         body:         message,
