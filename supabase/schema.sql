@@ -422,14 +422,27 @@ CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION handle_new_user();
 
+-- Shared config store for server-side secrets that trigger functions need.
+-- Hosted Supabase Postgres does not allow ALTER DATABASE/ROLE ... SET on
+-- custom ("app.*") GUCs — that requires superuser access to postgresql.conf,
+-- which managed instances don't expose. A locked-down table is the
+-- supported alternative. Never exposed via PostgREST (no RLS grants to
+-- anon/authenticated, and it lives outside any API-exposed schema pattern).
+CREATE TABLE IF NOT EXISTS private_config (
+  key   TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);
+REVOKE ALL ON TABLE private_config FROM PUBLIC;
+REVOKE ALL ON TABLE private_config FROM anon, authenticated;
+
 -- Shared helper: fire a real OS push from a SQL trigger via the send-push
 -- edge function (pg_net), authenticated with a shared internal secret so it
 -- doesn't need a user session. Best-effort — swallows errors so a push
 -- outage never blocks the underlying INSERT/UPDATE that triggered it.
--- Requires pg_net (CREATE EXTENSION IF NOT EXISTS pg_net;) and:
---   ALTER DATABASE postgres SET app.supabase_url = 'https://YOUR_PROJECT.supabase.co';
---   ALTER DATABASE postgres SET app.internal_push_secret = 'A_RANDOM_SECRET';
--- `app.internal_push_secret` MUST be a distinct, randomly generated value —
+-- Requires pg_net (CREATE EXTENSION IF NOT EXISTS pg_net;) and two rows in
+-- private_config: ('supabase_url', 'https://YOUR_PROJECT.supabase.co') and
+-- ('internal_push_secret', 'A_RANDOM_SECRET').
+-- `internal_push_secret` MUST be a distinct, randomly generated value —
 -- never the service-role key — set as the send-push function's
 -- INTERNAL_PUSH_SECRET secret. Keeping it separate means a leak of one does
 -- not also compromise full database/service-role access.
@@ -441,8 +454,8 @@ CREATE OR REPLACE FUNCTION notify_push_internal(
   p_action_url TEXT DEFAULT NULL
 ) RETURNS VOID AS $$
 DECLARE
-  v_url TEXT := current_setting('app.supabase_url', true);
-  v_key TEXT := current_setting('app.internal_push_secret', true);
+  v_url TEXT := (SELECT value FROM private_config WHERE key = 'supabase_url');
+  v_key TEXT := (SELECT value FROM private_config WHERE key = 'internal_push_secret');
 BEGIN
   IF v_url IS NULL OR v_key IS NULL OR v_url = '' OR v_key = '' THEN
     RETURN; -- not configured on this environment; skip silently
