@@ -1,21 +1,36 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Eye, EyeOff, Mail, Lock, Loader2, Shield, ArrowLeft } from 'lucide-react'
+import { Eye, EyeOff, Mail, Lock, Loader2, Shield, ArrowLeft, UserCircle2 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { AuthInput, AuthError } from '@/components/auth/AuthLayout'
+import { listSwitchableAccounts, switchToAccount, type SwitchableAccount } from '@/lib/accountSwitcher'
 
 const logoImg = '/logo.png'
 
 export default function AdminLoginPage() {
   const navigate = useNavigate()
-  const { signIn } = useAuth()
+  const { signIn, session, isAdmin, loading: authLoading } = useAuth()
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
   const [showPw, setShowPw]     = useState(false)
   const [rememberMe, setRememberMe] = useState(false)
   const [loading, setLoading]   = useState(false)
   const [error, setError]       = useState('')
+  const [switching, setSwitching] = useState<string | null>(null)
+  const [savedAccounts, setSavedAccounts] = useState<SwitchableAccount[]>([])
+
+  // Already have a valid admin session on this device (remembered sign-in) —
+  // skip the form entirely and go straight to the dashboard.
+  useEffect(() => {
+    if (!authLoading && session && isAdmin) {
+      navigate('/admin', { replace: true })
+    }
+  }, [authLoading, session, isAdmin, navigate])
+
+  useEffect(() => {
+    setSavedAccounts(listSwitchableAccounts())
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -28,6 +43,20 @@ export default function AdminLoginPage() {
       setError(err.message || 'Invalid credentials. Please try again.')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleQuickSwitch = async (account: SwitchableAccount) => {
+    setError('')
+    setSwitching(account.email)
+    try {
+      await switchToAccount(account.email)
+      navigate('/admin', { replace: true })
+    } catch (err: any) {
+      setError(err.message || 'Could not restore that session. Please sign in with your password.')
+      setSavedAccounts(listSwitchableAccounts())
+    } finally {
+      setSwitching(null)
     }
   }
 

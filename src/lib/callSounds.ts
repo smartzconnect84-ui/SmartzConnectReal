@@ -5,6 +5,9 @@
  * Ringing uses a cancel-token pattern so that any in-flight resume().then()
  * callback becomes a no-op the moment stopRinging() or a newer startRinging()
  * is called, preventing phantom ringing.
+ *
+ * Cadence: North-American style — ~2 s ring ON / 4 s ring OFF.
+ * Interval = 6 s total (burst fires at t=0, t=6, t=12, …).
  */
 
 let _ctx: AudioContext | null = null
@@ -41,22 +44,31 @@ function tone(
   gainNode.gain.linearRampToValueAtTime(0, ctx.currentTime + startOffset + duration)
   osc.start(ctx.currentTime + startOffset)
   osc.stop(ctx.currentTime + startOffset + duration + 0.01)
+  // Disconnect node after it finishes to allow GC
+  osc.onended = () => { try { osc.disconnect(); gainNode.disconnect() } catch { /* ignore */ } }
 }
 
 // ── Ringing — North-American dual-tone (440 Hz + 480 Hz), 2 s on / 4 s off ──
+// Total cadence period = 6 s  (ring 2 s, silence 4 s)
 
 let _ringToken = 0          // monotonic counter — incremented on every stop
 let _ringTimer: ReturnType<typeof setInterval> | null = null
 /** Gain nodes for oscillators in the current burst — stopped immediately on cancel */
 let _activeRingGains: GainNode[] = []
 
+const RING_ON_DURATION = 1.9   // seconds the dual-tone sounds
+const RING_PERIOD_MS   = 6000  // full cadence: 2 s on + 4 s off
+
 function _ringBurst() {
   const ctx = getCtx()
-  const RING_DURATION = 1.8
 
   // Immediately silence any still-fading nodes from the previous burst
   for (const g of _activeRingGains) {
-    try { g.gain.cancelScheduledValues(ctx.currentTime); g.gain.setValueAtTime(0, ctx.currentTime) } catch { /* ignore */ }
+    try {
+      g.gain.cancelScheduledValues(ctx.currentTime)
+      g.gain.setValueAtTime(0, ctx.currentTime)
+      g.disconnect()
+    } catch { /* ignore */ }
   }
   _activeRingGains = []
 
@@ -69,10 +81,11 @@ function _ringBurst() {
     osc.frequency.setValueAtTime(freq, ctx.currentTime)
     g.gain.setValueAtTime(0, ctx.currentTime)
     g.gain.linearRampToValueAtTime(0.18, ctx.currentTime + 0.05)
-    g.gain.setValueAtTime(0.18, ctx.currentTime + RING_DURATION - 0.05)
-    g.gain.linearRampToValueAtTime(0, ctx.currentTime + RING_DURATION)
+    g.gain.setValueAtTime(0.18, ctx.currentTime + RING_ON_DURATION - 0.05)
+    g.gain.linearRampToValueAtTime(0, ctx.currentTime + RING_ON_DURATION)
     osc.start(ctx.currentTime)
-    osc.stop(ctx.currentTime + RING_DURATION + 0.01)
+    osc.stop(ctx.currentTime + RING_ON_DURATION + 0.01)
+    osc.onended = () => { try { osc.disconnect(); g.disconnect() } catch { /* ignore */ } }
     _activeRingGains.push(g)
   })
 }
@@ -89,7 +102,7 @@ export function startRinging(): void {
     _ringTimer = setInterval(() => {
       if (_ringToken !== token) { clearInterval(_ringTimer!); _ringTimer = null; return }
       _ringBurst()
-    }, 5500) // 2 s ring, 3.5 s silence
+    }, RING_PERIOD_MS)
   })
 }
 
@@ -106,7 +119,11 @@ export function stopRinging(): void {
   if (_activeRingGains.length && _ctx) {
     const ctx = _ctx
     for (const g of _activeRingGains) {
-      try { g.gain.cancelScheduledValues(ctx.currentTime); g.gain.setValueAtTime(0, ctx.currentTime) } catch { /* ignore */ }
+      try {
+        g.gain.cancelScheduledValues(ctx.currentTime)
+        g.gain.setValueAtTime(0, ctx.currentTime)
+        g.disconnect()
+      } catch { /* ignore */ }
     }
     _activeRingGains = []
   }

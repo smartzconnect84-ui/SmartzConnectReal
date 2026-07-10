@@ -32,6 +32,7 @@ import NotificationPrompt from '@/components/NotificationPrompt'
 import NetworkStatusToast from '@/components/NetworkStatusToast'
 import { TourProvider } from '@/contexts/TourContext'
 import TourOverlay from '@/components/tour/TourOverlay'
+import { NotificationProvider } from '@/contexts/NotificationContext'
 
 import AdminLayout from '@/layouts/AdminLayout'
 import ProtectedRoute from '@/components/ProtectedRoute'
@@ -136,6 +137,7 @@ export default function App() {
           <LiveChatProvider>
           <LiveKitCallProvider>
           <BrowserRouter>
+          <NotificationProvider>
           <TourProvider>
             <AppInit />
             <NetworkStatusToast />
@@ -248,6 +250,7 @@ export default function App() {
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </TourProvider>
+          </NotificationProvider>
           </BrowserRouter>
           </LiveKitCallProvider>
           </LiveChatProvider>

@@ -3,6 +3,13 @@ import { type User, type Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import { linkOneSignalUser, unlinkOneSignalUser } from '@/lib/onesignal'
 import { applyStoredReferralCode } from '@/lib/referral'
+import { saveSwitchableAccount, removeSwitchableAccount } from '@/lib/accountSwitcher'
+
+interface AdminProfile {
+  fullName: string | null
+  avatarUrl: string | null
+  email: string | null
+}
 
 interface AuthContextType {
   user: User | null
@@ -11,6 +18,7 @@ interface AuthContextType {
   emailVerified: boolean
   role: string
   isAdmin: boolean
+  adminProfile: AdminProfile | null
   signIn: (email: string, password: string) => Promise<void>
   signUp: (email: string, password: string, name?: string, extra?: { dateOfBirth?: string; avatarFile?: File | null }) => Promise<{ needsVerification: boolean }>
   signOut: () => Promise<void>
@@ -30,6 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading]         = useState(true)
   const [emailVerified, setEmailVerified] = useState(false)
   const [role, setRole]               = useState<string>('user')
+  const [adminProfile, setAdminProfile] = useState<AdminProfile | null>(null)
   // Tracks the latest active user ID so stale async role fetches
   // from prior auth events can't overwrite the current user's role.
   const currentUserIdRef = useRef<string | null>(null)
@@ -48,6 +57,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .single()
     if (error) return null          // transient failure — preserve existing role
     return data?.role ?? 'user'     // explicit row with no role → regular user
+  }
+
+  // Fetch display profile (name/avatar) for the admin topbar + account switcher.
+  // Best-effort — a failure here should never block auth flow.
+  const resolveAdminProfile = async (userId: string, email: string | null): Promise<AdminProfile> => {
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('full_name, avatar_url')
+        .eq('id', userId)
+        .single()
+      return { fullName: data?.full_name ?? null, avatarUrl: data?.avatar_url ?? null, email }
+    } catch {
+      return { fullName: null, avatarUrl: null, email }
+    }
+  }
+
+  // Persist a refreshable session for the admin account switcher (allow-listed
+  // emails only — see src/lib/accountSwitcher.ts).
+  const persistSwitchableSession = (s: Session, roleValue: string, profile: AdminProfile) => {
+    if (!s.user.email || !s.refresh_token) return
+    saveSwitchableAccount({
+      email: s.user.email,
+      userId: s.user.id,
+      refreshToken: s.refresh_token,
+      fullName: profile.fullName,
+      avatarUrl: profile.avatarUrl,
+      role: roleValue,
+    })
   }
 
   useEffect(() => {
@@ -70,7 +108,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // On initial load a null result (DB unreachable) is safer to treat as
           // 'user' than to leave loading=true forever. Role corrects on next
           // TOKEN_REFRESHED once connectivity is restored.
-          setRole(resolved ?? 'user')
+          const roleValue = resolved ?? 'user'
+          setRole(roleValue)
+          const profile = await resolveAdminProfile(uid, session?.user?.email ?? null)
+          if (isMounted && currentUserIdRef.current === uid) {
+            setAdminProfile(profile)
+            if (session) persistSwitchableSession(session, roleValue, profile)
+          }
         }
       }
       if (isMounted) setLoading(false)
@@ -93,7 +137,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Guard: mounted + same user (rapid sign-out/sign-in safety)
           if (!isMounted || currentUserIdRef.current !== uid) return
           // Null on sign-in (DB unreachable) defaults to 'user'.
-          setRole(resolved ?? 'user')
+          const roleValue = resolved ?? 'user'
+          setRole(roleValue)
+          resolveAdminProfile(uid, session?.user?.email ?? null).then(profile => {
+            if (!isMounted || currentUserIdRef.current !== uid) return
+            setAdminProfile(profile)
+            if (session) persistSwitchableSession(session, roleValue, profile)
+          })
           linkOneSignalUser(uid)
           if (session?.user?.email) applyPendingProfile(uid, undefined, session.user.email)
           applyStoredReferralCode(uid)
@@ -135,6 +185,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (event === 'SIGNED_OUT') {
         if (isMounted) {
           setRole('user')
+          setAdminProfile(null)
           setLoading(false)
         }
         window.dispatchEvent(new CustomEvent('supabase:signed_out'))
@@ -318,10 +369,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const isAdmin = ADMIN_ROLES.includes(role)
 
+  const signOutClearSwitcher = async () => {
+    if (user?.email) removeSwitchableAccount(user.email)
+    await signOut()
+  }
+
   return (
     <AuthContext.Provider value={{
-      user, session, loading, emailVerified, role, isAdmin,
-      signIn, signUp, signOut, resetPassword, updatePassword, resendVerification,
+      user, session, loading, emailVerified, role, isAdmin, adminProfile,
+      signIn, signUp, signOut: signOutClearSwitcher, resetPassword, updatePassword, resendVerification,
       signInWithGoogle,
     }}>
       {children}
