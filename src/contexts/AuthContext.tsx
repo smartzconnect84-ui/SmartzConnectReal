@@ -1,7 +1,7 @@
 import { createContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { type User, type Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
-import { linkOneSignalUser, unlinkOneSignalUser, requestNotificationPermission } from '@/lib/onesignal'
+import { linkOneSignalUser, unlinkOneSignalUser } from '@/lib/onesignal'
 import { applyStoredReferralCode } from '@/lib/referral'
 
 interface AuthContextType {
@@ -97,10 +97,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           linkOneSignalUser(uid)
           if (session?.user?.email) applyPendingProfile(uid, undefined, session.user.email)
           applyStoredReferralCode(uid)
-          // Request browser push permission after login. OneSignal won't
-          // subscribe the user until permission is granted — without this call
-          // the browser prompt never appears and no pushes are ever delivered.
-          requestNotificationPermission().catch(() => {/* user dismissed — fine */})
+          // NOTE: do NOT auto-call requestNotificationPermission() here.
+          // Calling Notification.requestPermission() without a user gesture
+          // gets silently queued (never resolved) by most browsers, and a
+          // second, user-gesture-triggered call (from NotificationPrompt's
+          // "Allow" button) then queues behind the stuck first call and also
+          // never resolves — this was the "loads forever, no live push"
+          // symptom. Permission must only ever be requested from a real
+          // click, which NotificationPrompt already does.
         }
         if (isMounted) setLoading(false)
         window.dispatchEvent(new CustomEvent('supabase:signed_in', { detail: { session } }))

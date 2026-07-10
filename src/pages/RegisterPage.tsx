@@ -135,9 +135,9 @@ export default function RegisterPage() {
 
       {/* Ambient background */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/2 -translate-x-1/4 w-[700px] h-[500px] rounded-full bg-purple-600/10 blur-[140px]" />
-        <div className="absolute bottom-0 right-1/4 w-[500px] h-[400px] rounded-full bg-pink-600/8 blur-[100px]" />
-        <div className="absolute top-1/2 left-0 w-[300px] h-[300px] rounded-full bg-violet-500/6 blur-[80px]" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/4 w-[700px] h-[500px] rounded-full bg-purple-600/30 blur-[90px]" />
+        <div className="absolute bottom-0 right-1/4 w-[500px] h-[400px] rounded-full bg-pink-600/25 blur-[70px]" />
+        <div className="absolute top-1/2 left-0 w-[300px] h-[300px] rounded-full bg-violet-500/20 blur-[55px]" />
       </div>
 
       {/* Floating orbs */}

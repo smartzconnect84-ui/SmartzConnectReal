@@ -27,8 +27,11 @@ import CookieBanner from '@/components/CookieBanner'
 import { AnnouncementProvider } from '@/contexts/AnnouncementContext'
 import AppShell from '@/layouts/AppShell'
 import PWAInstallPrompt from '@/components/PWAInstallPrompt'
+import PWAUpdatePrompt from '@/components/PWAUpdatePrompt'
 import NotificationPrompt from '@/components/NotificationPrompt'
 import NetworkStatusToast from '@/components/NetworkStatusToast'
+import { TourProvider } from '@/contexts/TourContext'
+import TourOverlay from '@/components/tour/TourOverlay'
 
 import AdminLayout from '@/layouts/AdminLayout'
 import ProtectedRoute from '@/components/ProtectedRoute'
@@ -133,13 +136,16 @@ export default function App() {
           <LiveChatProvider>
           <LiveKitCallProvider>
           <BrowserRouter>
+          <TourProvider>
             <AppInit />
             <NetworkStatusToast />
             <LiveChat />
             <LiveKitCall />
             <CookieBanner />
             <PWAInstallPrompt />
+            <PWAUpdatePrompt />
             <NotificationPrompt />
+            <TourOverlay />
             <Routes>
               {/* Public */}
               <Route path="/"            element={<PublicLayout><HomePage /></PublicLayout>} />
@@ -241,6 +247,7 @@ export default function App() {
 
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
+          </TourProvider>
           </BrowserRouter>
           </LiveKitCallProvider>
           </LiveChatProvider>

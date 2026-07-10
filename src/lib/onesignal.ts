@@ -69,7 +69,27 @@ export async function unlinkOneSignalUser() {
   } catch { /* ignore */ }
 }
 
+let permissionRequestInFlight: Promise<boolean> | null = null
+
+/**
+ * Requests browser push permission. Must only be called from a real user
+ * gesture (e.g. a button click) — browsers silently queue/never-resolve
+ * calls made without one, which can also block a later, legitimate
+ * gesture-triggered call behind it. Guarded against concurrent calls so a
+ * double-click (or a lingering auto-trigger elsewhere) can't cause the same
+ * hang.
+ */
 export async function requestNotificationPermission(): Promise<boolean> {
+  if (permissionRequestInFlight) return permissionRequestInFlight
+  permissionRequestInFlight = doRequestNotificationPermission()
+  try {
+    return await permissionRequestInFlight
+  } finally {
+    permissionRequestInFlight = null
+  }
+}
+
+async function doRequestNotificationPermission(): Promise<boolean> {
   if (!appId) return false
 
   const hasNativeApi = typeof window !== 'undefined' && 'Notification' in window

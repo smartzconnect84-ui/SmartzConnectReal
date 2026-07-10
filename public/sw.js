@@ -3,7 +3,7 @@
  * Provides basic offline support and asset caching for PWA installation.
  */
 
-const CACHE_NAME = 'smartzconnect-v1'
+const CACHE_NAME = 'smartzconnect-v2'
 
 // Core shell assets to pre-cache on install
 const PRECACHE_URLS = [
@@ -20,8 +20,14 @@ self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => cache.addAll(PRECACHE_URLS))
   )
-  // Activate immediately without waiting for old tabs to close
-  self.skipWaiting()
+  // Do NOT auto skipWaiting here — let the new SW sit in "waiting" state so
+  // PWAUpdatePrompt can ask the user before swapping the live app under them.
+})
+
+// Allow the page to explicitly promote a waiting worker once the user
+// confirms the "Update available" prompt.
+self.addEventListener('message', event => {
+  if (event.data?.type === 'SKIP_WAITING') self.skipWaiting()
 })
 
 // ── Activate: clean up stale caches ──────────────────────────────────────────

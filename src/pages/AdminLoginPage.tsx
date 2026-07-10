@@ -35,9 +35,9 @@ export default function AdminLoginPage() {
     <div className="min-h-screen dark:bg-[#080510] bg-gray-50 relative flex flex-col items-center justify-center p-5 py-10 overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-0 left-1/2 -translate-x-1/3 w-[600px] h-[400px] rounded-full bg-amber-500/5 blur-[100px]" />
-        <div className="absolute bottom-0 left-0 w-[400px] h-[300px] rounded-full bg-purple-500/6 blur-[80px]" />
-        <div className="absolute top-1/3 right-0 w-[300px] h-[300px] rounded-full bg-pink-500/5 blur-[70px]" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/3 w-[600px] h-[400px] rounded-full bg-amber-500/20 blur-[65px]" />
+        <div className="absolute bottom-0 left-0 w-[400px] h-[300px] rounded-full bg-purple-500/22 blur-[55px]" />
+        <div className="absolute top-1/3 right-0 w-[300px] h-[300px] rounded-full bg-pink-500/18 blur-[50px]" />
       </div>
 
       {/* Floating particles */}

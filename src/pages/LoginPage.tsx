@@ -76,9 +76,9 @@ export default function LoginPage() {
     >
       {/* Ambient glow blobs */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] rounded-full bg-purple-700/20 blur-[120px]" />
-        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full bg-indigo-900/30 blur-[100px]" />
-        <div className="absolute top-1/3 right-1/4 w-[300px] h-[300px] rounded-full bg-pink-800/15 blur-[90px]" />
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] rounded-full bg-purple-700/45 blur-[80px]" />
+        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full bg-indigo-900/55 blur-[70px]" />
+        <div className="absolute top-1/3 right-1/4 w-[300px] h-[300px] rounded-full bg-pink-800/35 blur-[60px]" />
       </div>
 
       {/* Logo */}
