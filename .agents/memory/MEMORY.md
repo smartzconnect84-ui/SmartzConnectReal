@@ -33,3 +33,4 @@
 - [Stream Chat CSP](stream-chat-csp.md) — Stream SDK uses chat.stream-io-api.com not api.stream-io-api.com; CSP must use wildcard *.stream-io-api.com + edge.getstream.io.
 - [Vercel deployment](vercel-deployment.md) — use --archive=tgz flag; buildCommand must be pnpm run build; project/org IDs and domain alias recorded.
 - [Schema v15 SQL bugs fixed](schema-v15-fix.md) — referral_code column missing before unique index; dollar-quoting used $; not $; fixed via schema_v15_fix.sql.
+- [Framer Motion TypeScript typing](framer-motion-typing.md) — type:'spring' widens to string; annotate variant objects as Variants; add `as const` to type field in spread-prop helper functions.

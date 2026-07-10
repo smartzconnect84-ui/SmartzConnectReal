@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { motion, type Variants } from 'framer-motion'
 import Hero from '@/components/Hero'
 import {
   Heart, Globe, Users, Car, Package, ShoppingBag, Megaphone, Tv,
@@ -7,13 +7,29 @@ import {
   Star, Zap, Award, TrendingUp, Handshake, ArrowRight,
 } from 'lucide-react'
 
-/* ── animation ── */
+/* ── animation helpers ── */
 const up = (delay = 0) => ({
-  initial: { opacity: 0, y: 30 },
+  initial: { opacity: 0, y: 32 },
   whileInView: { opacity: 1, y: 0 },
-  viewport: { once: true, margin: '-50px' },
-  transition: { duration: 0.55, delay, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] },
+  viewport: { once: true, margin: '-40px' },
+  transition: { type: 'spring' as const, stiffness: 160, damping: 22, delay },
 })
+
+const fadeIn = (delay = 0) => ({
+  initial: { opacity: 0 },
+  whileInView: { opacity: 1 },
+  viewport: { once: true },
+  transition: { duration: 0.7, delay },
+})
+
+const stagger: Variants = {
+  hidden:  {},
+  visible: { transition: { staggerChildren: 0.07, delayChildren: 0.1 } },
+}
+const cardItem: Variants = {
+  hidden:  { opacity: 0, y: 24, scale: 0.97 },
+  visible: { opacity: 1, y: 0,  scale: 1,   transition: { type: 'spring', stiffness: 180, damping: 22 } },
+}
 
 /* ────────────────────────────────────────────────────────────────────────── */
 /*  BRAND PALETTE                                                              */
@@ -141,7 +157,7 @@ const STEPS = [
 /* ── shared section shell ── */
 function Sec({ id, dark, children }: { id?: string; dark?: boolean; children: React.ReactNode }) {
   return (
-    <section id={id} className={`relative overflow-hidden py-16 sm:py-20 lg:py-24 pt-[9px] pb-[9px] ${dark ? 'bg-black' : 'bg-[#05000d]'}`}>
+    <section id={id} className={`relative overflow-hidden py-16 sm:py-20 lg:py-24 pt-[9px] pb-[9px] ${dark ? 'bg-[#030008]' : 'bg-[#04000a]'}`}>
       {children}
     </section>
   )
@@ -225,14 +241,19 @@ export default function HomePage() {
                 { val: 'SmartzAds',      sub: 'Ad Campaigns',     grd: 'from-[#EC4899] to-[#DC2626]' },
                 { val: 'SmartzTV',       sub: 'Live & Creator',   grd: 'from-[#DC2626] to-rose-600'  },
                 { val: 'Pro Network',    sub: 'Careers & Biz',    grd: 'from-rose-600 to-[#DC2626]'  },
-              ].map(s => (
-                <div key={s.sub}
-                  className="p-4 sm:p-5 rounded-2xl border border-white/5 text-center relative overflow-hidden"
-                  style={{ background: 'rgba(255,255,255,0.03)' }}>
-                  <div className={`absolute inset-0 opacity-10 bg-gradient-to-br ${s.grd}`} />
+              ].map((s, i) => (
+                <motion.div key={s.sub}
+                  initial={{ opacity: 0, scale: 0.94 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.05, type: 'spring', stiffness: 200 }}
+                  whileHover={{ scale: 1.04, y: -2 }}
+                  className="p-4 sm:p-5 rounded-2xl text-center relative overflow-hidden cursor-default"
+                  style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.09)' }}>
+                  <div className={`absolute inset-0 opacity-[0.08] bg-gradient-to-br ${s.grd}`} />
                   <p className={`font-display font-black text-sm sm:text-base bg-gradient-to-r ${s.grd} bg-clip-text text-transparent mb-1 relative`}>{s.val}</p>
                   <p className="text-sm text-white/50 relative">{s.sub}</p>
-                </div>
+                </motion.div>
               ))}
             </motion.div>
           </div>
@@ -256,9 +277,9 @@ export default function HomePage() {
           </motion.div>
           <motion.div {...up(0.14)}>
             <div className="relative mx-auto max-w-3xl">
-              <div className="absolute -inset-1 rounded-3xl blur-xl" style={{ background: 'linear-gradient(135deg, rgba(236,72,153,0.18) 0%, rgba(220,38,38,0.18) 100%)' }} />
-              <div className="relative rounded-3xl border border-white/8 p-8 sm:p-12"
-                style={{ background: 'rgba(255,255,255,0.04)' }}>
+              <div className="absolute -inset-1 rounded-3xl blur-xl" style={{ background: 'linear-gradient(135deg, rgba(236,72,153,0.22) 0%, rgba(220,38,38,0.22) 100%)' }} />
+              <div className="relative rounded-3xl p-8 sm:p-12"
+                style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.1)' }}>
                 <div className="text-6xl font-display font-black text-[#EC4899]/20 leading-none mb-2 select-none">"</div>
                 <p className="text-base sm:text-xl text-white/80 leading-relaxed font-medium text-center">
                   To become the world's most trusted super app — built in Liberia, embraced by Africa, chosen by the world — where every person can connect, build, earn, and thrive through one secure digital identity.
@@ -283,16 +304,18 @@ export default function HomePage() {
           <div className="grid lg:grid-cols-2 gap-14 lg:gap-20 items-center">
 
             {/* Pillars */}
-            <motion.div {...up(0.1)} className="space-y-3 order-2 lg:order-1">
+            <motion.div variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-40px' }} className="space-y-3 order-2 lg:order-1">
               {[
                 { icon: '🤝', title: 'Connect Beyond Borders',    desc: 'A platform where people reach across geographies to form lasting bonds — from Monrovia to the world.' },
                 { icon: '🛡️', title: 'Safe & Inclusive Spaces',   desc: 'A verified, respectful environment where friendships flourish and communities thrive together.' },
                 { icon: '💡', title: 'Innovation at the Core',     desc: 'Building smarter technologies that make meaningful human connection and commerce effortless.' },
                 { icon: '🌱', title: 'Accessible Opportunities',   desc: 'Ensuring every person can access connections, businesses, jobs, and careers that improve their life.' },
-              ].map((p, i) => (
-                <motion.div key={p.title} {...up(0.06 * i)}
-                  className="flex items-start gap-4 p-4 sm:p-5 rounded-2xl border border-white/5 hover:border-[#EC4899]/20 transition-colors"
-                  style={{ background: 'rgba(255,255,255,0.03)' }}>
+              ].map((p) => (
+                <motion.div key={p.title} variants={cardItem}
+                  whileHover={{ x: 4 }}
+                  transition={{ type: 'spring', stiffness: 300 }}
+                  className="flex items-start gap-4 p-4 sm:p-5 rounded-2xl transition-all"
+                  style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.07)' }}>
                   <span className="text-2xl flex-shrink-0 mt-0.5">{p.icon}</span>
                   <div>
                     <p className="font-bold text-white text-sm sm:text-base mb-1">{p.title}</p>
@@ -342,26 +365,29 @@ export default function HomePage() {
             </p>
           </motion.div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-            {SERVICES.map((s, i) => {
+          <motion.div variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-60px' }}
+            className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+            {SERVICES.map((s) => {
               const Icon = s.icon
               return (
-                <motion.div key={s.name} {...up(i * 0.06)}
-                  className="group p-5 sm:p-6 rounded-2xl border border-white/5 hover:border-[#EC4899]/25 hover:shadow-2xl transition-all duration-300 relative overflow-hidden"
-                  style={{ background: 'rgba(255,255,255,0.03)' }}>
-                  {/* Hover glow */}
-                  <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br ${s.color}`} style={{ opacity: 0 }}
-                    onMouseEnter={e => (e.currentTarget.style.opacity = '0.05')}
-                    onMouseLeave={e => (e.currentTarget.style.opacity = '0')} />
-                  <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${s.color} flex items-center justify-center mb-4 shadow-lg ${s.glow} group-hover:scale-110 transition-transform duration-300`}>
+                <motion.div key={s.name} variants={cardItem}
+                  whileHover={{ y: -4, scale: 1.02 }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                  className="group p-5 sm:p-6 rounded-2xl relative overflow-hidden cursor-default"
+                  style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                  {/* Hover glow overlay */}
+                  <div className={`absolute inset-0 bg-gradient-to-br ${s.color} opacity-0 group-hover:opacity-[0.06] transition-opacity duration-500 rounded-2xl`} />
+                  {/* Top accent line */}
+                  <div className={`absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r ${s.color} opacity-0 group-hover:opacity-60 transition-opacity duration-300`} />
+                  <motion.div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${s.color} flex items-center justify-center mb-4 shadow-lg ${s.glow}`}
+                    whileHover={{ scale: 1.12, rotate: 5 }} transition={{ type: 'spring', stiffness: 400 }}>
                     <Icon className="w-6 h-6 text-white" />
-                  </div>
+                  </motion.div>
                   <div className="flex items-center gap-1.5 mb-2">
                     <span className="text-lg">{s.emoji}</span>
                     <h3 className="font-display font-black text-sm sm:text-base text-white leading-tight">{s.name}</h3>
                   </div>
                   <p className="text-white/50 text-[14px] sm:text-[17px] mb-3 leading-relaxed">{s.desc}</p>
-                  {/* Sub-features */}
                   <ul className="space-y-1">
                     {s.features.map(f => (
                       <li key={f} className="flex items-center gap-1.5 text-[13px] text-white/40">
@@ -373,7 +399,7 @@ export default function HomePage() {
                 </motion.div>
               )
             })}
-          </div>
+          </motion.div>
         </div>
       </Sec>
 
@@ -396,24 +422,30 @@ export default function HomePage() {
             </p>
           </motion.div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-            {VALUES.map((v, i) => {
+          <motion.div variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-60px' }}
+            className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+            {VALUES.map((v) => {
               const Icon = v.icon
               return (
-                <motion.div key={v.title} {...up(i * 0.06)}
-                  className="p-6 rounded-2xl border border-white/5 hover:border-[#EC4899]/20 hover:shadow-lg transition-all group relative overflow-hidden"
-                  style={{ background: 'rgba(255,255,255,0.03)' }}>
-                  <div className="absolute top-0 left-6 right-6 h-px" style={{ background: 'linear-gradient(to right, transparent, rgba(212,175,55,0.35), transparent)' }} />
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-4 border border-white/8"
-                    style={{ background: 'linear-gradient(135deg, rgba(236,72,153,0.12) 0%, rgba(212,175,55,0.12) 100%)' }}>
+                <motion.div key={v.title} variants={cardItem}
+                  whileHover={{ y: -4, scale: 1.02 }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                  className="p-6 rounded-2xl group relative overflow-hidden cursor-default"
+                  style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                  <div className="absolute top-0 left-6 right-6 h-px" style={{ background: 'linear-gradient(to right, transparent, rgba(212,175,55,0.4), transparent)' }} />
+                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl"
+                    style={{ background: 'linear-gradient(135deg, rgba(212,175,55,0.04) 0%, rgba(236,72,153,0.04) 100%)' }} />
+                  <motion.div className="w-10 h-10 rounded-xl flex items-center justify-center mb-4 relative"
+                    whileHover={{ scale: 1.15, rotate: 8 }} transition={{ type: 'spring', stiffness: 400 }}
+                    style={{ background: 'linear-gradient(135deg, rgba(236,72,153,0.15) 0%, rgba(212,175,55,0.15) 100%)', border: '1px solid rgba(255,255,255,0.1)' }}>
                     <Icon className="w-5 h-5 text-[#EC4899]" />
-                  </div>
-                  <h3 className={`font-display font-bold text-white sm:text-base mb-2 ${v.titleSize}`}>{v.title}</h3>
-                  <p className="sm:text-[17px] text-white/50 text-[14px]">{v.desc}</p>
+                  </motion.div>
+                  <h3 className="font-display font-bold text-white text-sm sm:text-base mb-2 relative">{v.title}</h3>
+                  <p className="sm:text-[17px] text-white/50 text-[14px] relative">{v.desc}</p>
                 </motion.div>
               )
             })}
-          </div>
+          </motion.div>
         </div>
       </Sec>
 
@@ -450,11 +482,13 @@ export default function HomePage() {
 
             {/* Checklist */}
             <motion.div {...up(0.14)}>
-              <ul className="space-y-3">
+              <motion.ul variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-40px' }} className="space-y-3">
                 {WHY_LIST.map((item, i) => (
-                  <motion.li key={i} {...up(0.05 * i)}
-                    className="flex items-start gap-3.5 p-4 rounded-xl border border-white/5 hover:border-[#EC4899]/15 transition-colors"
-                    style={{ background: 'rgba(255,255,255,0.03)' }}>
+                  <motion.li key={i} variants={cardItem}
+                    whileHover={{ x: 4 }}
+                    transition={{ type: 'spring', stiffness: 300 }}
+                    className="flex items-start gap-3.5 p-4 rounded-xl transition-all"
+                    style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.07)' }}>
                     <div className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 shadow-md"
                       style={{ background: 'linear-gradient(135deg, #EC4899 0%, #DC2626 100%)', boxShadow: '0 4px 12px rgba(236,72,153,0.25)' }}>
                       <CheckCircle className="w-3.5 h-3.5 text-white" />
@@ -462,7 +496,7 @@ export default function HomePage() {
                     <span className="text-[17px] text-white/70 leading-relaxed">{item}</span>
                   </motion.li>
                 ))}
-              </ul>
+              </motion.ul>
             </motion.div>
           </div>
         </div>
@@ -559,29 +593,34 @@ export default function HomePage() {
           </motion.div>
 
           {/* Steps */}
-          <div className="space-y-3 mb-14 sm:mb-16 relative">
+          <motion.div variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-40px' }}
+            className="space-y-3 mb-14 sm:mb-16 relative">
             <div className="absolute left-[27px] top-12 bottom-12 w-px hidden sm:block"
               style={{ background: 'linear-gradient(to bottom, rgba(236,72,153,0.40), rgba(220,38,38,0.40), rgba(212,175,55,0.30))' }} />
 
-            {STEPS.map((s, i) => (
-              <motion.div key={s.n} {...up(i * 0.07)}
-                className="flex items-start gap-4 p-4 sm:p-5 rounded-2xl border border-white/5 hover:border-[#EC4899]/20 transition-colors relative"
-                style={{ background: 'rgba(255,255,255,0.03)' }}>
-                <div className="w-14 h-14 rounded-2xl flex-shrink-0 flex items-center justify-center font-display font-black text-sm relative z-10 border border-white/8"
+            {STEPS.map((s) => (
+              <motion.div key={s.n} variants={cardItem}
+                whileHover={{ x: 6 }}
+                transition={{ type: 'spring', stiffness: 300 }}
+                className="flex items-start gap-4 p-4 sm:p-5 rounded-2xl transition-all relative"
+                style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                <motion.div className="w-14 h-14 rounded-2xl flex-shrink-0 flex items-center justify-center font-display font-black text-sm relative z-10"
+                  whileHover={{ scale: 1.1, rotate: 5 }} transition={{ type: 'spring', stiffness: 400 }}
                   style={{ background: 'linear-gradient(135deg, #EC4899 0%, #DC2626 100%)', boxShadow: '0 4px 16px rgba(236,72,153,0.30)' }}>
                   <span className="text-white">{s.n}</span>
-                </div>
+                </motion.div>
                 <div className="flex-1 flex items-center min-h-[56px]">
                   <p className="text-[17px] sm:text-[19px] text-white/75 leading-relaxed">{s.label}</p>
                 </div>
               </motion.div>
             ))}
-          </div>
+          </motion.div>
 
           {/* Final CTA */}
           <motion.div {...up(0.4)} className="text-center">
-            <div className="inline-block mb-8 px-5 py-3 rounded-2xl border border-white/8 text-center"
-              style={{ background: 'rgba(255,255,255,0.04)' }}>
+            <motion.div whileHover={{ scale: 1.02 }} transition={{ type: 'spring', stiffness: 300 }}
+              className="inline-block mb-8 px-5 py-3 rounded-2xl text-center"
+              style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.1)' }}>
               <p className="text-xs sm:text-sm font-bold tracking-wide text-white/60">
                 <span className="text-[#EC4899]">SmartzConnect</span>
                 <span className="mx-2 text-white/25">—</span>
@@ -589,20 +628,24 @@ export default function HomePage() {
                 <span className="text-[#D4AF37] mx-1">Endless Connections.</span>
                 Built in Liberia for the World.
               </p>
-            </div>
+            </motion.div>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link to="/register"
-                className="inline-flex items-center gap-2.5 px-10 py-4 rounded-2xl font-black text-base text-white shadow-2xl hover:opacity-90 hover:scale-105 active:scale-100 transition-all"
-                style={{ background: 'linear-gradient(135deg, #EC4899 0%, #DC2626 100%)', boxShadow: '0 8px 40px rgba(236,72,153,0.40)' }}>
-                <UserPlus className="w-5 h-5" />
-                Create Your Free Account
-              </Link>
-              <Link to="/login"
-                className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl font-bold text-sm text-white/70 border border-white/15 hover:border-white/25 hover:text-white transition-all"
-                style={{ background: 'rgba(255,255,255,0.04)' }}>
-                Already a member? Sign In
-              </Link>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }} transition={{ type: 'spring', stiffness: 400, damping: 20 }}>
+                <Link to="/register"
+                  className="inline-flex items-center gap-2.5 px-10 py-4 rounded-2xl font-black text-base text-white"
+                  style={{ background: 'linear-gradient(135deg, #EC4899 0%, #BE185D 100%)', boxShadow: '0 8px 40px rgba(236,72,153,0.42)' }}>
+                  <UserPlus className="w-5 h-5" />
+                  Create Your Free Account
+                </Link>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }} transition={{ type: 'spring', stiffness: 400, damping: 20 }}>
+                <Link to="/login"
+                  className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl font-bold text-sm text-white/70 hover:text-white transition-all"
+                  style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.12)' }}>
+                  Already a member? Sign In
+                </Link>
+              </motion.div>
             </div>
             <p className="mt-5 text-sm text-white/30">
               Free to join · No credit card required · Mobile Money accepted · Upgrade anytime

@@ -86,6 +86,8 @@ export default function AdminBlog() {
   const [showForm, setShowForm] = useState(false)
   const [editTarget, setEditTarget] = useState<BlogPost | null>(null)
   const [confirmDelete, setConfirmDelete] = useState<BlogPost | null>(null)
+  const [confirmClearAll, setConfirmClearAll] = useState(false)
+  const [clearingAll, setClearingAll] = useState(false)
   const [form, setForm] = useState<FormState>(EMPTY_FORM)
   const [dbError, setDbError] = useState<string | null>(null)
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null)
@@ -218,6 +220,20 @@ export default function AdminBlog() {
     }
   }
 
+  const handleClearAll = async () => {
+    setClearingAll(true)
+    // Delete all posts by matching any non-null id
+    const { error } = await supabase.from('blog_posts').delete().neq('id', '00000000-0000-0000-0000-000000000000')
+    if (error) {
+      showToast(error.message, false)
+    } else {
+      showToast('All posts cleared.')
+      setConfirmClearAll(false)
+      fetchPosts()
+    }
+    setClearingAll(false)
+  }
+
   const filtered = posts.filter(p => {
     const matchFilter = filter === 'all' || p.status === filter
     const matchSearch = !search || p.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -274,13 +290,19 @@ export default function AdminBlog() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={fetchPosts} className="p-2 rounded-xl dark:bg-white/5 bg-gray-100 hover:text-brand-pink transition-colors">
+          <button onClick={fetchPosts} className="p-2 rounded-xl dark:bg-white/5 bg-gray-100 hover:text-brand-pink transition-colors" title="Refresh">
             <RefreshCw className="w-4 h-4" />
           </button>
           <a href="/blog" target="_blank" rel="noopener noreferrer"
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl dark:bg-white/5 bg-gray-100 text-xs font-semibold dark:text-gray-300 text-gray-700 hover:text-brand-pink transition-colors">
             <Eye className="w-3.5 h-3.5" /> View Blog
           </a>
+          {posts.length > 0 && (
+            <button onClick={() => setConfirmClearAll(true)}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl dark:bg-red-500/10 bg-red-50 text-xs font-semibold text-red-500 border border-red-500/20 hover:bg-red-500/15 transition-all">
+              <Trash2 className="w-3.5 h-3.5" /> Clear All
+            </button>
+          )}
           <button onClick={openAdd}
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-love-gradient text-white text-xs font-bold shadow-lg shadow-pink-500/20 hover:opacity-90 transition-all">
             <Plus className="w-3.5 h-3.5" /> New Post
@@ -563,6 +585,33 @@ export default function AdminBlog() {
                     ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</>
                     : <><CheckCircle className="w-4 h-4" /> {form.status === 'published' ? 'Publish Post' : 'Save Draft'}</>
                   }
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Clear All Confirm */}
+      <AnimatePresence>
+        {confirmClearAll && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setConfirmClearAll(false)}>
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
+              onClick={e => e.stopPropagation()}
+              className="w-full max-w-sm dark:bg-[#1A1228] bg-white rounded-3xl p-6 border dark:border-white/8 border-gray-200 shadow-2xl text-center">
+              <div className="w-14 h-14 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto mb-4">
+                <Trash2 className="w-7 h-7 text-red-500" />
+              </div>
+              <h3 className="font-display font-black text-lg dark:text-white text-gray-900 mb-1">Clear All Posts?</h3>
+              <p className="text-sm dark:text-gray-400 text-gray-600 mb-5">
+                This will permanently delete all <strong className="dark:text-white text-gray-900">{posts.length}</strong> blog {posts.length === 1 ? 'post' : 'posts'}. This cannot be undone.
+              </p>
+              <div className="flex gap-3">
+                <button onClick={() => setConfirmClearAll(false)} disabled={clearingAll}
+                  className="flex-1 py-2.5 rounded-xl dark:bg-white/5 bg-gray-100 dark:text-white text-gray-900 text-sm font-semibold disabled:opacity-50">Cancel</button>
+                <button onClick={handleClearAll} disabled={clearingAll}
+                  className="flex-1 py-2.5 rounded-xl bg-red-500 text-white text-sm font-bold hover:bg-red-600 transition-colors disabled:opacity-60 flex items-center justify-center gap-2">
+                  {clearingAll ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Clearing…</> : 'Clear All'}
                 </button>
               </div>
             </motion.div>

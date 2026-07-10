@@ -39,29 +39,31 @@ interface DropdownMenuProps {
 function DropdownMenu({ items, onClose }: DropdownMenuProps) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8, scale: 0.97 }}
+      initial={{ opacity: 0, y: 10, scale: 0.96 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 8, scale: 0.97 }}
-      transition={{ duration: 0.16 }}
-      className="absolute top-full left-0 mt-2 w-64 bg-[#13103A]/95 backdrop-blur-xl rounded-2xl shadow-2xl shadow-black/40 border border-white/10 overflow-hidden p-2"
+      transition={{ type: 'spring', damping: 22, stiffness: 300 }}
+      className="absolute top-full left-0 mt-2 w-64 rounded-2xl shadow-2xl shadow-black/40 overflow-hidden p-2"
+      style={{ background: 'rgba(19,16,58,0.95)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.1)' }}
     >
-      {items.map(item => {
+      {items.map((item, i) => {
         const Icon = item.icon
         return (
-          <Link
-            key={item.href}
-            to={item.href}
-            onClick={onClose}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/8 transition-all group"
-          >
-            <div className="w-8 h-8 rounded-lg bg-white/8 flex items-center justify-center flex-shrink-0">
-              <Icon className={`w-4 h-4 ${item.color}`} />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-white group-hover:text-purple-300 transition-colors">{item.label}</p>
-              <p className="text-[11px] text-white/40">{item.desc}</p>
-            </div>
-          </Link>
+          <motion.div key={item.href} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }}>
+            <Link
+              to={item.href}
+              onClick={onClose}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/8 transition-all group"
+            >
+              <div className="w-8 h-8 rounded-lg bg-white/8 flex items-center justify-center flex-shrink-0">
+                <Icon className={`w-4 h-4 ${item.color}`} />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-white group-hover:text-purple-300 transition-colors">{item.label}</p>
+                <p className="text-[11px] text-white/40">{item.desc}</p>
+              </div>
+            </Link>
+          </motion.div>
         )
       })}
     </motion.div>
@@ -105,19 +107,31 @@ export default function Navbar() {
     <>
       {/* ── Navbar ── */}
       <nav className="fixed top-0 left-0 right-0 z-50 flex justify-center pt-3 sm:pt-4 px-4">
-        <div className={`w-full max-w-6xl transition-all duration-300 rounded-2xl ${
-          scrolled
-            ? 'bg-[#0D0B1A]/90 backdrop-blur-xl shadow-2xl shadow-black/40 border border-white/8'
-            : 'bg-[#0D0B1A]/75 backdrop-blur-md border border-white/8'
-        }`}>
-          <div className="flex items-center justify-between h-14 sm:h-16 px-4 sm:px-6 border-t-[#FF1493] border-r-[#FF1493] border-b-[#FF1493] border-l-[#FF1493] border-t-[1px] border-r-[1px] border-b-[1px] border-l-[1px] rounded-tl-[1px] rounded-tr-[1px] rounded-br-[1px] rounded-bl-[1px]">
+        <motion.div
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.5, type: 'spring', stiffness: 200 }}
+          className={`w-full max-w-6xl transition-all duration-300 rounded-2xl ${
+            scrolled
+              ? 'shadow-2xl shadow-black/40'
+              : ''
+          }`}
+          style={{
+            background: scrolled ? 'rgba(13,11,26,0.92)' : 'rgba(13,11,26,0.75)',
+            backdropFilter: 'blur(20px)',
+            border: '1px solid rgba(255,255,255,0.08)',
+          }}
+        >
+          <div className="flex items-center justify-between h-14 sm:h-16 px-4 sm:px-6">
 
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2.5 group flex-shrink-0">
-              <img
+              <motion.img
                 src={logoImg}
                 alt="SmartzConnect"
-                className="h-8 w-auto object-contain group-hover:scale-105 transition-transform drop-shadow-lg ml-[0px] mr-[0px] mt-[0px] mb-[0px] pl-[0px] pr-[0px]"
+                whileHover={{ scale: 1.08 }}
+                transition={{ type: 'spring', stiffness: 400 }}
+                className="h-8 w-auto object-contain drop-shadow-lg"
               />
               <span className="font-display font-black text-lg hidden sm:block">
                 <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Smartz</span>
@@ -132,11 +146,13 @@ export default function Navbar() {
                 <button
                   onClick={() => { setBusinessOpen(v => !v); setSocialOpen(false) }}
                   className={`flex items-center gap-1 px-3.5 py-2 rounded-xl text-sm font-semibold transition-all ${
-                    businessOpen ? 'text-purple-300' : 'text-white/80 hover:text-white'
+                    businessOpen ? 'text-purple-300 bg-white/5' : 'text-white/80 hover:text-white hover:bg-white/5'
                   }`}
                 >
                   Business
-                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${businessOpen ? 'rotate-180' : ''}`} />
+                  <motion.span animate={{ rotate: businessOpen ? 180 : 0 }} transition={{ type: 'spring', stiffness: 300 }}>
+                    <ChevronDown className="w-3.5 h-3.5" />
+                  </motion.span>
                 </button>
                 <AnimatePresence>
                   {businessOpen && <DropdownMenu items={businessItems} onClose={() => setBusinessOpen(false)} />}
@@ -148,11 +164,13 @@ export default function Navbar() {
                 <button
                   onClick={() => { setSocialOpen(v => !v); setBusinessOpen(false) }}
                   className={`flex items-center gap-1 px-3.5 py-2 rounded-xl text-sm font-semibold transition-all ${
-                    socialOpen ? 'text-purple-300' : 'text-white/80 hover:text-white'
+                    socialOpen ? 'text-purple-300 bg-white/5' : 'text-white/80 hover:text-white hover:bg-white/5'
                   }`}
                 >
                   Social
-                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${socialOpen ? 'rotate-180' : ''}`} />
+                  <motion.span animate={{ rotate: socialOpen ? 180 : 0 }} transition={{ type: 'spring', stiffness: 300 }}>
+                    <ChevronDown className="w-3.5 h-3.5" />
+                  </motion.span>
                 </button>
                 <AnimatePresence>
                   {socialOpen && <DropdownMenu items={socialItems} onClose={() => setSocialOpen(false)} />}
@@ -165,7 +183,7 @@ export default function Navbar() {
                   key={link.href}
                   to={link.href}
                   className={`px-3.5 py-2 rounded-xl text-sm font-semibold transition-all ${
-                    isActive(link.href) ? 'text-purple-300' : 'text-white/80 hover:text-white'
+                    isActive(link.href) ? 'text-purple-300 bg-white/5' : 'text-white/80 hover:text-white hover:bg-white/5'
                   }`}
                 >
                   {link.label}
@@ -175,12 +193,14 @@ export default function Navbar() {
 
             {/* Right actions */}
             <div className="flex items-center gap-2">
-              {/* Live Chat icon when dismissed */}
+              {/* Live Chat icon */}
               {dismissed && (
-                <button
+                <motion.button
                   onClick={() => { setDismissed(false); setOpen(true); setUnreadCount(0) }}
+                  whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.93 }}
                   title="Open support chat"
-                  className="relative w-9 h-9 rounded-xl flex items-center justify-center hover:text-white bg-white/8 hover:bg-white/12 transition-all text-[#FF1493]"
+                  className="relative w-9 h-9 rounded-xl flex items-center justify-center text-[#FF1493]"
+                  style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}
                 >
                   <MessageCircle className="w-4 h-4" />
                   {unreadCount > 0 && (
@@ -188,43 +208,67 @@ export default function Navbar() {
                       {unreadCount}
                     </span>
                   )}
-                </button>
+                </motion.button>
               )}
 
               {/* Theme toggle */}
-              <button
+              <motion.button
                 onClick={toggleTheme}
-                className="w-9 h-9 rounded-xl flex items-center justify-center text-white/60 hover:text-white bg-white/8 hover:bg-white/12 transition-all"
+                whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.93 }}
+                className="w-9 h-9 rounded-xl flex items-center justify-center text-white/60 hover:text-white transition-colors"
+                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}
               >
                 {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-              </button>
+              </motion.button>
 
               {/* Auth buttons — desktop */}
               <div className="hidden sm:flex items-center gap-2">
-                <Link
-                  to="/login"
-                  className="px-5 py-2 rounded-xl text-sm font-semibold text-white border border-white/20 hover:bg-white/8 transition-all"
-                >
-                  Sign in
-                </Link>
-                <Link
-                  to="/register"
-                  className="px-5 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-purple-500 text-white text-sm font-bold shadow-lg shadow-purple-600/30 hover:shadow-purple-600/50 hover:from-purple-500 hover:to-purple-400 transition-all"
-                >
-                  Join Now!
-                </Link>
+                {/* Sign In — Purple */}
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.96 }} transition={{ type: 'spring', stiffness: 400 }}>
+                  <Link
+                    to="/login"
+                    className="px-5 py-2 rounded-xl text-sm font-bold text-white transition-all"
+                    style={{
+                      background: 'linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%)',
+                      boxShadow: '0 4px 16px rgba(124,58,237,0.35)',
+                    }}
+                  >
+                    Sign in
+                  </Link>
+                </motion.div>
+
+                {/* Join Now — Pink */}
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.96 }} transition={{ type: 'spring', stiffness: 400 }}>
+                  <Link
+                    to="/register"
+                    className="px-5 py-2 rounded-xl text-sm font-bold text-white transition-all"
+                    style={{
+                      background: 'linear-gradient(135deg, #EC4899 0%, #BE185D 100%)',
+                      boxShadow: '0 4px 16px rgba(236,72,153,0.38)',
+                    }}
+                  >
+                    Join Now!
+                  </Link>
+                </motion.div>
               </div>
 
               {/* Mobile menu button */}
-              <button
+              <motion.button
                 onClick={() => setMobileOpen(v => !v)}
-                className="lg:hidden w-9 h-9 rounded-xl flex items-center justify-center bg-white/8 text-white hover:bg-white/12 transition-all"
+                whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.93 }}
+                className="lg:hidden w-9 h-9 rounded-xl flex items-center justify-center text-white transition-all"
+                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}
               >
-                {mobileOpen ? <X className="w-4.5 h-4.5" /> : <Menu className="w-4.5 h-4.5" />}
-              </button>
+                <AnimatePresence mode="wait">
+                  {mobileOpen
+                    ? <motion.span key="x" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.15 }}><X className="w-4.5 h-4.5" /></motion.span>
+                    : <motion.span key="m" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }} transition={{ duration: 0.15 }}><Menu className="w-4.5 h-4.5" /></motion.span>
+                  }
+                </AnimatePresence>
+              </motion.button>
             </div>
           </div>
-        </div>
+        </motion.div>
       </nav>
 
       {/* ── Mobile menu ── */}
@@ -237,11 +281,12 @@ export default function Navbar() {
               className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
             />
             <motion.div
-              initial={{ opacity: 0, y: -16 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -16 }}
-              transition={{ duration: 0.2 }}
-              className="fixed top-20 left-4 right-4 z-50 lg:hidden bg-[#0D0B1A]/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/10 overflow-hidden"
+              initial={{ opacity: 0, y: -16, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -16, scale: 0.98 }}
+              transition={{ type: 'spring', damping: 22, stiffness: 280 }}
+              className="fixed top-20 left-4 right-4 z-50 lg:hidden rounded-2xl shadow-2xl overflow-hidden"
+              style={{ background: 'rgba(13,11,26,0.96)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.1)' }}
             >
               <div className="p-3 space-y-0.5">
                 {/* Business */}
@@ -251,14 +296,13 @@ export default function Navbar() {
                     className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-white font-semibold hover:bg-white/8 hover:text-purple-300 transition-all"
                   >
                     <span>Business</span>
-                    <ChevronDown className={`w-4 h-4 transition-transform ${mobileBizOpen ? 'rotate-180' : ''}`} />
+                    <motion.span animate={{ rotate: mobileBizOpen ? 180 : 0 }} transition={{ type: 'spring', stiffness: 300 }}>
+                      <ChevronDown className="w-4 h-4" />
+                    </motion.span>
                   </button>
                   <AnimatePresence>
                     {mobileBizOpen && (
-                      <motion.div
-                        initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }}
-                        className="overflow-hidden pl-4"
-                      >
+                      <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden pl-4">
                         {businessItems.map(item => {
                           const Icon = item.icon
                           return (
@@ -281,14 +325,13 @@ export default function Navbar() {
                     className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-white font-semibold hover:bg-white/8 hover:text-purple-300 transition-all"
                   >
                     <span>Social</span>
-                    <ChevronDown className={`w-4 h-4 transition-transform ${mobileSocOpen ? 'rotate-180' : ''}`} />
+                    <motion.span animate={{ rotate: mobileSocOpen ? 180 : 0 }} transition={{ type: 'spring', stiffness: 300 }}>
+                      <ChevronDown className="w-4 h-4" />
+                    </motion.span>
                   </button>
                   <AnimatePresence>
                     {mobileSocOpen && (
-                      <motion.div
-                        initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }}
-                        className="overflow-hidden pl-4"
-                      >
+                      <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden pl-4">
                         {socialItems.map(item => {
                           const Icon = item.icon
                           return (
@@ -306,18 +349,15 @@ export default function Navbar() {
 
                 {/* Static links */}
                 {mainLinks.map(link => (
-                  <Link
-                    key={link.href}
-                    to={link.href}
-                    className="flex items-center px-4 py-3 rounded-xl text-white font-semibold hover:bg-white/8 hover:text-purple-300 transition-all"
-                  >
+                  <Link key={link.href} to={link.href}
+                    className="flex items-center px-4 py-3 rounded-xl text-white font-semibold hover:bg-white/8 hover:text-purple-300 transition-all">
                     {link.label}
                   </Link>
                 ))}
 
                 <div className="h-px bg-white/8 my-2" />
 
-                {/* Live chat in mobile when dismissed */}
+                {/* Live chat in mobile */}
                 {dismissed && (
                   <button
                     onClick={() => { setDismissed(false); setOpen(true); setMobileOpen(false) }}
@@ -331,16 +371,14 @@ export default function Navbar() {
                 )}
 
                 <div className="flex gap-2 px-2 pb-1">
-                  <Link
-                    to="/login"
-                    className="flex-1 py-2.5 rounded-xl text-center text-sm font-semibold border border-white/20 text-white hover:bg-white/8 transition-all"
-                  >
+                  {/* Sign In — Purple */}
+                  <Link to="/login" className="flex-1 py-2.5 rounded-xl text-center text-sm font-bold text-white transition-all"
+                    style={{ background: 'linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%)', boxShadow: '0 4px 12px rgba(124,58,237,0.30)' }}>
                     Sign in
                   </Link>
-                  <Link
-                    to="/register"
-                    className="flex-1 py-2.5 rounded-xl text-center text-sm font-bold bg-gradient-to-r from-purple-600 to-purple-500 text-white shadow-md shadow-purple-600/30"
-                  >
+                  {/* Join Now — Pink */}
+                  <Link to="/register" className="flex-1 py-2.5 rounded-xl text-center text-sm font-bold text-white transition-all"
+                    style={{ background: 'linear-gradient(135deg, #EC4899 0%, #BE185D 100%)', boxShadow: '0 4px 12px rgba(236,72,153,0.30)' }}>
                     Join Now!
                   </Link>
                 </div>
