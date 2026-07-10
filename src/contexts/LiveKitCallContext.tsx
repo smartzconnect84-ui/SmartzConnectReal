@@ -110,6 +110,73 @@ export function LiveKitCallProvider({ children }: { children: ReactNode }) {
     return () => { supabase.removeChannel(ch) }
   }, [user?.id])
 
+  // ── Catch up on missed ring events ─────────────────────────────────────────
+  // The realtime subscription above only delivers events while this client is
+  // actively connected. If the device was offline, the tab was backgrounded/
+  // suspended, or the app was closed when a call came in, the INSERT event is
+  // never received. As soon as connectivity/visibility is restored, re-check
+  // for any still-pending, unexpired incoming call so it surfaces immediately
+  // instead of silently expiring into a missed call.
+  useEffect(() => {
+    if (!user?.id) return
+
+    const checkForPendingCall = async (cancelledRef: { current: boolean }) => {
+      if (activeCallRef.current) return
+      const { data: rows } = await supabase
+        .from('call_notifications')
+        .select('id, from_id, room_name, call_type, expires_at, status')
+        .eq('to_id', user.id)
+        .eq('status', 'pending')
+        .gt('expires_at', new Date().toISOString())
+        .order('created_at', { ascending: false })
+        .limit(1)
+      // Re-check after the async query: the user may have entered/ended a call,
+      // or unmounted, while this request was in flight.
+      if (cancelledRef.current || activeCallRef.current) return
+      const row = rows?.[0]
+      if (!row) return
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name, avatar_url')
+        .eq('id', row.from_id)
+        .single()
+
+      // Re-check again after the second async hop, immediately before commit —
+      // this closes the race the first re-check can't catch (e.g. the call was
+      // accepted/expired/superseded by a realtime event during the profile fetch).
+      if (cancelledRef.current || activeCallRef.current) return
+      setIncomingCall(current => {
+        // Don't clobber a call that arrived via realtime in the meantime, and
+        // never resurrect an incoming call the user already dismissed/answered.
+        if (current) return current
+        return {
+          notificationId: row.id,
+          fromId: row.from_id,
+          fromName: profile?.full_name || 'Someone',
+          fromAvatar: profile?.avatar_url ?? undefined,
+          roomId: row.room_name,
+          type: row.call_type as CallType,
+          expiresAt: row.expires_at,
+        }
+      })
+    }
+
+    const cancelledRef = { current: false }
+    const handleOnline = () => { checkForPendingCall(cancelledRef) }
+    const handleVisibility = () => { if (document.visibilityState === 'visible') checkForPendingCall(cancelledRef) }
+    window.addEventListener('online', handleOnline)
+    document.addEventListener('visibilitychange', handleVisibility)
+    // Also check once on mount (e.g. cold app launch from a call push tap)
+    checkForPendingCall(cancelledRef)
+
+    return () => {
+      cancelledRef.current = true
+      window.removeEventListener('online', handleOnline)
+      document.removeEventListener('visibilitychange', handleVisibility)
+    }
+  }, [user?.id])
+
   // ── Outgoing call subscription (caller watching for accepted/declined) ─────
   useEffect(() => {
     if (!user?.id) return
@@ -194,25 +261,50 @@ export function LiveKitCallProvider({ children }: { children: ReactNode }) {
       return
     }
 
+    // ── Ring push — fires immediately, regardless of the callee's app state ──
+    // The realtime subscription above only pops the incoming-call UI while the
+    // callee's app is open and connected. To reach them while offline/backgrounded/
+    // screen-off (as long as they have internet), send a high-priority OS push the
+    // instant the call starts ringing — not just after the 60s missed-call timeout.
+    // A short TTL matches the ring window so a stale "call" push never arrives late.
+    supabase.from('profiles').select('full_name').eq('id', user.id).single()
+      .then(({ data: callerProfile }) => {
+        notifyUser({
+          userId: contactId,
+          type: 'call',
+          title: `Incoming ${type === 'video' ? 'video' : 'audio'} call 📞`,
+          message: `${callerProfile?.full_name || 'Someone'} is calling you`,
+          actionUrl: `/app/user/${user.id}`,
+          emoji: '📞',
+        }).catch(() => {})
+      })
+
     outgoingNotifIdRef.current = notif.id
     // Auto-mark missed after 60 s if callee never responds
     missedTimerRef.current = setTimeout(async () => {
       if (outgoingNotifIdRef.current === notif.id) {
-        await supabase.from('call_notifications')
+        const { data: updated } = await supabase.from('call_notifications')
           .update({ status: 'missed' })
           .eq('id', notif.id)
           .eq('status', 'pending')
+          .select('id')
         outgoingNotifIdRef.current = null
         setActiveCall(null)
-        // Notify callee that they missed a call (timeout path)
-        notifyUser({
-          userId: contactId,
-          type: 'missed_call',
-          title: 'Missed Call 📞',
-          message: `You missed a ${type} call. Tap to call back.`,
-          actionUrl: `/app/user/${user.id}`,
-          emoji: '📞',
-        }).catch(() => {})
+        // Only push a "missed call" if this update actually flipped a still-
+        // pending row. If it affected zero rows, the callee already accepted
+        // or declined (their status change just hasn't reached this client's
+        // realtime subscription yet) — pushing "missed" here would be a false
+        // notification on top of a call that was actually answered.
+        if (updated && updated.length > 0) {
+          notifyUser({
+            userId: contactId,
+            type: 'missed_call',
+            title: 'Missed Call 📞',
+            message: `You missed a ${type} call. Tap to call back.`,
+            actionUrl: `/app/user/${user.id}`,
+            emoji: '📞',
+          }).catch(() => {})
+        }
       }
     }, 60000)
 

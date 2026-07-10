@@ -164,8 +164,12 @@ serve(async (req) => {
       target_channel:  'push',
 
       // ── High-priority delivery ───────────────────────────────────────────
+      // "call" pushes must land the instant they're sent — a call ring that
+      // arrives late (e.g. delivered after the 60s ring window has expired)
+      // is worse than useless, so give it a short TTL instead of the default
+      // 24h used for regular notifications.
       priority:             10,       // 10 = high priority; bypasses Doze on Android
-      ttl:                  86400,    // 24 h time-to-live
+      ttl:                  notifType === 'call' ? 45 : 86400,
       isIos:                true,
       isAndroid:            true,
       isWP:                 false,
@@ -176,8 +180,11 @@ serve(async (req) => {
       ios_sound:           'default',
       // Android: "default" = system default sound on the default channel
       android_sound:       'default',
-      // Android 8+ notification channel (must be created in OneSignal dashboard)
-      android_channel_id:  'smartzconnect_high_priority',
+      // Android 8+ notification channels (both must be created in the OneSignal
+      // dashboard): a distinct louder/longer "ring" channel for calls so an
+      // incoming call is unmistakable from a regular message ping, and it
+      // also lets a wrapped native build show a full-screen incoming-call UI.
+      android_channel_id:  notifType === 'call' ? 'smartzconnect_call_ring' : 'smartzconnect_high_priority',
 
       // ── Icons / Badge ────────────────────────────────────────────────────
       chrome_web_icon:     APP_ICON,
