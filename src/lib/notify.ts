@@ -28,9 +28,9 @@ export async function notifyUser({
   actionUrl,
   emoji,
   imageUrl,
-}: NotifyUserParams): Promise<void> {
+}: NotifyUserParams): Promise<boolean> {
   try {
-    await supabase.functions.invoke('send-push', {
+    const { error } = await supabase.functions.invoke('send-push', {
       body: {
         userId,
         type,
@@ -41,8 +41,16 @@ export async function notifyUser({
         imageUrl,
       },
     })
+    if (error) {
+      // Function returned a non-2xx (e.g. 400/403/503) — surface it for callers
+      // that need to react (e.g. call signaling), but never throw.
+      console.warn('[notifyUser] send-push responded with an error:', error)
+      return false
+    }
+    return true
   } catch (err) {
     // Never throw — notification failure must never block UI actions
     console.warn('[notifyUser] push failed silently:', err)
+    return false
   }
 }

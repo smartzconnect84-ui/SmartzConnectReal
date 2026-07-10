@@ -16,7 +16,7 @@
 - [Stream Chat routing contract](stream-chat-routing.md) — ChatPage uses :id param as the OTHER USER's profile UUID (not a channel ID). Always navigate to /app/chat/:userId, never a derived channel ID.
 - [Stream Chat WorldChat fixes](stream-chat-worldchat-fixes.md) — use 'livestream' type for global chat (any auth user can watch/send); STREAM_SECRET ≠ STREAM_API_SECRET; pgcrypto hmac needs extensions.hmac() or SET search_path.
 - [WorldChat channel lifecycle](worldchat-lifecycle.md) — Capture channel in effect-local variable (not state closure) for cleanup; ch.off() with event name string causes TS error; use ch.stopWatching() only.
-- [Superadmin accounts](superadmin-accounts.md) — ceo@smartzconnect.com and shedrickknungehn@gmail.com created with role=superadmin in profiles; admin_users.role='ceo' (constraint only allows admin/super_admin/ceo/moderator).
+- [Superadmin accounts](superadmin-accounts.md) — two superadmin accounts exist with role=superadmin in profiles; admin_users.role='ceo' (constraint only allows admin/super_admin/ceo/moderator).
 - [Integration audit 2026-07](integration-audit-2026-07.md) — real bugs vs. false positives found auditing GetStream/LiveKit/Supabase/OneSignal/SUFY; check live DB/deployed functions before "fixing" naming mismatches.
 - [Livestreams schema & PostgREST joins](livestreams-schema.md) — column names differ from code (creator_id/viewer_count/gifts_earned); no FKs so joins must be done separately; atomic gifts RPC created; LK broadcaster timeout pattern.
 - [Exchange rates utility](exchange-rates-utility.md) — fetchRates() singleton; _inflight must clear on ALL paths incl. cache-hit; AbortSignal.timeout not safe cross-env; use manual AbortController.

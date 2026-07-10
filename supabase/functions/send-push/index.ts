@@ -45,6 +45,14 @@ serve(async (req) => {
       })
     }
 
+    // Cap payload sizes — a caller with a valid session but no legitimate
+    // reason to notify someone could otherwise craft oversized/abusive pushes.
+    if (title.length > 120 || message.length > 500) {
+      return new Response(JSON.stringify({ error: 'title/message too long' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
     // ── Authorization guard ─────────────────────────────────────────────────
     // Users can only push to others for allowed social notification types.
     // This prevents spam — a caller cannot craft arbitrary push blasts.
@@ -83,6 +91,22 @@ serve(async (req) => {
     // Prevent self-push loops (callers may notify themselves for system types)
     // For social types, sender ≠ recipient is enforced silently — it degrades to persist-only.
     const isSelfPush = user.id === userId
+
+    // Reject pushes to non-existent recipients — a valid session should not be
+    // enough to blast arbitrary/random UUIDs; the target must be a real user.
+    if (!isSelfPush) {
+      const adminCheckClient = createClient(supabaseUrl, serviceKey)
+      const { data: recipient } = await adminCheckClient
+        .from('profiles')
+        .select('id')
+        .eq('id', userId)
+        .maybeSingle()
+      if (!recipient) {
+        return new Response(JSON.stringify({ error: 'Recipient not found' }), {
+          status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+    }
 
     // ── 2. Persist notification row ─────────────────────────────────────────
     if (persist !== false) {
