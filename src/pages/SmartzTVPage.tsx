@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Play, Heart, Eye, Search, Flame, TrendingUp, Radio, Gift, X, Tv, Crown, Zap, Shield, RefreshCw, Plus, Mic, MicOff, Video, VideoOff, PhoneOff, Users, Loader2, Link2, Edit2, Trash2, Share2, MessageSquare, Clapperboard, Save, CheckCircle } from 'lucide-react'
+import { Play, Heart, Eye, Search, Flame, TrendingUp, Radio, Gift, X, Tv, Crown, Zap, Shield, RefreshCw, Plus, Mic, MicOff, Video, VideoOff, PhoneOff, Users, Loader2, Link2, Edit2, Trash2, Share2, MessageSquare, Clapperboard, Save, CheckCircle, Monitor, MonitorOff, UserPlus2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { uploadToSufy } from '@/lib/sufy'
@@ -45,11 +45,11 @@ interface Stream {
   id: string; title: string; creator: string; creatorId: string; creatorEmoji: string; avatar_url?: string
   views: string; likes: number; duration: string; category: string; emoji: string
   live: boolean; trending: boolean; gifts: number; verified: boolean; vip: boolean
-  thumbnail_url?: string; isAdminBroadcast?: boolean
+  thumbnail_url?: string; isAdminBroadcast?: boolean; invitedCreatorId?: string
 }
 
 // ── Broadcaster component ─────────────────────────────────────────────────
-interface BroadcastData { streamId: string; title: string }
+interface BroadcastData { streamId: string; title: string; guestName?: string }
 
 function SmartzTVBroadcaster({ data, onEnd }: { data: BroadcastData; onEnd: () => void }) {
   const localVideoRef = useRef<HTMLDivElement>(null)
@@ -57,22 +57,37 @@ function SmartzTVBroadcaster({ data, onEnd }: { data: BroadcastData; onEnd: () =
   const [connected, setConnected] = useState(false)
   const [muted, setMuted] = useState(false)
   const [cameraOff, setCameraOff] = useState(false)
+  const [screenSharing, setScreenSharing] = useState(false)
   const [viewers, setViewers] = useState(0)
   const [duration, setDuration] = useState(0)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const [lkError, setLkError] = useState('')
+  // Kick signal listener (for guest mode)
+  const ctrlChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
+
+  useEffect(() => {
+    const ch = supabase.channel(`stream-ctrl-${data.streamId}`)
+      .on('broadcast', { event: 'kick' }, (msg: any) => {
+        // If this broadcaster's identity matches the kicked one, disconnect
+        if (msg.payload?.identity && roomRef.current?.localParticipant.identity === msg.payload.identity) {
+          handleEnd()
+        }
+      })
+      .subscribe()
+    ctrlChannelRef.current = ch
+    return () => { supabase.removeChannel(ch) }
+  }, [data.streamId])
 
   useEffect(() => {
     let disposed = false
     const room = new Room({ adaptiveStream: true, dynacast: true })
     roomRef.current = room
 
-    // Abort after 20 s if LiveKit never connects
     let timedOut = false
     const timeoutId = setTimeout(() => {
       if (!disposed) {
         timedOut = true
-        room.disconnect() // abort pending connection attempt
+        room.disconnect()
         setLkError('Connection timed out. Check your camera/mic permissions and try again.')
       }
     }, 20000)
@@ -80,14 +95,14 @@ function SmartzTVBroadcaster({ data, onEnd }: { data: BroadcastData; onEnd: () =
     const connect = async () => {
       try {
         const { data: tkData, error } = await supabase.functions.invoke('livekit-token', {
-          body: { room: `smartz-tv-${data.streamId}`, name: 'Broadcaster' },
+          body: { room: `smartz-tv-${data.streamId}`, name: data.guestName || 'Broadcaster' },
         })
         if (error || !tkData?.token || !tkData?.wsUrl) throw new Error('LiveKit token unavailable — check server config')
         if (disposed || timedOut) return
         await room.connect(tkData.wsUrl, tkData.token)
         if (disposed || timedOut) { room.disconnect(); return }
         clearTimeout(timeoutId)
-        setLkError('') // clear any race-set error
+        setLkError('')
         await room.localParticipant.setCameraEnabled(true)
         await room.localParticipant.setMicrophoneEnabled(true)
         attachTrack(room.localParticipant, localVideoRef.current)
@@ -98,17 +113,20 @@ function SmartzTVBroadcaster({ data, onEnd }: { data: BroadcastData; onEnd: () =
         const syncViewerCount = () => {
           const count = room.remoteParticipants.size
           setViewers(count)
-          // Sync to DB so the stream list and viewer modal stay consistent
-          supabase.from('livestreams').update({ viewer_count: count }).eq('id', data.streamId).then(() => {})
+          // Only the primary broadcaster authorises DB writes; guests must not clobber counts
+          if (!data.guestName) {
+            supabase.from('livestreams').update({ viewer_count: count }).eq('id', data.streamId).then(() => {})
+          }
         }
         room.on(RoomEvent.ParticipantConnected, syncViewerCount)
         room.on(RoomEvent.ParticipantDisconnected, syncViewerCount)
-        // Reset count to 0 if broadcaster's connection drops unexpectedly
-        room.on(RoomEvent.Disconnected, () => {
-          if (disposed) return // graceful cleanup: handleEnd already wrote status/viewer_count
-          // Unexpected network drop — reset stream state so viewers see it as offline
-          supabase.from('livestreams').update({ status: 'ended', viewer_count: 0 }).eq('id', data.streamId).then(() => {})
-        })
+        // Only primary broadcaster reacts to unexpected disconnects by marking the stream ended
+        if (!data.guestName) {
+          room.on(RoomEvent.Disconnected, () => {
+            if (disposed) return
+            supabase.from('livestreams').update({ status: 'ended', viewer_count: 0 }).eq('id', data.streamId).then(() => {})
+          })
+        }
       } catch (err: any) {
         clearTimeout(timeoutId)
         if (!disposed && !timedOut) setLkError(err?.message || 'Could not start broadcast')
@@ -124,15 +142,14 @@ function SmartzTVBroadcaster({ data, onEnd }: { data: BroadcastData; onEnd: () =
     }
   }, [data.streamId])
 
-  const resetViewerCount = useCallback(async () => {
-    await supabase.from('livestreams').update({ status: 'ended', viewer_count: 0 }).eq('id', data.streamId)
-  }, [data.streamId])
-
   const handleEnd = useCallback(async () => {
     roomRef.current?.disconnect()
-    await resetViewerCount()
+    if (!data.guestName) {
+      // Only end the stream DB record if this is the main broadcaster, not a guest
+      await supabase.from('livestreams').update({ status: 'ended', viewer_count: 0 }).eq('id', data.streamId)
+    }
     onEnd()
-  }, [data.streamId, onEnd, resetViewerCount])
+  }, [data.streamId, data.guestName, onEnd])
 
   const toggleMute = useCallback(async () => {
     const r = roomRef.current; if (!r) return
@@ -149,6 +166,16 @@ function SmartzTVBroadcaster({ data, onEnd }: { data: BroadcastData; onEnd: () =
     attachTrack(r.localParticipant, localVideoRef.current)
   }, [cameraOff])
 
+  const toggleScreen = useCallback(async () => {
+    const r = roomRef.current; if (!r) return
+    try {
+      const next = !screenSharing
+      await r.localParticipant.setScreenShareEnabled(next)
+      setScreenSharing(next)
+      attachTrack(r.localParticipant, localVideoRef.current)
+    } catch { /* user cancelled */ }
+  }, [screenSharing])
+
   const fmt = (s: number) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
 
   return (
@@ -161,14 +188,14 @@ function SmartzTVBroadcaster({ data, onEnd }: { data: BroadcastData; onEnd: () =
         {!connected && !lkError && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/80">
             <div className="w-10 h-10 rounded-full border-2 border-red-500/30 border-t-red-500 animate-spin" />
-            <p className="text-sm text-white/60">Starting your broadcast…</p>
+            <p className="text-sm text-white/60">{data.guestName ? 'Joining as guest…' : 'Starting your broadcast…'}</p>
           </div>
         )}
         {lkError && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/80 px-6 text-center">
             <p className="text-red-400 font-semibold">⚠️ Broadcast error</p>
             <p className="text-sm text-white/50">{lkError}</p>
-            <button onClick={handleEnd} className="mt-2 px-6 py-2.5 rounded-2xl bg-red-500/20 text-red-400 border border-red-500/30 text-sm font-semibold">End Stream</button>
+            <button onClick={handleEnd} className="mt-2 px-6 py-2.5 rounded-2xl bg-red-500/20 text-red-400 border border-red-500/30 text-sm font-semibold">Leave Stream</button>
           </div>
         )}
 
@@ -176,9 +203,14 @@ function SmartzTVBroadcaster({ data, onEnd }: { data: BroadcastData; onEnd: () =
         <div className="absolute top-0 left-0 right-0 flex items-center justify-between p-4 bg-gradient-to-b from-black/60 to-transparent">
           <div className="flex items-center gap-2">
             <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-500 text-white text-xs font-black">
-              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> LIVE
+              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> {data.guestName ? 'GUEST' : 'LIVE'}
             </span>
             <span className="px-3 py-1 rounded-full bg-black/50 text-white text-xs font-semibold backdrop-blur-sm">{fmt(duration)}</span>
+            {screenSharing && (
+              <span className="px-2.5 py-1 rounded-full bg-blue-500/80 text-white text-xs font-semibold backdrop-blur-sm flex items-center gap-1">
+                <Monitor className="w-3 h-3" /> Screen
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/50 text-white text-xs backdrop-blur-sm">
             <Users className="w-3.5 h-3.5" /> {viewers}
@@ -188,54 +220,76 @@ function SmartzTVBroadcaster({ data, onEnd }: { data: BroadcastData; onEnd: () =
         {/* Title */}
         <div className="absolute bottom-20 left-4 right-4">
           <p className="text-white font-bold text-sm drop-shadow-lg truncate">{data.title}</p>
+          {data.guestName && <p className="text-white/50 text-xs">Joined as guest</p>}
         </div>
       </div>
 
       {/* Controls */}
-      <div className="flex items-center justify-center gap-4 px-6 py-5 bg-[#0A0710] flex-shrink-0">
+      <div className="flex items-center justify-center gap-3 px-6 py-5 bg-[#0A0710] flex-shrink-0">
         <button onClick={toggleMute} disabled={!connected}
-          className={`w-14 h-14 rounded-full flex items-center justify-center transition-all disabled:opacity-40 ${muted ? 'bg-red-500 shadow-lg shadow-red-500/30' : 'bg-white/10 hover:bg-white/20'}`}>
+          className={`w-13 h-13 w-12 h-12 rounded-full flex items-center justify-center transition-all disabled:opacity-40 ${muted ? 'bg-red-500 shadow-lg shadow-red-500/30' : 'bg-white/10 hover:bg-white/20'}`}>
           {muted ? <MicOff className="w-5 h-5 text-white" /> : <Mic className="w-5 h-5 text-white" />}
+        </button>
+        <button onClick={toggleCamera} disabled={!connected}
+          className={`w-12 h-12 rounded-full flex items-center justify-center transition-all disabled:opacity-40 ${cameraOff ? 'bg-red-500 shadow-lg shadow-red-500/30' : 'bg-white/10 hover:bg-white/20'}`}>
+          {cameraOff ? <VideoOff className="w-5 h-5 text-white" /> : <Video className="w-5 h-5 text-white" />}
         </button>
         <button onClick={handleEnd}
           className="w-16 h-16 rounded-full bg-red-500 flex items-center justify-center shadow-2xl shadow-red-500/40 hover:bg-red-600 transition-colors hover:scale-105 active:scale-95">
           <PhoneOff className="w-6 h-6 text-white" />
         </button>
-        <button onClick={toggleCamera} disabled={!connected}
-          className={`w-14 h-14 rounded-full flex items-center justify-center transition-all disabled:opacity-40 ${cameraOff ? 'bg-red-500 shadow-lg shadow-red-500/30' : 'bg-white/10 hover:bg-white/20'}`}>
-          {cameraOff ? <VideoOff className="w-5 h-5 text-white" /> : <Video className="w-5 h-5 text-white" />}
+        <button onClick={toggleScreen} disabled={!connected}
+          className={`w-12 h-12 rounded-full flex items-center justify-center transition-all disabled:opacity-40 ${screenSharing ? 'bg-blue-500 shadow-lg shadow-blue-500/30' : 'bg-white/10 hover:bg-white/20'}`}>
+          {screenSharing ? <MonitorOff className="w-5 h-5 text-white" /> : <Monitor className="w-5 h-5 text-white" />}
         </button>
+        {!data.guestName && (
+          <button
+            className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all"
+            onClick={() => {
+              const url = `${window.location.origin}/app/smartztv`
+              if (navigator.share) { navigator.share({ title: data.title, url }).catch(() => {}) }
+              else { navigator.clipboard.writeText(url).catch(() => {}) }
+            }}>
+            <Share2 className="w-4.5 h-4.5 text-white w-5 h-5" />
+          </button>
+        )}
       </div>
     </motion.div>
   )
 }
 
 // ── Stream viewer modal ───────────────────────────────────────────────────
-function StreamModal({ stream, onClose }: { stream: Stream; onClose: () => void }) {
+function StreamModal({ stream, onClose, onJoinAsGuest }: {
+  stream: Stream; onClose: () => void
+  onJoinAsGuest?: (streamId: string, title: string) => void
+}) {
   const { user } = useAuth()
   const [gifted, setGifted] = useState<string | null>(null)
   const [giftSending, setGiftSending] = useState(false)
   const [comment, setComment] = useState('')
-  const [comments, setComments] = useState<{ id?: number; user: string; text: string; time: string }[]>([])
+  const [comments, setComments] = useState<{ id?: number; user: string; avatar?: string; text: string; time: string }[]>([])
   const [commentsLoading, setCommentsLoading] = useState(true)
+  const commentsEndRef = useRef<HTMLDivElement>(null)
   const [following, setFollowing] = useState(false)
   const [followLoading, setFollowLoading] = useState(false)
+  const [liked, setLiked] = useState(false)
+  const [likeCount, setLikeCount] = useState(stream.likes || 0)
+  const [shareToast, setShareToast] = useState(false)
   // LiveKit viewer
   const liveVideoRef = useRef<HTMLDivElement>(null)
   const viewerRoomRef = useRef<Room | null>(null)
   const [liveVideoReady, setLiveVideoReady] = useState(false)
 
-  // Check follow status on open
+  // Check follow + like status on open
   useEffect(() => {
-    if (!user || !stream.creatorId || stream.creatorId === user.id) return
-    supabase
-      .from('follows')
-      .select('id')
-      .eq('follower_id', user.id)
-      .eq('following_id', stream.creatorId)
-      .maybeSingle()
-      .then(({ data }) => { if (data) setFollowing(true) })
-  }, [user?.id, stream.creatorId])
+    if (!user) return
+    if (stream.creatorId && stream.creatorId !== user.id) {
+      supabase.from('follows').select('id').eq('follower_id', user.id).eq('following_id', stream.creatorId)
+        .maybeSingle().then(({ data }) => { if (data) setFollowing(true) })
+    }
+    supabase.from('post_reactions').select('id').eq('post_id', stream.id).eq('user_id', user.id).eq('emoji', '❤️')
+      .maybeSingle().then(({ data }) => { if (data) setLiked(true) }).catch(() => {})
+  }, [user?.id, stream.id, stream.creatorId])
 
   const toggleFollow = async () => {
     if (!user || !stream.creatorId || stream.creatorId === user.id || followLoading) return
@@ -245,7 +299,6 @@ function StreamModal({ stream, onClose }: { stream: Stream; onClose: () => void 
       setFollowing(false)
     } else {
       await supabase.from('follows').insert({ follower_id: user.id, following_id: stream.creatorId })
-      // Persist + push in one call (fire-and-forget)
       notifyUser({
         userId: stream.creatorId,
         type: 'follow',
@@ -259,6 +312,31 @@ function StreamModal({ stream, onClose }: { stream: Stream; onClose: () => void 
     setFollowLoading(false)
   }
 
+  const toggleLike = async () => {
+    if (!user) return
+    const next = !liked
+    setLiked(next)
+    setLikeCount(c => next ? c + 1 : Math.max(0, c - 1))
+    if (next) {
+      supabase.from('post_reactions').insert({ post_id: stream.id, user_id: user.id, emoji: '❤️' }).then(() => {}).catch(() => {})
+    } else {
+      supabase.from('post_reactions').delete().eq('post_id', stream.id).eq('user_id', user.id).eq('emoji', '❤️').then(() => {}).catch(() => {})
+    }
+  }
+
+  const handleShare = () => {
+    const url = `${window.location.origin}/app/smartztv`
+    if (navigator.share) {
+      navigator.share({ title: stream.title, text: `Watch "${stream.title}" on SmartzTV!`, url }).catch(() => {})
+    } else {
+      navigator.clipboard.writeText(url).then(() => {
+        setShareToast(true)
+        setTimeout(() => setShareToast(false), 2500)
+      }).catch(() => {})
+    }
+  }
+
+  // LiveKit viewer connection
   useEffect(() => {
     if (!stream.live) return
     let disposed = false
@@ -267,7 +345,6 @@ function StreamModal({ stream, onClose }: { stream: Stream; onClose: () => void 
 
     const connect = async () => {
       try {
-        // Viewers get subscribe-only tokens — no publish rights
         const { data, error } = await supabase.functions.invoke('livekit-token', {
           body: { room: `smartz-tv-${stream.id}`, publish: false },
         })
@@ -276,11 +353,6 @@ function StreamModal({ stream, onClose }: { stream: Stream; onClose: () => void 
         await room.connect(data.wsUrl, data.token)
         if (disposed) { room.disconnect(); return }
 
-        // viewer_count is kept authoritative by the broadcaster's syncViewerCount
-        // (fires on ParticipantConnected/Disconnected in SmartzTVBroadcaster).
-        // Viewers do not write counts themselves to avoid competing updates.
-
-        // Viewer: render remote tracks only; clear ready when no tracks remain
         const renderRemote = () => {
           if (liveVideoRef.current) {
             liveVideoRef.current.innerHTML = ''
@@ -294,12 +366,10 @@ function StreamModal({ stream, onClose }: { stream: Stream; onClose: () => void 
                   rendered++
                 }
               })
-              // Broadcaster audio must be attached explicitly or viewers hear nothing.
               p.audioTrackPublications.forEach(pub => {
                 if (pub.track && pub.kind === Track.Kind.Audio) {
                   const a = pub.track.attach() as HTMLAudioElement
-                  a.autoplay = true
-                  a.style.display = 'none'
+                  a.autoplay = true; a.style.display = 'none'
                   liveVideoRef.current!.appendChild(a)
                 }
               })
@@ -320,44 +390,61 @@ function StreamModal({ stream, onClose }: { stream: Stream; onClose: () => void 
     }
   }, [stream.id, stream.live])
 
-  // Load existing comments from DB
+  // Load & subscribe to real-time comments
   useEffect(() => {
+    let isMounted = true
+    const formatComment = (c: any) => ({
+      id: c.id,
+      user: (c.profiles as any)?.full_name?.split(' ')[0] || '🧑🏾',
+      avatar: (c.profiles as any)?.avatar_url || undefined,
+      text: c.content,
+      time: new Date(c.created_at).toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' }),
+    })
+
     const load = async () => {
       setCommentsLoading(true)
       const { data } = await supabase
         .from('stream_comments')
         .select('id, content, created_at, profiles:user_id(full_name, avatar_url)')
-        .eq('stream_id', stream.id)
-        .eq('is_deleted', false)
-        .order('created_at', { ascending: true })
-        .limit(50)
-      if (data) {
-        setComments(data.map((c: any) => ({
-          id: c.id,
-          user: c.profiles?.full_name?.[0] ? c.profiles.full_name.split(' ')[0] : '🧑🏾',
-          text: c.content,
-          time: new Date(c.created_at).toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' }),
-        })))
-      }
-      setCommentsLoading(false)
+        .eq('stream_id', stream.id).eq('is_deleted', false)
+        .order('created_at', { ascending: true }).limit(80)
+      if (isMounted && data) setComments(data.map(formatComment))
+      if (isMounted) setCommentsLoading(false)
     }
     load()
+
+    // Real-time subscription for new comments
+    const sub = supabase.channel(`modal-comments-${stream.id}`)
+      .on('postgres_changes', {
+        event: 'INSERT', schema: 'public', table: 'stream_comments',
+        filter: `stream_id=eq.${stream.id}`,
+      }, async (payload: any) => {
+        const { data: c } = await supabase
+          .from('stream_comments')
+          .select('id, content, created_at, profiles:user_id(full_name, avatar_url)')
+          .eq('id', payload.new.id).single()
+        if (isMounted && c) setComments(prev => [...prev, formatComment(c)])
+      })
+      .subscribe()
+
+    return () => {
+      isMounted = false
+      supabase.removeChannel(sub)
+    }
   }, [stream.id])
+
+  // Auto-scroll to newest comment
+  useEffect(() => {
+    commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [comments.length])
 
   const sendComment = async () => {
     if (!comment.trim() || !user) return
     const text = comment.trim()
     setComment('')
-    const optimistic = { user: user.email?.split('@')[0] || '🧑🏾', text, time: 'now' }
-    setComments(prev => [...prev, optimistic])
-    const { error } = await supabase.from('stream_comments').insert({
-      stream_id: stream.id,
-      user_id: user.id,
-      content: text,
+    await supabase.from('stream_comments').insert({
+      stream_id: stream.id, user_id: user.id, content: text,
     })
-    if (error) {
-      // If FK fails (stream not in streams table), keep the optimistic local entry
-    }
   }
 
   const sendGift = async (gift: typeof giftItems[0]) => {
@@ -366,128 +453,166 @@ function StreamModal({ stream, onClose }: { stream: Stream; onClose: () => void 
     setGiftSending(true)
     try {
       await supabase.from('stream_gifts').insert({
-        stream_id: stream.id,
-        sender_id: user.id,
-        gift_type: gift.name,
-        gift_emoji: gift.emoji,
-        coins_cost: gift.price,
+        stream_id: stream.id, sender_id: user.id,
+        gift_type: gift.name, gift_emoji: gift.emoji, coins_cost: gift.price,
       })
-      // Atomic server-side increment to prevent concurrent-write data loss
-      await supabase.rpc('increment_gifts_earned', {
-        stream_row_id: stream.id,
-        amount: gift.price,
-      })
-    } catch {
-      // Silently continue — gift UI feedback already shown
-    }
+      await supabase.rpc('increment_gifts_earned', { stream_row_id: stream.id, amount: gift.price })
+    } catch { /* silently continue */ }
     setGiftSending(false)
   }
 
+  const isInvitedGuest = user && stream.invitedCreatorId && stream.invitedCreatorId === user.id
+
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm p-0 sm:p-4"
-      onClick={onClose}>
-      <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-        onClick={e => e.stopPropagation()}
-        className="dark:bg-[#0D0A14] bg-gray-900 rounded-t-3xl sm:rounded-3xl w-full sm:max-w-lg max-h-[90vh] flex flex-col overflow-hidden shadow-2xl border dark:border-purple-900/20">
+    <>
+      {/* Share toast */}
+      <AnimatePresence>
+        {shareToast && (
+          <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+            className="fixed top-6 left-1/2 -translate-x-1/2 z-[60] px-4 py-2 rounded-xl bg-emerald-500 text-white text-sm font-semibold shadow-xl flex items-center gap-2">
+            <CheckCircle className="w-4 h-4" /> Link copied!
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-        {/* Stream view */}
-        <div className="relative h-56 sm:h-64 bg-gradient-to-br from-pink-900/50 to-purple-900/50 flex items-center justify-center flex-shrink-0">
-          {/* Static fallback (thumbnail / emoji) */}
-          {stream.thumbnail_url
-            ? <img src={stream.thumbnail_url} alt={stream.title} className="w-full h-full object-cover absolute inset-0" />
-            : <div className="text-8xl">{stream.emoji}</div>}
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm p-0 sm:p-4"
+        onClick={onClose}>
+        <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+          onClick={e => e.stopPropagation()}
+          className="dark:bg-[#0D0A14] bg-gray-900 rounded-t-3xl sm:rounded-3xl w-full sm:max-w-lg max-h-[90vh] flex flex-col overflow-hidden shadow-2xl border dark:border-purple-900/20">
 
-          {/* LiveKit viewer: overlays the thumbnail when a live video track arrives */}
-          {stream.live && (
-            <div
-              ref={liveVideoRef}
-              className={`absolute inset-0 [&>video]:w-full [&>video]:h-full [&>video]:object-cover transition-opacity ${liveVideoReady ? 'opacity-100' : 'opacity-0'}`}
-            />
-          )}
-          {/* Connecting indicator while waiting for live track */}
-          {stream.live && !liveVideoReady && (
-            <div className="absolute bottom-14 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/60 backdrop-blur-sm">
-              <div className="w-3 h-3 rounded-full border border-white/30 border-t-white animate-spin" />
-              <span className="text-[10px] text-white/70">Connecting to stream…</span>
-            </div>
-          )}
+          {/* Stream view */}
+          <div className="relative h-56 sm:h-64 bg-gradient-to-br from-pink-900/50 to-purple-900/50 flex items-center justify-center flex-shrink-0">
+            {stream.thumbnail_url
+              ? <img src={stream.thumbnail_url} alt={stream.title} className="w-full h-full object-cover absolute inset-0" />
+              : <div className="text-8xl">{stream.emoji}</div>}
 
-          <div className="absolute top-4 left-4 right-4 flex items-start justify-between">
-            <div className="flex items-center gap-2">
-              {stream.live && <span className="px-2.5 py-1 rounded-full bg-red-500 text-white text-[10px] font-black animate-pulse">● LIVE</span>}
-              {stream.trending && <span className="px-2.5 py-1 rounded-full bg-amber-500 text-white text-[10px] font-black">🔥 Trending</span>}
-            </div>
-            <button onClick={onClose} className="w-8 h-8 rounded-full bg-black/50 flex items-center justify-center backdrop-blur-sm hover:bg-black/70 transition-colors">
-              <X className="w-4 h-4 text-white" />
-            </button>
-          </div>
-          <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full dark:bg-purple-900/40 bg-black/40 flex items-center justify-center text-lg overflow-hidden">
-                {stream.avatar_url ? <img src={stream.avatar_url} alt={stream.creator} className="w-full h-full object-cover" /> : stream.creatorEmoji}
-              </div>
-              <div>
-                <p className="text-white text-xs font-bold">{stream.creator}</p>
-                <p className="text-white/70 text-[10px] flex items-center gap-1"><Eye className="w-3 h-3" /> {stream.views}</p>
-              </div>
-            </div>
-            {user && stream.creatorId && stream.creatorId !== user.id && (
-              <button onClick={toggleFollow} disabled={followLoading}
-                className={`px-3 py-1.5 rounded-full text-[10px] font-black shadow-lg transition-all disabled:opacity-60 ${following ? 'bg-white/20 text-white border border-white/30' : 'bg-love-gradient text-white'}`}>
-                {following ? 'Following' : 'Follow'}
-              </button>
+            {stream.live && (
+              <div ref={liveVideoRef}
+                className={`absolute inset-0 [&>video]:w-full [&>video]:h-full [&>video]:object-cover transition-opacity ${liveVideoReady ? 'opacity-100' : 'opacity-0'}`}
+              />
             )}
-          </div>
-        </div>
+            {stream.live && !liveVideoReady && (
+              <div className="absolute bottom-14 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/60 backdrop-blur-sm">
+                <div className="w-3 h-3 rounded-full border border-white/30 border-t-white animate-spin" />
+                <span className="text-[10px] text-white/70">Connecting to stream…</span>
+              </div>
+            )}
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          <h3 className="font-bold dark:text-white text-gray-100 text-sm leading-snug">{stream.title}</h3>
+            {/* Top row */}
+            <div className="absolute top-4 left-4 right-4 flex items-start justify-between">
+              <div className="flex items-center gap-2">
+                {stream.live && <span className="px-2.5 py-1 rounded-full bg-red-500 text-white text-[10px] font-black animate-pulse">● LIVE</span>}
+                {stream.trending && <span className="px-2.5 py-1 rounded-full bg-amber-500 text-white text-[10px] font-black">🔥 Trending</span>}
+              </div>
+              <button onClick={onClose} className="w-8 h-8 rounded-full bg-black/50 flex items-center justify-center backdrop-blur-sm hover:bg-black/70 transition-colors">
+                <X className="w-4 h-4 text-white" />
+              </button>
+            </div>
 
-          {/* Gifts */}
-          <div>
-            <p className="text-[11px] dark:text-pink-300/60 text-gray-400 font-semibold mb-2">Send a gift</p>
-            <div className="grid grid-cols-6 gap-2">
-              {giftItems.map(g => (
-                <button key={g.name} onClick={() => sendGift(g)} disabled={!user || giftSending}
-                  className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all disabled:opacity-50 ${gifted === g.name ? 'dark:bg-purple-800/30 bg-purple-100 ring-1 ring-brand-pink' : 'dark:bg-white/5 bg-gray-100 hover:dark:bg-white/8'}`}>
-                  <span className="text-xl">{g.emoji}</span>
-                  <span className={`text-[9px] font-bold ${g.color}`}>{g.price}</span>
+            {/* Bottom row */}
+            <div className="absolute bottom-3 left-4 right-4 flex items-end justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full dark:bg-purple-900/40 bg-black/40 flex items-center justify-center text-lg overflow-hidden flex-shrink-0">
+                  {stream.avatar_url ? <img src={stream.avatar_url} alt={stream.creator} className="w-full h-full object-cover" /> : stream.creatorEmoji}
+                </div>
+                <div>
+                  <p className="text-white text-xs font-bold">{stream.creator}</p>
+                  <p className="text-white/70 text-[10px] flex items-center gap-1"><Eye className="w-3 h-3" /> {stream.views}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                {/* Like */}
+                <button onClick={toggleLike}
+                  className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[11px] font-bold transition-all backdrop-blur-sm ${liked ? 'bg-red-500 text-white' : 'bg-black/50 text-white hover:bg-black/70'}`}>
+                  <Heart className={`w-3.5 h-3.5 ${liked ? 'fill-white' : ''}`} /> {likeCount}
                 </button>
-              ))}
+                {/* Share */}
+                <button onClick={handleShare}
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[11px] font-bold bg-black/50 text-white hover:bg-black/70 transition-all backdrop-blur-sm">
+                  <Share2 className="w-3.5 h-3.5" />
+                </button>
+                {/* Follow */}
+                {user && stream.creatorId && stream.creatorId !== user.id && (
+                  <button onClick={toggleFollow} disabled={followLoading}
+                    className={`px-3 py-1.5 rounded-full text-[10px] font-black shadow-lg transition-all disabled:opacity-60 ${following ? 'bg-white/20 text-white border border-white/30' : 'bg-love-gradient text-white'}`}>
+                    {following ? 'Following' : 'Follow'}
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
-          {/* Comments */}
-          <div>
-            <p className="text-[11px] dark:text-pink-300/60 text-gray-400 font-semibold mb-2">Live comments</p>
-            <div className="space-y-2 max-h-32 overflow-y-auto">
-              {commentsLoading ? (
-                <p className="text-xs dark:text-purple-400/50 text-gray-400 italic">Loading comments…</p>
-              ) : comments.length === 0 ? (
-                <p className="text-xs dark:text-purple-400/50 text-gray-400 italic">Be the first to comment!</p>
-              ) : (
-                comments.map((c, i) => (
-                  <div key={c.id ?? i} className="flex items-center gap-2">
-                    <span className="text-sm font-semibold dark:text-purple-300 text-gray-700 shrink-0">{c.user}</span>
-                    <p className="text-xs dark:text-pink-50 text-gray-900 flex-1 min-w-0 truncate">{c.text}</p>
-                    <span className="text-[10px] dark:text-purple-400/40 text-gray-400 shrink-0">{c.time}</span>
-                  </div>
-                ))
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold dark:text-white text-gray-100 text-sm leading-snug flex-1 mr-2 truncate">{stream.title}</h3>
+              {/* Join as Guest button */}
+              {isInvitedGuest && onJoinAsGuest && stream.live && (
+                <button
+                  onClick={() => { onClose(); onJoinAsGuest(stream.id, stream.title) }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 text-white text-xs font-bold flex-shrink-0 shadow-lg hover:opacity-90 transition-opacity">
+                  <UserPlus2 className="w-3.5 h-3.5" /> Go Live as Guest
+                </button>
               )}
             </div>
-          </div>
 
-          <div className="flex gap-2">
-            <input value={comment} onChange={e => setComment(e.target.value)} onKeyDown={e => e.key === 'Enter' && sendComment()}
-              placeholder="Say something…"
-              className="flex-1 px-3 py-2.5 rounded-xl dark:bg-purple-900/10 bg-gray-100 text-sm dark:text-pink-50 text-gray-900 placeholder:dark:text-purple-400/50 placeholder:text-gray-400 focus:outline-none border dark:border-purple-500/15 border-transparent focus:dark:border-pink-500/30" />
-            <button onClick={sendComment} disabled={!comment.trim()}
-              className="px-4 py-2.5 rounded-xl bg-love-gradient text-white text-sm font-bold disabled:opacity-50">Send</button>
+            {/* Gifts */}
+            <div>
+              <p className="text-[11px] dark:text-pink-300/60 text-gray-400 font-semibold mb-2">Send a gift</p>
+              <div className="grid grid-cols-6 gap-2">
+                {giftItems.map(g => (
+                  <button key={g.name} onClick={() => sendGift(g)} disabled={!user || giftSending}
+                    className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all disabled:opacity-50 ${gifted === g.name ? 'dark:bg-purple-800/30 bg-purple-100 ring-1 ring-brand-pink' : 'dark:bg-white/5 bg-gray-100 hover:dark:bg-white/8'}`}>
+                    <span className="text-xl">{g.emoji}</span>
+                    <span className={`text-[9px] font-bold ${g.color}`}>{g.price}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Live Comments */}
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-1.5">
+                <MessageSquare className="w-3.5 h-3.5 text-brand-pink" />
+                <p className="text-[11px] dark:text-pink-300/60 text-gray-400 font-semibold">
+                  Live chat {stream.live && <span className="text-red-400 ml-1">● live</span>}
+                </p>
+              </div>
+              <div className="space-y-2 max-h-36 overflow-y-auto pr-1">
+                {commentsLoading ? (
+                  <p className="text-xs dark:text-purple-400/50 text-gray-400 italic">Loading…</p>
+                ) : comments.length === 0 ? (
+                  <p className="text-xs dark:text-purple-400/50 text-gray-400 italic">Be the first to comment!</p>
+                ) : (
+                  comments.map((c, i) => (
+                    <div key={c.id ?? i} className="flex items-start gap-2">
+                      <div className="w-5 h-5 rounded-full bg-love-gradient flex items-center justify-center text-white text-[9px] font-bold flex-shrink-0 overflow-hidden mt-0.5">
+                        {c.avatar ? <img src={c.avatar} alt={c.user} className="w-full h-full object-cover" /> : c.user[0]}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <span className="text-[10px] font-bold dark:text-purple-300 text-gray-700 mr-1">{c.user}</span>
+                        <span className="text-xs dark:text-pink-50 text-gray-900 break-words">{c.text}</span>
+                      </div>
+                    </div>
+                  ))
+                )}
+                <div ref={commentsEndRef} />
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <input value={comment} onChange={e => setComment(e.target.value)} onKeyDown={e => e.key === 'Enter' && sendComment()}
+                placeholder={user ? 'Say something…' : 'Log in to comment'}
+                disabled={!user}
+                className="flex-1 px-3 py-2.5 rounded-xl dark:bg-purple-900/10 bg-gray-100 text-sm dark:text-pink-50 text-gray-900 placeholder:dark:text-purple-400/50 placeholder:text-gray-400 focus:outline-none border dark:border-purple-500/15 border-transparent focus:dark:border-pink-500/30 disabled:opacity-50" />
+              <button onClick={sendComment} disabled={!comment.trim() || !user}
+                className="px-4 py-2.5 rounded-xl bg-love-gradient text-white text-sm font-bold disabled:opacity-50">Send</button>
+            </div>
           </div>
-        </div>
+        </motion.div>
       </motion.div>
-    </motion.div>
+    </>
   )
 }
 
@@ -699,7 +824,7 @@ export default function SmartzTVPage() {
       // Fetch streams — no FK on creator_id so profiles join is done separately
       const { data: rows, error } = await supabase
         .from('livestreams')
-        .select('id, title, category, status, viewer_count, gifts_earned, thumbnail_url, created_at, creator_id, is_admin_broadcast')
+        .select('id, title, category, status, viewer_count, gifts_earned, thumbnail_url, created_at, creator_id, is_admin_broadcast, invited_creator_id')
         .order('viewer_count', { ascending: false })
         .limit(20)
 
@@ -743,6 +868,7 @@ export default function SmartzTVPage() {
           vip: profile?.subscription_tier === 'vip',
           thumbnail_url: s.thumbnail_url,
           isAdminBroadcast: s.is_admin_broadcast ?? false,
+          invitedCreatorId: s.invited_creator_id || undefined,
         }
       }))
     } catch {
@@ -1173,7 +1299,16 @@ export default function SmartzTVPage() {
 
       {/* Stream modal (Watch tab) */}
       <AnimatePresence>
-        {selectedStream && <StreamModal stream={selectedStream} onClose={() => setSelectedStream(null)} />}
+        {selectedStream && (
+          <StreamModal
+            stream={selectedStream}
+            onClose={() => setSelectedStream(null)}
+            onJoinAsGuest={(streamId, title) => {
+              setSelectedStream(null)
+              setBroadcastData({ streamId, title, guestName: user?.email?.split('@')[0] || 'Guest' })
+            }}
+          />
+        )}
       </AnimatePresence>
 
       {/* Creator Studio: Edit modal */}

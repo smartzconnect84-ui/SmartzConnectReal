@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { motion, useInView } from 'framer-motion'
+import { motion, AnimatePresence, useInView } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import {
   Tv, Play, Users, Gift, TrendingUp, Mic, Video, Crown, Zap,
   Signal, Clapperboard, Eye, RefreshCw, Radio, Loader2, Volume2, VolumeX,
-  Maximize2, Globe,
+  Maximize2, Globe, Heart, Share2, MessageSquare, X, CheckCircle,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { Room, RoomEvent, Track } from 'livekit-client'
@@ -46,12 +46,40 @@ const features = [
 
 function PublicLiveTVPlayer({ broadcast }: { broadcast: AdminBroadcast }) {
   const videoRef = useRef<HTMLDivElement>(null)
+  const playerWrapRef = useRef<HTMLDivElement>(null)
   const roomRef = useRef<Room | null>(null)
+  const commentsEndRef = useRef<HTMLDivElement>(null)
+
   const [connected, setConnected] = useState(false)
-  const [muted, setMuted] = useState(true) // start muted to comply with autoplay policies
+  const [muted, setMuted] = useState(true)
   const [lkError, setLkError] = useState('')
   const [connecting, setConnecting] = useState(true)
+  const [viewerCount, setViewerCount] = useState(broadcast.viewer_count || 0)
 
+  // Chat state
+  const [showChat, setShowChat] = useState(false)
+  const [comments, setComments] = useState<{ id: number; user: string; avatar?: string; text: string }[]>([])
+
+  // Likes (local + DB via post_reactions if logged in)
+  const [likeCount, setLikeCount] = useState(0)
+  const [liked, setLiked] = useState(false)
+  const [likeAnim, setLikeAnim] = useState(false)
+
+  // Share toast
+  const [shareToast, setShareToast] = useState(false)
+
+  // Reset per-broadcast UI state when the selected broadcast changes
+  useEffect(() => {
+    setViewerCount(broadcast.viewer_count || 0)
+    setLiked(false)
+    setLikeCount(0)
+    setLikeAnim(false)
+    setComments([])
+    setConnected(false)
+    setShareToast(false)
+  }, [broadcast.id])
+
+  // ── LiveKit viewer ──
   useEffect(() => {
     let disposed = false
     const room = new Room({ adaptiveStream: true })
@@ -60,44 +88,24 @@ function PublicLiveTVPlayer({ broadcast }: { broadcast: AdminBroadcast }) {
     const connect = async () => {
       setConnecting(true)
       try {
-        // Call the public token edge function using the anon key directly
-        // (no user auth required — this is a viewer-only public token)
         const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL as string || '').replace(/\/$/, '')
         const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string
-
-        if (!supabaseUrl || !anonKey) {
-          setLkError('Stream configuration not ready.')
-          setConnecting(false)
-          return
-        }
+        if (!supabaseUrl || !anonKey) { setConnecting(false); return }
 
         const res = await fetch(`${supabaseUrl}/functions/v1/livekit-public-token`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': anonKey,
-          },
+          headers: { 'Content-Type': 'application/json', 'apikey': anonKey },
           body: JSON.stringify({ room: `smartz-tv-${broadcast.id}` }),
         })
-
-        if (!res.ok) {
-          // Function not deployed yet — show thumbnail fallback silently
-          setConnecting(false)
-          return
-        }
+        if (!res.ok) { setConnecting(false); return }
 
         const { token, wsUrl, error } = await res.json()
-        if (error || !token || !wsUrl) {
-          setConnecting(false)
-          return
-        }
-
+        if (error || !token || !wsUrl) { setConnecting(false); return }
         if (disposed) return
 
         await room.connect(wsUrl, token)
         if (disposed) { room.disconnect(); return }
 
-        // Render remote broadcaster tracks
         const render = () => {
           if (!videoRef.current || disposed) return
           videoRef.current.innerHTML = ''
@@ -112,133 +120,331 @@ function PublicLiveTVPlayer({ broadcast }: { broadcast: AdminBroadcast }) {
                 rendered++
               }
             })
-            // Broadcaster audio must be attached explicitly or viewers hear nothing.
             p.audioTrackPublications.forEach(pub => {
               if (pub.track && pub.kind === Track.Kind.Audio) {
                 const a = pub.track.attach() as HTMLAudioElement
-                a.autoplay = true
-                a.muted = muted
-                a.style.display = 'none'
+                a.autoplay = true; a.muted = muted; a.style.display = 'none'
                 videoRef.current!.appendChild(a)
               }
             })
           })
           setConnected(rendered > 0)
         }
-
         render()
         room.on(RoomEvent.TrackSubscribed, render)
         room.on(RoomEvent.TrackUnsubscribed, render)
         room.on(RoomEvent.ParticipantConnected, render)
-      } catch {
-        if (!disposed) setConnecting(false)
-      }
+      } catch { /* silent — show thumbnail */ }
       if (!disposed) setConnecting(false)
     }
-
     connect()
+    return () => { disposed = true; room.disconnect(); roomRef.current = null }
+  }, [broadcast.id])
+
+  // Sync mute
+  useEffect(() => {
+    videoRef.current?.querySelectorAll('video').forEach(v => { v.muted = muted })
+    videoRef.current?.querySelectorAll('audio').forEach(a => { a.muted = muted })
+  }, [muted])
+
+  // ── Live chat subscription ──
+  useEffect(() => {
+    let isMounted = true
+    // Initial load
+    supabase.from('stream_comments')
+      .select('id, content, created_at, profiles:user_id(full_name, avatar_url)')
+      .eq('stream_id', broadcast.id).eq('is_deleted', false)
+      .order('created_at', { ascending: true }).limit(60)
+      .then(({ data }) => {
+        if (isMounted && data) {
+          setComments(data.map((c: any) => ({
+            id: c.id,
+            user: c.profiles?.full_name?.split(' ')[0] || '🧑🏾',
+            avatar: c.profiles?.avatar_url || undefined,
+            text: c.content,
+          })))
+        }
+      })
+    // Real-time new comments
+    const sub = supabase.channel(`pub-chat-${broadcast.id}`)
+      .on('postgres_changes', {
+        event: 'INSERT', schema: 'public', table: 'stream_comments',
+        filter: `stream_id=eq.${broadcast.id}`,
+      }, async (payload: any) => {
+        const { data: c } = await supabase
+          .from('stream_comments')
+          .select('id, content, profiles:user_id(full_name, avatar_url)')
+          .eq('id', payload.new.id).single()
+        if (isMounted && c) {
+          setComments(prev => [...prev, {
+            id: (c as any).id,
+            user: (c as any).profiles?.full_name?.split(' ')[0] || '🧑🏾',
+            avatar: (c as any).profiles?.avatar_url || undefined,
+            text: (c as any).content,
+          }])
+        }
+      })
+      .subscribe()
+
+    // Viewer count subscription
+    const countSub = supabase.channel(`pub-viewcount-${broadcast.id}`)
+      .on('postgres_changes', {
+        event: 'UPDATE', schema: 'public', table: 'livestreams',
+        filter: `id=eq.${broadcast.id}`,
+      }, (payload: any) => {
+        if (isMounted && payload.new?.viewer_count != null) {
+          setViewerCount(payload.new.viewer_count)
+        }
+      })
+      .subscribe()
 
     return () => {
-      disposed = true
-      room.disconnect()
-      roomRef.current = null
+      isMounted = false
+      supabase.removeChannel(sub)
+      supabase.removeChannel(countSub)
     }
   }, [broadcast.id])
 
-  // Sync mute state to video elements
+  // Auto-scroll chat
   useEffect(() => {
-    if (!videoRef.current) return
-    videoRef.current.querySelectorAll('video').forEach(v => { v.muted = muted })
-    videoRef.current.querySelectorAll('audio').forEach(a => { a.muted = muted })
-  }, [muted])
+    commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [comments.length])
+
+  const handleLike = () => {
+    if (liked) return
+    setLiked(true)
+    setLikeCount(c => c + 1)
+    setLikeAnim(true)
+    setTimeout(() => setLikeAnim(false), 700)
+  }
+
+  const handleShare = () => {
+    const url = `${window.location.origin}/smartztv`
+    const text = `Watch "${broadcast.title}" LIVE on SmartzTV!`
+    if (navigator.share) {
+      navigator.share({ title: broadcast.title, text, url }).catch(() => {})
+    } else {
+      navigator.clipboard.writeText(url).then(() => {
+        setShareToast(true)
+        setTimeout(() => setShareToast(false), 2500)
+      })
+    }
+  }
 
   const handleFullscreen = () => {
-    const el = videoRef.current?.closest('.lk-player-wrap') as HTMLElement | null
-    el?.requestFullscreen?.()
+    const el = playerWrapRef.current
+    if (!el) return
+    if (document.fullscreenElement) { document.exitFullscreen?.() }
+    else { el.requestFullscreen?.() }
   }
 
   return (
-    <div className="lk-player-wrap relative w-full aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl shadow-black/50 border border-violet-500/20">
-      {/* Thumbnail behind the video */}
-      {broadcast.thumbnail_url && (
-        <img
-          src={broadcast.thumbnail_url}
-          alt={broadcast.title}
-          className={`absolute inset-0 w-full h-full object-cover transition-opacity ${connected ? 'opacity-0' : 'opacity-100'}`}
-        />
-      )}
-      {!broadcast.thumbnail_url && !connected && (
-        <div className="absolute inset-0 flex items-center justify-center dark:bg-violet-950/30 bg-violet-100/30">
-          <Tv className="w-16 h-16 text-violet-400/30" />
-        </div>
-      )}
+    <div className="relative w-full">
+      {/* Share toast */}
+      <AnimatePresence>
+        {shareToast && (
+          <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+            className="absolute top-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500 text-white text-xs font-bold shadow-xl whitespace-nowrap">
+            <CheckCircle className="w-3.5 h-3.5" /> Link copied!
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* Live video overlay */}
-      <div
-        ref={videoRef}
-        className={`absolute inset-0 [&>video]:w-full [&>video]:h-full [&>video]:object-cover transition-opacity ${connected ? 'opacity-100' : 'opacity-0'}`}
-      />
-
-      {/* Connecting indicator */}
-      {connecting && !connected && !lkError && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/60">
-          <Loader2 className="w-8 h-8 text-violet-400 animate-spin" />
-          <p className="text-sm text-white/70">Connecting to live stream…</p>
-        </div>
-      )}
-
-      {/* Error / no signal */}
-      {lkError && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/70 px-6 text-center">
-          <Tv className="w-10 h-10 text-white/30" />
-          <p className="text-sm text-white/60">{lkError}</p>
-        </div>
-      )}
-
-      {/* HUD overlay */}
-      <div className="absolute inset-0 pointer-events-none">
-        {/* Top bar */}
-        <div className="absolute top-0 left-0 right-0 flex items-center justify-between p-3 bg-gradient-to-b from-black/70 to-transparent">
-          <div className="flex items-center gap-2">
-            <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-500 text-white text-[11px] font-black">
-              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> LIVE
-            </span>
-            {broadcast.category && (
-              <span className="px-2 py-0.5 rounded-full bg-black/50 text-white text-[10px] font-semibold backdrop-blur-sm">
-                {broadcast.category}
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/50 text-white text-[11px] backdrop-blur-sm">
-            <Eye className="w-3 h-3" /> {(broadcast.viewer_count || 0).toLocaleString()}
-          </div>
-        </div>
-
-        {/* Bottom info */}
-        <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 to-transparent">
-          <div className="flex items-end justify-between">
-            <div>
-              <p className="text-white font-bold text-sm leading-tight drop-shadow-lg line-clamp-1">{broadcast.title}</p>
-              <p className="text-white/60 text-[11px] mt-0.5">{broadcast.creator_name}</p>
+      <div className="flex gap-3 items-start">
+        {/* ── Player ── */}
+        <div ref={playerWrapRef} className="lk-player-wrap relative flex-1 aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl shadow-black/50 border border-violet-500/20 min-w-0">
+          {/* Thumbnail */}
+          {broadcast.thumbnail_url && (
+            <img src={broadcast.thumbnail_url} alt={broadcast.title}
+              className={`absolute inset-0 w-full h-full object-cover transition-opacity ${connected ? 'opacity-0' : 'opacity-100'}`}
+            />
+          )}
+          {!broadcast.thumbnail_url && !connected && (
+            <div className="absolute inset-0 flex items-center justify-center dark:bg-violet-950/30 bg-violet-100/30">
+              <Tv className="w-16 h-16 text-violet-400/30" />
             </div>
-            {/* Controls (pointer-events on) */}
-            <div className="flex items-center gap-1.5 pointer-events-auto">
-              <button
-                onClick={() => setMuted(m => !m)}
-                className="w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/70 transition-colors"
-              >
-                {muted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
-              </button>
-              <button
-                onClick={handleFullscreen}
-                className="w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/70 transition-colors"
-              >
-                <Maximize2 className="w-3.5 h-3.5" />
-              </button>
+          )}
+
+          {/* Live video */}
+          <div ref={videoRef}
+            className={`absolute inset-0 [&>video]:w-full [&>video]:h-full [&>video]:object-cover transition-opacity ${connected ? 'opacity-100' : 'opacity-0'}`}
+          />
+
+          {/* Connecting */}
+          {connecting && !connected && !lkError && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/60">
+              <Loader2 className="w-8 h-8 text-violet-400 animate-spin" />
+              <p className="text-sm text-white/70">Connecting to live stream…</p>
+            </div>
+          )}
+          {lkError && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/70 px-6 text-center">
+              <Tv className="w-10 h-10 text-white/30" />
+              <p className="text-sm text-white/60">{lkError}</p>
+            </div>
+          )}
+
+          {/* HUD */}
+          <div className="absolute inset-0 pointer-events-none">
+            {/* Top bar */}
+            <div className="absolute top-0 left-0 right-0 flex items-center justify-between p-3 bg-gradient-to-b from-black/70 to-transparent">
+              <div className="flex items-center gap-2">
+                <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-500 text-white text-[11px] font-black">
+                  <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> LIVE
+                </span>
+                {broadcast.category && (
+                  <span className="px-2 py-0.5 rounded-full bg-black/50 text-white text-[10px] font-semibold backdrop-blur-sm">
+                    {broadcast.category}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/50 text-white text-[11px] backdrop-blur-sm">
+                <Eye className="w-3 h-3" /> {viewerCount.toLocaleString()}
+              </div>
+            </div>
+
+            {/* Bottom bar */}
+            <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 to-transparent">
+              <div className="flex items-end justify-between">
+                <div>
+                  <p className="text-white font-bold text-sm leading-tight drop-shadow-lg line-clamp-1">{broadcast.title}</p>
+                  <p className="text-white/60 text-[11px] mt-0.5">{broadcast.creator_name}</p>
+                </div>
+                {/* Controls */}
+                <div className="flex items-center gap-1.5 pointer-events-auto">
+                  {/* Like */}
+                  <button onClick={handleLike}
+                    className={`relative w-8 h-8 rounded-full backdrop-blur-sm flex items-center justify-center text-white transition-all ${liked ? 'bg-red-500' : 'bg-black/50 hover:bg-black/70'}`}>
+                    <Heart className={`w-3.5 h-3.5 ${liked ? 'fill-white' : ''} ${likeAnim ? 'scale-150' : ''} transition-transform`} />
+                    {likeAnim && (
+                      <motion.span initial={{ opacity: 1, y: 0, scale: 1 }} animate={{ opacity: 0, y: -24, scale: 1.5 }}
+                        className="absolute text-red-400 text-xs pointer-events-none">❤️</motion.span>
+                    )}
+                  </button>
+                  {/* Chat */}
+                  <button onClick={() => setShowChat(c => !c)}
+                    className={`w-8 h-8 rounded-full backdrop-blur-sm flex items-center justify-center text-white transition-colors relative ${showChat ? 'bg-violet-500' : 'bg-black/50 hover:bg-black/70'}`}>
+                    <MessageSquare className="w-3.5 h-3.5" />
+                    {comments.length > 0 && !showChat && (
+                      <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-red-500 text-[8px] font-black text-white flex items-center justify-center">
+                        {Math.min(comments.length, 9)}
+                      </span>
+                    )}
+                  </button>
+                  {/* Share */}
+                  <button onClick={handleShare}
+                    className="w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/70 transition-colors">
+                    <Share2 className="w-3.5 h-3.5" />
+                  </button>
+                  {/* Mute */}
+                  <button onClick={() => setMuted(m => !m)}
+                    className="w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/70 transition-colors">
+                    {muted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+                  </button>
+                  {/* Fullscreen */}
+                  <button onClick={handleFullscreen}
+                    className="w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/70 transition-colors">
+                    <Maximize2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
+
+        {/* ── Live Chat Panel ── */}
+        <AnimatePresence>
+          {showChat && (
+            <motion.div
+              initial={{ width: 0, opacity: 0 }}
+              animate={{ width: 260, opacity: 1 }}
+              exit={{ width: 0, opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 280 }}
+              className="flex-shrink-0 hidden lg:flex flex-col dark:bg-[#0e0820] bg-white rounded-2xl border dark:border-violet-900/30 border-violet-200/50 overflow-hidden shadow-xl"
+              style={{ height: 'inherit', minHeight: 280, maxHeight: 380 }}>
+              <div className="flex items-center justify-between px-3 py-2.5 border-b dark:border-white/5 border-gray-100 flex-shrink-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                  <p className="text-xs font-bold dark:text-white text-gray-900">Live Chat</p>
+                  <span className="text-[10px] dark:text-gray-500 text-gray-400">{comments.length}</span>
+                </div>
+                <button onClick={() => setShowChat(false)}
+                  className="w-5 h-5 rounded flex items-center justify-center hover:dark:bg-white/10 hover:bg-gray-100 transition-colors">
+                  <X className="w-3 h-3 dark:text-gray-400 text-gray-500" />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-2 space-y-1.5 min-h-0">
+                {comments.length === 0 ? (
+                  <p className="text-xs dark:text-gray-500 text-gray-400 text-center py-6 italic">No messages yet</p>
+                ) : (
+                  comments.map((c, i) => (
+                    <div key={c.id ?? i} className="flex items-start gap-1.5">
+                      <div className="w-5 h-5 rounded-full bg-violet-500/20 flex items-center justify-center text-[9px] font-bold text-violet-400 flex-shrink-0 overflow-hidden mt-0.5">
+                        {c.avatar ? <img src={c.avatar} alt={c.user} className="w-full h-full object-cover" /> : c.user[0]}
+                      </div>
+                      <div className="min-w-0">
+                        <span className="text-[10px] font-bold dark:text-violet-300 text-violet-600 mr-1">{c.user}</span>
+                        <span className="text-xs dark:text-gray-300 text-gray-700 break-words">{c.text}</span>
+                      </div>
+                    </div>
+                  ))
+                )}
+                <div ref={commentsEndRef} />
+              </div>
+              {/* Login prompt to chat */}
+              <div className="p-2 border-t dark:border-white/5 border-gray-100 flex-shrink-0">
+                <Link to="/login"
+                  className="flex items-center justify-center gap-1.5 w-full py-2 rounded-lg dark:bg-violet-500/10 bg-violet-50 dark:text-violet-300 text-violet-700 text-xs font-semibold hover:dark:bg-violet-500/20 hover:bg-violet-100 transition-colors">
+                  <MessageSquare className="w-3.5 h-3.5" /> Log in to chat
+                </Link>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
+
+      {/* Mobile chat (below player on small screens) */}
+      <AnimatePresence>
+        {showChat && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 200, opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="lg:hidden mt-3 dark:bg-[#0e0820] bg-white rounded-2xl border dark:border-violet-900/30 border-violet-200/50 overflow-hidden flex flex-col shadow-lg">
+            <div className="flex items-center justify-between px-3 py-2 border-b dark:border-white/5 border-gray-100 flex-shrink-0">
+              <div className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                <p className="text-xs font-bold dark:text-white text-gray-900">Live Chat</p>
+              </div>
+              <button onClick={() => setShowChat(false)} className="w-5 h-5 rounded flex items-center justify-center">
+                <X className="w-3 h-3 dark:text-gray-400 text-gray-500" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-2 space-y-1">
+              {comments.map((c, i) => (
+                <div key={c.id ?? i} className="flex items-start gap-1.5">
+                  <span className="text-[10px] font-bold dark:text-violet-300 text-violet-600 shrink-0">{c.user}:</span>
+                  <span className="text-xs dark:text-gray-300 text-gray-700 truncate">{c.text}</span>
+                </div>
+              ))}
+              <div ref={commentsEndRef} />
+            </div>
+            <div className="p-2 flex-shrink-0">
+              <Link to="/login"
+                className="flex items-center justify-center gap-1 w-full py-1.5 rounded-lg bg-violet-500/10 text-violet-400 text-xs font-semibold">
+                Log in to chat
+              </Link>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Like count display */}
+      {likeCount > 0 && (
+        <div className="mt-2 flex items-center gap-1.5 text-xs dark:text-gray-400 text-gray-500">
+          <Heart className="w-3.5 h-3.5 text-red-400 fill-red-400" /> {likeCount} {likeCount === 1 ? 'like' : 'likes'}
+        </div>
+      )}
     </div>
   )
 }
