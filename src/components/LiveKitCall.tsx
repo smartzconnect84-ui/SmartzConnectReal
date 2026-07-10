@@ -23,6 +23,20 @@ function attachTrack(participant: LocalParticipant | RemoteParticipant, el: HTML
       el.appendChild(track)
     }
   })
+  // Audio tracks must also be attached to an element, or the browser never
+  // plays the remote party's voice even though the track is subscribed.
+  // Never attach the LOCAL participant's own audio — that would echo the
+  // user's own mic back to them.
+  if (!participant.isLocal) {
+    participant.audioTrackPublications.forEach(pub => {
+      if (pub.track && pub.kind === Track.Kind.Audio) {
+        const audioEl = pub.track.attach() as HTMLAudioElement
+        audioEl.autoplay = true
+        audioEl.style.display = 'none'
+        el.appendChild(audioEl)
+      }
+    })
+  }
 }
 
 const VIDEO_FILTERS = [
@@ -135,6 +149,20 @@ export default function LiveKitCall() {
         const accessToken = sessionData.session?.access_token
         if (!accessToken) throw new Error('Not authenticated')
 
+        // Pre-flight: request mic permission before connecting so the browser
+        // permission dialog shows before LiveKit tries to publish tracks.
+        // This ensures the user has a chance to grant access; without this
+        // some browsers block `setMicrophoneEnabled` silently mid-call.
+        if (navigator.mediaDevices?.getUserMedia) {
+          try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+            stream.getTracks().forEach(t => t.stop()) // Release immediately — LiveKit re-acquires
+          } catch {
+            // Permission denied or device unavailable — LiveKit will surface the error gracefully
+          }
+        }
+        if (disposed) return
+
         const { data, error } = await supabase.functions.invoke('livekit-token', {
           // Pass the current user's own display name as the LiveKit participant name,
           // not the other participant's name. myDisplayName comes from the user's own profile.
@@ -144,6 +172,12 @@ export default function LiveKitCall() {
         if (disposed) return
 
         await room.connect(data.wsUrl, data.token)
+
+        // startAudio() unblocks audio playback on browsers/iOS that apply autoplay
+        // restrictions. Must be called after connect and preferably within the call
+        // answer user-gesture chain so the browser allows it.
+        try { await room.startAudio() } catch { /* best-effort — non-critical */ }
+
         await room.localParticipant.setMicrophoneEnabled(true)
         if (activeCall.type === 'video') await room.localParticipant.setCameraEnabled(true)
 

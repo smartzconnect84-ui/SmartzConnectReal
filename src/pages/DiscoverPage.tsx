@@ -473,9 +473,12 @@ export default function DiscoverPage() {
                   className="flex-1 py-2.5 rounded-xl dark:bg-white/5 bg-gray-100 text-sm font-semibold dark:text-gray-300 text-gray-700">
                   Keep Swiping
                 </button>
-                <Link to="/app/matches" className="flex-1 py-2.5 rounded-xl bg-love-gradient text-white text-sm font-bold text-center">
+                <button
+                  onClick={() => { const id = showMatch.id; setShowMatch(null); navigate(`/app/chat/${id}`) }}
+                  className="flex-1 py-2.5 rounded-xl bg-love-gradient text-white text-sm font-bold text-center"
+                >
                   Message 💬
-                </Link>
+                </button>
               </div>
             </div>
           </motion.div>

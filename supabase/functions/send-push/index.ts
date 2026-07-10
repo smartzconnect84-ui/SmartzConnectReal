@@ -36,7 +36,8 @@ serve(async (req) => {
       })
     }
 
-    const { userId, title, message, url } = await req.json()
+    const body = await req.json()
+    const { userId, title, message, url, type, emoji, actionUrl, persist } = body
 
     if (!userId || !title || !message) {
       return new Response(JSON.stringify({ error: 'Missing required fields: userId, title, message' }), {
@@ -45,25 +46,21 @@ serve(async (req) => {
       })
     }
 
-    // ── 2. Authorise: caller must have a match with the target ───────────────
-    // Users can only push-notify someone they are matched with.
-    // Use service role so we can read matches regardless of RLS.
-    const adminClient = createClient(supabaseUrl, serviceKey)
-    const [a, b] = [user.id, userId].sort()
-    const { data: match } = await adminClient
-      .from('matches')
-      .select('id')
-      .eq('user_a', a)
-      .eq('user_b', b)
-      .maybeSingle()
-
-    // Also allow pushing one's own device (e.g. multi-device notifications)
-    const isSelf = user.id === userId
-    if (!match && !isSelf) {
-      return new Response(JSON.stringify({ error: 'Forbidden: no match with target user' }), {
-        status: 403,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+    // ── 2. Optionally persist a notification row ─────────────────────────────
+    // No match check — any authenticated user can notify any other user.
+    // This covers follows, likes, comments, matches, spin connections, etc.
+    if (persist !== false) {
+      const adminClient = createClient(supabaseUrl, serviceKey)
+      await adminClient.from('notifications').insert({
+        user_id:      userId,
+        from_user_id: user.id,
+        type:         type || 'system',
+        title,
+        body:         message,
+        emoji:        emoji || '🔔',
+        action_url:   actionUrl || url || null,
+        read:         false,
+      }).then(() => {}) // fire-and-forget, don't fail push on DB error
     }
 
     // ── 3. Send via OneSignal ────────────────────────────────────────────────
@@ -71,7 +68,8 @@ serve(async (req) => {
     const oneSignalKey   = Deno.env.get('ONESIGNAL_REST_API_KEY')
 
     if (!oneSignalAppId || !oneSignalKey) {
-      return new Response(JSON.stringify({ error: 'OneSignal not configured on server' }), {
+      // DB row may have been persisted — treat push failure as non-fatal
+      return new Response(JSON.stringify({ error: 'OneSignal not configured on server', persisted: persist !== false }), {
         status: 503,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
@@ -85,7 +83,9 @@ serve(async (req) => {
       include_aliases:  { external_id: [userId] },
       target_channel: 'push',
     }
-    if (url) payload.url = url
+
+    const pushUrl = url || actionUrl
+    if (pushUrl) payload.url = pushUrl
 
     const res = await fetch('https://onesignal.com/api/v1/notifications', {
       method: 'POST',

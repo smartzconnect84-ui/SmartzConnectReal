@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef, useContext, useCallback } from 'react'
 import { motion, AnimatePresence, useAnimation } from 'framer-motion'
-import { Zap, RefreshCw, Heart, X, MessageCircle, Shield, Globe, Sparkles, Send, Phone, Video, Database, CheckCircle2, Radio } from 'lucide-react'
+import { Zap, RefreshCw, Heart, X, MessageCircle, Shield, Globe, Sparkles, Send, Phone, Video, Database, CheckCircle2, Radio, ExternalLink } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { useLiveKitCall } from '@/contexts/LiveKitCallContext'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { StreamContext } from '@/contexts/StreamContext'
 import { getOrCreateDirectChannel } from '@/lib/stream'
+import { sendPushNotification } from '@/lib/onesignal'
 
 const defaultEmojis = ['👩🏾', '👨🏿', '👩🏽', '👨🏾', '👩🏿', '👨🏽']
 
@@ -67,6 +69,7 @@ function scoreMatch(
 
 export default function SpinChatPage() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [phase, setPhase] = useState<Phase>('idle')
   const [currentProfile, setCurrentProfile] = useState<SpinProfile | null>(null)
   const [rotation, setRotation] = useState(0)
@@ -362,14 +365,37 @@ export default function SpinChatPage() {
         action: 'like',
         source: 'spin_chat',
       }, { onConflict: 'swiper_id,swiped_id' })
+
+      // Notify the matched user
+      const myProfile = await supabase.from('profiles').select('full_name').eq('id', user.id).single()
+      const myName = myProfile.data?.full_name || 'Someone'
+      supabase.from('notifications').insert({
+        user_id: currentProfile.id,
+        type: 'spin',
+        title: `${myName} wants to connect!`,
+        body: `You were matched on Spin & Chat. Say hi! 🎡`,
+        emoji: '⚡',
+        action_url: `/app/chat/${user.id}`,
+        from_user_id: user.id,
+        read: false,
+      }).then(() => {})
+
+      sendPushNotification({
+        userId: currentProfile.id,
+        title: `${myName} wants to connect! ⚡`,
+        message: 'You were matched on Spin & Chat. Open the app to chat!',
+        url: `${window.location.origin}/app/chat/${user.id}`,
+      }).catch(() => {})
     } catch {
       // Silently continue — connect is a soft action
     }
     setConnectSaving(false)
     setConnectDone(true)
-    // Auto-reset after 2.5s
-    const t = setTimeout(reset, 2500)
-    pendingTimers.current.push(t)
+    // Navigate to full chat after a brief success moment
+    const t1 = setTimeout(() => {
+      if (currentProfile) navigate(`/app/chat/${currentProfile.id}`)
+    }, 1500)
+    pendingTimers.current.push(t1)
   }
 
   return (
@@ -557,6 +583,15 @@ export default function SpinChatPage() {
                     <MessageCircle className="w-4 h-4 text-fuchsia-500" />
                     <span className="text-sm font-semibold dark:text-white text-gray-900">Chat</span>
                   </div>
+                  {/* Open Full Chat button */}
+                  {currentProfile && (
+                    <button
+                      onClick={() => navigate(`/app/chat/${currentProfile.id}`)}
+                      title="Open full chat"
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-fuchsia-500/10 border border-fuchsia-500/20 text-fuchsia-500 text-[10px] font-bold hover:bg-fuchsia-500/20 transition-colors">
+                      <ExternalLink className="w-2.5 h-2.5" /> Open Chat
+                    </button>
+                  )}
                   {/* Chat mode badge */}
                   {chatMode === 'live' && (
                     <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 text-[10px] font-bold">

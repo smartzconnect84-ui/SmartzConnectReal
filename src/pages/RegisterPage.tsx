@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Loader2, Check, Globe, ArrowLeft, Calendar, Camera, Gift } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { AuthInput, AuthError, AuthLabel } from '@/components/auth/AuthLayout'
+import { DateOfBirthPicker } from '@/components/auth/DateOfBirthPicker'
 import TurnstileWidget from '@/components/TurnstileWidget'
 import { captureReferralCodeFromUrl, getStoredReferralCode } from '@/lib/referral'
 
@@ -424,15 +425,11 @@ export default function RegisterPage() {
                         {/* Date of birth */}
                         <div>
                           <AuthLabel htmlFor="reg-dob">Date of Birth</AuthLabel>
-                          <AuthInput
+                          <DateOfBirthPicker
                             id="reg-dob"
-                            type="date"
                             value={dob}
-                            onChange={e => setDob(e.target.value)}
-                            required
-                            max={maxDob}
-                            autoComplete="bday"
-                            icon={<Calendar className="w-4 h-4" />}
+                            onChange={setDob}
+                            maxDate={maxDob}
                           />
                           <p className="mt-1.5 text-[10px] text-white/30">You must be at least {MIN_AGE} years old to join.</p>
                         </div>

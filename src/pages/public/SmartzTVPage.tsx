@@ -112,6 +112,16 @@ function PublicLiveTVPlayer({ broadcast }: { broadcast: AdminBroadcast }) {
                 rendered++
               }
             })
+            // Broadcaster audio must be attached explicitly or viewers hear nothing.
+            p.audioTrackPublications.forEach(pub => {
+              if (pub.track && pub.kind === Track.Kind.Audio) {
+                const a = pub.track.attach() as HTMLAudioElement
+                a.autoplay = true
+                a.muted = muted
+                a.style.display = 'none'
+                videoRef.current!.appendChild(a)
+              }
+            })
           })
           setConnected(rendered > 0)
         }
@@ -139,6 +149,7 @@ function PublicLiveTVPlayer({ broadcast }: { broadcast: AdminBroadcast }) {
   useEffect(() => {
     if (!videoRef.current) return
     videoRef.current.querySelectorAll('video').forEach(v => { v.muted = muted })
+    videoRef.current.querySelectorAll('audio').forEach(a => { a.muted = muted })
   }, [muted])
 
   const handleFullscreen = () => {

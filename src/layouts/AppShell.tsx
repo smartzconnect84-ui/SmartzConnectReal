@@ -15,6 +15,7 @@ import LeftSidebar from '@/layouts/LeftSidebar'
 import CreateModal from '@/components/CreateModal'
 import IncomingCall from '@/components/IncomingCall'
 import AnnouncementBanner from '@/components/AnnouncementBanner'
+import NotificationToast from '@/components/NotificationToast'
 
 // All nav sections for the mobile drawer
 const drawerSections = [
@@ -23,7 +24,7 @@ const drawerSections = [
     items: [
       { path: '/app/feed',          icon: Home,          label: 'Home',          badge: null as string | null, color: '' },
       { path: '/app/profile',       icon: User,          label: 'Profile',       badge: null as string | null, color: '' },
-      { path: '/app/friends',       icon: Users,         label: 'Friends',       badge: '3' as string | null,  color: '' },
+      { path: '/app/friends',       icon: Users,         label: 'Friends',       badge: null as string | null,  color: '' },
       { path: '/app/matches',        icon: MessageCircle, label: 'Messages',      badge: null as string | null, color: '' },
       { path: '/app/notifications', icon: Bell,          label: 'Notifications', badge: null as string | null, color: '' },
     ],
@@ -116,6 +117,7 @@ export default function AppShell() {
 
       {/* ── Announcement Banner ── */}
       <AnnouncementBanner />
+      <NotificationToast />
 
       {/* ── Full-width Top Nav ── */}
       <TopNavBar

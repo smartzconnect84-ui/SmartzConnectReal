@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import { Search, UserPlus, UserMinus, Users, UserCheck, Loader2 } from 'lucide-react'
+import { Search, UserPlus, UserMinus, Users, UserCheck, Loader2, MessageCircle } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
+import { sendPushNotification } from '@/lib/onesignal'
 
 interface Profile {
   id: string
@@ -31,6 +33,7 @@ function Avatar({ profile, size = 10 }: { profile: Profile; size?: number }) {
 
 function ProfileCard({ profile, onFollow }: { profile: Profile; onFollow: (id: string, following: boolean) => void }) {
   const [loading, setLoading] = useState(false)
+  const navigate = useNavigate()
 
   const handleToggle = async () => {
     setLoading(true)
@@ -58,6 +61,13 @@ function ProfileCard({ profile, onFollow }: { profile: Profile; onFollow: (id: s
           {profile.occupation || profile.location || `@${profile.username || 'user'}`}
         </p>
       </div>
+      {/* Message button — navigates to direct chat */}
+      <button
+        onClick={() => navigate(`/app/chat/${profile.id}`)}
+        title="Message"
+        className="w-8 h-8 rounded-xl dark:bg-purple-500/10 bg-purple-50 border dark:border-purple-500/20 border-purple-100 flex items-center justify-center hover:bg-purple-500/20 transition-colors flex-shrink-0">
+        <MessageCircle className="w-3.5 h-3.5 text-purple-500" />
+      </button>
       <button
         onClick={handleToggle}
         disabled={loading}
@@ -159,6 +169,28 @@ export default function FriendsPage() {
     } else {
       await supabase.from('follows').insert({ follower_id: user.id, following_id: targetId })
       setFollowingIds(prev => new Set([...prev, targetId]))
+
+      // In-app notification row
+      const myProfile = await supabase.from('profiles').select('full_name').eq('id', user.id).single()
+      const myName = myProfile.data?.full_name || 'Someone'
+      supabase.from('notifications').insert({
+        user_id: targetId,
+        type: 'follow',
+        title: `${myName} followed you`,
+        body: 'Tap to see their profile',
+        emoji: '👤',
+        action_url: `/app/user/${user.id}`,
+        from_user_id: user.id,
+        read: false,
+      }).then(() => {})
+
+      // Push notification (fire-and-forget)
+      sendPushNotification({
+        userId: targetId,
+        title: `${myName} followed you`,
+        message: 'You have a new follower on SmartzConnect!',
+        url: `${window.location.origin}/app/user/${user.id}`,
+      }).catch(() => {})
     }
     const toggle = (p: Profile) => p.id === targetId ? { ...p, isFollowing: !isCurrentlyFollowing } : p
     setFollowing(prev => prev.map(toggle))

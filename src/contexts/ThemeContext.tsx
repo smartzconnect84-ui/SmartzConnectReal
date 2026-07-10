@@ -53,7 +53,7 @@ interface ThemeContextType {
 }
 
 const ThemeContext = createContext<ThemeContextType>({
-  theme: 'dark',
+  theme: 'light',
   toggleTheme: () => {},
   setTheme: () => {},
   appearance: DEFAULT_APPEARANCE,
@@ -88,7 +88,7 @@ const THEME_KEY = 'sc-theme'
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => {
     const stored = localStorage.getItem(THEME_KEY)
-    return (stored as Theme) || 'dark'
+    return (stored as Theme) || 'light'
   })
 
   const [appearance, setAppearanceState] = useState<AppearanceSettings>(() => {

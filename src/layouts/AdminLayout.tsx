@@ -248,7 +248,7 @@ export default function AdminLayout() {
                 onFocus={() => setSearchOpen(true)}
                 onBlur={() => setTimeout(() => setSearchOpen(false), 150)}
                 placeholder="Search anything..."
-                className="pl-8 pr-3 py-1.5 rounded-lg dark:bg-white/5 bg-gray-100 border dark:border-white/8 border-gray-200 text-xs dark:text-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-brand-pink transition-colors w-40 focus:w-56 transition-all"
+                className="pl-8 pr-3 py-1.5 rounded-lg dark:bg-white/5 bg-gray-100 border dark:border-white/8 border-gray-200 text-xs dark:text-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-brand-pink transition-colors w-20 sm:w-28 focus:w-56 transition-all"
               />
               {searchOpen && searchQuery.trim().length >= 2 && (
                 <div className="absolute top-full mt-1 left-0 w-72 max-h-80 overflow-y-auto rounded-xl dark:bg-[#130E1E] bg-white border dark:border-white/8 border-gray-200 shadow-xl z-50">

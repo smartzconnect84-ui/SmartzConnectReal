@@ -585,6 +585,7 @@ export default function AdminSmartzTV() {
       status: 'pending',
       moderation_status: 'approved',
       is_admin_created: true,
+      is_admin_broadcast: true,
       viewer_count: 0,
     })
     if (!error) fetchStreams()

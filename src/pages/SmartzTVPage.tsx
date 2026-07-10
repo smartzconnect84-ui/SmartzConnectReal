@@ -17,6 +17,16 @@ function attachTrack(participant: LocalParticipant | RemoteParticipant, el: HTML
       el.appendChild(v)
     }
   })
+  if (!participant.isLocal) {
+    participant.audioTrackPublications.forEach(pub => {
+      if (pub.track && pub.kind === Track.Kind.Audio) {
+        const a = pub.track.attach() as HTMLAudioElement
+        a.autoplay = true
+        a.style.display = 'none'
+        el.appendChild(a)
+      }
+    })
+  }
 }
 
 const categories = ['All', 'Live', 'Music', 'Comedy', 'Tech', 'Fashion', 'Sports', 'Food', 'Education']
@@ -273,6 +283,15 @@ function StreamModal({ stream, onClose }: { stream: Stream; onClose: () => void 
                   v.className = 'w-full h-full object-cover'
                   liveVideoRef.current!.appendChild(v)
                   rendered++
+                }
+              })
+              // Broadcaster audio must be attached explicitly or viewers hear nothing.
+              p.audioTrackPublications.forEach(pub => {
+                if (pub.track && pub.kind === Track.Kind.Audio) {
+                  const a = pub.track.attach() as HTMLAudioElement
+                  a.autoplay = true
+                  a.style.display = 'none'
+                  liveVideoRef.current!.appendChild(a)
                 }
               })
             })
