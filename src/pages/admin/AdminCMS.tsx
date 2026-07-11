@@ -251,7 +251,7 @@ function SettingsTab() {
         <button onClick={addSetting} className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-bold bg-love-gradient text-white shadow-lg shadow-pink-500/20">
           <Plus className="w-4 h-4" /> Add Setting
         </button>
-        <button onClick={seedBrandingDefaults} className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-bold dark:bg-white/8 bg-gray-100 dark:text-white text-gray-700 hover:dark:bg-white/15 hover:bg-gray-200 transition-colors">
+        <button onClick={() => seedBrandingDefaults(rows)} className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-bold dark:bg-white/8 bg-gray-100 dark:text-white text-gray-700 hover:dark:bg-white/15 hover:bg-gray-200 transition-colors">
           <ImageIcon className="w-4 h-4" /> Add Branding & Background Fields
         </button>
       </div>

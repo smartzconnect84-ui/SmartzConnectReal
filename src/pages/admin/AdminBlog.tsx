@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   BookOpen, Plus, Edit, Trash2, X, RefreshCw, Eye, Star, Globe,
   FileText, CheckCircle, AlertCircle, Loader2, Search,
-  Calendar, Clock, Heart, TrendingUp, Tag, ChevronDown, Image,
+  Calendar, Clock, Heart, TrendingUp, Tag, ChevronDown, Image, Archive,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import ImageUploader from '@/components/admin/ImageUploader'
