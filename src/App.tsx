@@ -108,6 +108,7 @@ import AdminAuditLogs      from '@/pages/admin/AdminAuditLogs'
 import AdminCEO            from '@/pages/admin/AdminCEO'
 import AdminTour           from '@/pages/admin/AdminTour'
 import AdminWorldStage      from '@/pages/admin/AdminWorldStage'
+import AdminEmail           from '@/pages/admin/AdminEmail'
 
 function PublicLayout({ children, showFooter = true }: { children: React.ReactNode; showFooter?: boolean }) {
   return (
@@ -246,6 +247,7 @@ export default function App() {
                 <Route path="ceo"           element={<AdminCEO />} />
                 <Route path="tour"          element={<AdminTour />} />
                 <Route path="worldstage"    element={<AdminWorldStage />} />
+                <Route path="email"         element={<AdminEmail />} />
               </Route>
 
               <Route path="*" element={<Navigate to="/" replace />} />

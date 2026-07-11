@@ -10,7 +10,6 @@ interface TourContextType {
   currentStep: TourStep | null
   total: number
   loadingCompletionStatus: boolean
-  /** Start the tour. `restart` clears the previous completion flag first. */
   startTour: (opts?: { restart?: boolean }) => void
   next: () => void
   prev: () => void
@@ -22,20 +21,33 @@ const TourContext = createContext<TourContextType | undefined>(undefined)
 
 const LOCAL_KEY_PREFIX = 'szc_tour_completed:'
 
+/** Fisher-Yates shuffle — returns a NEW array */
+function shuffleSteps(steps: TourStep[]): TourStep[] {
+  const arr = [...steps]
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[arr[i], arr[j]] = [arr[j], arr[i]]
+  }
+  return arr
+}
+
 export function TourProvider({ children }: { children: ReactNode }) {
   const { user, role } = useAuth()
   const [isActive, setIsActive] = useState(false)
   const [stepIndex, setStepIndex] = useState(0)
-  const [completed, setCompleted] = useState<boolean | null>(null) // null = unknown yet
+  const [completed, setCompleted] = useState<boolean | null>(null)
+  const [shuffled, setShuffled] = useState<TourStep[]>([])
   const autoStartedRef = useRef(false)
 
-  const steps = useMemo(
+  const baseSteps = useMemo(
     () => TOUR_STEPS.filter(s => !s.roles || s.roles.includes(role)),
     [role],
   )
 
-  // ── Resolve completion status: fast localStorage read first, then confirm
-  // against the DB (source of truth across devices). ──────────────────────
+  // Use shuffled steps when active, otherwise base steps for reference
+  const steps = isActive ? shuffled : baseSteps
+
+  // Resolve completion status
   useEffect(() => {
     if (!user?.id) { setCompleted(null); return }
     const localVal = localStorage.getItem(LOCAL_KEY_PREFIX + user.id)
@@ -50,8 +62,6 @@ export function TourProvider({ children }: { children: ReactNode }) {
       .then(({ data, error }) => {
         if (!mounted) return
         if (error) {
-          // Transient failure — fall back to whatever localStorage said (or
-          // false, so the tour can still run offline-first).
           setCompleted(prev => prev ?? (localVal === '1'))
           return
         }
@@ -70,19 +80,19 @@ export function TourProvider({ children }: { children: ReactNode }) {
     try {
       await supabase.from('profiles').update({ tour_completed: done }).eq('id', user.id)
     } catch {
-      // Non-fatal — localStorage already reflects the intent; DB will
-      // reconcile next time the profile is fetched successfully.
+      // Non-fatal
     }
   }, [user?.id])
 
   const startTour = useCallback((opts?: { restart?: boolean }) => {
+    // Shuffle a fresh random order every time the tour starts
+    setShuffled(shuffleSteps(baseSteps))
     setStepIndex(0)
     setIsActive(true)
     if (opts?.restart) persistCompletion(false)
-  }, [persistCompletion])
+  }, [baseSteps, persistCompletion])
 
-  // Auto-launch once per session for first-time users, after their
-  // completion status is known and it's confirmed `false`.
+  // Auto-launch once per session for first-time users
   useEffect(() => {
     if (autoStartedRef.current) return
     if (!user?.id) return

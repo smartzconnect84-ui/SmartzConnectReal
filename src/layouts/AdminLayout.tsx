@@ -6,7 +6,7 @@ import {
   ShoppingBag, Tv, Car, FileText, Shield, Settings, ChevronLeft,
   ChevronRight, Bell, Search, Moon, Sun, LogOut, Crown,
   Users2, ScrollText, Menu, X, Map, MessageCircle, BookOpen, Layout as LayoutIcon, Zap, Trophy,
-  Check
+  Check, Mail
 } from 'lucide-react'
 import { useTheme } from '@/contexts/ThemeContext'
 import { openTawkChat } from '@/lib/tawk'
@@ -40,6 +40,7 @@ const navItems = [
   { icon: Tv,              label: 'SmartzTV',        path: '/admin/smartztv' },
   { icon: Car,             label: 'Rides',           path: '/admin/rides' },
   { icon: Megaphone,       label: 'Broadcasts',      path: '/admin/broadcasts' },
+  { icon: Mail,            label: 'Email Campaigns', path: '/admin/email' },
   { icon: Zap,             label: 'Advertisements',  path: '/admin/ads' },
   { icon: Users2,          label: 'Team',            path: '/admin/team' },
   { icon: BookOpen,        label: 'Blog',            path: '/admin/blog' },

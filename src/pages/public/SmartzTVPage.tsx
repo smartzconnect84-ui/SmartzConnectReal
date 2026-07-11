@@ -97,7 +97,7 @@ function LiveStreamPlayer({ channel }: { channel: TVChannel }) {
           primaryColor="#ffffff"
           accentColor="#8b5cf6"
           metadata={{ video_title: channel.name, viewer_user_id: 'anonymous' }}
-          style={{ width: '100%', height: '100%' } as React.CSSProperties}
+          style={{ width: '100%', height: '100%' } as any}
         />
       ) : (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/70 px-6 text-center">

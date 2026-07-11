@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Crown, Users, Settings, Shield, Globe, Key, AlertTriangle, Database,
+  Crown, Users, Shield, Globe, Key, AlertTriangle, Database,
   RefreshCw, Plus, Edit, Trash2, Download, X, Save, CheckCircle,
-  AlertCircle, Loader2, Mail, Briefcase, UserCheck, ToggleLeft, ToggleRight,
-  Eye, EyeOff
+  AlertCircle, Loader2, UserCheck
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import ImageUploader from '@/components/admin/ImageUploader'
@@ -19,6 +18,7 @@ interface StaffMember {
   status: string
   department?: string | null
   responsibilities?: string | null
+  tasks?: string | null
   avatar_url?: string | null
   created_at?: string
 }
@@ -31,6 +31,7 @@ const ROLE_META: Record<RoleKey, {
   bg: string
   badge: string
   responsibilities: string[]
+  tasks: string[]
 }> = {
   ceo: {
     label: 'CEO',
@@ -44,6 +45,13 @@ const ROLE_META: Record<RoleKey, {
       'Audit log access — all actions by all admins',
       'Emergency platform shutdown or maintenance mode',
       'Hire and revoke admin team access',
+    ],
+    tasks: [
+      'Review weekly platform analytics report',
+      'Approve major product or feature changes',
+      'Sign off on pricing and subscription adjustments',
+      'Conduct quarterly team performance reviews',
+      'Oversee legal, compliance, and partnership deals',
     ],
   },
   super_admin: {
@@ -59,6 +67,13 @@ const ROLE_META: Record<RoleKey, {
       'Content moderation oversight',
       'Admin account creation (below CEO level)',
     ],
+    tasks: [
+      'Daily review of flagged accounts and reports',
+      'Monitor platform health & uptime dashboards',
+      'Create and schedule broadcast announcements',
+      'Review and update platform feature toggles',
+      'Onboard and deactivate admin team members',
+    ],
   },
   admin: {
     label: 'Admin',
@@ -72,6 +87,13 @@ const ROLE_META: Record<RoleKey, {
       'Marketplace listing management',
       'Blog & CMS content updates',
       'Broadcast messages (with approval)',
+    ],
+    tasks: [
+      'Process and close 10+ support tickets daily',
+      'Review open user reports — act or escalate within 24h',
+      'Approve or reject marketplace listings',
+      'Publish or update blog articles weekly',
+      'Monitor comments and posts for policy violations',
     ],
   },
   moderator: {
@@ -87,6 +109,13 @@ const ROLE_META: Record<RoleKey, {
       'WorldChat moderation and message removal',
       'Escalate serious violations to admins',
     ],
+    tasks: [
+      'Check flagged content queue every 2 hours',
+      'Remove rule-breaking posts and messages promptly',
+      'Issue warnings with standardized templates',
+      'Document all moderation actions in the audit log',
+      'Monitor WorldChat during peak hours (6–10 PM)',
+    ],
   },
   support: {
     label: 'Support',
@@ -101,26 +130,19 @@ const ROLE_META: Record<RoleKey, {
       'Manage subscription upgrade/downgrade requests',
       'Collect and triage user feedback',
     ],
+    tasks: [
+      'Respond to all live-chat messages within 5 minutes',
+      'Process verification document requests within 24h',
+      'File bug reports with screenshots and repro steps',
+      'Follow up on open tickets older than 48 hours',
+      'Log billing issues and escalate to Super Admin',
+    ],
   },
 }
 
 const ROLE_OPTIONS = ['ceo', 'super_admin', 'admin', 'moderator', 'support']
 const DEPT_OPTIONS = ['Executive', 'Engineering', 'Operations', 'Marketing', 'Customer Support', 'Moderation', 'Finance', 'Legal']
 
-// ── Platform Config ────────────────────────────────────────────────────────────
-
-const platformConfig = [
-  { key: 'Platform Name',       value: 'SmartzConnect',              editable: true },
-  { key: 'Version',             value: 'v2.4.1',                     editable: false },
-  { key: 'Default Currency',    value: 'USD',                        editable: true },
-  { key: 'Primary Market',      value: 'Liberia, Africa',            editable: true },
-  { key: 'Support Email',       value: 'support@smartzconnect.com',  editable: true },
-  { key: 'Business Email',      value: 'business@smartzconnect.com', editable: true },
-  { key: 'WhatsApp',            value: '+231 776 679 963',           editable: true },
-  { key: 'Max Free Swipes/Day', value: '10',                         editable: true },
-  { key: 'Premium Price',       value: '$9.99/mo',                   editable: true },
-  { key: 'VIP Price',           value: '$24.99/mo',                  editable: true },
-]
 
 interface PlatformStats {
   totalUsers: number
@@ -180,8 +202,8 @@ export default function AdminCEO() {
   const [confirmDelete, setConfirmDelete] = useState<StaffMember | null>(null)
   const [saving, setSaving]             = useState(false)
   const [selectedRole, setSelectedRole] = useState<RoleKey>('admin')
-  const [configEdit, setConfigEdit]     = useState<Record<string, string>>({})
-  const [expandedConfig, setExpandedConfig] = useState(false)
+
+  const [modalTab, setModalTab] = useState<'info' | 'responsibilities' | 'tasks'>('info')
 
   const [form, setForm] = useState({
     full_name: '',
@@ -189,6 +211,7 @@ export default function AdminCEO() {
     role: 'admin',
     department: '',
     responsibilities: '',
+    tasks: '',
     status: 'active',
     avatar_url: '',
   })
@@ -220,6 +243,7 @@ export default function AdminCEO() {
         status: a.status || 'active',
         department: a.department || null,
         responsibilities: a.responsibilities || null,
+        tasks: a.tasks || null,
         avatar_url: a.avatar_url || null,
         created_at: a.created_at,
       })))
@@ -234,7 +258,8 @@ export default function AdminCEO() {
   const openAdd = () => {
     setEditTarget(null)
     setSelectedRole('admin')
-    setForm({ full_name: '', email: '', role: 'admin', department: '', responsibilities: '', status: 'active', avatar_url: '' })
+    setModalTab('info')
+    setForm({ full_name: '', email: '', role: 'admin', department: '', responsibilities: '', tasks: '', status: 'active', avatar_url: '' })
     setShowForm(true)
   }
 
@@ -242,12 +267,14 @@ export default function AdminCEO() {
     setEditTarget(s)
     const rk = roleKey(s.role)
     setSelectedRole(rk)
+    setModalTab('info')
     setForm({
       full_name: s.full_name,
       email: s.email,
       role: s.role,
       department: s.department || '',
       responsibilities: s.responsibilities || ROLE_META[rk].responsibilities.join('\n'),
+      tasks: s.tasks || ROLE_META[rk].tasks.join('\n'),
       status: s.status,
       avatar_url: s.avatar_url || '',
     })
@@ -261,6 +288,7 @@ export default function AdminCEO() {
       ...p,
       role,
       responsibilities: p.responsibilities || ROLE_META[rk].responsibilities.join('\n'),
+      tasks: p.tasks || ROLE_META[rk].tasks.join('\n'),
     }))
   }
 
@@ -277,6 +305,7 @@ export default function AdminCEO() {
       status: form.status,
       ...(form.department ? { department: form.department } : {}),
       ...(form.responsibilities ? { responsibilities: form.responsibilities } : {}),
+      ...(form.tasks ? { tasks: form.tasks } : {}),
       ...(form.avatar_url ? { avatar_url: form.avatar_url } : {}),
     }
 
@@ -555,46 +584,6 @@ export default function AdminCEO() {
         </div>
       )}
 
-      {/* Platform Config */}
-      <div className="dark:bg-[#130E1E] bg-white rounded-2xl border dark:border-white/6 border-gray-200 overflow-hidden">
-        <button onClick={() => setExpandedConfig(v => !v)}
-          className="w-full flex items-center justify-between px-5 py-4 border-b dark:border-white/5 border-gray-100 hover:dark:bg-white/2 hover:bg-gray-50 transition-colors">
-          <div className="flex items-center gap-2">
-            <Settings className="w-4 h-4 text-brand-pink" />
-            <h3 className="font-bold text-sm dark:text-white text-gray-900">Platform Configuration</h3>
-          </div>
-          <span className="text-xs dark:text-gray-500 text-gray-400">{expandedConfig ? 'Collapse' : 'Expand'}</span>
-        </button>
-        <AnimatePresence>
-          {expandedConfig && (
-            <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} className="overflow-hidden">
-              <div className="divide-y dark:divide-white/4 divide-gray-50">
-                {platformConfig.map((cfg, i) => (
-                  <div key={i} className="flex items-center justify-between px-5 py-3.5 hover:dark:bg-white/2 hover:bg-gray-50 transition-colors gap-4">
-                    <span className="text-sm dark:text-gray-400 text-gray-500 flex-shrink-0">{cfg.key}</span>
-                    {cfg.editable ? (
-                      <input
-                        value={configEdit[cfg.key] ?? cfg.value}
-                        onChange={e => setConfigEdit(p => ({ ...p, [cfg.key]: e.target.value }))}
-                        className="text-sm font-semibold dark:text-white text-gray-900 bg-transparent border-b dark:border-white/10 border-gray-200 focus:outline-none focus:border-brand-pink text-right transition-colors min-w-0 w-48"
-                      />
-                    ) : (
-                      <span className="text-sm dark:text-gray-500 text-gray-400 font-mono text-xs">{cfg.value}</span>
-                    )}
-                  </div>
-                ))}
-              </div>
-              <div className="px-5 pb-4">
-                <button onClick={() => showToast('Configuration saved locally')}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-love-gradient text-white text-xs font-bold mt-2">
-                  <Save className="w-3.5 h-3.5" /> Save Config
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-
       {/* Security notice */}
       <div className="flex items-start gap-3 p-4 rounded-2xl dark:bg-amber-500/8 bg-amber-50 border dark:border-amber-500/15 border-amber-200">
         <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
@@ -626,89 +615,155 @@ export default function AdminCEO() {
                 </button>
               </div>
 
+              {/* Modal Tabs */}
+              <div className="flex gap-1 px-6 pt-4 pb-0">
+                {(['info', 'responsibilities', 'tasks'] as const).map(tab => (
+                  <button key={tab} onClick={() => setModalTab(tab)}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold capitalize transition-all ${
+                      modalTab === tab ? 'bg-love-gradient text-white shadow-md' : 'dark:text-gray-400 text-gray-500 hover:text-brand-pink dark:hover:text-brand-pink'
+                    }`}>
+                    {tab === 'responsibilities' ? 'Responsibilities' : tab.charAt(0).toUpperCase() + tab.slice(1)}
+                  </button>
+                ))}
+              </div>
+
               <div className="p-6 space-y-5">
-                {/* Avatar */}
-                <ImageUploader
-                  value={form.avatar_url || null}
-                  onChange={url => setForm(p => ({ ...p, avatar_url: url || '' }))}
-                  folder="avatars"
-                  label="Avatar"
-                  assetName={form.full_name || 'staff'}
-                />
 
-                {/* Name & Email */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs font-bold dark:text-gray-400 text-gray-600 mb-1.5 block">Full Name *</label>
-                    <input value={form.full_name} onChange={e => setForm(p => ({ ...p, full_name: e.target.value }))}
-                      placeholder="Jane Doe" className={inp} />
-                  </div>
-                  <div>
-                    <label className="text-xs font-bold dark:text-gray-400 text-gray-600 mb-1.5 block">Email Address *</label>
-                    <input type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
-                      placeholder="jane@smartzconnect.com" className={inp} />
-                  </div>
-                </div>
+                {/* ── Info Tab ── */}
+                {modalTab === 'info' && (
+                  <>
+                    {/* Avatar */}
+                    <ImageUploader
+                      value={form.avatar_url || null}
+                      onChange={url => setForm(p => ({ ...p, avatar_url: url || '' }))}
+                      folder="avatars"
+                      label="Avatar"
+                      assetName={form.full_name || 'staff'}
+                    />
 
-                {/* Role & Department */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs font-bold dark:text-gray-400 text-gray-600 mb-1.5 block">Role *</label>
-                    <select value={form.role} onChange={e => handleRoleChange(e.target.value)} className={sel}>
-                      {ROLE_OPTIONS.map(r => (
-                        <option key={r} value={r}>{ROLE_META[roleKey(r)]?.label || r}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-xs font-bold dark:text-gray-400 text-gray-600 mb-1.5 block">Department</label>
-                    <select value={form.department} onChange={e => setForm(p => ({ ...p, department: e.target.value }))} className={sel}>
-                      <option value="">Select department…</option>
-                      {DEPT_OPTIONS.map(d => <option key={d} value={d}>{d}</option>)}
-                    </select>
-                  </div>
-                </div>
+                    {/* Name & Email */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-xs font-bold dark:text-gray-400 text-gray-600 mb-1.5 block">Full Name *</label>
+                        <input value={form.full_name} onChange={e => setForm(p => ({ ...p, full_name: e.target.value }))}
+                          placeholder="Jane Doe" className={inp} />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold dark:text-gray-400 text-gray-600 mb-1.5 block">Email Address *</label>
+                        <input type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
+                          placeholder="jane@smartzconnect.com" className={inp} />
+                      </div>
+                    </div>
 
-                {/* Role responsibilities preview */}
-                <div className={`p-4 rounded-xl border ${roleMeta.bg} dark:border-white/5 border-gray-100`}>
-                  <p className={`text-xs font-black uppercase tracking-wide mb-2 ${roleMeta.color}`}>
-                    {roleMeta.label} — Default Responsibilities
-                  </p>
-                  <ul className="space-y-1">
-                    {roleMeta.responsibilities.map((r, i) => (
-                      <li key={i} className="text-xs dark:text-gray-400 text-gray-600 flex items-start gap-1.5">
-                        <span className={`${roleMeta.color} mt-0.5 flex-shrink-0`}>✓</span> {r}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                    {/* Role & Department */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-xs font-bold dark:text-gray-400 text-gray-600 mb-1.5 block">Role *</label>
+                        <select value={form.role} onChange={e => handleRoleChange(e.target.value)} className={sel}>
+                          {ROLE_OPTIONS.map(r => (
+                            <option key={r} value={r}>{ROLE_META[roleKey(r)]?.label || r}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold dark:text-gray-400 text-gray-600 mb-1.5 block">Department</label>
+                        <select value={form.department} onChange={e => setForm(p => ({ ...p, department: e.target.value }))} className={sel}>
+                          <option value="">Select department…</option>
+                          {DEPT_OPTIONS.map(d => <option key={d} value={d}>{d}</option>)}
+                        </select>
+                      </div>
+                    </div>
 
-                {/* Custom responsibilities */}
-                <div>
-                  <label className="text-xs font-bold dark:text-gray-400 text-gray-600 mb-1.5 block">
-                    Custom Responsibilities <span className="font-normal opacity-60">(optional override, one per line)</span>
-                  </label>
-                  <textarea value={form.responsibilities} onChange={e => setForm(p => ({ ...p, responsibilities: e.target.value }))}
-                    rows={4} placeholder="Enter custom responsibilities, one per line…"
-                    className={inp + ' resize-none'} />
-                </div>
+                    {/* Status */}
+                    <div>
+                      <label className="text-xs font-bold dark:text-gray-400 text-gray-600 mb-1.5 block">Status</label>
+                      <div className="flex gap-3 flex-wrap">
+                        {['active', 'inactive', 'suspended'].map(s => (
+                          <button key={s} onClick={() => setForm(p => ({ ...p, status: s }))}
+                            className={`px-4 py-2 rounded-xl text-xs font-semibold capitalize border transition-all ${
+                              form.status === s
+                                ? s === 'active' ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-500' : s === 'suspended' ? 'bg-red-500/15 border-red-500/30 text-red-500' : 'dark:bg-white/5 bg-gray-100 dark:border-white/10 border-gray-200 dark:text-white text-gray-900'
+                                : 'dark:border-white/8 border-gray-200 dark:text-gray-400 text-gray-500 hover:border-gray-300'
+                            }`}>
+                            {s}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
 
-                {/* Status */}
-                <div>
-                  <label className="text-xs font-bold dark:text-gray-400 text-gray-600 mb-1.5 block">Status</label>
-                  <div className="flex gap-3">
-                    {['active', 'inactive', 'suspended'].map(s => (
-                      <button key={s} onClick={() => setForm(p => ({ ...p, status: s }))}
-                        className={`px-4 py-2 rounded-xl text-xs font-semibold capitalize border transition-all ${
-                          form.status === s
-                            ? s === 'active' ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-500' : s === 'suspended' ? 'bg-red-500/15 border-red-500/30 text-red-500' : 'dark:bg-white/5 bg-gray-100 dark:border-white/10 border-gray-200 dark:text-white text-gray-900'
-                            : 'dark:border-white/8 border-gray-200 dark:text-gray-400 text-gray-500 hover:border-gray-300'
-                        }`}>
-                        {s}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                {/* ── Responsibilities Tab ── */}
+                {modalTab === 'responsibilities' && (
+                  <>
+                    {/* Default responsibilities preview */}
+                    <div className={`p-4 rounded-xl border ${roleMeta.bg} dark:border-white/5 border-gray-100`}>
+                      <p className={`text-xs font-black uppercase tracking-wide mb-2 ${roleMeta.color}`}>
+                        {roleMeta.label} — Default Responsibilities
+                      </p>
+                      <ul className="space-y-1">
+                        {roleMeta.responsibilities.map((r, i) => (
+                          <li key={i} className="text-xs dark:text-gray-400 text-gray-600 flex items-start gap-1.5">
+                            <span className={`${roleMeta.color} mt-0.5 flex-shrink-0`}>✓</span> {r}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {/* Custom responsibilities */}
+                    <div>
+                      <label className="text-xs font-bold dark:text-gray-400 text-gray-600 mb-1.5 block">
+                        Custom Responsibilities <span className="font-normal opacity-60">(one per line — overrides defaults)</span>
+                      </label>
+                      <textarea value={form.responsibilities} onChange={e => setForm(p => ({ ...p, responsibilities: e.target.value }))}
+                        rows={7} placeholder="Enter custom responsibilities, one per line…"
+                        className={inp + ' resize-none'} />
+                      <div className="flex gap-2 mt-2">
+                        <button
+                          onClick={() => setForm(p => ({ ...p, responsibilities: roleMeta.responsibilities.join('\n') }))}
+                          className="text-xs text-brand-pink font-semibold hover:underline">
+                          ↺ Reset to defaults
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* ── Tasks Tab ── */}
+                {modalTab === 'tasks' && (
+                  <>
+                    {/* Default tasks preview */}
+                    <div className={`p-4 rounded-xl border ${roleMeta.bg} dark:border-white/5 border-gray-100`}>
+                      <p className={`text-xs font-black uppercase tracking-wide mb-2 ${roleMeta.color}`}>
+                        {roleMeta.label} — Default Tasks
+                      </p>
+                      <ul className="space-y-1">
+                        {roleMeta.tasks.map((t, i) => (
+                          <li key={i} className="text-xs dark:text-gray-400 text-gray-600 flex items-start gap-1.5">
+                            <span className={`${roleMeta.color} mt-0.5 flex-shrink-0`}>→</span> {t}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {/* Custom tasks */}
+                    <div>
+                      <label className="text-xs font-bold dark:text-gray-400 text-gray-600 mb-1.5 block">
+                        Custom Tasks <span className="font-normal opacity-60">(one per line — day-to-day action items)</span>
+                      </label>
+                      <textarea value={form.tasks} onChange={e => setForm(p => ({ ...p, tasks: e.target.value }))}
+                        rows={7} placeholder="Enter specific tasks for this staff member, one per line…"
+                        className={inp + ' resize-none'} />
+                      <div className="flex gap-2 mt-2">
+                        <button
+                          onClick={() => setForm(p => ({ ...p, tasks: roleMeta.tasks.join('\n') }))}
+                          className="text-xs text-brand-pink font-semibold hover:underline">
+                          ↺ Reset to defaults
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
 
               <div className="flex gap-3 px-6 pb-6">

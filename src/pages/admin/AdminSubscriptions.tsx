@@ -116,19 +116,108 @@ export default function AdminSubscriptions() {
         ))}
       </div>
 
-      {/* Plans overview */}
+      {/* Plans overview with features */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {plans.map(p => (
-          <div key={p.id} className="dark:bg-[#130E1E] bg-white rounded-2xl p-5 border dark:border-white/6 border-gray-200">
-            <div className="flex items-center gap-2 mb-3">
-              {planIcon(p.id)}
-              <span className="font-bold dark:text-white text-gray-900">{p.name}</span>
-              {p.badge && <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-love-soft text-brand-pink border border-pink-500/20">{p.badge}</span>}
+        {[
+          {
+            id: 'free',
+            name: 'Free',
+            price_usd: 0,
+            badge: null,
+            color: 'text-gray-400',
+            border: 'dark:border-white/6 border-gray-200',
+            features: [
+              '10 swipes per day',
+              'Basic profile & bio',
+              'World Chat access',
+              'View public stories',
+              'SmartzTV (watch only)',
+              'Basic search & discovery',
+              'SmartzMarket browsing',
+              'Group chat (join only)',
+              'Standard notifications',
+            ],
+          },
+          {
+            id: 'premium',
+            name: 'Premium',
+            price_usd: 9.99,
+            badge: 'Popular',
+            color: 'text-pink-400',
+            border: 'border-pink-500/40',
+            features: [
+              'Unlimited swipes & matches',
+              'See who liked your profile',
+              'Profile boost (3× visibility)',
+              'Priority message delivery',
+              'Advanced match filters',
+              'Post stories (photos + text)',
+              'Go live on SmartzTV',
+              'Create group chat rooms',
+              'SmartzRide booking access',
+              'Marketplace seller account',
+              'Ad-free experience',
+              'Voice & video calls',
+              'Verified badge eligibility',
+              'Priority support',
+            ],
+          },
+          {
+            id: 'vip',
+            name: 'VIP',
+            price_usd: 24.99,
+            badge: 'Best Value',
+            color: 'text-amber-400',
+            border: 'border-amber-500/40',
+            features: [
+              'Everything in Premium',
+              '5× profile boost (max visibility)',
+              'Super Likes (10/day)',
+              'Instant match notifications',
+              'See full visitor list',
+              'Custom profile frame & badge',
+              'Exclusive VIP dating pool',
+              'Priority live stream placement',
+              'Spin & Chat unlimited',
+              'In-app wallet credits monthly',
+              'Promotional ads discount (20%)',
+              'WorldStage performer access',
+              'Dedicated VIP support channel',
+              'Early access to new features',
+            ],
+          },
+        ].map(plan => {
+          const dbPlan = plans.find(p => p.id === plan.id)
+          const activeSubs = subs.filter(s => s.plan_id === plan.id && s.status === 'active').length
+          return (
+            <div key={plan.id} className={`dark:bg-[#130E1E] bg-white rounded-2xl p-5 border ${plan.border} dark:border-opacity-100 relative overflow-hidden`}>
+              {plan.badge && (
+                <span className="absolute top-3 right-3 text-[9px] font-black px-2 py-1 rounded-full bg-love-gradient text-white shadow-md">
+                  {plan.badge}
+                </span>
+              )}
+              <div className="flex items-center gap-2 mb-2">
+                {planIcon(plan.id)}
+                <span className="font-bold dark:text-white text-gray-900">{dbPlan?.name || plan.name}</span>
+              </div>
+              <p className="font-display font-black text-3xl dark:text-white text-gray-900">
+                {plan.price_usd === 0 ? 'Free' : `$${plan.price_usd}`}
+                {plan.price_usd > 0 && <span className="text-sm font-normal dark:text-gray-400 text-gray-500">/mo</span>}
+              </p>
+              <p className="text-xs dark:text-gray-500 text-gray-400 mt-1 mb-4">
+                {activeSubs} active subscriber{activeSubs !== 1 ? 's' : ''}
+              </p>
+              <div className="space-y-1.5 border-t dark:border-white/5 border-gray-100 pt-3">
+                {plan.features.map((f, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <Check className={`w-3 h-3 flex-shrink-0 ${plan.color}`} />
+                    <span className="text-[11px] dark:text-gray-300 text-gray-600">{f}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-            <p className="font-display font-black text-3xl dark:text-white text-gray-900">${p.price_usd}<span className="text-sm font-normal dark:text-gray-400 text-gray-500">/mo</span></p>
-            <p className="text-xs dark:text-gray-500 text-gray-400 mt-2">{subs.filter(s => s.plan_id === p.id && s.status === 'active').length} active subscribers</p>
-          </div>
-        ))}
+          )
+        })}
       </div>
 
       {/* Search */}

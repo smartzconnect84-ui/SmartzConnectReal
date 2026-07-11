@@ -5,13 +5,14 @@ import {
   Image, Video, Send, Heart, MessageCircle, Share2, MoreHorizontal,
   Bookmark, TrendingUp, RefreshCw, MapPin, Plus, Smile,
   Users, Calendar, Gift, ChevronRight, Wifi, Camera, X, PartyPopper,
-  Link2, Trash2, Flag, Loader2
+  Link2, Trash2, Flag, Loader2, CheckCircle
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { notifyUser } from '@/lib/notify'
 import { uploadToSufy } from '@/lib/sufy'
 import { useAuth } from '@/hooks/useAuth'
 import ReportBlockModal from '@/components/ReportBlockModal'
+import { useOfflineDraft } from '@/lib/offlineDraft'
 
 // ── Types ───────────────────────────────────────────────────────────────────
 interface Post {
@@ -717,6 +718,22 @@ function ComposeBox({
   const { user: authUser } = useAuth()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  // Offline draft — auto-saves text & location so work is never lost on disconnect
+  const { isDirty, isOnline, hasDraft, restore, clear: clearDraft } = useOfflineDraft(
+    'post-composer',
+    { text, location },
+    ({ text: t, location: l }: { text: string; location: string }) => {
+      setText(t || '')
+      setLocation(l || '')
+    },
+    { isEmpty: (d: any) => !d?.text?.trim() },
+  )
+
+  // Restore draft on open if one exists
+  useEffect(() => {
+    if (open && hasDraft) restore()
+  }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const pickMedia = (kind: 'image' | 'video') => {
     setMediaKind(kind)
     fileInputRef.current?.click()
@@ -838,6 +855,17 @@ function ComposeBox({
               </div>
             )}
 
+            {/* Offline / draft status bar */}
+            {(!isOnline || isDirty) && (
+              <div className={`flex items-center gap-1.5 text-[10px] px-1 pb-1 ${!isOnline ? 'text-amber-500' : 'text-gray-400'}`}>
+                {!isOnline ? (
+                  <><Wifi className="w-3 h-3" /> Offline — draft saved locally</>
+                ) : isDirty ? (
+                  <><CheckCircle className="w-3 h-3 text-green-500" /> Draft auto-saved</>
+                ) : null}
+              </div>
+            )}
+
             <div className="flex items-center justify-between pt-2 border-t dark:border-white/6 border-gray-100">
               <div className="flex gap-1 relative">
                 <button onClick={() => pickMedia('image')} title="Photo" className="p-2 rounded-xl dark:hover:bg-white/5 hover:bg-gray-100 transition-colors">
@@ -855,7 +883,7 @@ function ComposeBox({
                 {showEmoji && <EmojiPicker onPick={insertEmoji} onClose={() => setShowEmoji(false)} />}
               </div>
               <div className="flex gap-2">
-                <button onClick={() => { setOpen(false); setText(''); setMediaFile(null); setMediaPreview(''); setLocation('') }}
+                <button onClick={() => { setOpen(false); setText(''); setMediaFile(null); setMediaPreview(''); setLocation(''); clearDraft() }}
                   className="px-3 py-1.5 rounded-xl dark:bg-white/5 bg-gray-100 text-xs font-semibold dark:text-gray-400 text-gray-600">
                   Cancel
                 </button>
