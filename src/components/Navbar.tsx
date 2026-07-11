@@ -4,163 +4,176 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Sun, Moon, Menu, X, ChevronDown,
   Tv, ShoppingBag, Car, Package, Megaphone,
-  Heart, Users, MessageCircle, Zap, ArrowRight,
+  Heart, Users, MessageCircle, Zap,
+  Globe, Users2, FileText, Info,
 } from 'lucide-react'
 const logoImg = '/logo.png'
 import { useTheme } from '@/contexts/ThemeContext'
 import { openTawkChat } from '@/lib/tawk'
 import { useAuth } from '@/hooks/useAuth'
 
-const businessItems = [
-  { label: 'SmartzMarket',   href: '/smartzmarket',   icon: ShoppingBag, desc: 'Buy & sell anything',        color: 'text-amber-400',   bg: 'bg-amber-500/10'   },
-  { label: 'SmartzRide',     href: '/smartzride',     icon: Car,         desc: 'Ride-hailing across Africa', color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-  { label: 'SmartzDelivery', href: '/smartzdelivery', icon: Package,     desc: 'Fast local delivery',        color: 'text-blue-400',    bg: 'bg-blue-500/10'    },
-  { label: 'SmartzAds',      href: '/smartzads',      icon: Megaphone,   desc: 'Advertise to millions',      color: 'text-pink-400',    bg: 'bg-pink-500/10'    },
-]
-
-const socialItems = [
-  { label: 'SmartzSocial',  href: '/app/feed',     icon: Users,  desc: 'Your social feed',           color: 'text-violet-400',  bg: 'bg-violet-500/10' },
-  { label: 'SmartzDating',  href: '/app/discover', icon: Heart,  desc: 'Match & connect',            color: 'text-pink-400',    bg: 'bg-pink-500/10'   },
-  { label: 'SmartzTV',      href: '/smartztv',     icon: Tv,     desc: 'Live streams & creator hub', color: 'text-purple-400',  bg: 'bg-purple-500/10' },
-  { label: 'Spin & Chat',   href: '/app/spin',     icon: Zap,    desc: 'Random instant connections', color: 'text-fuchsia-400', bg: 'bg-fuchsia-500/10'},
-]
-
-const mainLinks = [
-  { label: 'World Stage',  href: '/world-stage' },
-  { label: 'Our Team',     href: '/team'        },
-  { label: 'Pricing',      href: '/pricing'     },
-  { label: 'Blog',         href: '/blog'        },
-  { label: 'About',        href: '/about'       },
-]
-
-/* ── Mega dropdown ─────────────────────────────────────────────────────── */
-interface MegaDropProps {
-  title: string
-  items: typeof businessItems
-  onClose: () => void
+/* ── Nav data ─────────────────────────────────────────────────────────── */
+const products = {
+  business: [
+    { label: 'SmartzMarket',   href: '/smartzmarket',   icon: ShoppingBag, color: 'text-amber-400',    bg: 'bg-amber-500/10',    desc: 'Buy & sell anything'        },
+    { label: 'SmartzRide',     href: '/smartzride',     icon: Car,         color: 'text-emerald-400',  bg: 'bg-emerald-500/10',  desc: 'Ride-hailing across Africa' },
+    { label: 'SmartzDelivery', href: '/smartzdelivery', icon: Package,     color: 'text-sky-400',      bg: 'bg-sky-500/10',      desc: 'Fast local delivery'        },
+    { label: 'SmartzAds',      href: '/smartzads',      icon: Megaphone,   color: 'text-rose-400',     bg: 'bg-rose-500/10',     desc: 'Advertise to millions'      },
+  ],
+  social: [
+    { label: 'SmartzSocial',   href: '/app/feed',       icon: Users,       color: 'text-violet-400',   bg: 'bg-violet-500/10',   desc: 'Your social feed'           },
+    { label: 'SmartzDating',   href: '/app/discover',   icon: Heart,       color: 'text-pink-400',     bg: 'bg-pink-500/10',     desc: 'Match & connect'            },
+    { label: 'SmartzTV',       href: '/smartztv',       icon: Tv,          color: 'text-purple-400',   bg: 'bg-purple-500/10',   desc: 'Live streams & creators'    },
+    { label: 'Spin & Chat',    href: '/app/spin',        icon: Zap,         color: 'text-fuchsia-400',  bg: 'bg-fuchsia-500/10',  desc: 'Random connections'         },
+  ],
 }
-function MegaDrop({ title, items, onClose }: MegaDropProps) {
+
+const company = [
+  { label: 'About Us',      href: '/about',        icon: Info,       desc: 'Our story & mission'     },
+  { label: 'Our Team',      href: '/team',         icon: Users2,     desc: 'Meet the people behind'  },
+  { label: 'Blog',          href: '/blog',         icon: FileText,   desc: 'Stories & updates'       },
+  { label: 'World Stage',   href: '/world-stage',  icon: Globe,      desc: 'Global community hub'    },
+]
+
+/* ── Dropdown: Products (mega, 2-col) ─────────────────────────────────── */
+function ProductsDrop({ onClose }: { onClose: () => void }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8, scale: 0.97 }}
+      initial={{ opacity: 0, y: 10, scale: 0.97 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: 6, scale: 0.97 }}
-      transition={{ type: 'spring', damping: 24, stiffness: 320 }}
-      className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-[340px] rounded-2xl overflow-hidden"
+      exit={{ opacity: 0, y: 8, scale: 0.97 }}
+      transition={{ type: 'spring', damping: 26, stiffness: 340 }}
+      className="absolute top-full left-1/2 -translate-x-1/2 mt-2.5 w-[560px] rounded-2xl overflow-hidden"
       style={{
-        background: 'rgba(15,12,30,0.96)',
-        backdropFilter: 'blur(24px)',
-        border: '1px solid rgba(255,255,255,0.10)',
-        boxShadow: '0 24px 60px rgba(0,0,0,0.55), 0 0 0 0.5px rgba(255,255,255,0.06)',
+        background: 'rgba(12, 9, 26, 0.98)',
+        backdropFilter: 'blur(28px)',
+        border: '1px solid rgba(255,255,255,0.09)',
+        boxShadow: '0 28px 64px rgba(0,0,0,0.6), 0 0 0 0.5px rgba(255,255,255,0.05)',
       }}
     >
-      {/* Header */}
-      <div className="px-4 pt-4 pb-3 border-b border-white/6">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-white/30">{title}</p>
-      </div>
-
-      {/* Items grid — 2 columns */}
-      <div className="p-2.5 grid grid-cols-2 gap-1">
-        {items.map((item, i) => {
-          const Icon = item.icon
-          return (
-            <motion.div key={item.href} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-              <Link
-                to={item.href}
-                onClick={onClose}
-                className="flex items-start gap-3 p-3 rounded-xl hover:bg-white/6 transition-all group"
-              >
+      <div className="grid grid-cols-2 gap-0 p-3">
+        {/* Business */}
+        <div>
+          <p className="px-3 pt-2 pb-2 text-[10px] font-black uppercase tracking-[0.14em] text-white/25">Commerce</p>
+          {products.business.map(item => {
+            const Icon = item.icon
+            return (
+              <Link key={item.href} to={item.href} onClick={onClose}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 transition-all group">
                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${item.bg}`}>
-                  <Icon className={`w-4 h-4 ${item.color}`} />
+                  <Icon className={`w-3.5 h-3.5 ${item.color}`} />
                 </div>
-                <div className="min-w-0">
-                  <p className="text-[13px] font-semibold text-white/90 group-hover:text-white transition-colors leading-tight">{item.label}</p>
-                  <p className="text-[11px] text-white/35 mt-0.5 leading-snug">{item.desc}</p>
+                <div>
+                  <p className="text-[13px] font-semibold text-white/80 group-hover:text-white transition-colors">{item.label}</p>
+                  <p className="text-[11px] text-white/30">{item.desc}</p>
                 </div>
               </Link>
-            </motion.div>
-          )
-        })}
-      </div>
+            )
+          })}
+        </div>
 
-      {/* Footer CTA */}
-      <div className="px-3 pb-3">
-        <div className="h-px bg-white/6 mb-3" />
-        <Link
-          to="/app/feed"
-          onClick={onClose}
-          className="flex items-center justify-between px-3 py-2 rounded-xl bg-white/4 hover:bg-white/8 transition-all group"
-        >
-          <span className="text-xs font-semibold text-white/50 group-hover:text-white/70 transition-colors">Explore all products</span>
-          <ArrowRight className="w-3.5 h-3.5 text-white/30 group-hover:text-white/60 group-hover:translate-x-0.5 transition-all" />
-        </Link>
+        {/* Divider */}
+        <div className="relative">
+          <div className="absolute left-0 top-4 bottom-4 w-px bg-white/6" />
+          <p className="px-3 pt-2 pb-2 text-[10px] font-black uppercase tracking-[0.14em] text-white/25">Social</p>
+          {products.social.map(item => {
+            const Icon = item.icon
+            return (
+              <Link key={item.href} to={item.href} onClick={onClose}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 transition-all group">
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${item.bg}`}>
+                  <Icon className={`w-3.5 h-3.5 ${item.color}`} />
+                </div>
+                <div>
+                  <p className="text-[13px] font-semibold text-white/80 group-hover:text-white transition-colors">{item.label}</p>
+                  <p className="text-[11px] text-white/30">{item.desc}</p>
+                </div>
+              </Link>
+            )
+          })}
+        </div>
       </div>
     </motion.div>
   )
 }
 
-/* ── Nav link with animated underline ─────────────────────────────────── */
-function NavLink({ to, children, active }: { to: string; children: React.ReactNode; active: boolean }) {
+/* ── Dropdown: Company (single col) ───────────────────────────────────── */
+function CompanyDrop({ onClose }: { onClose: () => void }) {
   return (
-    <Link
-      to={to}
-      className={`relative px-3 py-2 text-[13px] font-semibold transition-colors duration-150 ${
-        active ? 'text-white' : 'text-white/55 hover:text-white/90'
-      }`}
+    <motion.div
+      initial={{ opacity: 0, y: 10, scale: 0.97 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: 8, scale: 0.97 }}
+      transition={{ type: 'spring', damping: 26, stiffness: 340 }}
+      className="absolute top-full left-1/2 -translate-x-1/2 mt-2.5 w-[240px] rounded-2xl overflow-hidden"
+      style={{
+        background: 'rgba(12, 9, 26, 0.98)',
+        backdropFilter: 'blur(28px)',
+        border: '1px solid rgba(255,255,255,0.09)',
+        boxShadow: '0 28px 64px rgba(0,0,0,0.6), 0 0 0 0.5px rgba(255,255,255,0.05)',
+      }}
     >
-      {children}
-      {active && (
-        <motion.span
-          layoutId="nav-underline"
-          className="absolute bottom-0 left-3 right-3 h-0.5 rounded-full"
-          style={{ background: 'linear-gradient(90deg, #EC4899, #9B5DE5)' }}
-          transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-        />
-      )}
-    </Link>
+      <div className="p-2">
+        {company.map(item => {
+          const Icon = item.icon
+          return (
+            <Link key={item.href} to={item.href} onClick={onClose}
+              className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-white/5 transition-all group">
+              <div className="w-7 h-7 rounded-lg bg-white/6 flex items-center justify-center flex-shrink-0">
+                <Icon className="w-3.5 h-3.5 text-white/50 group-hover:text-white/80 transition-colors" />
+              </div>
+              <div>
+                <p className="text-[13px] font-semibold text-white/80 group-hover:text-white transition-colors">{item.label}</p>
+                <p className="text-[11px] text-white/30">{item.desc}</p>
+              </div>
+            </Link>
+          )
+        })}
+      </div>
+    </motion.div>
   )
 }
 
-/* ── Dropdown trigger button ───────────────────────────────────────────── */
-function DropTrigger({
-  label,
-  open,
-  onClick,
-  active,
-}: {
-  label: string
-  open: boolean
-  onClick: () => void
-  active: boolean
-}) {
+/* ── Trigger button ───────────────────────────────────────────────────── */
+function Trigger({ label, open, active, onClick }: { label: string; open: boolean; active: boolean; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className={`relative flex items-center gap-1 px-3 py-2 text-[13px] font-semibold rounded-lg transition-colors duration-150 ${
-        open || active ? 'text-white' : 'text-white/55 hover:text-white/90'
+      className={`relative flex items-center gap-0.5 px-3.5 py-2 text-[13.5px] font-medium tracking-[-0.01em] rounded-lg transition-all duration-150 ${
+        open || active ? 'text-white' : 'text-white/50 hover:text-white/85'
       }`}
     >
       {label}
-      <motion.span
-        animate={{ rotate: open ? 180 : 0 }}
-        transition={{ type: 'spring', stiffness: 320, damping: 28 }}
-        className="flex-shrink-0"
-      >
-        <ChevronDown className="w-3 h-3" />
+      <motion.span animate={{ rotate: open ? 180 : 0 }} transition={{ type: 'spring', stiffness: 340, damping: 28 }}>
+        <ChevronDown className="w-3 h-3 ml-0.5" />
       </motion.span>
       {active && (
-        <motion.span
-          layoutId="nav-underline"
-          className="absolute bottom-0 left-3 right-3 h-0.5 rounded-full"
-          style={{ background: 'linear-gradient(90deg, #EC4899, #9B5DE5)' }}
-          transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-        />
+        <motion.span layoutId="nav-pill" className="absolute inset-0 rounded-lg bg-white/6 -z-10"
+          transition={{ type: 'spring', stiffness: 380, damping: 32 }} />
       )}
     </button>
   )
 }
 
-/* ── Main Navbar ───────────────────────────────────────────────────────── */
+/* ── Static nav link ──────────────────────────────────────────────────── */
+function NavLink({ to, children, active }: { to: string; children: React.ReactNode; active: boolean }) {
+  return (
+    <Link
+      to={to}
+      className={`relative px-3.5 py-2 text-[13.5px] font-medium tracking-[-0.01em] rounded-lg transition-all duration-150 ${
+        active ? 'text-white' : 'text-white/50 hover:text-white/85'
+      }`}
+    >
+      {children}
+      {active && (
+        <motion.span layoutId="nav-pill" className="absolute inset-0 rounded-lg bg-white/6 -z-10"
+          transition={{ type: 'spring', stiffness: 380, damping: 32 }} />
+      )}
+    </Link>
+  )
+}
+
+/* ── Main component ───────────────────────────────────────────────────── */
 export default function Navbar() {
   const { theme, toggleTheme } = useTheme()
   const { session, isAdmin } = useAuth()
@@ -170,24 +183,24 @@ export default function Navbar() {
 
   const [scrolled, setScrolled]         = useState(false)
   const [mobileOpen, setMobileOpen]     = useState(false)
-  const [businessOpen, setBusinessOpen] = useState(false)
-  const [socialOpen, setSocialOpen]     = useState(false)
-  const [mobileBizOpen, setMobileBizOpen] = useState(false)
-  const [mobileSocOpen, setMobileSocOpen] = useState(false)
+  const [productsOpen, setProductsOpen] = useState(false)
+  const [companyOpen, setCompanyOpen]   = useState(false)
+  const [mobileProdOpen, setMobileProdOpen] = useState(false)
+  const [mobileCompOpen, setMobileCompOpen] = useState(false)
 
-  const bizRef = useRef<HTMLDivElement>(null)
-  const socRef = useRef<HTMLDivElement>(null)
+  const prodRef    = useRef<HTMLDivElement>(null)
+  const companyRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 20)
+    const onScroll = () => setScrolled(window.scrollY > 16)
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (bizRef.current && !bizRef.current.contains(e.target as Node)) setBusinessOpen(false)
-      if (socRef.current && !socRef.current.contains(e.target as Node)) setSocialOpen(false)
+      if (prodRef.current    && !prodRef.current.contains(e.target as Node))    setProductsOpen(false)
+      if (companyRef.current && !companyRef.current.contains(e.target as Node)) setCompanyOpen(false)
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
@@ -198,44 +211,44 @@ export default function Navbar() {
   const isActive = (href: string) =>
     href === '/' ? location.pathname === '/' : location.pathname.startsWith(href)
 
-  const bizActive = businessItems.some(i => location.pathname.startsWith(i.href))
-  const socActive = socialItems.some(i => location.pathname.startsWith(i.href))
+  const prodActive = [...products.business, ...products.social].some(i => location.pathname.startsWith(i.href))
+  const compActive = company.some(i => location.pathname.startsWith(i.href))
 
   return (
     <>
-      {/* ── Floating navbar ─────────────────────────────────────────── */}
+      {/* ── Navbar ─────────────────────────────────────────────────── */}
       <nav className="fixed top-0 left-0 right-0 z-50 flex justify-center px-4 pt-3 sm:pt-4">
         <motion.div
-          initial={{ y: -24, opacity: 0 }}
+          initial={{ y: -28, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.5, type: 'spring', stiffness: 220, damping: 22 }}
+          transition={{ type: 'spring', stiffness: 240, damping: 24, duration: 0.6 }}
           className="w-full max-w-6xl"
         >
           <div
-            className={`flex items-center justify-between h-14 px-3 sm:px-5 rounded-2xl transition-all duration-300 ${
-              scrolled ? 'shadow-2xl shadow-black/50' : 'shadow-lg shadow-black/20'
+            className={`flex items-center justify-between h-[52px] sm:h-[56px] px-3 sm:px-4 rounded-2xl transition-all duration-300 ${
+              scrolled ? 'shadow-2xl shadow-black/50' : 'shadow-md shadow-black/20'
             }`}
             style={{
-              background: scrolled
-                ? 'rgba(11,9,22,0.94)'
-                : 'rgba(11,9,22,0.78)',
-              backdropFilter: 'blur(24px)',
-              WebkitBackdropFilter: 'blur(24px)',
-              border: scrolled
-                ? '1px solid rgba(255,255,255,0.10)'
-                : '1px solid rgba(255,255,255,0.07)',
+              background: scrolled ? 'rgba(9,7,20,0.96)' : 'rgba(9,7,20,0.80)',
+              backdropFilter: 'blur(28px)',
+              WebkitBackdropFilter: 'blur(28px)',
+              border: scrolled ? '1px solid rgba(255,255,255,0.11)' : '1px solid rgba(255,255,255,0.07)',
+              // Subtle inner top highlight — the "classic" touch
+              boxShadow: scrolled
+                ? 'inset 0 1px 0 rgba(255,255,255,0.05), 0 24px 56px rgba(0,0,0,0.5)'
+                : 'inset 0 1px 0 rgba(255,255,255,0.04)',
             }}
           >
+
             {/* ── Logo ── */}
-            <Link to="/" className="flex items-center gap-2.5 flex-shrink-0 group">
+            <Link to="/" className="flex items-center gap-2.5 flex-shrink-0">
               <motion.img
-                src={logoImg}
-                alt="SmartzConnect"
-                whileHover={{ scale: 1.07, rotate: -2 }}
-                transition={{ type: 'spring', stiffness: 420 }}
-                className="h-8 w-auto object-contain"
+                src={logoImg} alt="SmartzConnect"
+                whileHover={{ scale: 1.06 }}
+                transition={{ type: 'spring', stiffness: 440 }}
+                className="h-7 w-auto object-contain"
               />
-              <span className="font-display font-black text-[17px] hidden sm:block tracking-tight">
+              <span className="font-display font-black text-base hidden sm:block tracking-tight leading-none">
                 <span className="bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent">Smartz</span>
                 <span className="text-white">Connect</span>
               </span>
@@ -243,116 +256,83 @@ export default function Navbar() {
 
             {/* ── Desktop center nav ── */}
             <div className="hidden lg:flex items-center gap-0 absolute left-1/2 -translate-x-1/2">
-              {/* Business dropdown */}
-              <div ref={bizRef} className="relative">
-                <DropTrigger
-                  label="Business"
-                  open={businessOpen}
-                  active={bizActive}
-                  onClick={() => { setBusinessOpen(v => !v); setSocialOpen(false) }}
-                />
+              {/* Products */}
+              <div ref={prodRef} className="relative">
+                <Trigger label="Products" open={productsOpen} active={prodActive}
+                  onClick={() => { setProductsOpen(v => !v); setCompanyOpen(false) }} />
                 <AnimatePresence>
-                  {businessOpen && (
-                    <MegaDrop
-                      title="Business & Commerce"
-                      items={businessItems}
-                      onClose={() => setBusinessOpen(false)}
-                    />
-                  )}
+                  {productsOpen && <ProductsDrop onClose={() => setProductsOpen(false)} />}
                 </AnimatePresence>
               </div>
 
-              {/* Social dropdown */}
-              <div ref={socRef} className="relative">
-                <DropTrigger
-                  label="Social"
-                  open={socialOpen}
-                  active={socActive}
-                  onClick={() => { setSocialOpen(v => !v); setBusinessOpen(false) }}
-                />
+              {/* Company */}
+              <div ref={companyRef} className="relative">
+                <Trigger label="Company" open={companyOpen} active={compActive}
+                  onClick={() => { setCompanyOpen(v => !v); setProductsOpen(false) }} />
                 <AnimatePresence>
-                  {socialOpen && (
-                    <MegaDrop
-                      title="Social & Community"
-                      items={socialItems}
-                      onClose={() => setSocialOpen(false)}
-                    />
-                  )}
+                  {companyOpen && <CompanyDrop onClose={() => setCompanyOpen(false)} />}
                 </AnimatePresence>
               </div>
 
-              {/* Static links */}
-              {mainLinks.map(link => (
-                <NavLink key={link.href} to={link.href} active={isActive(link.href)}>
-                  {link.label}
-                </NavLink>
-              ))}
+              {/* Standalone links */}
+              <NavLink to="/world-stage" active={isActive('/world-stage')}>World Stage</NavLink>
+              <NavLink to="/pricing"     active={isActive('/pricing')}>Pricing</NavLink>
+              <NavLink to="/blog"        active={isActive('/blog')}>Blog</NavLink>
             </div>
 
             {/* ── Right actions ── */}
-            <div className="flex items-center gap-1.5">
-              {/* Support chat */}
+            <div className="flex items-center gap-1">
+              {/* Support */}
               <motion.button
                 onClick={() => openTawkChat()}
-                whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.92 }}
+                whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.91 }}
                 title="Live support"
-                className="hidden sm:flex w-8 h-8 rounded-xl items-center justify-center text-white/40 hover:text-pink-400 transition-colors"
-                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
+                className="hidden sm:flex w-8 h-8 rounded-xl items-center justify-center text-white/35 hover:text-white/75 transition-colors duration-150"
               >
-                <MessageCircle className="w-3.5 h-3.5" />
+                <MessageCircle className="w-[15px] h-[15px]" />
               </motion.button>
 
-              {/* Theme toggle */}
+              {/* Theme */}
               <motion.button
                 onClick={toggleTheme}
-                whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.92 }}
-                className="hidden sm:flex w-8 h-8 rounded-xl items-center justify-center text-white/40 hover:text-white/80 transition-colors"
-                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
+                whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.91 }}
+                className="hidden sm:flex w-8 h-8 rounded-xl items-center justify-center text-white/35 hover:text-white/75 transition-colors duration-150"
               >
-                {theme === 'dark' ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
+                {theme === 'dark' ? <Sun className="w-[15px] h-[15px]" /> : <Moon className="w-[15px] h-[15px]" />}
               </motion.button>
 
-              {/* Separator */}
-              <div className="hidden sm:block w-px h-5 bg-white/10 mx-1" />
+              {/* Divider */}
+              <div className="hidden sm:block w-px h-4 bg-white/10 mx-1.5" />
 
-              {/* Auth buttons */}
+              {/* Auth */}
               <div className="hidden sm:flex items-center gap-1.5">
                 {isSignedIn ? (
-                  <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }} transition={{ type: 'spring', stiffness: 400 }}>
-                    <Link
-                      to={dashboardHref}
-                      className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-[13px] font-bold text-white transition-all"
+                  <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
+                    <Link to={dashboardHref}
+                      className="inline-flex items-center px-4 py-[7px] rounded-xl text-[13px] font-semibold text-white transition-all"
                       style={{
                         background: 'linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%)',
-                        boxShadow: '0 0 0 1px rgba(124,58,237,0.4), 0 4px 16px rgba(124,58,237,0.25)',
-                      }}
-                    >
+                        boxShadow: '0 0 0 1px rgba(124,58,237,0.35), 0 2px 12px rgba(124,58,237,0.20)',
+                      }}>
                       Dashboard
                     </Link>
                   </motion.div>
                 ) : (
                   <>
-                    {/* Sign In — ghost */}
-                    <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}>
-                      <Link
-                        to="/login"
-                        className="px-4 py-1.5 rounded-xl text-[13px] font-semibold text-white/70 hover:text-white transition-colors"
-                        style={{ border: '1px solid rgba(255,255,255,0.12)' }}
-                      >
+                    <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
+                      <Link to="/login"
+                        className="inline-flex items-center px-4 py-[7px] rounded-xl text-[13px] font-medium text-white/60 hover:text-white/90 transition-colors duration-150"
+                        style={{ border: '1px solid rgba(255,255,255,0.10)' }}>
                         Sign in
                       </Link>
                     </motion.div>
-
-                    {/* Join Now — gradient pill */}
-                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} transition={{ type: 'spring', stiffness: 400 }}>
-                      <Link
-                        to="/register"
-                        className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-[13px] font-bold text-white transition-all"
+                    <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}>
+                      <Link to="/register"
+                        className="inline-flex items-center px-4 py-[7px] rounded-xl text-[13px] font-semibold text-white transition-all"
                         style={{
                           background: 'linear-gradient(135deg, #EC4899 0%, #9B5DE5 100%)',
-                          boxShadow: '0 0 0 1px rgba(236,72,153,0.35), 0 4px 16px rgba(236,72,153,0.25)',
-                        }}
-                      >
+                          boxShadow: '0 0 0 1px rgba(236,72,153,0.30), 0 2px 12px rgba(236,72,153,0.20)',
+                        }}>
                         Get started
                       </Link>
                     </motion.div>
@@ -360,17 +340,17 @@ export default function Navbar() {
                 )}
               </div>
 
-              {/* Mobile hamburger */}
+              {/* Mobile menu button */}
               <motion.button
                 onClick={() => setMobileOpen(v => !v)}
                 whileHover={{ scale: 1.06 }} whileTap={{ scale: 0.92 }}
-                className="lg:hidden w-8 h-8 rounded-xl flex items-center justify-center text-white/70 hover:text-white transition-colors"
-                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.10)' }}
+                className="lg:hidden w-8 h-8 rounded-xl flex items-center justify-center text-white/60 hover:text-white transition-colors ml-1.5"
+                style={{ border: '1px solid rgba(255,255,255,0.10)' }}
               >
                 <AnimatePresence mode="wait">
                   {mobileOpen
-                    ? <motion.span key="x" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.14 }}><X className="w-4 h-4" /></motion.span>
-                    : <motion.span key="m" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }} transition={{ duration: 0.14 }}><Menu className="w-4 h-4" /></motion.span>
+                    ? <motion.span key="x"  initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.13 }}><X    className="w-4 h-4" /></motion.span>
+                    : <motion.span key="m"  initial={{ rotate: 90, opacity: 0 }}  animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }} transition={{ duration: 0.13 }}><Menu className="w-4 h-4" /></motion.span>
                   }
                 </AnimatePresence>
               </motion.button>
@@ -379,64 +359,112 @@ export default function Navbar() {
         </motion.div>
       </nav>
 
-      {/* ── Mobile menu drawer ──────────────────────────────────────── */}
+      {/* ── Mobile drawer ──────────────────────────────────────────── */}
       <AnimatePresence>
         {mobileOpen && (
           <>
-            {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
+              transition={{ duration: 0.18 }}
               onClick={() => setMobileOpen(false)}
               className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 lg:hidden"
             />
-
-            {/* Drawer */}
             <motion.div
-              initial={{ opacity: 0, y: -12, scale: 0.98 }}
+              initial={{ opacity: 0, y: -14, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -12, scale: 0.98 }}
-              transition={{ type: 'spring', damping: 24, stiffness: 300 }}
-              className="fixed top-[72px] left-4 right-4 z-50 lg:hidden rounded-2xl overflow-hidden"
+              exit={{ opacity: 0, y: -14, scale: 0.98 }}
+              transition={{ type: 'spring', damping: 26, stiffness: 310 }}
+              className="fixed top-[68px] left-4 right-4 z-50 lg:hidden rounded-2xl overflow-hidden"
               style={{
-                background: 'rgba(11,9,22,0.97)',
-                backdropFilter: 'blur(24px)',
+                background: 'rgba(9,7,20,0.98)',
+                backdropFilter: 'blur(28px)',
                 border: '1px solid rgba(255,255,255,0.10)',
-                boxShadow: '0 24px 60px rgba(0,0,0,0.6)',
+                boxShadow: '0 28px 64px rgba(0,0,0,0.65)',
               }}
             >
-              <div className="p-2.5 space-y-0.5">
+              <div className="p-3 space-y-0.5">
 
-                {/* Business accordion */}
+                {/* Products accordion */}
                 <div>
                   <button
-                    onClick={() => setMobileBizOpen(v => !v)}
-                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-[13px] font-semibold text-white/70 hover:text-white hover:bg-white/5 transition-all"
+                    onClick={() => setMobileProdOpen(v => !v)}
+                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-[13px] font-medium text-white/60 hover:text-white hover:bg-white/4 transition-all"
                   >
-                    <span>Business</span>
-                    <motion.span animate={{ rotate: mobileBizOpen ? 180 : 0 }} transition={{ type: 'spring', stiffness: 300 }}>
+                    Products
+                    <motion.span animate={{ rotate: mobileProdOpen ? 180 : 0 }} transition={{ type: 'spring', stiffness: 320 }}>
                       <ChevronDown className="w-3.5 h-3.5 text-white/30" />
                     </motion.span>
                   </button>
                   <AnimatePresence>
-                    {mobileBizOpen && (
+                    {mobileProdOpen && (
                       <motion.div
                         initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.2 }}
+                        transition={{ duration: 0.18 }}
                         className="overflow-hidden"
                       >
-                        <div className="px-2 pb-1 grid grid-cols-2 gap-1">
-                          {businessItems.map(item => {
+                        <div className="mx-2 mb-1">
+                          <p className="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-white/20">Commerce</p>
+                          <div className="grid grid-cols-2 gap-0.5">
+                            {products.business.map(item => {
+                              const Icon = item.icon
+                              return (
+                                <Link key={item.href} to={item.href}
+                                  className="flex items-center gap-2 px-3 py-2.5 rounded-xl hover:bg-white/4 transition-all group">
+                                  <div className={`w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 ${item.bg}`}>
+                                    <Icon className={`w-3 h-3 ${item.color}`} />
+                                  </div>
+                                  <span className="text-[12px] font-medium text-white/55 group-hover:text-white transition-colors">{item.label}</span>
+                                </Link>
+                              )
+                            })}
+                          </div>
+                          <p className="px-3 py-1.5 mt-1 text-[10px] font-black uppercase tracking-widest text-white/20">Social</p>
+                          <div className="grid grid-cols-2 gap-0.5">
+                            {products.social.map(item => {
+                              const Icon = item.icon
+                              return (
+                                <Link key={item.href} to={item.href}
+                                  className="flex items-center gap-2 px-3 py-2.5 rounded-xl hover:bg-white/4 transition-all group">
+                                  <div className={`w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 ${item.bg}`}>
+                                    <Icon className={`w-3 h-3 ${item.color}`} />
+                                  </div>
+                                  <span className="text-[12px] font-medium text-white/55 group-hover:text-white transition-colors">{item.label}</span>
+                                </Link>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                {/* Company accordion */}
+                <div>
+                  <button
+                    onClick={() => setMobileCompOpen(v => !v)}
+                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-[13px] font-medium text-white/60 hover:text-white hover:bg-white/4 transition-all"
+                  >
+                    Company
+                    <motion.span animate={{ rotate: mobileCompOpen ? 180 : 0 }} transition={{ type: 'spring', stiffness: 320 }}>
+                      <ChevronDown className="w-3.5 h-3.5 text-white/30" />
+                    </motion.span>
+                  </button>
+                  <AnimatePresence>
+                    {mobileCompOpen && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.18 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="grid grid-cols-2 gap-0.5 mx-2 mb-1">
+                          {company.map(item => {
                             const Icon = item.icon
                             return (
-                              <Link
-                                key={item.href} to={item.href}
-                                className="flex items-center gap-2 px-3 py-2.5 rounded-xl hover:bg-white/5 transition-all group"
-                              >
-                                <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${item.bg}`}>
-                                  <Icon className={`w-3.5 h-3.5 ${item.color}`} />
-                                </div>
-                                <span className="text-[12px] font-medium text-white/60 group-hover:text-white transition-colors leading-tight">{item.label}</span>
+                              <Link key={item.href} to={item.href}
+                                className="flex items-center gap-2 px-3 py-2.5 rounded-xl hover:bg-white/4 transition-all group">
+                                <Icon className="w-3.5 h-3.5 text-white/30 group-hover:text-white/60 flex-shrink-0" />
+                                <span className="text-[12px] font-medium text-white/55 group-hover:text-white transition-colors">{item.label}</span>
                               </Link>
                             )
                           })}
@@ -446,55 +474,16 @@ export default function Navbar() {
                   </AnimatePresence>
                 </div>
 
-                {/* Social accordion */}
-                <div>
-                  <button
-                    onClick={() => setMobileSocOpen(v => !v)}
-                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-[13px] font-semibold text-white/70 hover:text-white hover:bg-white/5 transition-all"
-                  >
-                    <span>Social</span>
-                    <motion.span animate={{ rotate: mobileSocOpen ? 180 : 0 }} transition={{ type: 'spring', stiffness: 300 }}>
-                      <ChevronDown className="w-3.5 h-3.5 text-white/30" />
-                    </motion.span>
-                  </button>
-                  <AnimatePresence>
-                    {mobileSocOpen && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="overflow-hidden"
-                      >
-                        <div className="px-2 pb-1 grid grid-cols-2 gap-1">
-                          {socialItems.map(item => {
-                            const Icon = item.icon
-                            return (
-                              <Link
-                                key={item.href} to={item.href}
-                                className="flex items-center gap-2 px-3 py-2.5 rounded-xl hover:bg-white/5 transition-all group"
-                              >
-                                <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${item.bg}`}>
-                                  <Icon className={`w-3.5 h-3.5 ${item.color}`} />
-                                </div>
-                                <span className="text-[12px] font-medium text-white/60 group-hover:text-white transition-colors leading-tight">{item.label}</span>
-                              </Link>
-                            )
-                          })}
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-
-                {/* Divider */}
-                <div className="h-px bg-white/6 mx-2 my-1" />
-
-                {/* Static links */}
-                <div className="grid grid-cols-2 gap-0.5">
-                  {mainLinks.map(link => (
-                    <Link
-                      key={link.href} to={link.href}
-                      className={`px-4 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${
-                        isActive(link.href) ? 'text-white bg-white/6' : 'text-white/55 hover:text-white hover:bg-white/4'
+                {/* Standalone links */}
+                <div className="grid grid-cols-3 gap-0.5">
+                  {[
+                    { label: 'World Stage', href: '/world-stage' },
+                    { label: 'Pricing',     href: '/pricing'     },
+                    { label: 'Blog',        href: '/blog'        },
+                  ].map(link => (
+                    <Link key={link.href} to={link.href}
+                      className={`px-3 py-2.5 rounded-xl text-center text-[12px] font-medium transition-all ${
+                        isActive(link.href) ? 'text-white bg-white/6' : 'text-white/50 hover:text-white hover:bg-white/4'
                       }`}
                     >
                       {link.label}
@@ -502,44 +491,32 @@ export default function Navbar() {
                   ))}
                 </div>
 
-                {/* Divider */}
                 <div className="h-px bg-white/6 mx-2 my-1" />
 
-                {/* Utility buttons */}
-                <div className="flex items-center gap-2 px-2 pb-0.5">
-                  <button
-                    onClick={() => { openTawkChat(); setMobileOpen(false) }}
-                    className="flex items-center gap-2 flex-1 px-4 py-2.5 rounded-xl text-[13px] font-semibold text-white/55 hover:text-white hover:bg-white/5 transition-all"
-                  >
+                {/* Utility */}
+                <div className="flex gap-1.5 px-1">
+                  <button onClick={() => { openTawkChat(); setMobileOpen(false) }}
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[12px] font-medium text-white/50 hover:text-white hover:bg-white/4 transition-all">
                     <MessageCircle className="w-3.5 h-3.5 text-pink-400" /> Support
                   </button>
-                  <button
-                    onClick={() => { toggleTheme(); }}
-                    className="flex items-center gap-2 flex-1 px-4 py-2.5 rounded-xl text-[13px] font-semibold text-white/55 hover:text-white hover:bg-white/5 transition-all"
-                  >
+                  <button onClick={toggleTheme}
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[12px] font-medium text-white/50 hover:text-white hover:bg-white/4 transition-all">
                     {theme === 'dark' ? <Sun className="w-3.5 h-3.5 text-amber-400" /> : <Moon className="w-3.5 h-3.5 text-purple-400" />}
-                    {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+                    {theme === 'dark' ? 'Light' : 'Dark'}
                   </button>
                 </div>
 
-                {/* Auth CTA */}
-                <div className="px-2 pb-2 pt-0.5 flex gap-2">
-                  <Link
-                    to={isSignedIn ? dashboardHref : '/login'}
-                    className="flex-1 py-2.5 rounded-xl text-center text-[13px] font-semibold text-white/70 transition-all"
-                    style={{ border: '1px solid rgba(255,255,255,0.12)' }}
-                  >
+                {/* Auth */}
+                <div className="flex gap-2 px-1 pb-1 pt-0.5">
+                  <Link to={isSignedIn ? dashboardHref : '/login'}
+                    className="flex-1 py-2.5 rounded-xl text-center text-[13px] font-medium text-white/60 transition-all"
+                    style={{ border: '1px solid rgba(255,255,255,0.10)' }}>
                     {isSignedIn ? 'Dashboard' : 'Sign in'}
                   </Link>
                   {!isSignedIn && (
-                    <Link
-                      to="/register"
-                      className="flex-1 py-2.5 rounded-xl text-center text-[13px] font-bold text-white transition-all"
-                      style={{
-                        background: 'linear-gradient(135deg, #EC4899 0%, #9B5DE5 100%)',
-                        boxShadow: '0 4px 16px rgba(236,72,153,0.25)',
-                      }}
-                    >
+                    <Link to="/register"
+                      className="flex-1 py-2.5 rounded-xl text-center text-[13px] font-semibold text-white transition-all"
+                      style={{ background: 'linear-gradient(135deg, #EC4899 0%, #9B5DE5 100%)' }}>
                       Get started
                     </Link>
                   )}

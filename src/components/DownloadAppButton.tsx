@@ -101,7 +101,7 @@ export default function DownloadAppButton({ variant = 'primary', className = '' 
   const styleMap = {
     primary: {
       className: 'text-white',
-      style: { background: 'linear-gradient(135deg, #8B5CF6 0%, #EC4899 60%, #DC2626 100%)', boxShadow: '0 8px 28px rgba(139,92,246,0.40)' },
+      style: { background: 'linear-gradient(135deg, #8B5CF6 0%, #EC4899 60%, #DC2626 100%)', boxShadow: '0 6px 24px rgba(139,92,246,0.38)' },
     },
     secondary: {
       className: 'text-white bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20',
@@ -109,7 +109,7 @@ export default function DownloadAppButton({ variant = 'primary', className = '' 
     },
     green: {
       className: 'text-white',
-      style: { background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)', boxShadow: '0 8px 28px rgba(16,185,129,0.38)' },
+      style: { background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)', boxShadow: '0 6px 24px rgba(16,185,129,0.35)' },
     },
   }
 
@@ -120,12 +120,13 @@ export default function DownloadAppButton({ variant = 'primary', className = '' 
       <motion.button
         onClick={handleClick}
         disabled={loading}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.97 }}
-        transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+        whileHover={{ scale: 1.05, y: -1 }}
+        whileTap={{ scale: 0.96 }}
+        transition={{ type: 'spring', stiffness: 420, damping: 18 }}
         className={[
-          'inline-flex items-center gap-2 font-bold text-sm sm:text-base rounded-xl transition-all',
-          'px-6 sm:px-8 py-3 sm:py-3.5',
+          'inline-flex items-center gap-2 font-bold text-sm sm:text-[15px] rounded-xl transition-all',
+          // 10% smaller than previous px-6 sm:px-8 py-3 sm:py-3.5
+          'px-5 sm:px-7 py-2.5 sm:py-3',
           'disabled:opacity-60 disabled:cursor-not-allowed',
           s.className,
           className,
