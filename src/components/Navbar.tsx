@@ -304,8 +304,8 @@ export default function Navbar() {
                     <Link to={dashboardHref}
                       className="inline-flex items-center px-4 py-[7px] rounded-xl text-[13px] font-semibold text-white transition-all"
                       style={{
-                        background: 'linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%)',
-                        boxShadow: '0 0 0 1px rgba(124,58,237,0.35), 0 2px 12px rgba(124,58,237,0.20)',
+                        background: 'linear-gradient(135deg, #EAB308 0%, #CA8A04 100%)',
+                        boxShadow: '0 0 0 1px rgba(234,179,8,0.35), 0 2px 12px rgba(234,179,8,0.20)',
                       }}>
                       Dashboard
                     </Link>
@@ -494,7 +494,7 @@ export default function Navbar() {
                   <Link to={isSignedIn ? dashboardHref : '/login'}
                     className="flex-1 py-2.5 rounded-xl text-center text-[13px] font-semibold text-white transition-all"
                     style={isSignedIn
-                      ? { border: '1px solid rgba(255,255,255,0.10)' }
+                      ? { background: 'linear-gradient(135deg, #EAB308 0%, #CA8A04 100%)', boxShadow: '0 0 0 1px rgba(234,179,8,0.35), 0 2px 12px rgba(234,179,8,0.20)' }
                       : { background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)', border: '1px solid #EC4899', boxShadow: '0 0 0 1px rgba(236,72,153,0.25), 0 2px 12px rgba(22,163,74,0.20)' }}>
                     {isSignedIn ? 'Dashboard' : 'Sign in'}
                   </Link>
