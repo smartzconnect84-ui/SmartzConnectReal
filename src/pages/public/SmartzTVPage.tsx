@@ -7,7 +7,7 @@ import {
   Maximize2, Globe, Heart, Share2, MessageSquare, X, CheckCircle,
   Calendar, Clock, Antenna, AlertCircle,
 } from 'lucide-react'
-import Hls from 'hls.js'
+import MuxPlayer from '@mux/mux-player-react'
 import { supabase } from '@/lib/supabase'
 import { Room, RoomEvent, Track } from 'livekit-client'
 import { useSiteConfig, SITE_IMAGE_KEYS } from '@/contexts/SiteConfigContext'
@@ -21,6 +21,7 @@ interface TVChannel {
   cover_url: string | null
   description: string | null
   category: string | null
+  mux_playback_id: string | null
   playback_url: string | null
   stream_status: 'idle' | 'active' | 'disconnected'
   is_active: boolean
@@ -56,94 +57,44 @@ const features = [
   { icon: Crown,      title: 'Creator Monetisation',   desc: 'Subscriptions, tips, brand deals, and exclusive content — multiple income streams in one place.',     color: 'from-yellow-500 to-amber-600' },
 ]
 
-// ── Mux HLS Player ─────────────────────────────────────────────────────────────
+// ── Mux Player (official @mux/mux-player-react, realtime live playback) ────────
 
-function MuxHLSPlayer({ channel, onClose }: { channel: TVChannel; onClose?: () => void }) {
-  const videoRef = useRef<HTMLVideoElement>(null)
+function MuxLivePlayer({ channel }: { channel: TVChannel }) {
+  const playerRef = useRef<any>(null)
   const playerWrapRef = useRef<HTMLDivElement>(null)
-  const hlsRef = useRef<Hls | null>(null)
 
-  const [playing, setPlaying] = useState(false)
-  const [muted, setMuted] = useState(true)
-  const [hlsError, setHlsError] = useState(false)
-  const [connecting, setConnecting] = useState(true)
+  const [status, setStatus] = useState<'loading' | 'playing' | 'error'>('loading')
   const [shareToast, setShareToast] = useState(false)
   const [showChat, setShowChat] = useState(false)
-  const [comments, setComments] = useState<{ id: string; user: string; avatar?: string; text: string }[]>([])
-  const [schedule, setSchedule] = useState<TVScheduleEntry[]>([])
   const [showSchedule, setShowSchedule] = useState(false)
-  const commentsEndRef = useRef<HTMLDivElement>(null)
+  const [comments] = useState<{ id: string; user: string; avatar?: string; text: string }[]>([])
+  const [schedule, setSchedule] = useState<TVScheduleEntry[]>([])
 
   // Reset on channel change
   useEffect(() => {
-    setPlaying(false); setHlsError(false); setConnecting(true)
-    setComments([]); setShareToast(false)
+    setStatus('loading'); setShareToast(false)
   }, [channel.id])
 
-  // HLS playback
+  // Wire up the underlying <mux-player> element's native media events —
+  // this is the only reliable way to know if a "live" playback ID is
+  // actually receiving segments right now vs. just idling.
   useEffect(() => {
-    const video = videoRef.current
-    if (!video || !channel.playback_url) {
-      setConnecting(false); return
-    }
-
-    const url = channel.playback_url
-
-    // Destroy previous instance
-    if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null }
-
-    if (video.canPlayType('application/vnd.apple.mpegurl')) {
-      // Safari native HLS
-      video.src = url
-      video.load()
-      video.play().catch(() => {})
-      setConnecting(false)
-    } else if (Hls.isSupported()) {
-      const hls = new Hls({
-        lowLatencyMode: true,
-        backBufferLength: 30,
-        maxBufferLength: 60,
-      })
-      hlsRef.current = hls
-
-      hls.on(Hls.Events.ERROR, (_evt, data) => {
-        if (data.fatal) {
-          setHlsError(true)
-          setConnecting(false)
-        }
-      })
-
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        setConnecting(false)
-        video.play().then(() => setPlaying(true)).catch(() => { setPlaying(false) })
-      })
-
-      hls.loadSource(url)
-      hls.attachMedia(video)
-    } else {
-      setHlsError(true)
-      setConnecting(false)
-    }
-
-    const onPlay  = () => setPlaying(true)
-    const onPause = () => setPlaying(false)
-    video.addEventListener('play', onPlay)
-    video.addEventListener('pause', onPause)
-
+    const el = playerRef.current
+    if (!el) return
+    const onPlaying = () => setStatus('playing')
+    const onError = () => setStatus('error')
+    const onWaiting = () => setStatus(s => (s === 'playing' ? s : 'loading'))
+    el.addEventListener('playing', onPlaying)
+    el.addEventListener('error', onError)
+    el.addEventListener('waiting', onWaiting)
     return () => {
-      video.removeEventListener('play', onPlay)
-      video.removeEventListener('pause', onPause)
-      hlsRef.current?.destroy()
-      hlsRef.current = null
+      el.removeEventListener('playing', onPlaying)
+      el.removeEventListener('error', onError)
+      el.removeEventListener('waiting', onWaiting)
     }
-  }, [channel.id, channel.playback_url])
+  }, [channel.id])
 
-  // Sync mute
-  useEffect(() => {
-    if (videoRef.current) videoRef.current.muted = muted
-  }, [muted])
-
-  // Load schedule
+  // Upcoming schedule (shown in the side panel, independent of live status)
   useEffect(() => {
     supabase.from('tv_schedules').select('id, title, starts_at, ends_at, category')
       .eq('channel_id', channel.id).gte('ends_at', new Date().toISOString())
@@ -161,13 +112,6 @@ function MuxHLSPlayer({ channel, onClose }: { channel: TVChannel; onClose?: () =
         setShareToast(true); setTimeout(() => setShareToast(false), 2500)
       })
     }
-  }
-
-  const handleFullscreen = () => {
-    const el = playerWrapRef.current
-    if (!el) return
-    if (document.fullscreenElement) document.exitFullscreen?.()
-    else el.requestFullscreen?.()
   }
 
   const fmtTime = (iso: string) => {
@@ -188,128 +132,83 @@ function MuxHLSPlayer({ channel, onClose }: { channel: TVChannel; onClose?: () =
       </AnimatePresence>
 
       <div className="flex gap-3 items-start">
-        {/* ── Video Player ── */}
-        <div ref={playerWrapRef}
-          className="relative flex-1 aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl shadow-black/50 border border-violet-500/20 min-w-0">
-
-          {/* Cover fallback */}
-          {channel.cover_url && (
-            <img src={channel.cover_url} alt={channel.name}
-              className={`absolute inset-0 w-full h-full object-cover transition-opacity ${playing ? 'opacity-0' : 'opacity-100'}`} />
-          )}
-          {!channel.cover_url && !playing && (
-            <div className="absolute inset-0 flex items-center justify-center dark:bg-violet-950/30 bg-violet-100/30">
-              <Tv className="w-16 h-16 text-violet-400/30" />
-            </div>
-          )}
-
-          {/* Video element */}
-          <video
-            ref={videoRef}
-            className={`absolute inset-0 w-full h-full object-cover transition-opacity ${playing ? 'opacity-100' : 'opacity-0'}`}
-            autoPlay playsInline muted={muted}
-          />
-
-          {/* Connecting spinner */}
-          {connecting && !hlsError && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/60">
-              <Loader2 className="w-8 h-8 text-violet-400 animate-spin" />
-              <p className="text-sm text-white/70">Connecting to live stream…</p>
-            </div>
-          )}
-
-          {/* Error state */}
-          {hlsError && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/70 px-6 text-center">
-              <AlertCircle className="w-10 h-10 text-amber-400/60" />
-              <p className="text-sm text-white/70 font-semibold">Stream not available</p>
-              <p className="text-xs text-white/40">The channel may be offline. Check back soon.</p>
-            </div>
-          )}
-
-          {/* No playback URL */}
-          {!channel.playback_url && !connecting && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/70 px-6 text-center">
-              <Antenna className="w-10 h-10 text-violet-400/40" />
-              <p className="text-sm text-white/60 font-semibold">Broadcast not started</p>
-              <p className="text-xs text-white/30">The broadcaster hasn't started their OBS/vMix stream yet.</p>
-            </div>
-          )}
-
-          {/* ── HUD ── */}
-          <div className="absolute inset-0 pointer-events-none">
-            {/* Top bar */}
-            <div className="absolute top-0 left-0 right-0 flex items-center justify-between p-3 bg-gradient-to-b from-black/70 to-transparent">
-              <div className="flex items-center gap-2">
-                <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-500 text-white text-[11px] font-black">
-                  <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> LIVE
-                </span>
-                {channel.category && (
-                  <span className="px-2 py-0.5 rounded-full bg-black/50 text-white text-[10px] font-semibold backdrop-blur-sm">
-                    {channel.category}
-                  </span>
-                )}
-                {channel.current_program && (
-                  <span className="hidden sm:inline px-2 py-0.5 rounded-full bg-violet-500/60 text-white text-[10px] font-semibold backdrop-blur-sm truncate max-w-[140px]">
-                    {channel.current_program}
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center gap-1.5">
-                {channel.viewer_count > 0 && (
-                  <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/50 text-white text-[11px] backdrop-blur-sm">
-                    <Eye className="w-3 h-3" /> {channel.viewer_count.toLocaleString()}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Bottom bar */}
-            <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 to-transparent">
-              <div className="flex items-end justify-between">
-                <div className="flex items-center gap-2 min-w-0">
-                  {channel.logo_url && (
-                    <div className="w-8 h-8 rounded-lg overflow-hidden border border-white/20 flex-shrink-0">
-                      <img src={channel.logo_url} alt={channel.name} className="w-full h-full object-cover" />
-                    </div>
-                  )}
-                  <div className="min-w-0">
-                    <p className="text-white font-bold text-sm leading-tight drop-shadow-lg line-clamp-1">{channel.name}</p>
-                    {channel.description && <p className="text-white/50 text-[10px] line-clamp-1">{channel.description}</p>}
-                  </div>
+        <div className="flex-1 min-w-0 rounded-2xl overflow-hidden shadow-2xl shadow-black/50 border border-violet-500/20 dark:bg-[#0e0820] bg-white">
+          {/* ── Channel header ── */}
+          <div className="flex items-center justify-between gap-2 p-3 bg-gradient-to-r dark:from-violet-950/50 dark:to-purple-950/30 from-violet-50 to-purple-50">
+            <div className="flex items-center gap-2 min-w-0">
+              {channel.logo_url && (
+                <div className="w-8 h-8 rounded-lg overflow-hidden border dark:border-white/10 border-black/5 flex-shrink-0">
+                  <img src={channel.logo_url} alt={channel.name} className="w-full h-full object-cover" />
                 </div>
-                {/* Controls */}
-                <div className="flex items-center gap-1.5 pointer-events-auto flex-shrink-0">
-                  {schedule.length > 0 && (
-                    <button onClick={() => setShowSchedule(s => !s)}
-                      className={`w-8 h-8 rounded-full backdrop-blur-sm flex items-center justify-center text-white transition-colors ${showSchedule ? 'bg-violet-500' : 'bg-black/50 hover:bg-black/70'}`}>
-                      <Calendar className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                  <button onClick={() => setShowChat(c => !c)}
-                    className={`w-8 h-8 rounded-full backdrop-blur-sm flex items-center justify-center text-white transition-colors relative ${showChat ? 'bg-violet-500' : 'bg-black/50 hover:bg-black/70'}`}>
-                    <MessageSquare className="w-3.5 h-3.5" />
-                    {comments.length > 0 && !showChat && (
-                      <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-red-500 text-[8px] font-black text-white flex items-center justify-center">
-                        {Math.min(comments.length, 9)}
-                      </span>
-                    )}
-                  </button>
-                  <button onClick={handleShare}
-                    className="w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/70 transition-colors">
-                    <Share2 className="w-3.5 h-3.5" />
-                  </button>
-                  <button onClick={() => setMuted(m => !m)}
-                    className="w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/70 transition-colors">
-                    {muted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
-                  </button>
-                  <button onClick={handleFullscreen}
-                    className="w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/70 transition-colors">
-                    <Maximize2 className="w-3.5 h-3.5" />
-                  </button>
+              )}
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <p className="font-bold text-sm dark:text-white text-gray-900 leading-tight truncate">{channel.name}</p>
+                  <span className="flex-shrink-0 flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-500 text-white text-[10px] font-black">
+                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> LIVE
+                  </span>
                 </div>
+                <p className="text-[11px] dark:text-gray-400 text-gray-500 truncate">
+                  {channel.current_program || channel.category || 'On Air'}
+                  {channel.viewer_count > 0 && <span> · <Eye className="w-2.5 h-2.5 inline -mt-0.5" /> {channel.viewer_count.toLocaleString()} watching</span>}
+                </p>
               </div>
             </div>
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              {schedule.length > 0 && (
+                <button onClick={() => setShowSchedule(s => !s)} title="Upcoming schedule"
+                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${showSchedule ? 'bg-violet-500 text-white' : 'dark:bg-white/10 bg-gray-100 dark:text-gray-300 text-gray-600 hover:bg-violet-500/20'}`}>
+                  <Calendar className="w-3.5 h-3.5" />
+                </button>
+              )}
+              <button onClick={() => setShowChat(c => !c)} title="Live chat"
+                className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${showChat ? 'bg-violet-500 text-white' : 'dark:bg-white/10 bg-gray-100 dark:text-gray-300 text-gray-600 hover:bg-violet-500/20'}`}>
+                <MessageSquare className="w-3.5 h-3.5" />
+              </button>
+              <button onClick={handleShare} title="Share"
+                className="w-8 h-8 rounded-full dark:bg-white/10 bg-gray-100 dark:text-gray-300 text-gray-600 hover:bg-violet-500/20 flex items-center justify-center transition-colors">
+                <Share2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+
+          {/* ── Player ── */}
+          <div ref={playerWrapRef} className="relative w-full aspect-video bg-black">
+            {channel.mux_playback_id ? (
+              <MuxPlayer
+                ref={playerRef}
+                streamType="live"
+                playbackId={channel.mux_playback_id}
+                autoPlay="muted"
+                muted
+                playsInline
+                primaryColor="#ffffff"
+                accentColor="#8b5cf6"
+                metadata={{ video_title: channel.name, viewer_user_id: 'anonymous' }}
+                style={{ width: '100%', height: '100%', '--controls-backdrop-color': 'transparent' } as React.CSSProperties}
+              />
+            ) : (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/70 px-6 text-center">
+                <Antenna className="w-10 h-10 text-violet-400/40" />
+                <p className="text-sm text-white/60 font-semibold">Broadcast not started</p>
+                <p className="text-xs text-white/30">The broadcaster hasn't started their stream yet.</p>
+              </div>
+            )}
+
+            {channel.mux_playback_id && status === 'loading' && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/60 pointer-events-none">
+                <Loader2 className="w-8 h-8 text-violet-400 animate-spin" />
+                <p className="text-sm text-white/70">Connecting to live stream…</p>
+              </div>
+            )}
+
+            {channel.mux_playback_id && status === 'error' && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/80 px-6 text-center">
+                <AlertCircle className="w-10 h-10 text-amber-400/60" />
+                <p className="text-sm text-white/70 font-semibold">Stream not available</p>
+                <p className="text-xs text-white/40">The channel may have just gone offline. Check back soon.</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -384,7 +283,6 @@ function MuxHLSPlayer({ channel, onClose }: { channel: TVChannel; onClose?: () =
                     </div>
                   ))
                 )}
-                <div ref={commentsEndRef} />
               </div>
               <div className="p-2 border-t dark:border-white/5 border-gray-100 flex-shrink-0">
                 <Link to="/login"
@@ -400,52 +298,128 @@ function MuxHLSPlayer({ channel, onClose }: { channel: TVChannel; onClose?: () =
   )
 }
 
+// ── "No Live Broadcast" placeholder ─────────────────────────────────────────────
+
+function NoLiveBroadcastCard({ channel, nextSchedule }: { channel: TVChannel | null; nextSchedule: TVScheduleEntry | null }) {
+  const fmtSchedule = (iso: string) => {
+    try {
+      return new Date(iso).toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+    } catch { return '' }
+  }
+
+  return (
+    <div className="relative w-full aspect-video rounded-2xl overflow-hidden shadow-2xl shadow-black/40 border border-violet-500/20 bg-gradient-to-br from-[#0e0720] via-[#160830] to-[#1a0a35]">
+      {/* Ambient background */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 rounded-full bg-violet-600/15 blur-3xl" />
+        {(channel?.cover_url) && (
+          <img src={channel.cover_url} alt="" className="absolute inset-0 w-full h-full object-cover opacity-10" />
+        )}
+      </div>
+
+      <div className="relative h-full flex flex-col items-center justify-center text-center px-6 sm:px-10">
+        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="relative mb-5">
+          <span className="absolute inset-0 rounded-full bg-violet-500/20 animate-ping" />
+          <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-violet-600 to-purple-700 flex items-center justify-center shadow-xl shadow-violet-900/50">
+            <Antenna className="w-8 h-8 sm:w-9 sm:h-9 text-white/80" />
+          </div>
+        </motion.div>
+
+        <h3 className="font-display font-black text-xl sm:text-2xl text-white mb-1.5">No Live Broadcast Currently</h3>
+        <p className="text-sm text-white/50 max-w-sm mb-5">
+          {channel
+            ? `${channel.name} is offline right now. We'll switch to the live player automatically the moment they go live.`
+            : "SmartzTV isn't broadcasting right now. We'll switch to the live player automatically the moment a stream starts."}
+        </p>
+
+        {nextSchedule ? (
+          <div className="inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-white/8 border border-white/10 backdrop-blur-sm">
+            <Calendar className="w-4 h-4 text-violet-300 flex-shrink-0" />
+            <div className="text-left">
+              <p className="text-xs font-bold text-white leading-tight">{nextSchedule.title}</p>
+              <p className="text-[11px] text-white/50 flex items-center gap-1 mt-0.5">
+                <Clock className="w-2.5 h-2.5" /> {fmtSchedule(nextSchedule.starts_at)}
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10">
+            <Globe className="w-3.5 h-3.5 text-white/30" />
+            <p className="text-xs text-white/40">Check back soon, or explore community streams below</p>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ── Mux TV Channels Section ─────────────────────────────────────────────────────
 
 function MuxTVSection() {
   const [channels, setChannels] = useState<TVChannel[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
   const [selected, setSelected] = useState<TVChannel | null>(null)
+  const [nextSchedule, setNextSchedule] = useState<TVScheduleEntry | null>(null)
 
-  const load = useCallback(async (sig: { cancelled: boolean }) => {
-    setLoading(true)
+  const load = useCallback(async (sig: { cancelled: boolean }, silent = false) => {
+    if (!silent) setLoading(true)
+    setError(false)
     try {
-      const { data, error } = await supabase
+      const { data, error: err } = await supabase
         .from('tv_channels')
-        .select('id, name, logo_url, cover_url, description, category, playback_url, stream_status, is_active, is_featured, current_program, viewer_count')
+        .select('id, name, logo_url, cover_url, description, category, mux_playback_id, playback_url, stream_status, is_active, is_featured, current_program, viewer_count')
         .eq('is_active', true)
         .order('is_featured', { ascending: false })
         .order('display_order', { ascending: true })
         .limit(12)
 
       if (sig.cancelled) return
+      if (err) throw err
 
-      if (!error && data && data.length > 0) {
-        const list = data as TVChannel[]
-        setChannels(list)
-        // Prefer featured, then first active
-        setSelected(list.find(c => c.is_featured) || list[0])
-      } else if (!sig.cancelled) {
-        setChannels([]); setSelected(null)
-      }
+      const list = (data as TVChannel[]) || []
+      setChannels(list)
+      setSelected(prev => {
+        const live = list.find(c => c.stream_status === 'active')
+        const stillThere = prev ? list.find(c => c.id === prev.id) : null
+        return live || stillThere || list.find(c => c.is_featured) || list[0] || null
+      })
     } catch {
-      if (!sig.cancelled) { setChannels([]); setSelected(null) }
+      if (!sig.cancelled) { setError(true); setChannels([]); setSelected(null) }
     }
     if (!sig.cancelled) setLoading(false)
   }, [])
 
+  // Initial load + realtime updates (any insert/update/delete flips the on-air state
+  // instantly) + a periodic refresh as a safety net if a realtime event is missed.
   useEffect(() => {
     const sig = { cancelled: false }
     void load(sig)
-    // Realtime channel status updates
+
     const sub = supabase.channel('public-tv-channels')
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tv_channels' }, () => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tv_channels' }, () => {
         const innerSig = { cancelled: false }
-        void load(innerSig)
+        void load(innerSig, true)
       })
       .subscribe()
-    return () => { sig.cancelled = true; supabase.removeChannel(sub) }
+
+    const interval = setInterval(() => { void load({ cancelled: false }, true) }, 20000)
+
+    return () => { sig.cancelled = true; clearInterval(interval); supabase.removeChannel(sub) }
   }, [load])
+
+  // Next scheduled broadcast for the currently viewed channel (only relevant when it's offline)
+  useEffect(() => {
+    if (!selected || selected.stream_status === 'active') { setNextSchedule(null); return }
+    let cancelled = false
+    supabase.from('tv_schedules').select('id, title, starts_at, ends_at, category')
+      .eq('channel_id', selected.id).gte('ends_at', new Date().toISOString())
+      .order('starts_at', { ascending: true }).limit(1)
+      .then(({ data }) => { if (!cancelled) setNextSchedule((data as TVScheduleEntry[])?.[0] || null) })
+    return () => { cancelled = true }
+  }, [selected?.id, selected?.stream_status])
+
+  const isLive = !!selected && selected.stream_status === 'active' && !!selected.mux_playback_id
 
   if (loading) {
     return (
@@ -461,7 +435,27 @@ function MuxTVSection() {
     )
   }
 
-  if (channels.length === 0) return null  // Fall through to LiveKit section
+  if (error) {
+    return (
+      <section className="py-10 dark:bg-[#06030f] bg-violet-950/5 border-y dark:border-violet-900/20 border-violet-200/30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-3 mb-6">
+            <Tv className="w-5 h-5 text-violet-400" />
+            <h2 className="font-display font-black text-xl dark:text-white text-gray-900">SmartzTV Live</h2>
+          </div>
+          <div className="flex flex-col items-center justify-center gap-3 h-64 sm:h-96 rounded-2xl dark:bg-white/5 bg-gray-100 text-center px-6">
+            <AlertCircle className="w-8 h-8 text-amber-500/70" />
+            <p className="text-sm font-semibold dark:text-white text-gray-800">Couldn't load SmartzTV Live</p>
+            <p className="text-xs dark:text-gray-400 text-gray-500">Check your connection and try again.</p>
+            <button onClick={() => { const sig = { cancelled: false }; void load(sig) }}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-violet-600 text-white text-xs font-bold hover:bg-violet-700 transition-colors">
+              <RefreshCw className="w-3.5 h-3.5" /> Retry
+            </button>
+          </div>
+        </div>
+      </section>
+    )
+  }
 
   return (
     <section className="py-10 dark:bg-[#06030f] bg-violet-950/5 border-y dark:border-violet-900/20 border-violet-200/30">
@@ -469,7 +463,7 @@ function MuxTVSection() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
+            <span className={`w-2.5 h-2.5 rounded-full ${isLive ? 'bg-red-500 animate-pulse' : 'dark:bg-gray-600 bg-gray-300'}`} />
             <h2 className="font-display font-black text-xl dark:text-white text-gray-900">📺 SmartzTV Live</h2>
             <span className="px-2 py-0.5 rounded-full bg-red-500/15 text-red-500 text-[11px] font-black border border-red-500/25">
               OFFICIAL
@@ -484,7 +478,9 @@ function MuxTVSection() {
         <div className={`grid gap-4 ${channels.length > 1 ? 'lg:grid-cols-[1fr_260px]' : ''}`}>
           {/* Main player */}
           <div>
-            {selected && <MuxHLSPlayer channel={selected} />}
+            {isLive && selected
+              ? <MuxLivePlayer channel={selected} />
+              : <NoLiveBroadcastCard channel={selected} nextSchedule={nextSchedule} />}
           </div>
 
           {/* Channel list */}
