@@ -7,6 +7,7 @@ import {
   Globe, Lock, Truck, BarChart3, Shirt, Smartphone, Apple,
   Sparkles, Home, Car, Wrench, Palette,
 } from 'lucide-react'
+import { useSiteConfig, SITE_IMAGE_KEYS } from '@/contexts/SiteConfigContext'
 
 const categories = [
   { name: 'Fashion',       icon: Shirt,       color: 'from-pink-500 to-rose-600',     bg: 'bg-pink-500/10' },
@@ -73,6 +74,8 @@ export default function SmartzMarketPage() {
   const heroRef = useRef(null)
   const inView  = useInView(ref,    { once: true, margin: '-80px' })
   const heroIn  = useInView(heroRef, { once: true })
+  const siteConfig = useSiteConfig()
+  const bgUrl = siteConfig.get(SITE_IMAGE_KEYS.marketPageBg)
 
   return (
     <div className="dark:bg-[#080510] bg-gray-50 min-h-screen pt-[72px] sm:pt-20">
@@ -80,14 +83,17 @@ export default function SmartzMarketPage() {
       {/* ── Hero ── */}
       <section ref={heroRef}>
         {/* Hero image */}
-        <div className="w-full overflow-hidden">
+        <div className="w-full overflow-hidden relative">
+          {bgUrl && (
+            <img src={bgUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
+          )}
           <motion.img
             src="/smartz-market-hero.png"
             alt="SmartzMarket — Shop Smart. Live Better."
-            className="w-full object-cover object-center"
-            style={{ maxHeight: '620px' }}
+            className="w-full object-cover object-center relative"
+            style={{ maxHeight: '620px', opacity: bgUrl ? 0.75 : undefined }}
             initial={{ opacity: 0, scale: 1.03 }}
-            animate={heroIn ? { opacity: 1, scale: 1 } : {}}
+            animate={heroIn ? { opacity: bgUrl ? 0.75 : 1, scale: 1 } : {}}
             transition={{ duration: 0.7 }}
           />
         </div>

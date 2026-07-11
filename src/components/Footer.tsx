@@ -2,7 +2,8 @@ import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Heart, Shield, Zap, Globe, MessageCircle, ArrowRight, ExternalLink } from 'lucide-react'
 import AnimatedStat from '@/components/AnimatedStat'
-const logoImg = '/logo.png'
+import { useSiteConfig, SITE_IMAGE_KEYS } from '@/contexts/SiteConfigContext'
+const defaultLogoImg = '/logo.png'
 
 /* ── Wired & live links only ─────────────────────────────────────────── */
 const nav = {
@@ -59,6 +60,7 @@ function FadeUp({ children, delay = 0, className }: { children: React.ReactNode;
 }
 
 export default function Footer() {
+  const siteConfig = useSiteConfig()
   return (
     <footer className="relative bg-[#07050F] text-white overflow-hidden">
 
@@ -143,7 +145,7 @@ export default function Footer() {
           <FadeUp className="sm:col-span-1">
             <div className="sm:col-span-1">
               <Link to="/" className="flex items-center gap-2.5 mb-5 group">
-                <img src={logoImg} alt="SmartzConnect" className="h-8 w-auto object-contain group-hover:scale-105 transition-transform" />
+                <img src={siteConfig.get(SITE_IMAGE_KEYS.logo, defaultLogoImg)} alt="SmartzConnect" className="h-8 w-auto object-contain group-hover:scale-105 transition-transform" />
                 <span className="font-display font-black text-base">
                   <span style={{ background: 'linear-gradient(135deg, #EC4899 0%, #9B5DE5 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Smartz</span>
                   <span className="text-white">Connect</span>

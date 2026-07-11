@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { Room, RoomEvent, Track } from 'livekit-client'
+import { useSiteConfig, SITE_IMAGE_KEYS } from '@/contexts/SiteConfigContext'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -637,6 +638,8 @@ export default function SmartzTVPage() {
   const heroRef = useRef(null)
   const inView = useInView(ref, { once: true, margin: '-80px' })
   const heroIn = useInView(heroRef, { once: true })
+  const siteConfig = useSiteConfig()
+  const bgUrl = siteConfig.get(SITE_IMAGE_KEYS.tvPageBg)
 
   const [liveStreams, setLiveStreams] = useState<LiveStream[]>([])
   const [loadingStreams, setLoadingStreams] = useState(true)
@@ -701,14 +704,17 @@ export default function SmartzTVPage() {
 
       {/* ── Hero ── */}
       <section ref={heroRef}>
-        <div className="w-full overflow-hidden">
+        <div className="w-full overflow-hidden relative">
+          {bgUrl && (
+            <img src={bgUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
+          )}
           <motion.img
             src="/smartz-tv-hero.png"
             alt="SmartzTV Live — Live TV. Anytime. Anywhere."
-            className="w-full object-cover object-center"
-            style={{ maxHeight: '620px' }}
+            className="w-full object-cover object-center relative"
+            style={{ maxHeight: '620px', opacity: bgUrl ? 0.75 : undefined }}
             initial={{ opacity: 0, scale: 1.03 }}
-            animate={heroIn ? { opacity: 1, scale: 1 } : {}}
+            animate={heroIn ? { opacity: bgUrl ? 0.75 : 1, scale: 1 } : {}}
             transition={{ duration: 0.7 }}
           />
         </div>

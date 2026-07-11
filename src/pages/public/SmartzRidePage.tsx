@@ -7,6 +7,7 @@ import {
   Navigation, Wallet, BarChart3, Globe,
   Route, Bike, Bus,
 } from 'lucide-react'
+import { useSiteConfig, SITE_IMAGE_KEYS } from '@/contexts/SiteConfigContext'
 
 const features = [
   {
@@ -62,6 +63,8 @@ export default function SmartzRidePage() {
   const heroRef = useRef(null)
   const inView  = useInView(ref,    { once: true, margin: '-80px' })
   const heroIn  = useInView(heroRef, { once: true })
+  const siteConfig = useSiteConfig()
+  const bgUrl = siteConfig.get(SITE_IMAGE_KEYS.ridePageBg)
 
   return (
     <div className="dark:bg-[#080510] bg-gray-50 min-h-screen pt-[72px] sm:pt-20">
@@ -70,8 +73,11 @@ export default function SmartzRidePage() {
       <section className="relative overflow-hidden" ref={heroRef}>
         {/* Background */}
         <div className="relative h-[460px] sm:h-[540px] lg:h-[620px] bg-gradient-to-br from-[#021a0e] via-[#032b16] to-[#041f12]">
+          {bgUrl && (
+            <img src={bgUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
+          )}
           {/* Decorative blobs */}
-          <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute inset-0 pointer-events-none" style={bgUrl ? { opacity: 0.65 } : undefined}>
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full bg-emerald-600/20 blur-3xl" />
             <div className="absolute top-10 right-10 w-72 h-72 rounded-full bg-teal-500/15 blur-3xl" />
             <div className="absolute bottom-10 left-10 w-56 h-56 rounded-full bg-emerald-400/10 blur-2xl" />

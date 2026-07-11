@@ -23,6 +23,7 @@ import Footer from '@/components/Footer'
 import LiveKitCall from '@/components/LiveKitCall'
 import CookieBanner from '@/components/CookieBanner'
 import { AnnouncementProvider } from '@/contexts/AnnouncementContext'
+import { SiteConfigProvider } from '@/contexts/SiteConfigContext'
 import AppShell from '@/layouts/AppShell'
 import PWAInstallPrompt from '@/components/PWAInstallPrompt'
 import PWAUpdatePrompt from '@/components/PWAUpdatePrompt'
@@ -129,6 +130,7 @@ function AppInit() {
 export default function App() {
   return (
     <ThemeProvider>
+      <SiteConfigProvider>
       <AnnouncementProvider>
       <AuthProvider>
         <StreamProvider>
@@ -252,6 +254,7 @@ export default function App() {
         </StreamProvider>
       </AuthProvider>
       </AnnouncementProvider>
+      </SiteConfigProvider>
     </ThemeProvider>
   )
 }

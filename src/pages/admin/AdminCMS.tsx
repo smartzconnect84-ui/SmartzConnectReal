@@ -149,6 +149,7 @@ function SettingsTab() {
     const data = await cmsList<SiteConfigRow>('site_config', { orderBy: 'group' })
     setRows(data)
     setLoading(false)
+    await seedBrandingDefaults(data)
   }, [])
 
   useEffect(() => { load() }, [load])
@@ -168,9 +169,34 @@ function SettingsTab() {
     if (!key) return
     const label = prompt('Label to show in admin', key) || key
     const group = prompt('Group (e.g. General, Contact, Social)', 'General') || 'General'
-    const row: SiteConfigRow = { id: crypto.randomUUID(), key, value: '', type: 'text', label, group }
+    const type = confirm('Is this an image setting (a logo/background/photo)? Click OK for Image, Cancel for Text.') ? 'image' : 'text'
+    const row: SiteConfigRow = { id: crypto.randomUUID(), key, value: '', type, label, group }
     setRows(prev => [...prev, row])
     await cmsSave('site_config', row)
+  }
+
+  const BRANDING_DEFAULTS: Omit<SiteConfigRow, 'id'>[] = [
+    { key: 'brand_logo_url', value: '', type: 'image', label: 'Site Logo', group: 'Branding' },
+    { key: 'brand_favicon_url', value: '', type: 'image', label: 'Favicon', group: 'Branding' },
+    { key: 'homepage_bg_url', value: '', type: 'image', label: 'Homepage Background', group: 'Backgrounds' },
+    { key: 'team_page_bg_url', value: '', type: 'image', label: 'Team Page Background', group: 'Backgrounds' },
+    { key: 'social_page_bg_url', value: '', type: 'image', label: 'SmartzSocial Page Background', group: 'Backgrounds' },
+    { key: 'service_dating_bg_url', value: '', type: 'image', label: 'SmartzDating Page Background', group: 'Backgrounds' },
+    { key: 'service_tv_bg_url', value: '', type: 'image', label: 'SmartzTV Page Background', group: 'Backgrounds' },
+    { key: 'service_market_bg_url', value: '', type: 'image', label: 'SmartzMarket Page Background', group: 'Backgrounds' },
+    { key: 'service_ride_bg_url', value: '', type: 'image', label: 'SmartzRide Page Background', group: 'Backgrounds' },
+    { key: 'service_delivery_bg_url', value: '', type: 'image', label: 'SmartzDelivery Page Background', group: 'Backgrounds' },
+    { key: 'service_ads_bg_url', value: '', type: 'image', label: 'SmartzAds Page Background', group: 'Backgrounds' },
+  ]
+
+  /** Ensures the branding/background config keys exist so admins can control them without manual setup. */
+  const seedBrandingDefaults = async (currentRows: SiteConfigRow[]) => {
+    const existingKeys = new Set(currentRows.map(r => r.key))
+    const toAdd = BRANDING_DEFAULTS.filter(d => !existingKeys.has(d.key))
+    if (toAdd.length === 0) return
+    const newRows = toAdd.map(d => ({ ...d, id: crypto.randomUUID() }))
+    setRows(prev => [...prev, ...newRows])
+    for (const row of newRows) await cmsSave('site_config', row)
   }
 
   const remove = async (row: SiteConfigRow) => {
@@ -189,25 +215,46 @@ function SettingsTab() {
           <p className="text-xs font-bold uppercase tracking-wider dark:text-gray-500 text-gray-500 mb-3">{group}</p>
           <div className="space-y-3">
             {items.map(row => (
-              <div key={row.id} className="flex items-center gap-3">
-                <label className="w-40 flex-shrink-0 text-xs font-semibold dark:text-gray-300 text-gray-700">{row.label}</label>
-                <input
-                  value={drafts[row.id] ?? row.value}
-                  onChange={e => setDrafts(prev => ({ ...prev, [row.id]: e.target.value }))}
-                  onBlur={e => save(row, e.target.value)}
-                  className="flex-1 px-3 py-2 rounded-lg text-sm dark:bg-white/5 bg-gray-50 border dark:border-white/10 border-gray-200 dark:text-white text-gray-900 focus:outline-none focus:border-brand-pink"
-                />
-                <button onClick={() => remove(row)} className="w-8 h-8 rounded-lg flex items-center justify-center text-red-400 hover:bg-red-500/10 flex-shrink-0">
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
+              row.type === 'image' ? (
+                <div key={row.id} className="flex items-center gap-3">
+                  <ImageUploader
+                    label={row.label}
+                    folder="covers"
+                    value={row.value || null}
+                    assetName={row.key}
+                    className="flex-1"
+                    onChange={url => save(row, url || '')}
+                  />
+                  <button onClick={() => remove(row)} className="w-8 h-8 rounded-lg flex items-center justify-center text-red-400 hover:bg-red-500/10 flex-shrink-0">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <div key={row.id} className="flex items-center gap-3">
+                  <label className="w-40 flex-shrink-0 text-xs font-semibold dark:text-gray-300 text-gray-700">{row.label}</label>
+                  <input
+                    value={drafts[row.id] ?? row.value}
+                    onChange={e => setDrafts(prev => ({ ...prev, [row.id]: e.target.value }))}
+                    onBlur={e => save(row, e.target.value)}
+                    className="flex-1 px-3 py-2 rounded-lg text-sm dark:bg-white/5 bg-gray-50 border dark:border-white/10 border-gray-200 dark:text-white text-gray-900 focus:outline-none focus:border-brand-pink"
+                  />
+                  <button onClick={() => remove(row)} className="w-8 h-8 rounded-lg flex items-center justify-center text-red-400 hover:bg-red-500/10 flex-shrink-0">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )
             ))}
           </div>
         </div>
       ))}
-      <button onClick={addSetting} className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-bold bg-love-gradient text-white shadow-lg shadow-pink-500/20">
-        <Plus className="w-4 h-4" /> Add Setting
-      </button>
+      <div className="flex items-center gap-2 flex-wrap">
+        <button onClick={addSetting} className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-bold bg-love-gradient text-white shadow-lg shadow-pink-500/20">
+          <Plus className="w-4 h-4" /> Add Setting
+        </button>
+        <button onClick={seedBrandingDefaults} className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-bold dark:bg-white/8 bg-gray-100 dark:text-white text-gray-700 hover:dark:bg-white/15 hover:bg-gray-200 transition-colors">
+          <ImageIcon className="w-4 h-4" /> Add Branding & Background Fields
+        </button>
+      </div>
     </div>
   )
 }

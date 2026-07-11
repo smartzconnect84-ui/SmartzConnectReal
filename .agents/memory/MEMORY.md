@@ -39,3 +39,5 @@
 - [OneSignal auth scheme consistency](onesignal-auth-scheme.md) — every OneSignal call must use "Key <key>" (not "Basic"); stream-webhook needs member-lookup fallback + mandatory signature check.
 - [users vs profiles ID mismatch](users-profiles-id-mismatch.md) — users.id is a separate numeric/table PK; the auth UUID is users.auth_id. profiles.id IS the auth UUID. Any push/admin fan-out must use the UUID field.
 - [Go-live/call-screen/switcher audit](admin-golive-callscreen-audit.md) — RLS-blocked updates return 0 rows not errors (must check); call darkness was over-blurred CSS not a black screen; device ringtones are a hard web limitation.
+- [Site-config branding architecture](site-config-branding.md) — SiteConfigContext + site_config table drives admin-controlled logo/background images across Navbar/Footer/public pages, additive with fallback.
+- [admin_users RLS infinite recursion (unfixed)](admin-users-rls-recursion.md) — platform_settings/system_announcements 500 with 42P17; blocked by missing DB write credentials this session.

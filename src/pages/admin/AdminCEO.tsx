@@ -1,13 +1,13 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Crown, Users, Settings, Shield, Globe, Key, AlertTriangle, Database,
-  RefreshCw, Plus, Edit, Trash2, Download, X, Save, Upload, CheckCircle,
+  RefreshCw, Plus, Edit, Trash2, Download, X, Save, CheckCircle,
   AlertCircle, Loader2, Mail, Briefcase, UserCheck, ToggleLeft, ToggleRight,
   Eye, EyeOff
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
-import { uploadToSufy } from '@/lib/sufy'
+import ImageUploader from '@/components/admin/ImageUploader'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -180,10 +180,8 @@ export default function AdminCEO() {
   const [confirmDelete, setConfirmDelete] = useState<StaffMember | null>(null)
   const [saving, setSaving]             = useState(false)
   const [selectedRole, setSelectedRole] = useState<RoleKey>('admin')
-  const [uploading, setUploading]       = useState(false)
   const [configEdit, setConfigEdit]     = useState<Record<string, string>>({})
   const [expandedConfig, setExpandedConfig] = useState(false)
-  const fileRef = useRef<HTMLInputElement>(null)
 
   const [form, setForm] = useState({
     full_name: '',
@@ -264,20 +262,6 @@ export default function AdminCEO() {
       role,
       responsibilities: p.responsibilities || ROLE_META[rk].responsibilities.join('\n'),
     }))
-  }
-
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setUploading(true)
-    try {
-      const url = await uploadToSufy(file, 'photos')
-      setForm(p => ({ ...p, avatar_url: url }))
-      showToast('Photo uploaded')
-    } catch {
-      showToast('Upload failed', false)
-    }
-    setUploading(false)
   }
 
   const handleSave = async () => {
@@ -644,25 +628,13 @@ export default function AdminCEO() {
 
               <div className="p-6 space-y-5">
                 {/* Avatar */}
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-2xl overflow-hidden flex-shrink-0 dark:bg-white/5 bg-gray-100 flex items-center justify-center">
-                    {form.avatar_url
-                      ? <img src={form.avatar_url} alt="avatar" className="w-full h-full object-cover" />
-                      : <span className="text-2xl font-black text-brand-pink">{form.full_name[0]?.toUpperCase() || '?'}</span>
-                    }
-                  </div>
-                  <div className="flex-1">
-                    <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
-                    <button onClick={() => fileRef.current?.click()} disabled={uploading}
-                      className="flex items-center gap-2 px-4 py-2 rounded-xl dark:bg-white/5 bg-gray-100 dark:text-gray-300 text-gray-700 text-xs font-semibold hover:text-brand-pink hover:border-brand-pink border dark:border-white/8 border-gray-200 transition-colors disabled:opacity-50">
-                      {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
-                      {uploading ? 'Uploading…' : 'Upload Photo'}
-                    </button>
-                    <p className="text-[10px] dark:text-gray-600 text-gray-400 mt-1">Or paste a URL below</p>
-                    <input value={form.avatar_url} onChange={e => setForm(p => ({ ...p, avatar_url: e.target.value }))}
-                      placeholder="https://..." className={inp + ' text-xs mt-1'} />
-                  </div>
-                </div>
+                <ImageUploader
+                  value={form.avatar_url || null}
+                  onChange={url => setForm(p => ({ ...p, avatar_url: url || '' }))}
+                  folder="avatars"
+                  label="Avatar"
+                  assetName={form.full_name || 'staff'}
+                />
 
                 {/* Name & Email */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

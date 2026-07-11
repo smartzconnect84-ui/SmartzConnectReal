@@ -2,6 +2,7 @@ import { useRef } from 'react'
 import { motion, useInView } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import { Package, MapPin, Clock, Shield, Truck, DollarSign, Smartphone, Zap, CheckCircle, BarChart3 } from 'lucide-react'
+import { useSiteConfig, SITE_IMAGE_KEYS } from '@/contexts/SiteConfigContext'
 
 const features = [
   { icon: Clock,      title: 'Same-Day Delivery',    desc: 'Order before 2PM and receive your package the same day in supported cities.',                        color: 'from-blue-500 to-indigo-600' },
@@ -36,13 +37,18 @@ const stats = [
 export default function SmartzDeliveryPage() {
   const ref = useRef(null)
   const inView = useInView(ref, { once: true, margin: '-80px' })
+  const siteConfig = useSiteConfig()
+  const bgUrl = siteConfig.get(SITE_IMAGE_KEYS.deliveryPageBg)
 
   return (
     <div className="dark:bg-[#080510] bg-gray-50 min-h-screen">
 
       {/* Hero */}
       <section className="relative pt-28 pb-20 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-indigo-900/10 to-transparent pointer-events-none" />
+        {bgUrl && (
+          <img src={bgUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-indigo-900/10 to-transparent pointer-events-none" style={bgUrl ? { opacity: 0.7 } : undefined} />
         <div className="absolute top-20 right-0 w-96 h-96 bg-blue-500/8 rounded-full blur-3xl pointer-events-none" />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

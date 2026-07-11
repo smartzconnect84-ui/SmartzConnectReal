@@ -2,6 +2,7 @@ import { useRef } from 'react'
 import { motion, useInView } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import { ExternalLink, Users, Zap, Shield, Star, MapPin, Calendar } from 'lucide-react'
+import { useSiteConfig, SITE_IMAGE_KEYS } from '@/contexts/SiteConfigContext'
 
 const values = [
   { emoji: '🌍', title: 'Africa First',       desc: 'Every decision starts with: "Is this right for Africa?" We build for our continent, by our continent.' },
@@ -24,6 +25,8 @@ const CEO = {
 export default function TeamPage() {
   const ref = useRef(null)
   const inView = useInView(ref, { once: true, margin: '-60px' })
+  const siteConfig = useSiteConfig()
+  const bgUrl = siteConfig.get(SITE_IMAGE_KEYS.teamPageBg)
 
   return (
     <div className="dark:bg-[#080510] bg-gray-50 min-h-screen pt-16 sm:pt-20">
@@ -31,7 +34,10 @@ export default function TeamPage() {
       {/* ── Hero ── */}
       <section className="relative overflow-hidden">
         <div className="relative h-56 sm:h-72 md:h-80 bg-gradient-to-br from-[#1a0a2e] via-[#0d0518] to-[#1d0a30]">
-          <div className="absolute inset-0 pointer-events-none">
+          {bgUrl && (
+            <img src={bgUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
+          )}
+          <div className="absolute inset-0 pointer-events-none" style={bgUrl ? { opacity: 0.7 } : undefined}>
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-pink-500/20 blur-3xl" />
             <div className="absolute top-1/4 left-1/4 w-48 h-48 rounded-full bg-purple-500/15 blur-2xl" />
             <div className="absolute bottom-1/4 right-1/4 w-64 h-64 rounded-full bg-violet-500/15 blur-3xl" />

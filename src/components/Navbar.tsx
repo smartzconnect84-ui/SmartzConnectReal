@@ -7,10 +7,11 @@ import {
   Heart, Users, MessageCircle, Zap,
   Globe, Users2, FileText, Info,
 } from 'lucide-react'
-const logoImg = '/logo.png'
+const defaultLogoImg = '/logo.png'
 import { useTheme } from '@/contexts/ThemeContext'
 import { openTawkChat } from '@/lib/tawk'
 import { useAuth } from '@/hooks/useAuth'
+import { useSiteConfig, SITE_IMAGE_KEYS } from '@/contexts/SiteConfigContext'
 
 /* ── Nav data ─────────────────────────────────────────────────────────── */
 const products = {
@@ -176,6 +177,7 @@ function NavLink({ to, children, active }: { to: string; children: React.ReactNo
 /* ── Main component ───────────────────────────────────────────────────── */
 export default function Navbar() {
   const { theme, toggleTheme } = useTheme()
+  const siteConfig = useSiteConfig()
   const { session, isAdmin } = useAuth()
   const isSignedIn = !!session
   const dashboardHref = isAdmin ? '/admin' : '/app/feed'
@@ -243,7 +245,7 @@ export default function Navbar() {
             {/* ── Logo ── */}
             <Link to="/" className="flex items-center gap-2.5 flex-shrink-0">
               <motion.img
-                src={logoImg} alt="SmartzConnect"
+                src={siteConfig.get(SITE_IMAGE_KEYS.logo, defaultLogoImg)} alt="SmartzConnect"
                 whileHover={{ scale: 1.06 }}
                 transition={{ type: 'spring', stiffness: 440 }}
                 className="h-7 w-auto object-contain"

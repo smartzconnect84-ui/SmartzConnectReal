@@ -4,6 +4,7 @@ import {
   Megaphone, BarChart3, Target, Globe, Users, TrendingUp,
   CheckCircle, ArrowRight, Mail, Play, Layers,
 } from 'lucide-react'
+import { useSiteConfig, SITE_IMAGE_KEYS } from '@/contexts/SiteConfigContext'
 
 const adFormats = [
   {
@@ -41,20 +42,26 @@ const faqs = [
 ]
 
 export default function SmartzAdsPage() {
+  const siteConfig = useSiteConfig()
+  const bgUrl = siteConfig.get(SITE_IMAGE_KEYS.adsPageBg)
+
   return (
     <div className="min-h-screen dark:bg-[#080510] bg-gray-50 pt-[72px] sm:pt-20">
 
       {/* ── Hero ── */}
       <section>
         {/* Hero image */}
-        <div className="w-full overflow-hidden">
+        <div className="w-full overflow-hidden relative">
+          {bgUrl && (
+            <img src={bgUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
+          )}
           <motion.img
             src="/smartz-ads-hero.png"
             alt="SmartzAds — Advertise Smarter. Grow Faster."
-            className="w-full object-cover object-center"
-            style={{ maxHeight: '620px' }}
+            className="w-full object-cover object-center relative"
+            style={{ maxHeight: '620px', opacity: bgUrl ? 0.75 : undefined }}
             initial={{ opacity: 0, scale: 1.03 }}
-            animate={{ opacity: 1, scale: 1 }}
+            animate={{ opacity: bgUrl ? 0.75 : 1, scale: 1 }}
             transition={{ duration: 0.7 }}
           />
         </div>

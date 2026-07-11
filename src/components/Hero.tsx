@@ -113,7 +113,7 @@ export default function Hero() {
       />
 
       {/* ── Main content ── */}
-      <div className="relative z-10 max-w-7xl mx-auto px-5 sm:px-8 lg:px-12 flex flex-col justify-center min-h-[calc(100vh-80px)] pb-28">
+      <div className="relative z-10 max-w-7xl mx-auto px-5 sm:px-8 lg:px-12 flex flex-col justify-center min-h-[calc(100vh-80px)] pb-32 sm:pb-36">
         <div className="max-w-2xl">
 
           {/* Badge */}
@@ -156,7 +156,7 @@ export default function Hero() {
               key={`sub-${current}`}
               initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.45, delay: 0.25 }}
-              className="text-sm sm:text-base lg:text-lg text-white/70 leading-relaxed mb-7 sm:mb-8 max-w-xl"
+              className="text-sm sm:text-base lg:text-lg text-white/70 leading-relaxed mb-8 sm:mb-10 max-w-xl"
             >
               {slide.sub}
             </motion.p>
@@ -166,7 +166,7 @@ export default function Hero() {
           <motion.div
             initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.35 }}
-            className="flex items-center gap-3 mb-4 sm:mb-5"
+            className="flex items-center gap-3 mb-6 sm:mb-8"
           >
             {/* Join Now */}
             <motion.div
@@ -198,7 +198,7 @@ export default function Hero() {
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }}
             transition={{ duration: 0.5, delay: 0.5 }}
-            className="flex flex-wrap items-center gap-4 sm:gap-6 text-white/55 text-xs sm:text-sm"
+            className="flex flex-wrap items-center gap-4 sm:gap-6 text-white/55 text-xs sm:text-sm mt-1 sm:mt-2"
           >
             {['Free to join', '195+ countries', 'One identity'].map((t, i) => (
               <motion.span

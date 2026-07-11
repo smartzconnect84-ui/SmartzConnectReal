@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, type ReactNode } from 'react'
+import { useState, useEffect, type ReactNode } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Users2, Plus, Crown, Shield, Eye, Edit, Trash2, X,
@@ -7,7 +7,7 @@ import {
   ChevronUp, ChevronDown,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
-import { uploadToSufy } from '@/lib/sufy'
+import ImageUploader from '@/components/admin/ImageUploader'
 
 interface TeamMember {
   id: string
@@ -56,43 +56,6 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   )
 }
 
-function PhotoUploadField({ value, onChange, inputClass }: {
-  value: string
-  onChange: (url: string) => void
-  inputClass: string
-}) {
-  const fileRef = useRef<HTMLInputElement>(null)
-  const [uploading, setUploading] = useState(false)
-
-  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setUploading(true)
-    try {
-      const url = await uploadToSufy(file, 'photos')
-      onChange(url)
-    } catch { /* ignore */ }
-    setUploading(false)
-  }
-
-  return (
-    <div className="space-y-1.5">
-      <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
-      <div className="flex items-center gap-2">
-        {value && (
-          <img src={value} alt="preview" className="w-9 h-9 rounded-lg object-cover border dark:border-white/8 border-gray-200 flex-shrink-0" />
-        )}
-        <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-xl dark:bg-white/5 bg-gray-50 border dark:border-white/8 border-gray-200 text-[10px] font-semibold dark:text-gray-300 text-gray-700 hover:border-brand-pink/40 transition-colors disabled:opacity-50 whitespace-nowrap">
-          {uploading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Link2 className="w-3 h-3" />}
-          {uploading ? 'Uploading…' : 'Upload Photo'}
-        </button>
-      </div>
-      <input value={value} onChange={e => onChange(e.target.value)}
-        placeholder="https://… or upload above" className={inputClass} />
-    </div>
-  )
-}
 
 export default function AdminTeamMembers() {
   const [members, setMembers] = useState<TeamMember[]>([])
@@ -554,10 +517,12 @@ export default function AdminTeamMembers() {
                 {/* Row 3 */}
                 <div className="grid sm:grid-cols-3 gap-4">
                   <Field label="Photo">
-                    <PhotoUploadField
-                      value={form.photo_url || ''}
-                      onChange={url => setForm(p => ({ ...p, photo_url: url }))}
-                      inputClass={inp}
+                    <ImageUploader
+                      value={form.photo_url || null}
+                      onChange={url => setForm(p => ({ ...p, photo_url: url || '' }))}
+                      folder="photos"
+                      label="Photo"
+                      assetName={form.full_name || 'team-member'}
                     />
                   </Field>
                   <Field label="Emoji (fallback)">

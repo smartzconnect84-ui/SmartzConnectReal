@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import ImageUploader from '@/components/admin/ImageUploader'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Tv, Eye, CheckCircle, XCircle, Play, Users, Search, Loader2,
@@ -591,11 +592,13 @@ function EditStreamModal({ stream, onClose, onSave }: {
             <textarea value={description} onChange={e => setDescription(e.target.value)} rows={2}
               className="w-full px-3 py-2.5 rounded-xl dark:bg-white/5 bg-gray-50 border dark:border-white/8 border-gray-200 text-sm dark:text-white text-gray-900 focus:outline-none resize-none" />
           </div>
-          <div>
-            <label className="text-xs font-semibold dark:text-gray-400 text-gray-600 block mb-1">Thumbnail URL</label>
-            <input value={thumbnail} onChange={e => setThumbnail(e.target.value)} placeholder="https://..."
-              className="w-full px-3 py-2.5 rounded-xl dark:bg-white/5 bg-gray-50 border dark:border-white/8 border-gray-200 text-sm dark:text-white text-gray-900 focus:outline-none focus:border-brand-pink" />
-          </div>
+          <ImageUploader
+            value={thumbnail || null}
+            onChange={url => setThumbnail(url || '')}
+            folder="covers"
+            label="Thumbnail"
+            assetName={title || 'stream'}
+          />
           <button onClick={handleSave} disabled={!title.trim() || saving}
             className="w-full py-2.5 rounded-xl bg-love-gradient text-white font-bold text-sm disabled:opacity-50 flex items-center justify-center gap-2">
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
@@ -668,11 +671,13 @@ function CreateStreamModal({ onClose, onCreate }: {
             <textarea value={description} onChange={e => setDescription(e.target.value)} rows={2} placeholder="Stream description…"
               className="w-full px-3 py-2.5 rounded-xl dark:bg-white/5 bg-gray-50 border dark:border-white/8 border-gray-200 text-sm dark:text-white text-gray-900 focus:outline-none resize-none" />
           </div>
-          <div>
-            <label className="text-xs font-semibold dark:text-gray-400 text-gray-600 block mb-1">Thumbnail URL</label>
-            <input value={thumbnail} onChange={e => setThumbnail(e.target.value)} placeholder="https://…"
-              className="w-full px-3 py-2.5 rounded-xl dark:bg-white/5 bg-gray-50 border dark:border-white/8 border-gray-200 text-sm dark:text-white text-gray-900 focus:outline-none focus:border-brand-pink" />
-          </div>
+          <ImageUploader
+            value={thumbnail || null}
+            onChange={url => setThumbnail(url || '')}
+            folder="covers"
+            label="Thumbnail"
+            assetName={title || 'stream'}
+          />
           {/* OBS/WHIP note */}
           <div className="flex items-start gap-2 p-3 rounded-xl bg-blue-500/5 border border-blue-500/15">
             <Code2 className="w-3.5 h-3.5 text-blue-400 flex-shrink-0 mt-0.5" />
