@@ -47,11 +47,11 @@ const slides: Slide[] = [
 
 const stats = [
   { value: '15K+', label: 'USERS',     delay: 0   },
-  { value: '195+', label: 'STATES',    delay: 80  },
-  { value: '1K+',  label: 'STORES',    delay: 160 },
-  { value: '20+',  label: 'DRIVERS',   delay: 240 },
-  { value: '1K+',  label: 'VENDORS',   delay: 320 },
-  { value: '8K+',  label: 'CONNECTED', delay: 400 },
+  { value: '195+', label: 'STATES',    delay: 40  },
+  { value: '1K+',  label: 'STORES',    delay: 80  },
+  { value: '20+',  label: 'DRIVERS',   delay: 120 },
+  { value: '1K+',  label: 'VENDORS',   delay: 160 },
+  { value: '8K+',  label: 'CONNECTED', delay: 200 },
 ]
 
 export default function Hero() {
@@ -240,15 +240,17 @@ export default function Hero() {
             {stats.map((s, i) => (
               <motion.div
                 key={i}
-                whileHover={{ backgroundColor: 'rgba(255,255,255,0.04)' }}
-                transition={{ duration: 0.15 }}
+                initial={{ opacity: 0, y: 14, scale: 0.85 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ type: 'spring', stiffness: 260, damping: 18, delay: s.delay / 1000 }}
+                whileHover={{ backgroundColor: 'rgba(255,255,255,0.04)', scale: 1.05 }}
                 className="py-3.5 sm:py-4 px-3 sm:px-5"
               >
                 <AnimatedStat
                   value={s.value}
                   label={s.label}
                   delay={s.delay}
-                  duration={1600}
+                  duration={900}
                   className="text-center"
                   valueClass="font-display font-black sm:text-xl text-white text-[17px] tabular-nums"
                   labelClass="sm:text-[10px] text-white/40 font-bold tracking-wider mt-0.5 text-[9px]"
