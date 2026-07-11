@@ -52,12 +52,12 @@ export default function TopNavBar({ unreadMessages, unreadNotifs, onMenuToggle, 
   const isPremium = profileData?.subscription_tier === 'premium' || profileData?.subscription_tier === 'vip'
 
   return (
-    <header className="h-14 flex-shrink-0 dark:bg-[#0D0A14] bg-white border-b dark:border-white/6 border-gray-100 flex items-center px-3 gap-2 z-40 relative shadow-sm">
+    <header className="h-14 flex-shrink-0 dark:bg-[#0D0A14] bg-white border-b dark:border-white/6 border-gray-100 flex items-center px-2 sm:px-3 gap-1 sm:gap-2 z-40 relative shadow-sm">
 
       {/* Mobile: hamburger */}
       <button
         onClick={onMenuToggle}
-        className="md:hidden w-9 h-9 rounded-xl dark:bg-white/5 bg-gray-100 flex items-center justify-center flex-shrink-0 transition-colors hover:bg-pink-500/10"
+        className="md:hidden w-8 h-8 sm:w-9 sm:h-9 rounded-xl dark:bg-white/5 bg-gray-100 flex items-center justify-center flex-shrink-0 transition-colors hover:bg-pink-500/10"
         aria-label="Toggle menu"
       >
         <AnimatePresence mode="wait" initial={false}>
@@ -86,17 +86,20 @@ export default function TopNavBar({ unreadMessages, unreadNotifs, onMenuToggle, 
       {/* Mobile search icon button (hidden on sm+) */}
       <button
         onClick={() => {
-          setProfileOpen(false) // close any competing overlay first
+          setProfileOpen(false)
           setSearchExpanded(true)
           setTimeout(() => searchInputRef.current?.focus(), 50)
         }}
-        className="sm:hidden w-9 h-9 rounded-xl dark:bg-white/5 bg-gray-100 flex items-center justify-center flex-shrink-0 hover:bg-pink-500/10 transition-colors"
+        className="sm:hidden w-8 h-8 rounded-xl dark:bg-white/5 bg-gray-100 flex items-center justify-center flex-shrink-0 hover:bg-pink-500/10 transition-colors"
         aria-label="Search"
         aria-expanded={searchExpanded}
         aria-controls="mobile-search-overlay"
       >
-        <Search className="w-4 h-4 dark:text-gray-500 text-gray-400" />
+        <Search className="w-[15px] h-[15px] dark:text-gray-500 text-gray-400" />
       </button>
+
+      {/* Mobile spacer — pushes right-side icons to the far right */}
+      <div className="flex-1 sm:hidden" />
 
       {/* Mobile expanded search overlay — z-[60] so it always sits above the
           profile dropdown (z-50) and any other in-header overlay. */}
@@ -175,7 +178,7 @@ export default function TopNavBar({ unreadMessages, unreadNotifs, onMenuToggle, 
       </div>
 
       {/* Right actions */}
-      <div className="flex items-center gap-1 flex-shrink-0">
+      <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
 
         {/* Video call — md+ */}
         <Link to="/app/calls/video" title="Video Call"
@@ -198,20 +201,20 @@ export default function TopNavBar({ unreadMessages, unreadNotifs, onMenuToggle, 
         </button>
 
         {/* Messages */}
-        <Link to="/app/matches" className="relative w-9 h-9 rounded-xl dark:bg-white/5 bg-gray-100 flex items-center justify-center hover:bg-pink-500/10 dark:text-gray-400 text-gray-600 transition-colors">
-          <MessageCircle className="w-4 h-4" />
+        <Link to="/app/matches" className="relative w-8 h-8 sm:w-9 sm:h-9 rounded-xl dark:bg-white/5 bg-gray-100 flex items-center justify-center hover:bg-pink-500/10 dark:text-gray-400 text-gray-600 transition-colors">
+          <MessageCircle className="w-[15px] h-[15px] sm:w-4 sm:h-4" />
           {unreadMessages > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-brand-pink text-white text-[8px] font-black flex items-center justify-center">
+            <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-brand-pink text-white text-[7px] sm:text-[8px] font-black flex items-center justify-center">
               {unreadMessages > 9 ? '9+' : unreadMessages}
             </span>
           )}
         </Link>
 
         {/* Notifications */}
-        <Link to="/app/notifications" className="relative w-9 h-9 rounded-xl dark:bg-white/5 bg-gray-100 flex items-center justify-center hover:bg-pink-500/10 dark:text-gray-400 text-gray-600 transition-colors">
-          <Bell className="w-4 h-4" />
+        <Link to="/app/notifications" className="relative w-8 h-8 sm:w-9 sm:h-9 rounded-xl dark:bg-white/5 bg-gray-100 flex items-center justify-center hover:bg-pink-500/10 dark:text-gray-400 text-gray-600 transition-colors">
+          <Bell className="w-[15px] h-[15px] sm:w-4 sm:h-4" />
           {unreadNotifs > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-brand-pink text-white text-[8px] font-black flex items-center justify-center">
+            <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-brand-pink text-white text-[7px] sm:text-[8px] font-black flex items-center justify-center">
               {unreadNotifs > 9 ? '9+' : unreadNotifs}
             </span>
           )}
