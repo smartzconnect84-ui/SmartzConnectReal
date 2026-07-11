@@ -59,25 +59,15 @@ const features = [
 
 // ── Mux Player (official @mux/mux-player-react, realtime live playback) ────────
 
-function MuxLivePlayer({ channel }: { channel: TVChannel }) {
+function LiveStreamPlayer({ channel }: { channel: TVChannel }) {
   const playerRef = useRef<any>(null)
-  const playerWrapRef = useRef<HTMLDivElement>(null)
-
   const [status, setStatus] = useState<'loading' | 'playing' | 'error'>('loading')
-  const [shareToast, setShareToast] = useState(false)
-  const [showChat, setShowChat] = useState(false)
-  const [showSchedule, setShowSchedule] = useState(false)
-  const [comments] = useState<{ id: string; user: string; avatar?: string; text: string }[]>([])
-  const [schedule, setSchedule] = useState<TVScheduleEntry[]>([])
 
-  // Reset on channel change
-  useEffect(() => {
-    setStatus('loading'); setShareToast(false)
-  }, [channel.id])
+  useEffect(() => { setStatus('loading') }, [channel.id])
 
-  // Wire up the underlying <mux-player> element's native media events —
-  // this is the only reliable way to know if a "live" playback ID is
-  // actually receiving segments right now vs. just idling.
+  // Wire up the underlying <mux-player> element's native media events — the
+  // only reliable way to know if a "live" playback ID is actually receiving
+  // segments right now vs. just idling.
   useEffect(() => {
     const el = playerRef.current
     if (!el) return
@@ -94,19 +84,104 @@ function MuxLivePlayer({ channel }: { channel: TVChannel }) {
     }
   }, [channel.id])
 
-  // Upcoming schedule (shown in the side panel, independent of live status)
-  useEffect(() => {
-    supabase.from('tv_schedules').select('id, title, starts_at, ends_at, category')
-      .eq('channel_id', channel.id).gte('ends_at', new Date().toISOString())
-      .order('starts_at', { ascending: true }).limit(5)
-      .then(({ data }) => setSchedule((data as TVScheduleEntry[]) || []))
-  }, [channel.id])
+  return (
+    <div className="relative w-full aspect-video rounded-2xl overflow-hidden shadow-2xl shadow-black/50 border border-violet-500/20 bg-black">
+      {channel.mux_playback_id ? (
+        <MuxPlayer
+          ref={playerRef}
+          streamType="live"
+          playbackId={channel.mux_playback_id}
+          autoPlay="muted"
+          muted
+          playsInline
+          primaryColor="#ffffff"
+          accentColor="#8b5cf6"
+          metadata={{ video_title: channel.name, viewer_user_id: 'anonymous' }}
+          style={{ width: '100%', height: '100%' } as React.CSSProperties}
+        />
+      ) : (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/70 px-6 text-center">
+          <Antenna className="w-10 h-10 text-violet-400/40" />
+          <p className="text-sm text-white/60 font-semibold">Broadcast not started</p>
+        </div>
+      )}
+
+      {channel.mux_playback_id && status === 'loading' && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/60 pointer-events-none">
+          <Loader2 className="w-8 h-8 text-violet-400 animate-spin" />
+          <p className="text-sm text-white/70">Connecting to live stream…</p>
+        </div>
+      )}
+
+      {channel.mux_playback_id && status === 'error' && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/80 px-6 text-center pointer-events-none">
+          <AlertCircle className="w-10 h-10 text-amber-400/60" />
+          <p className="text-sm text-white/70 font-semibold">Stream not available</p>
+          <p className="text-xs text-white/40">The channel may have just gone offline. Check back soon.</p>
+        </div>
+      )}
+
+      {/* LIVE badge */}
+      <div className="absolute top-3 left-3 flex items-center gap-2 pointer-events-none">
+        <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-500 text-white text-[11px] font-black shadow-lg">
+          <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> LIVE
+        </span>
+        {channel.viewer_count > 0 && (
+          <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/50 text-white text-[11px] backdrop-blur-sm">
+            <Eye className="w-3 h-3" /> {channel.viewer_count.toLocaleString()}
+          </span>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── "Coming Soon" placeholder (shown when nothing is live) ─────────────────────
+
+function ComingSoonPlayer({ channel }: { channel: TVChannel | null }) {
+  return (
+    <div className="relative w-full aspect-video rounded-2xl overflow-hidden shadow-2xl shadow-black/40 border border-violet-500/20 bg-gradient-to-br from-[#0e0720] via-[#160830] to-[#1a0a35]">
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 rounded-full bg-violet-600/15 blur-3xl" />
+        {channel?.cover_url && (
+          <img src={channel.cover_url} alt="" className="absolute inset-0 w-full h-full object-cover opacity-10" />
+        )}
+      </div>
+
+      <div className="relative h-full flex flex-col items-center justify-center text-center px-6 sm:px-10">
+        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="relative mb-4">
+          <span className="absolute inset-0 rounded-full bg-violet-500/20 animate-ping" />
+          <div className="relative w-14 h-14 sm:w-18 sm:h-18 rounded-full bg-gradient-to-br from-violet-600 to-purple-700 flex items-center justify-center shadow-xl shadow-violet-900/50">
+            <Antenna className="w-7 h-7 sm:w-8 sm:h-8 text-white/80" />
+          </div>
+        </motion.div>
+        <h3 className="font-display font-black text-lg sm:text-2xl text-white mb-1.5">Live stream coming soon</h3>
+        <p className="text-sm text-white/50 max-w-sm">
+          {channel ? `${channel.name} isn't broadcasting right now.` : "SmartzTV isn't broadcasting right now."}
+          {' '}We'll switch to the live player automatically the moment a stream starts.
+        </p>
+      </div>
+
+      {/* Muted/offline badge to match the live badge position */}
+      <div className="absolute top-3 left-3 pointer-events-none">
+        <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 text-white/70 text-[11px] font-bold backdrop-blur-sm border border-white/10">
+          <span className="w-1.5 h-1.5 rounded-full bg-gray-400" /> OFFLINE
+        </span>
+      </div>
+    </div>
+  )
+}
+
+// ── Now Playing card ─────────────────────────────────────────────────────────────
+
+function NowPlayingCard({ channel, isLive, nextSchedule }: { channel: TVChannel | null; isLive: boolean; nextSchedule: TVScheduleEntry | null }) {
+  const [shareToast, setShareToast] = useState(false)
 
   const handleShare = () => {
     const url = `${window.location.origin}/smartztv`
-    const text = `Watch "${channel.name}" LIVE on SmartzTV!`
+    const text = channel ? `Watch "${channel.name}" LIVE on SmartzTV!` : 'Watch SmartzTV Live!'
     if (navigator.share) {
-      navigator.share({ title: channel.name, text, url }).catch(() => {})
+      navigator.share({ title: channel?.name || 'SmartzTV', text, url }).catch(() => {})
     } else {
       navigator.clipboard.writeText(url).then(() => {
         setShareToast(true); setTimeout(() => setShareToast(false), 2500)
@@ -114,246 +189,106 @@ function MuxLivePlayer({ channel }: { channel: TVChannel }) {
     }
   }
 
-  const fmtTime = (iso: string) => {
-    try { return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
+  const fmtSchedule = (iso: string) => {
+    try { return new Date(iso).toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) }
     catch { return '' }
   }
 
   return (
-    <div className="relative w-full">
-      {/* Share toast */}
+    <div className="relative mt-4 dark:bg-[#0e0820] bg-white rounded-2xl border dark:border-white/6 border-gray-200 p-4 sm:p-5">
       <AnimatePresence>
         {shareToast && (
           <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-            className="absolute top-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500 text-white text-xs font-bold shadow-xl whitespace-nowrap">
+            className="absolute -top-3 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500 text-white text-xs font-bold shadow-xl whitespace-nowrap">
             <CheckCircle className="w-3.5 h-3.5" /> Link copied!
           </motion.div>
         )}
       </AnimatePresence>
 
-      <div className="flex gap-3 items-start">
-        <div className="flex-1 min-w-0 rounded-2xl overflow-hidden shadow-2xl shadow-black/50 border border-violet-500/20 dark:bg-[#0e0820] bg-white">
-          {/* ── Channel header ── */}
-          <div className="flex items-center justify-between gap-2 p-3 bg-gradient-to-r dark:from-violet-950/50 dark:to-purple-950/30 from-violet-50 to-purple-50">
-            <div className="flex items-center gap-2 min-w-0">
-              {channel.logo_url && (
-                <div className="w-8 h-8 rounded-lg overflow-hidden border dark:border-white/10 border-black/5 flex-shrink-0">
-                  <img src={channel.logo_url} alt={channel.name} className="w-full h-full object-cover" />
-                </div>
-              )}
-              <div className="min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <p className="font-bold text-sm dark:text-white text-gray-900 leading-tight truncate">{channel.name}</p>
-                  <span className="flex-shrink-0 flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-500 text-white text-[10px] font-black">
-                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> LIVE
-                  </span>
-                </div>
-                <p className="text-[11px] dark:text-gray-400 text-gray-500 truncate">
-                  {channel.current_program || channel.category || 'On Air'}
-                  {channel.viewer_count > 0 && <span> · <Eye className="w-2.5 h-2.5 inline -mt-0.5" /> {channel.viewer_count.toLocaleString()} watching</span>}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-1.5 flex-shrink-0">
-              {schedule.length > 0 && (
-                <button onClick={() => setShowSchedule(s => !s)} title="Upcoming schedule"
-                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${showSchedule ? 'bg-violet-500 text-white' : 'dark:bg-white/10 bg-gray-100 dark:text-gray-300 text-gray-600 hover:bg-violet-500/20'}`}>
-                  <Calendar className="w-3.5 h-3.5" />
-                </button>
-              )}
-              <button onClick={() => setShowChat(c => !c)} title="Live chat"
-                className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${showChat ? 'bg-violet-500 text-white' : 'dark:bg-white/10 bg-gray-100 dark:text-gray-300 text-gray-600 hover:bg-violet-500/20'}`}>
-                <MessageSquare className="w-3.5 h-3.5" />
-              </button>
-              <button onClick={handleShare} title="Share"
-                className="w-8 h-8 rounded-full dark:bg-white/10 bg-gray-100 dark:text-gray-300 text-gray-600 hover:bg-violet-500/20 flex items-center justify-center transition-colors">
-                <Share2 className="w-3.5 h-3.5" />
-              </button>
-            </div>
+      <div className="flex items-start justify-between gap-3 flex-wrap sm:flex-nowrap">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-11 h-11 rounded-xl dark:bg-white/10 bg-violet-50 flex items-center justify-center flex-shrink-0 overflow-hidden border dark:border-white/10 border-violet-100">
+            {channel?.logo_url
+              ? <img src={channel.logo_url} alt={channel.name} className="w-full h-full object-cover" />
+              : <Tv className="w-5 h-5 text-violet-400" />}
           </div>
-
-          {/* ── Player ── */}
-          <div ref={playerWrapRef} className="relative w-full aspect-video bg-black">
-            {channel.mux_playback_id ? (
-              <MuxPlayer
-                ref={playerRef}
-                streamType="live"
-                playbackId={channel.mux_playback_id}
-                autoPlay="muted"
-                muted
-                playsInline
-                primaryColor="#ffffff"
-                accentColor="#8b5cf6"
-                metadata={{ video_title: channel.name, viewer_user_id: 'anonymous' }}
-                style={{ width: '100%', height: '100%', '--controls-backdrop-color': 'transparent' } as React.CSSProperties}
-              />
-            ) : (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/70 px-6 text-center">
-                <Antenna className="w-10 h-10 text-violet-400/40" />
-                <p className="text-sm text-white/60 font-semibold">Broadcast not started</p>
-                <p className="text-xs text-white/30">The broadcaster hasn't started their stream yet.</p>
-              </div>
-            )}
-
-            {channel.mux_playback_id && status === 'loading' && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/60 pointer-events-none">
-                <Loader2 className="w-8 h-8 text-violet-400 animate-spin" />
-                <p className="text-sm text-white/70">Connecting to live stream…</p>
-              </div>
-            )}
-
-            {channel.mux_playback_id && status === 'error' && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/80 px-6 text-center">
-                <AlertCircle className="w-10 h-10 text-amber-400/60" />
-                <p className="text-sm text-white/70 font-semibold">Stream not available</p>
-                <p className="text-xs text-white/40">The channel may have just gone offline. Check back soon.</p>
-              </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className="font-bold text-sm sm:text-base dark:text-white text-gray-900 truncate">
+                {channel ? channel.name : 'SmartzTV'}
+              </p>
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-black flex-shrink-0 ${isLive ? 'bg-red-500/15 text-red-500 border border-red-500/25' : 'dark:bg-white/10 bg-gray-100 dark:text-gray-400 text-gray-500'}`}>
+                {isLive ? 'NOW PLAYING' : 'OFF AIR'}
+              </span>
+            </div>
+            <p className="text-xs dark:text-gray-400 text-gray-500 mt-0.5 line-clamp-1">
+              {isLive
+                ? (channel?.current_program || channel?.category || 'Live broadcast')
+                : (channel?.description || 'No broadcast in progress')}
+              {isLive && channel && channel.viewer_count > 0 && (
+                <span> · <Eye className="w-3 h-3 inline -mt-0.5" /> {channel.viewer_count.toLocaleString()} watching</span>
+              )}
+            </p>
+            {!isLive && nextSchedule && (
+              <p className="text-xs text-violet-500 dark:text-violet-300 mt-1 flex items-center gap-1">
+                <Calendar className="w-3 h-3" /> Next: {nextSchedule.title} · {fmtSchedule(nextSchedule.starts_at)}
+              </p>
             )}
           </div>
         </div>
-
-        {/* ── Schedule panel (desktop) ── */}
-        <AnimatePresence>
-          {showSchedule && schedule.length > 0 && (
-            <motion.div
-              initial={{ width: 0, opacity: 0 }}
-              animate={{ width: 240, opacity: 1 }}
-              exit={{ width: 0, opacity: 0 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 280 }}
-              className="flex-shrink-0 hidden lg:flex flex-col dark:bg-[#0e0820] bg-white rounded-2xl border dark:border-violet-900/30 border-violet-200/50 overflow-hidden shadow-xl"
-              style={{ minHeight: 280, maxHeight: 380 }}>
-              <div className="flex items-center justify-between px-3 py-2.5 border-b dark:border-white/5 border-gray-100 flex-shrink-0">
-                <div className="flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5 text-violet-400" />
-                  <p className="text-xs font-bold dark:text-white text-gray-900">Upcoming</p>
-                </div>
-                <button onClick={() => setShowSchedule(false)} className="w-5 h-5 rounded flex items-center justify-center hover:dark:bg-white/10 hover:bg-gray-100">
-                  <X className="w-3 h-3 dark:text-gray-400 text-gray-500" />
-                </button>
-              </div>
-              <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
-                {schedule.map(s => (
-                  <div key={s.id} className="p-2 rounded-xl dark:bg-white/3 bg-gray-50 border dark:border-white/5 border-gray-100">
-                    <p className="text-xs font-semibold dark:text-white text-gray-900 line-clamp-1">{s.title}</p>
-                    <div className="flex items-center gap-1 mt-0.5">
-                      <Clock className="w-2.5 h-2.5 dark:text-gray-500 text-gray-400" />
-                      <span className="text-[10px] dark:text-gray-400 text-gray-500">{fmtTime(s.starts_at)}</span>
-                      {s.category && <span className="text-[10px] dark:text-gray-600 text-gray-400 ml-1">{s.category}</span>}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* ── Chat panel (desktop) ── */}
-        <AnimatePresence>
-          {showChat && (
-            <motion.div
-              initial={{ width: 0, opacity: 0 }}
-              animate={{ width: 260, opacity: 1 }}
-              exit={{ width: 0, opacity: 0 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 280 }}
-              className="flex-shrink-0 hidden lg:flex flex-col dark:bg-[#0e0820] bg-white rounded-2xl border dark:border-violet-900/30 border-violet-200/50 overflow-hidden shadow-xl"
-              style={{ height: 'inherit', minHeight: 280, maxHeight: 380 }}>
-              <div className="flex items-center justify-between px-3 py-2.5 border-b dark:border-white/5 border-gray-100 flex-shrink-0">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-                  <p className="text-xs font-bold dark:text-white text-gray-900">Live Chat</p>
-                  <span className="text-[10px] dark:text-gray-500 text-gray-400">{comments.length}</span>
-                </div>
-                <button onClick={() => setShowChat(false)} className="w-5 h-5 rounded flex items-center justify-center hover:dark:bg-white/10 hover:bg-gray-100">
-                  <X className="w-3 h-3 dark:text-gray-400 text-gray-500" />
-                </button>
-              </div>
-              <div className="flex-1 overflow-y-auto p-2 space-y-1.5 min-h-0">
-                {comments.length === 0 ? (
-                  <p className="text-xs dark:text-gray-500 text-gray-400 text-center py-6 italic">No messages yet</p>
-                ) : (
-                  comments.map((c, i) => (
-                    <div key={c.id ?? i} className="flex items-start gap-1.5">
-                      <div className="w-5 h-5 rounded-full bg-violet-500/20 flex items-center justify-center text-[9px] font-bold text-violet-400 flex-shrink-0 overflow-hidden mt-0.5">
-                        {c.avatar ? <img src={c.avatar} alt={c.user} className="w-full h-full object-cover" /> : c.user[0]}
-                      </div>
-                      <div className="min-w-0">
-                        <span className="text-[10px] font-bold dark:text-violet-300 text-violet-600 mr-1">{c.user}</span>
-                        <span className="text-xs dark:text-gray-300 text-gray-700 break-words">{c.text}</span>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-              <div className="p-2 border-t dark:border-white/5 border-gray-100 flex-shrink-0">
-                <Link to="/login"
-                  className="flex items-center justify-center gap-1.5 w-full py-2 rounded-lg dark:bg-violet-500/10 bg-violet-50 dark:text-violet-300 text-violet-700 text-xs font-semibold hover:dark:bg-violet-500/20 hover:bg-violet-100 transition-colors">
-                  <MessageSquare className="w-3.5 h-3.5" /> Log in to chat
-                </Link>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <button onClick={handleShare}
+          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl dark:bg-white/10 bg-gray-100 dark:text-gray-300 text-gray-600 hover:bg-violet-500/20 text-xs font-semibold transition-colors flex-shrink-0">
+          <Share2 className="w-3.5 h-3.5" /> Share
+        </button>
       </div>
     </div>
   )
 }
 
-// ── "No Live Broadcast" placeholder ─────────────────────────────────────────────
+// ── Program Schedule section ─────────────────────────────────────────────────────
 
-function NoLiveBroadcastCard({ channel, nextSchedule }: { channel: TVChannel | null; nextSchedule: TVScheduleEntry | null }) {
-  const fmtSchedule = (iso: string) => {
-    try {
-      return new Date(iso).toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
-    } catch { return '' }
+function ProgramScheduleSection({ schedule }: { schedule: TVScheduleEntry[] }) {
+  const fmt = (iso: string) => {
+    try { return new Date(iso).toLocaleString([], { weekday: 'short', hour: '2-digit', minute: '2-digit' }) }
+    catch { return '' }
   }
 
   return (
-    <div className="relative w-full aspect-video rounded-2xl overflow-hidden shadow-2xl shadow-black/40 border border-violet-500/20 bg-gradient-to-br from-[#0e0720] via-[#160830] to-[#1a0a35]">
-      {/* Ambient background */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 rounded-full bg-violet-600/15 blur-3xl" />
-        {(channel?.cover_url) && (
-          <img src={channel.cover_url} alt="" className="absolute inset-0 w-full h-full object-cover opacity-10" />
-        )}
+    <div className="mt-4 dark:bg-[#0e0820] bg-white rounded-2xl border dark:border-white/6 border-gray-200 overflow-hidden">
+      <div className="flex items-center gap-2 px-4 sm:px-5 py-3.5 border-b dark:border-white/5 border-gray-100">
+        <Calendar className="w-4 h-4 text-violet-400" />
+        <p className="font-bold text-sm dark:text-white text-gray-900">Program Schedule</p>
+        {schedule.length > 0 && <span className="ml-auto text-xs dark:text-gray-500 text-gray-400">{schedule.length} upcoming</span>}
       </div>
-
-      <div className="relative h-full flex flex-col items-center justify-center text-center px-6 sm:px-10">
-        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="relative mb-5">
-          <span className="absolute inset-0 rounded-full bg-violet-500/20 animate-ping" />
-          <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-violet-600 to-purple-700 flex items-center justify-center shadow-xl shadow-violet-900/50">
-            <Antenna className="w-8 h-8 sm:w-9 sm:h-9 text-white/80" />
-          </div>
-        </motion.div>
-
-        <h3 className="font-display font-black text-xl sm:text-2xl text-white mb-1.5">No Live Broadcast Currently</h3>
-        <p className="text-sm text-white/50 max-w-sm mb-5">
-          {channel
-            ? `${channel.name} is offline right now. We'll switch to the live player automatically the moment they go live.`
-            : "SmartzTV isn't broadcasting right now. We'll switch to the live player automatically the moment a stream starts."}
-        </p>
-
-        {nextSchedule ? (
-          <div className="inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-white/8 border border-white/10 backdrop-blur-sm">
-            <Calendar className="w-4 h-4 text-violet-300 flex-shrink-0" />
-            <div className="text-left">
-              <p className="text-xs font-bold text-white leading-tight">{nextSchedule.title}</p>
-              <p className="text-[11px] text-white/50 flex items-center gap-1 mt-0.5">
-                <Clock className="w-2.5 h-2.5" /> {fmtSchedule(nextSchedule.starts_at)}
-              </p>
+      {schedule.length === 0 ? (
+        <div className="flex flex-col items-center justify-center gap-2 py-10 px-6 text-center">
+          <Clock className="w-6 h-6 dark:text-gray-600 text-gray-300" />
+          <p className="text-sm dark:text-gray-500 text-gray-400">No scheduled programs yet</p>
+          <p className="text-xs dark:text-gray-600 text-gray-400">Check back soon for upcoming broadcasts.</p>
+        </div>
+      ) : (
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 p-4 sm:p-5">
+          {schedule.map(s => (
+            <div key={s.id} className="p-3 rounded-xl dark:bg-white/5 bg-gray-50 border dark:border-white/5 border-gray-100">
+              <p className="text-sm font-semibold dark:text-white text-gray-900 line-clamp-1">{s.title}</p>
+              <div className="flex items-center gap-1.5 mt-1.5">
+                <Clock className="w-3 h-3 dark:text-gray-500 text-gray-400" />
+                <span className="text-xs dark:text-gray-400 text-gray-500">{fmt(s.starts_at)}</span>
+              </div>
+              {s.category && (
+                <span className="inline-block mt-2 px-2 py-0.5 rounded-full dark:bg-violet-500/10 bg-violet-50 dark:text-violet-300 text-violet-600 text-[10px] font-semibold">
+                  {s.category}
+                </span>
+              )}
             </div>
-          </div>
-        ) : (
-          <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10">
-            <Globe className="w-3.5 h-3.5 text-white/30" />
-            <p className="text-xs text-white/40">Check back soon, or explore community streams below</p>
-          </div>
-        )}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
 
-// ── Mux TV Channels Section ─────────────────────────────────────────────────────
+// ── Watch SmartzTV Live section ──────────────────────────────────────────────────
 
 function MuxTVSection() {
   const [channels, setChannels] = useState<TVChannel[]>([])
@@ -361,6 +296,7 @@ function MuxTVSection() {
   const [error, setError] = useState(false)
   const [selected, setSelected] = useState<TVChannel | null>(null)
   const [nextSchedule, setNextSchedule] = useState<TVScheduleEntry | null>(null)
+  const [schedule, setSchedule] = useState<TVScheduleEntry[]>([])
 
   const load = useCallback(async (sig: { cancelled: boolean }, silent = false) => {
     if (!silent) setLoading(true)
@@ -408,28 +344,35 @@ function MuxTVSection() {
     return () => { sig.cancelled = true; clearInterval(interval); supabase.removeChannel(sub) }
   }, [load])
 
-  // Next scheduled broadcast for the currently viewed channel (only relevant when it's offline)
+  // Program schedule for the currently viewed channel
   useEffect(() => {
-    if (!selected || selected.stream_status === 'active') { setNextSchedule(null); return }
+    if (!selected) { setSchedule([]); setNextSchedule(null); return }
     let cancelled = false
     supabase.from('tv_schedules').select('id, title, starts_at, ends_at, category')
       .eq('channel_id', selected.id).gte('ends_at', new Date().toISOString())
-      .order('starts_at', { ascending: true }).limit(1)
-      .then(({ data }) => { if (!cancelled) setNextSchedule((data as TVScheduleEntry[])?.[0] || null) })
+      .order('starts_at', { ascending: true }).limit(9)
+      .then(({ data }) => {
+        if (cancelled) return
+        const list = (data as TVScheduleEntry[]) || []
+        setSchedule(list)
+        setNextSchedule(list[0] || null)
+      })
     return () => { cancelled = true }
-  }, [selected?.id, selected?.stream_status])
+  }, [selected?.id])
 
   const isLive = !!selected && selected.stream_status === 'active' && !!selected.mux_playback_id
 
   if (loading) {
     return (
-      <section className="py-10 dark:bg-[#06030f] bg-violet-950/5 border-y dark:border-violet-900/20 border-violet-200/30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="py-10 sm:py-14 dark:bg-[#06030f] bg-violet-950/5">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
-            <h2 className="font-display font-black text-xl dark:text-white text-gray-900">SmartzTV Live</h2>
+            <h2 className="font-display font-black text-xl sm:text-2xl dark:text-white text-gray-900">Watch SmartzTV Live</h2>
           </div>
-          <div className="h-64 sm:h-96 dark:bg-white/5 bg-gray-100 rounded-2xl animate-pulse" />
+          <div className="aspect-video dark:bg-white/5 bg-gray-100 rounded-2xl animate-pulse" />
+          <div className="h-20 mt-4 dark:bg-white/5 bg-gray-100 rounded-2xl animate-pulse" />
+          <div className="h-32 mt-4 dark:bg-white/5 bg-gray-100 rounded-2xl animate-pulse" />
         </div>
       </section>
     )
@@ -437,13 +380,13 @@ function MuxTVSection() {
 
   if (error) {
     return (
-      <section className="py-10 dark:bg-[#06030f] bg-violet-950/5 border-y dark:border-violet-900/20 border-violet-200/30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="py-10 sm:py-14 dark:bg-[#06030f] bg-violet-950/5">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3 mb-6">
             <Tv className="w-5 h-5 text-violet-400" />
-            <h2 className="font-display font-black text-xl dark:text-white text-gray-900">SmartzTV Live</h2>
+            <h2 className="font-display font-black text-xl sm:text-2xl dark:text-white text-gray-900">Watch SmartzTV Live</h2>
           </div>
-          <div className="flex flex-col items-center justify-center gap-3 h-64 sm:h-96 rounded-2xl dark:bg-white/5 bg-gray-100 text-center px-6">
+          <div className="flex flex-col items-center justify-center gap-3 aspect-video rounded-2xl dark:bg-white/5 bg-gray-100 text-center px-6">
             <AlertCircle className="w-8 h-8 text-amber-500/70" />
             <p className="text-sm font-semibold dark:text-white text-gray-800">Couldn't load SmartzTV Live</p>
             <p className="text-xs dark:text-gray-400 text-gray-500">Check your connection and try again.</p>
@@ -458,16 +401,13 @@ function MuxTVSection() {
   }
 
   return (
-    <section className="py-10 dark:bg-[#06030f] bg-violet-950/5 border-y dark:border-violet-900/20 border-violet-200/30">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section className="py-10 sm:py-14 dark:bg-[#06030f] bg-violet-950/5">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-5 flex-wrap gap-2">
           <div className="flex items-center gap-3">
             <span className={`w-2.5 h-2.5 rounded-full ${isLive ? 'bg-red-500 animate-pulse' : 'dark:bg-gray-600 bg-gray-300'}`} />
-            <h2 className="font-display font-black text-xl dark:text-white text-gray-900">📺 SmartzTV Live</h2>
-            <span className="px-2 py-0.5 rounded-full bg-red-500/15 text-red-500 text-[11px] font-black border border-red-500/25">
-              OFFICIAL
-            </span>
+            <h2 className="font-display font-black text-xl sm:text-2xl dark:text-white text-gray-900">📺 Watch SmartzTV Live</h2>
           </div>
           <button onClick={() => { const sig = { cancelled: false }; void load(sig) }}
             className="p-2 rounded-xl dark:bg-white/5 bg-gray-100 hover:text-violet-500 transition-colors">
@@ -475,55 +415,35 @@ function MuxTVSection() {
           </button>
         </div>
 
-        <div className={`grid gap-4 ${channels.length > 1 ? 'lg:grid-cols-[1fr_260px]' : ''}`}>
-          {/* Main player */}
-          <div>
-            {isLive && selected
-              ? <MuxLivePlayer channel={selected} />
-              : <NoLiveBroadcastCard channel={selected} nextSchedule={nextSchedule} />}
+        {/* Channel switcher (only shown when multiple official channels exist) */}
+        {channels.length > 1 && (
+          <div className="flex items-center gap-2 overflow-x-auto pb-3 -mx-1 px-1 scrollbar-none">
+            {channels.map(ch => (
+              <button key={ch.id} onClick={() => setSelected(ch)}
+                className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+                  selected?.id === ch.id
+                    ? 'bg-violet-600 text-white border-violet-600'
+                    : 'dark:bg-white/5 bg-white dark:text-gray-300 text-gray-600 dark:border-white/10 border-gray-200 hover:border-violet-400'
+                }`}>
+                {ch.stream_status === 'active' && <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />}
+                {ch.name}
+              </button>
+            ))}
           </div>
+        )}
 
-          {/* Channel list */}
-          {channels.length > 1 && (
-            <div className="dark:bg-[#0e0820] bg-white rounded-2xl border dark:border-white/6 border-gray-200 overflow-hidden">
-              <div className="flex items-center gap-2 px-4 py-3 border-b dark:border-white/5 border-gray-100">
-                <Radio className="w-4 h-4 text-violet-400" />
-                <p className="font-bold text-sm dark:text-white text-gray-900">Channels</p>
-                <span className="ml-auto text-xs dark:text-gray-500 text-gray-400">{channels.length} active</span>
-              </div>
-              <div className="overflow-y-auto max-h-[380px]">
-                {channels.map(ch => (
-                  <button key={ch.id} onClick={() => setSelected(ch)}
-                    className={`w-full flex items-center gap-3 p-3 text-left transition-colors border-b dark:border-white/4 border-gray-50 last:border-0 ${
-                      selected?.id === ch.id ? 'dark:bg-violet-500/10 bg-violet-50' : 'dark:hover:bg-white/5 hover:bg-gray-50'
-                    }`}>
-                    <div className="w-14 h-10 rounded-lg dark:bg-white/10 bg-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden relative">
-                      {ch.cover_url
-                        ? <img src={ch.cover_url} alt={ch.name} className="w-full h-full object-cover" />
-                        : ch.logo_url
-                          ? <img src={ch.logo_url} alt={ch.name} className="w-full h-full object-contain p-1" />
-                          : <Tv className="w-5 h-5 text-violet-400/40" />}
-                      {ch.stream_status === 'active' && (
-                        <span className="absolute top-0.5 left-0.5 w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs font-semibold dark:text-white text-gray-900 truncate">{ch.name}</p>
-                      <p className="text-[10px] dark:text-gray-400 text-gray-500 truncate mt-0.5">
-                        {ch.current_program || ch.category || 'Live'}
-                      </p>
-                    </div>
-                    {selected?.id === ch.id && (
-                      <div className="w-1.5 h-1.5 rounded-full bg-violet-500 flex-shrink-0" />
-                    )}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
+        {/* Player — full content width, responsive 16:9 */}
+        {isLive && selected
+          ? <LiveStreamPlayer channel={selected} />
+          : <ComingSoonPlayer channel={selected} />}
 
-        {/* CTA below player */}
+        {/* Now Playing */}
+        <NowPlayingCard channel={selected} isLive={isLive} nextSchedule={nextSchedule} />
+
+        {/* Program Schedule */}
+        <ProgramScheduleSection schedule={schedule} />
+
+        {/* CTA */}
         <div className="mt-4 flex items-center justify-between flex-wrap gap-3 p-4 rounded-2xl dark:bg-violet-500/5 bg-violet-50/80 border dark:border-violet-500/10 border-violet-200/50">
           <div className="flex items-center gap-2">
             <Signal className="w-4 h-4 text-violet-500" />
