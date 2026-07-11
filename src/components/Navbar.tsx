@@ -294,15 +294,6 @@ export default function Navbar() {
                 <MessageCircle className="w-[15px] h-[15px]" />
               </motion.button>
 
-              {/* Theme */}
-              <motion.button
-                onClick={toggleTheme}
-                whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.91 }}
-                className="flex w-8 h-8 rounded-xl items-center justify-center text-white/35 hover:text-white/75 transition-colors duration-150"
-              >
-                {theme === 'dark' ? <Sun className="w-[15px] h-[15px]" /> : <Moon className="w-[15px] h-[15px]" />}
-              </motion.button>
-
               {/* Divider */}
               <div className="hidden sm:block w-px h-4 bg-white/10 mx-1.5" />
 
@@ -323,8 +314,11 @@ export default function Navbar() {
                   <>
                     <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
                       <Link to="/login"
-                        className="inline-flex items-center px-4 py-[7px] rounded-xl text-[13px] font-medium text-white/60 hover:text-white/90 transition-colors duration-150"
-                        style={{ border: '1px solid rgba(255,255,255,0.10)' }}>
+                        className="inline-flex items-center px-4 py-[7px] rounded-xl text-[13px] font-semibold text-white transition-all"
+                        style={{
+                          background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+                          boxShadow: '0 0 0 1px rgba(22,163,74,0.35), 0 2px 12px rgba(22,163,74,0.20)',
+                        }}>
                         Sign in
                       </Link>
                     </motion.div>
