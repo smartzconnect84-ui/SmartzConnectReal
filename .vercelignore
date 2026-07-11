@@ -1,0 +1,22 @@
+# Replit internal state — must be excluded or the --archive=tgz upload
+# fails with ENOENT on broken symlinks inside workflow-log directories.
+.local/
+.upm/
+.config/
+.cache/
+.replit
+replit.nix
+
+# Dev dependencies & build artifacts (already in .gitignore)
+node_modules/
+dist/
+dist-ssr/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+.env.production
+
+# Logs
+*.log
