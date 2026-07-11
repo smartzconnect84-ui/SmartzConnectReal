@@ -288,7 +288,7 @@ export default function HomePage() {
                 </p>
                 <div className="mt-6 flex items-center justify-center gap-2">
                   <div className="h-px flex-1" style={{ background: 'linear-gradient(to right, transparent, rgba(236,72,153,0.4))' }} />
-                  <span className="text-xs text-[#EC4899]/70 font-bold tracking-widest uppercase">Our Vision</span>
+                  <span className="text-xs text-[#EC4899]/70 font-bold tracking-widest uppercase">-CEO, Shedrick K. Nungehn-</span>
                   <div className="h-px flex-1" style={{ background: 'linear-gradient(to left, transparent, rgba(236,72,153,0.4))' }} />
                 </div>
               </div>
@@ -329,7 +329,9 @@ export default function HomePage() {
 
             {/* Text */}
             <motion.div {...up()} className="order-1 lg:order-2">
-              <Badge icon={Target} label="Our Mission" className="mb-5" />
+              <div className="flex justify-center">
+                <Badge icon={Target} label="Our Mission" className="mb-5" />
+              </div>
               <Heading>
                 Built in Liberia.{' '}
                 <span style={{ background: 'linear-gradient(135deg, #EC4899 0%, #DC2626 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
