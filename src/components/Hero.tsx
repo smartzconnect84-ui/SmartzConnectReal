@@ -236,7 +236,7 @@ export default function Hero() {
         style={{ background: 'rgba(10,8,22,0.82)', backdropFilter: 'blur(20px)', borderTop: '1px solid rgba(255,255,255,0.07)' }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-8">
-          <div className="grid grid-cols-3 sm:grid-cols-6 divide-x divide-white/6">
+          <div className="grid grid-cols-3 sm:grid-cols-6">
             {stats.map((s, i) => (
               <motion.div
                 key={i}
