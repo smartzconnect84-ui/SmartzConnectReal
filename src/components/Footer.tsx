@@ -24,13 +24,6 @@ const nav = {
     { label: 'World Stage',     href: '/world-stage'    },
     { label: 'Pricing',         href: '/pricing'        },
   ],
-  Support: [
-    { label: 'Help Center',     href: '/app/help'       },
-    { label: 'Safety Center',   href: '/privacy#safety' },
-    { label: 'Community Rules', href: '/terms#community'},
-    { label: 'WhatsApp Support',href: 'https://wa.me/231776679963', external: true },
-    { label: 'Report a Problem',href: 'https://wa.me/231776679963?text=Report%20a%20Problem%3A', external: true },
-  ],
   Legal: [
     { label: 'Privacy Policy',  href: '/privacy'        },
     { label: 'Terms of Service',href: '/terms'          },
@@ -86,56 +79,6 @@ export default function Footer() {
           </div>
         </div>
       </div>
-
-      {/* ── CTA banner ────────────────────────────────────────────── */}
-      <div className="relative overflow-hidden">
-        {/* Ambient glow */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[200px] rounded-full"
-            style={{ background: 'radial-gradient(ellipse, rgba(236,72,153,0.07) 0%, transparent 70%)' }} />
-        </div>
-
-        <div className="relative max-w-5xl mx-auto px-6 py-12 sm:py-16">
-          <FadeUp>
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-8">
-              <div>
-                <p className="text-[11px] font-black uppercase tracking-[0.16em] text-pink-500/70 mb-2">
-                  Join the movement
-                </p>
-                <h2 className="font-display font-black text-2xl sm:text-3xl text-white leading-tight mb-1">
-                  One account. Eight products.<br />
-                  <span style={{ background: 'linear-gradient(135deg, #EC4899 0%, #9B5DE5 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-                    Infinite connections.
-                  </span>
-                </h2>
-                <p className="text-sm text-white/40 mt-2">Free to join · No credit card · Mobile Money accepted</p>
-              </div>
-              <div className="flex items-center gap-3 flex-shrink-0">
-                <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}>
-                  <Link to="/login"
-                    className="inline-flex items-center px-5 py-2.5 rounded-xl text-sm font-medium text-white/60 hover:text-white transition-colors"
-                    style={{ border: '1px solid rgba(255,255,255,0.12)' }}>
-                    Sign in
-                  </Link>
-                </motion.div>
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Link to="/register"
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white transition-all"
-                    style={{
-                      background: 'linear-gradient(135deg, #EC4899 0%, #9B5DE5 100%)',
-                      boxShadow: '0 4px 20px rgba(236,72,153,0.28)',
-                    }}>
-                    Get started free <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
-                </motion.div>
-              </div>
-            </div>
-          </FadeUp>
-        </div>
-      </div>
-
-      {/* ── Border ── */}
-      <div className="h-px mx-6 bg-white/5" />
 
       {/* ── Main links ────────────────────────────────────────────── */}
       <div className="max-w-5xl mx-auto px-6 py-12 sm:py-14">

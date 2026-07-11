@@ -69,7 +69,6 @@ import SubscriptionsPage   from '@/pages/SubscriptionsPage'
 import FriendsPage         from '@/pages/FriendsPage'
 import CallsPage           from '@/pages/CallsPage'
 import SettingsPage        from '@/pages/SettingsPage'
-import HelpSupportPage     from '@/pages/HelpSupportPage'
 import SavedPostsPage      from '@/pages/SavedPostsPage'
 import ReferralsPage       from '@/pages/ReferralsPage'
 import WorldStageVotePage  from '@/pages/WorldStageVotePage'
@@ -207,7 +206,6 @@ export default function App() {
                 <Route path="calls"         element={<CallsPage />} />
                 <Route path="calls/video"   element={<CallsPage defaultMode="video" />} />
                 <Route path="calls/audio"   element={<CallsPage defaultMode="audio" />} />
-                <Route path="help"          element={<HelpSupportPage />} />
                 <Route path="saved"         element={<SavedPostsPage />} />
                 <Route path="referrals"     element={<ReferralsPage />} />
                 <Route path="worldstage"    element={<WorldStageVotePage />} />
