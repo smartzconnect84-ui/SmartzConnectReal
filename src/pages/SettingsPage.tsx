@@ -3,12 +3,13 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Bell, Lock, Shield, Crown, Settings, ChevronRight, ChevronDown,
   Sun, Moon, Download, Trash2, LogOut, AlertTriangle,
-  Palette, Globe, Check, Save, X, RefreshCw
+  Palette, Globe, Check, Save, X, RefreshCw, Wifi
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useTheme } from '@/contexts/ThemeContext'
 import { supabase } from '@/lib/supabase'
 import { useNavigate } from 'react-router-dom'
+import { useOfflineDraft } from '@/lib/offlineDraft'
 
 interface NotifPrefs {
   push_messages: boolean
@@ -89,6 +90,15 @@ export default function SettingsPage() {
   const [notifPrefs,   setNotifPrefs]   = useState<NotifPrefs>(DEFAULT_NOTIF)
   const [privacyPrefs, setPrivacyPrefs] = useState<PrivacyPrefs>(DEFAULT_PRIVACY)
   const [appearance,   setAppearance]   = useState<AppearancePrefs>(DEFAULT_APPEARANCE)
+
+  // Offline draft — persists unsaved pref changes across disconnects
+  const draftData = { notifPrefs, privacyPrefs, appearance }
+  const setDraftData = useCallback((d: typeof draftData) => {
+    if (d.notifPrefs)   setNotifPrefs(d.notifPrefs)
+    if (d.privacyPrefs) setPrivacyPrefs(d.privacyPrefs)
+    if (d.appearance)   setAppearance(d.appearance)
+  }, [])
+  const { isOnline, isDirty: hasPendingDraft } = useOfflineDraft('settings-prefs', draftData, setDraftData)
 
   // ── Load preferences from DB ──────────────────────────────────────────────
   const loadPrefs = useCallback(async () => {
@@ -275,6 +285,14 @@ export default function SettingsPage() {
                 <Check className="w-3 h-3 text-emerald-500" />
                 <span className="text-xs font-bold text-emerald-500">Saved!</span>
               </motion.div>
+            )}
+            {!isOnline && (
+              <span className="flex items-center gap-1 text-[10px] text-amber-500 font-semibold">
+                <Wifi className="w-3 h-3" /> Offline — changes saved locally
+              </span>
+            )}
+            {hasPendingDraft && isOnline && (
+              <span className="text-[10px] text-gray-400">Draft saved</span>
             )}
             <button onClick={savePrefs} disabled={saving}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-love-gradient text-white text-xs font-bold shadow-md shadow-pink-500/20 disabled:opacity-60">

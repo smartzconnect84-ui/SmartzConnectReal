@@ -9,6 +9,7 @@ import { streamClient } from '@/lib/stream'
 import EmojiPicker from '@/components/EmojiPicker'
 import TranslateButton from '@/components/TranslateButton'
 import type { Channel } from 'stream-chat'
+import { useOfflineDraft } from '@/lib/offlineDraft'
 
 interface Room {
   id: string; name: string; emoji: string; topic: string; members: number
@@ -53,6 +54,10 @@ export default function GroupChatPage() {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const [createForm, setCreateForm] = useState<CreateRoomForm>({
     name: '', topic: '', category: 'Dating', type: 'public', emoji: '💬'
+  })
+
+  useOfflineDraft('group-create-form', createForm, setCreateForm, {
+    isEmpty: (d: any) => !d?.name?.trim(),
   })
 
   const [isRecording, setIsRecording] = useState(false)

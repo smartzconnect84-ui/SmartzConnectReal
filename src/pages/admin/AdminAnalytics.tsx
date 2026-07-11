@@ -34,7 +34,7 @@ export default function AdminAnalytics() {
 
   const fetchStats = useCallback(async () => {
     setLoading(true)
-    const [usersRes, matchesRes, postsRes, reportsRes, streamsRes, ridesRes, marketRes] = await Promise.all([
+    const [usersRes, matchesRes, postsRes, reportsRes, streamsRes, ridesRes, marketRes, paymentsRes] = await Promise.all([
       supabase.from('profiles').select('id, created_at, last_seen', { count: 'exact' }),
       supabase.from('matches').select('id', { count: 'exact' }),
       supabase.from('posts').select('id', { count: 'exact' }),
@@ -42,6 +42,7 @@ export default function AdminAnalytics() {
       supabase.from('livestreams').select('id', { count: 'exact' }),
       supabase.from('ride_requests').select('id', { count: 'exact' }),
       supabase.from('marketplace_items').select('id', { count: 'exact' }),
+      supabase.from('momo_payments').select('amount').eq('status', 'approved'),
     ])
 
     const anyError = [usersRes, matchesRes, postsRes, reportsRes].find(r => r.error)
@@ -66,11 +67,13 @@ export default function AdminAnalytics() {
       const rideCount = ridesRes.count || 0
       const marketCount = marketRes.count || 0
 
+      const revenue = (paymentsRes.data || []).reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0)
+
       setStats({
         totalUsers: usersRes.count || 0,
         newUsersThisMonth: newThisMonth,
         activeToday,
-        revenue: 0,
+        revenue,
         matches: matchCount,
         messages: 0,
         posts: postCount,
@@ -121,7 +124,7 @@ export default function AdminAnalytics() {
     { label: 'Total Matches',     value: stats.matches.toLocaleString(),     icon: Heart,      color: 'from-fuchsia-500 to-pink-600',  sub: 'All time matches' },
     { label: 'Total Posts',       value: stats.posts.toLocaleString(),       icon: MessageCircle, color: 'from-blue-500 to-indigo-600', sub: 'Feed posts' },
     { label: 'Open Reports',      value: stats.reports.toLocaleString(),     icon: BarChart3,  color: 'from-amber-500 to-orange-600',  sub: 'Needs attention' },
-    { label: 'Platform Revenue',  value: '$0',                               icon: DollarSign, color: 'from-emerald-500 to-teal-600',  sub: 'Connect billing to track' },
+    { label: 'Platform Revenue',  value: `$${stats.revenue.toLocaleString()}`, icon: DollarSign, color: 'from-emerald-500 to-teal-600',  sub: 'Approved MoMo payments' },
   ] : []
 
   return (

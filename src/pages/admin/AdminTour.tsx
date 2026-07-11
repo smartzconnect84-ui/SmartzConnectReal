@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, Users, CreditCard, Flag, BarChart3, Megaphone,
   ShoppingBag, Tv, Car, FileText, Shield, Megaphone as Ad,
-  Settings, Users2, ScrollText, Crown, ChevronRight
+  Settings, Users2, ScrollText, Crown, ChevronRight, Mail
 } from 'lucide-react'
 
 const pages = [
@@ -84,8 +84,13 @@ const pages = [
   },
   {
     num: '16', icon: Crown,           label: 'CEO Panel',        path: '/admin/ceo',          color: 'from-amber-500 to-yellow-600',
-    desc: 'Highest permission level — admin oversight, platform config, CEO-only actions',
-    features: ['Admin team override', 'Edit subscription pricing', 'Platform configuration', 'Emergency controls'],
+    desc: 'Highest permission level — staff management, responsibilities, tasks, emergency controls',
+    features: ['Staff member CRUD with roles', 'Per-role responsibilities & tasks tabs', 'Edit subscription pricing', 'Export staff CSV'],
+  },
+  {
+    num: '17', icon: Mail,            label: 'Email Campaigns',  path: '/admin/email',        color: 'from-pink-500 to-rose-600',
+    desc: 'Bulk promotional email composer — target by plan, preview, save drafts, track history',
+    features: ['Audience targeting (Free/Premium/VIP)', 'Template library & live preview', 'Send history + CSV export', 'Draft auto-save'],
   },
 ]
 
@@ -94,7 +99,7 @@ export default function AdminTour() {
     <div className="p-4 sm:p-6 space-y-5">
       <div className="dark:bg-gradient-to-r dark:from-pink-500/10 dark:to-purple-500/5 bg-gradient-to-r from-pink-50 to-purple-50 rounded-3xl border dark:border-pink-500/20 border-pink-200 p-6 mb-2">
         <h1 className="font-display font-black text-2xl dark:text-white text-gray-900 mb-1">Admin Panel Tour</h1>
-        <p className="text-sm dark:text-gray-400 text-gray-500">All 16 pages at a glance — click any card to navigate there</p>
+        <p className="text-sm dark:text-gray-400 text-gray-500">All 17 pages at a glance — click any card to navigate there</p>
       </div>
 
       <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">

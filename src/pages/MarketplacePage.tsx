@@ -4,6 +4,7 @@ import { Search, Heart, Star, ShoppingCart, MapPin, Shield, X, Plus, Minus, Pack
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { uploadToSufy } from '@/lib/sufy'
+import { useOfflineDraft } from '@/lib/offlineDraft'
 
 const categories = ['All', 'Fashion', 'Electronics', 'Food', 'Art', 'Beauty', 'Home', 'Services', 'Digital']
 
@@ -135,6 +136,10 @@ export default function MarketplacePage() {
   const [uploadingImage, setUploadingImage] = useState(false)
   const imageInputRef = useRef<HTMLInputElement>(null)
   const { user } = useAuth()
+
+  useOfflineDraft('marketplace-listing', newListing, setNewListing, {
+    isEmpty: (d: any) => !d?.name?.trim(),
+  })
 
   const fetchProducts = async () => {
     setLoading(true)

@@ -222,13 +222,13 @@ function PaymentModal({ plan, onClose }: { plan: typeof plans[0]; onClose: () =>
               <div className="space-y-2 mb-5">
                 {momoMethods.map(m => (
                   <button key={m.id} onClick={() => m.id !== 'card' && setMethod(m.id)} disabled={m.id === 'card'}
-                    className={`w-full flex items-center gap-3 p-3.5 rounded-2xl border-2 transition-all ${method === m.id ? 'border-brand-pink dark:bg-pink-500/10 bg-pink-50' : m.color} ${m.id === 'card' ? 'cursor-not-allowed' : 'cursor-pointer hover:border-pink-300'}`}>
+                    className={`w-full flex items-center gap-3 p-3.5 rounded-2xl border-2 transition-all ${method === m.id ? 'border-brand-pink dark:bg-pink-500/10 bg-pink-50' : m.color} ${m.id === 'card' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:border-pink-300'}`}>
                     <span className="text-2xl">{m.emoji}</span>
                     <div className="flex-1 text-left">
                       <p className="text-sm font-bold dark:text-white text-gray-900">{m.name}</p>
-                      <p className="text-xs dark:text-gray-400 text-gray-500">{m.number}</p>
+                      <p className="text-xs dark:text-gray-400 text-gray-500">{m.id === 'card' ? 'Coming soon — use Mobile Money' : m.number}</p>
                     </div>
-                    {method === m.id && <Check className="w-4 h-4 text-brand-pink flex-shrink-0" />}
+                    {m.id === 'card' ? <span className="text-[10px] font-bold text-gray-400 bg-gray-200/50 dark:bg-white/10 px-2 py-0.5 rounded-full">Soon</span> : method === m.id && <Check className="w-4 h-4 text-brand-pink flex-shrink-0" />}
                   </button>
                 ))}
               </div>
