@@ -667,7 +667,7 @@ export default function PricingPage() {
       <section className="pb-20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6">
           <div className="relative overflow-hidden rounded-3xl bg-love-gradient p-10 text-center shadow-2xl shadow-pink-500/25">
-            <div className="absolute inset-0 bg-[url('/noise.svg')] opacity-5 pointer-events-none" />
+
             <p className="font-display font-black text-3xl sm:text-4xl text-white mb-3">Ready to Connect? 💕</p>
             <p className="text-white/80 text-base mb-7 max-w-lg mx-auto">Join 100,000+ people across Africa building real connections, businesses, and communities on SmartzConnect.</p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
