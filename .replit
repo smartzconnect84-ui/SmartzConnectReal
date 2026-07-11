@@ -39,12 +39,12 @@ waitForPort = 5000
 name = "Deploy to Vercel"
 author = "agent"
 
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "cd /home/runner/workspace && npx vercel --prod --yes --archive=tgz --token=\"$VERCEL_TOKEN\" 2>&1 | tee /tmp/vercel-deploy.log; echo \"EXIT:$?\""
-
 [workflows.workflow.metadata]
 outputType = "console"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd /home/runner/workspace && npx --yes vercel --prod --yes --archive=tgz --token=\"$VERCEL_TOKEN\" 2>&1 | tee /tmp/vercel-deploy.log; echo \"EXIT:$?\""
 
 [[ports]]
 localPort = 3000

@@ -60,6 +60,39 @@ self.addEventListener('activate', event => {
   )
 })
 
+// ── Push (App Badging) ───────────────────────────────────────────────────────
+// This app's push notifications are actually delivered via the OneSignal SDK,
+// which registers its own worker (OneSignalSDKWorker.js) to receive and
+// display them — see that file for the matching badge-update logic. This
+// handler is kept here too as a defensive fallback in case a 'push' event
+// ever reaches this worker directly (e.g. a non-OneSignal push subscription
+// registered against this SW's scope), so the badge logic isn't silently
+// skipped depending on which worker ends up owning the push subscription.
+self.addEventListener('push', event => {
+  let payload = {}
+  try {
+    payload = event.data ? event.data.json() : {}
+  } catch {
+    // Non-JSON push payload — ignore, nothing to read a badge count from.
+  }
+
+  // Accept a few common shapes for where a badge count might be sent from
+  // the backend: top-level `badge`/`unreadCount`, or nested in `data`.
+  const badgeCount =
+    payload.badge ??
+    payload.unreadCount ??
+    payload.data?.badge ??
+    payload.data?.unreadCount
+
+  if ('setAppBadge' in self.navigator) {
+    event.waitUntil(
+      typeof badgeCount === 'number'
+        ? self.navigator.setAppBadge(badgeCount).catch(() => {})
+        : self.navigator.setAppBadge().catch(() => {}) // no count given — just flag "something new"
+    )
+  }
+})
+
 // ── Fetch ─────────────────────────────────────────────────────────────────────
 self.addEventListener('fetch', event => {
   const { request } = event

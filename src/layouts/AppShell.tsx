@@ -11,6 +11,7 @@ import { useTheme } from '@/contexts/ThemeContext'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
 import { useNotifications } from '@/contexts/NotificationContext'
+import { clearAppBadge } from '@/lib/appBadge'
 import TopNavBar from '@/layouts/TopNavBar'
 import LeftSidebar from '@/layouts/LeftSidebar'
 import CreateModal from '@/components/CreateModal'
@@ -87,6 +88,18 @@ export default function AppShell() {
 
   // Close drawer on navigation
   useEffect(() => { setDrawerOpen(false) }, [location.pathname])
+
+  // Clear the PWA icon badge whenever the user is actively viewing the app —
+  // on first mount, and again whenever the tab regains focus/visibility
+  // (covers reopening an installed PWA from the home screen/taskbar).
+  useEffect(() => {
+    clearAppBadge()
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') clearAppBadge()
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => document.removeEventListener('visibilitychange', handleVisibility)
+  }, [])
 
   // Realtime unread message count (notifications come from NotificationContext)
   useEffect(() => {
