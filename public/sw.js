@@ -30,9 +30,12 @@ self.addEventListener('install', event => {
       )
     )
   )
-  // Immediately become the active SW — don't wait for all tabs to close.
-  // PWAUpdatePrompt handles the user-facing "Update available" flow.
-  self.skipWaiting()
+  // Do NOT call self.skipWaiting() here automatically.
+  // If we did, the SW would take over immediately, fire 'controllerchange',
+  // and PWAUpdatePrompt would call window.location.reload() while the page
+  // is still downloading chunks — causing the ring to restart every visit.
+  // skipWaiting is only sent explicitly by the user clicking "Reload" in
+  // the PWAUpdatePrompt banner.
 })
 
 // Allow the page to explicitly promote a waiting worker once the user

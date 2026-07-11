@@ -16,6 +16,12 @@ export default function PWAUpdatePrompt() {
   useEffect(() => {
     if (!('serviceWorker' in navigator) || !import.meta.env.PROD) return
 
+    // Snapshot whether a SW was already in control when this page loaded.
+    // controllerchange also fires on FIRST install (null → v4). We must not
+    // reload in that case — the page is already loading the latest code and
+    // a reload would restart the ring mid-download.
+    const hadControllerOnLoad = !!navigator.serviceWorker.controller
+
     const promptIfWaiting = (reg: ServiceWorkerRegistration) => {
       if (reg.waiting && navigator.serviceWorker.controller) {
         waitingWorkerRef.current = reg.waiting
@@ -23,6 +29,7 @@ export default function PWAUpdatePrompt() {
       }
     }
 
+    let cleanupInterval: (() => void) | undefined
     navigator.serviceWorker.getRegistration().then(reg => {
       if (!reg) return
       promptIfWaiting(reg)
@@ -39,20 +46,26 @@ export default function PWAUpdatePrompt() {
         })
       })
 
-      // Periodically check for a new build (covers tabs left open for a
-      // long time, since 'updatefound' only fires on navigation/interval).
-      const interval = setInterval(() => reg.update().catch(() => {}), 60 * 60 * 1000)
-      return () => clearInterval(interval)
+      // Periodically check for a new build (covers tabs left open for hours).
+      const id = setInterval(() => reg.update().catch(() => {}), 60 * 60 * 1000)
+      cleanupInterval = () => clearInterval(id)
     })
 
-    // Once the new SW takes control, reload exactly once to pick it up.
+    // Reload once the new SW takes control — but ONLY if there was already
+    // a previous SW in control (i.e. this is an update, not first install).
+    // On first install hadControllerOnLoad is false; reloading would interrupt
+    // the initial chunk downloads and cause the ring to appear to loop forever.
     const onControllerChange = () => {
+      if (!hadControllerOnLoad) return   // first install — skip reload
       if (reloadingRef.current) return
       reloadingRef.current = true
       window.location.reload()
     }
     navigator.serviceWorker.addEventListener('controllerchange', onControllerChange)
-    return () => navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange)
+    return () => {
+      navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange)
+      cleanupInterval?.()
+    }
   }, [])
 
   const handleUpdate = () => {

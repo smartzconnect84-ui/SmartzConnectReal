@@ -2,7 +2,7 @@ export default function SplashLoader({ message = 'Loading SmartzConnect…' }: {
   return (
     <div className="min-h-screen dark:bg-[#0D0A14] bg-gray-50 flex flex-col items-center justify-center gap-6">
       <div className="relative flex items-center justify-center">
-        {/* Outer spinning arc — conic gradient ring */}
+        {/* Outer spinning arc */}
         <svg
           className="absolute animate-spin"
           style={{ animationDuration: '1.4s' }}
@@ -25,7 +25,7 @@ export default function SplashLoader({ message = 'Loading SmartzConnect…' }: {
           />
         </svg>
 
-        {/* Inner slower counter-spinning accent arc */}
+        {/* Inner counter-spinning accent arc */}
         <svg
           className="absolute animate-spin"
           style={{ animationDuration: '2.2s', animationDirection: 'reverse' }}
@@ -41,10 +41,16 @@ export default function SplashLoader({ message = 'Loading SmartzConnect…' }: {
           />
         </svg>
 
-        {/* Logo */}
+        {/*
+          Use icon-192.png (26 KB) not pwa-logo.png (1.4 MB).
+          SplashLoader renders during auth/loading states — fetching a 1.4 MB
+          image here blocked the spinner from appearing quickly on slow connections.
+        */}
         <img
-          src="/pwa-logo.png"
+          src="/icon-192.png"
           alt="SmartzConnect"
+          width={80}
+          height={80}
           className="w-20 h-20 object-contain rounded-2xl"
           style={{ filter: 'drop-shadow(0 0 16px rgba(236,72,153,0.45))' }}
         />

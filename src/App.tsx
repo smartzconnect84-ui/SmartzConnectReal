@@ -118,28 +118,24 @@ const AdminTour            = lazy(() => import('@/pages/admin/AdminTour'))
 const AdminWorldStage      = lazy(() => import('@/pages/admin/AdminWorldStage'))
 const AdminEmail           = lazy(() => import('@/pages/admin/AdminEmail'))
 
-// ── Suspense fallback shown while a lazy chunk is downloading ────────────────
+// ── Suspense fallback: thin progress bar only — never blocks the whole screen.
+// The native-splash already handles first-paint. A full-screen overlay here
+// would make the ring appear to "restart" on every lazy navigation.
 function PageLoader() {
   return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 9998,
-      background: '#0D0A14',
-      display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center', gap: 24,
-    }}>
-      <div style={{ position: 'relative', width: 80, height: 80, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <svg style={{ position: 'absolute', animation: 'sc-spin 1.4s linear infinite' }} width="80" height="80" viewBox="0 0 120 120" fill="none">
-          <defs>
-            <linearGradient id="sg2" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#EC4899" stopOpacity="0"/>
-              <stop offset="40%" stopColor="#EC4899" stopOpacity="0.6"/>
-              <stop offset="100%" stopColor="#A855F7" stopOpacity="1"/>
-            </linearGradient>
-          </defs>
-          <circle cx="60" cy="60" r="54" stroke="url(#sg2)" strokeWidth="4" strokeLinecap="round" strokeDasharray="220 120"/>
-        </svg>
-        <img src="/pwa-logo.png" alt="" style={{ width: 48, height: 48, objectFit: 'contain', borderRadius: 12, filter: 'drop-shadow(0 0 12px rgba(236,72,153,0.45))' }} />
-      </div>
+    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9990, height: 3 }}>
+      <div style={{
+        height: '100%',
+        background: 'linear-gradient(90deg, #EC4899, #A855F7)',
+        animation: 'sc-progress 1.8s ease-in-out infinite',
+      }} />
+      <style>{`
+        @keyframes sc-progress {
+          0%   { width: 0%;   opacity: 1; }
+          70%  { width: 85%;  opacity: 1; }
+          100% { width: 100%; opacity: 0; }
+        }
+      `}</style>
     </div>
   )
 }
