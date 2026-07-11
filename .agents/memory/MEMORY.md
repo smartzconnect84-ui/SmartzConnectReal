@@ -41,3 +41,5 @@
 - [Go-live/call-screen/switcher audit](admin-golive-callscreen-audit.md) — RLS-blocked updates return 0 rows not errors (must check); call darkness was over-blurred CSS not a black screen; device ringtones are a hard web limitation.
 - [Site-config branding architecture](site-config-branding.md) — SiteConfigContext + site_config table drives admin-controlled logo/background images across Navbar/Footer/public pages, additive with fallback.
 - [admin_users RLS infinite recursion (unfixed)](admin-users-rls-recursion.md) — platform_settings/system_announcements 500 with 42P17; blocked by missing DB write credentials this session.
+- [Tawk.to live chat fix](tawk-live-chat-fix.md) — hideWidget()/showWidget() hide the ENTIRE widget not just the launcher; openTawkChat() must call showWidget() before maximize().
+- [Stories text media_type fix](stories-text-media-type-fix.md) — live DB CHECK constraint only allowed image/video; text stories always failed silently. Comments backend tested fine.

@@ -76,9 +76,23 @@
     <script type="text/javascript">
       var Tawk_API = Tawk_API || {};
       var Tawk_LoadStart = new Date();
+      // Pin the widget to a fixed bottom-right anchor with an explicit high
+      // z-index BEFORE the embed script loads, so if it renders at all
+      // (briefly, before hideWidget() below runs) it doesn't jump around or
+      // sit at an inconsistent spot relative to the app's own FAB.
+      Tawk_API.customStyle = {
+        zIndex: 2147483000,
+        visibility: {
+          desktop: { xOffset: 20, yOffset: 20, position: 'br' },
+          mobile: { xOffset: 12, yOffset: 12, position: 'br' },
+        },
+      };
       // Hide Tawk's own floating launcher bubble as soon as it loads — the app
       // renders its own FloatingSupportWidget (Live Support / Help & Support)
       // and calls Tawk_API.maximize() directly to open the chat window.
+      // NOTE: hideWidget()/showWidget() control the ENTIRE widget (launcher +
+      // chat), not just the launcher — src/lib/tawk.ts's openTawkChat() calls
+      // showWidget() before maximize() to un-hide it again.
       Tawk_API.onLoad = function () {
         if (Tawk_API.hideWidget) Tawk_API.hideWidget();
       };

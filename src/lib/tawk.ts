@@ -24,7 +24,13 @@ declare global {
  */
 export function openTawkChat() {
   const api = window.Tawk_API
-  if (api?.maximize) {
+  // The widget is fully hidden on load (see hideTawkWidget below) — per
+  // Tawk's own API, hideWidget()/showWidget() control visibility of the
+  // ENTIRE widget (launcher + chat window), not just the launcher bubble.
+  // Calling maximize() while hidden does nothing, so we must un-hide it
+  // first or the chat is silently unreachable.
+  if (api?.showWidget && api?.maximize) {
+    api.showWidget()
     api.maximize()
     return
   }
@@ -32,10 +38,12 @@ export function openTawkChat() {
   let attempts = 0
   const retry = setInterval(() => {
     attempts += 1
-    if (window.Tawk_API?.maximize) {
-      window.Tawk_API.maximize()
+    const a = window.Tawk_API
+    if (a?.showWidget && a?.maximize) {
+      a.showWidget()
+      a.maximize()
       clearInterval(retry)
-    } else if (attempts >= 10) {
+    } else if (attempts >= 20) {
       clearInterval(retry)
     }
   }, 300)
