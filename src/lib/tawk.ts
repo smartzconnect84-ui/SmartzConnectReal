@@ -1,6 +1,9 @@
 // Thin wrapper around the global Tawk.to widget API.
 // The widget script itself is loaded directly in index.html (before </body>),
 // so it is present on every route without any React mounting/lazy-loading.
+// Tawk's own floating launcher bubble is the only support widget in the app
+// (pinned to a bottom-right fallback position via Tawk_API.customStyle in
+// index.html) — there is no custom app-side FAB to keep in sync with it.
 
 declare global {
   interface Window {
@@ -11,6 +14,7 @@ declare global {
       showWidget?: () => void
       hideWidget?: () => void
       onLoad?: () => void
+      customStyle?: unknown
       [key: string]: unknown
     }
     Tawk_LoadStart?: Date
@@ -24,13 +28,7 @@ declare global {
  */
 export function openTawkChat() {
   const api = window.Tawk_API
-  // The widget is fully hidden on load (see hideTawkWidget below) — per
-  // Tawk's own API, hideWidget()/showWidget() control visibility of the
-  // ENTIRE widget (launcher + chat window), not just the launcher bubble.
-  // Calling maximize() while hidden does nothing, so we must un-hide it
-  // first or the chat is silently unreachable.
-  if (api?.showWidget && api?.maximize) {
-    api.showWidget()
+  if (api?.maximize) {
     api.maximize()
     return
   }
@@ -38,43 +36,13 @@ export function openTawkChat() {
   let attempts = 0
   const retry = setInterval(() => {
     attempts += 1
-    const a = window.Tawk_API
-    if (a?.showWidget && a?.maximize) {
-      a.showWidget()
-      a.maximize()
+    if (window.Tawk_API?.maximize) {
+      window.Tawk_API.maximize()
       clearInterval(retry)
     } else if (attempts >= 20) {
       clearInterval(retry)
     }
   }, 300)
-}
-
-/**
- * Hides Tawk.to's own floating launcher bubble so it doesn't duplicate our
- * custom FloatingSupportWidget. Safe to call before the script has loaded —
- * retries briefly, same pattern as `openTawkChat`.
- */
-export function hideTawkWidget() {
-  const api = window.Tawk_API
-  if (api?.hideWidget) {
-    api.hideWidget()
-    return
-  }
-  let attempts = 0
-  const retry = setInterval(() => {
-    attempts += 1
-    if (window.Tawk_API?.hideWidget) {
-      window.Tawk_API.hideWidget()
-      clearInterval(retry)
-    } else if (attempts >= 10) {
-      clearInterval(retry)
-    }
-  }, 300)
-}
-
-/** Restores Tawk.to's own launcher bubble (not used by default; kept for parity). */
-export function showTawkWidget() {
-  window.Tawk_API?.showWidget?.()
 }
 
 export {}

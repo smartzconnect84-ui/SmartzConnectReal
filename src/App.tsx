@@ -29,7 +29,6 @@ import PWAInstallPrompt from '@/components/PWAInstallPrompt'
 import PWAUpdatePrompt from '@/components/PWAUpdatePrompt'
 import NotificationPrompt from '@/components/NotificationPrompt'
 import NetworkStatusToast from '@/components/NetworkStatusToast'
-import FloatingSupportWidget from '@/components/FloatingSupportWidget'
 import { TourProvider } from '@/contexts/TourContext'
 import TourOverlay from '@/components/tour/TourOverlay'
 import { NotificationProvider } from '@/contexts/NotificationContext'
@@ -147,7 +146,6 @@ export default function App() {
             <PWAUpdatePrompt />
             <NotificationPrompt />
             <TourOverlay />
-            <FloatingSupportWidget />
             <Routes>
               {/* Public */}
               <Route path="/"            element={<PublicLayout><HomePage /></PublicLayout>} />
