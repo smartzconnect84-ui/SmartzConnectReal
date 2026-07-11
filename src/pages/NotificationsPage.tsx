@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Bell, Heart, MessageCircle, Users, Zap, Check, Trash2, RefreshCw } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { useNotifications } from '@/contexts/NotificationContext'
+import { useAuth } from '@/hooks/useAuth'
 
 const tabs = [
   { key: 'all',     label: 'All',      icon: Bell },
@@ -21,11 +23,37 @@ const typeConfig: Record<string, { color: string; bg: string }> = {
   spin:    { color: 'text-fuchsia-500', bg: 'bg-fuchsia-500/10' },
 }
 
+function relativeTime(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime()
+  const mins = Math.floor(diff / 60_000)
+  if (mins < 1)   return 'just now'
+  if (mins < 60)  return `${mins}m ago`
+  const hrs = Math.floor(mins / 60)
+  if (hrs  < 24)  return `${hrs}h ago`
+  const days = Math.floor(hrs / 24)
+  if (days < 7)   return `${days}d ago`
+  return new Date(iso).toLocaleDateString()
+}
+
 export default function NotificationsPage() {
   const { notifications, unreadCount, loading, markRead, markAllRead, deleteNotification, refresh } = useNotifications()
+  const { user } = useAuth()
+  const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('all')
 
   const filtered = notifications.filter(n => activeTab === 'all' || n.type === activeTab)
+
+  const handleNotificationClick = (n: typeof notifications[0]) => {
+    markRead(n.id)
+    if (n.action_url) {
+      // Internal paths (starting with /) use React Router; external URLs open in new tab
+      if (n.action_url.startsWith('/')) {
+        navigate(n.action_url)
+      } else {
+        window.open(n.action_url, '_blank', 'noopener,noreferrer')
+      }
+    }
+  }
 
   return (
     <div className="h-full overflow-y-auto dark:bg-[#0A0710] bg-gray-50">
@@ -95,18 +123,21 @@ export default function NotificationsPage() {
             <AnimatePresence>
               {filtered.map((n, i) => {
                 const cfg = typeConfig[n.type] || typeConfig.system
-                const timeLabel = new Date(n.created_at).toLocaleDateString()
+                const timeLabel = relativeTime(n.created_at)
                 return (
                   <motion.div key={n.id}
                     initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: -100 }}
                     transition={{ delay: i * 0.03 }}
-                    onClick={() => markRead(n.id)}
+                    onClick={() => handleNotificationClick(n)}
                     className={`flex items-start gap-3 p-4 rounded-2xl border cursor-pointer transition-all ${
                       !n.read
                         ? 'dark:bg-[#1A1228] bg-white dark:border-white/10 border-pink-100 shadow-sm'
                         : 'dark:bg-[#130E1E]/50 bg-white/50 dark:border-white/5 border-gray-100'
                     }`}>
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-lg ${cfg.bg}`}>
+                    <div
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-lg ${cfg.bg}${n.from_user_id && n.from_user_id !== user?.id ? ' cursor-pointer' : ''}`}
+                      onClick={n.from_user_id && n.from_user_id !== user?.id ? (e) => { e.stopPropagation(); navigate(`/app/user/${n.from_user_id}`) } : undefined}
+                    >
                       {n.emoji}
                     </div>
                     <div className="flex-1 min-w-0">
