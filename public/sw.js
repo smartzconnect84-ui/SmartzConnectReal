@@ -3,7 +3,7 @@
  * Provides basic offline support and asset caching for PWA installation.
  */
 
-const CACHE_NAME = 'smartzconnect-v2'
+const CACHE_NAME = 'smartzconnect-v3'
 
 // Core shell assets to pre-cache on install
 const PRECACHE_URLS = [

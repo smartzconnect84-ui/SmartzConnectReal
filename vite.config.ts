@@ -25,21 +25,36 @@ export default defineConfig({
     assetsDir: 'assets',
     sourcemap: false,
     target: 'es2020',
-    chunkSizeWarningLimit: 1500,
+    // Lower the warning threshold now that we're code-splitting
+    chunkSizeWarningLimit: 600,
     rollupOptions: {
       output: {
         manualChunks(id) {
           if (!id.includes('node_modules')) return
-          if (id.includes('stream-chat')) return 'stream'
-          if (id.includes('framer-motion')) return 'motion'
-          if (id.includes('@supabase')) return 'supabase'
-          if (
-            id.includes('react-router') ||
-            id.includes('/react/') ||
-            id.includes('/react-dom/')
-          ) return 'vendor'
+
+          // Heavy third-party SDKs — each in its own chunk so they're only
+          // downloaded when the feature is first used (chat, video, etc.)
+          if (id.includes('stream-chat') || id.includes('stream-io')) return 'stream'
+          if (id.includes('framer-motion'))                            return 'motion'
+          if (id.includes('@supabase'))                                return 'supabase'
+          if (id.includes('livekit'))                                  return 'livekit'
+
+          // React core — separate from react-router to break the circular dep
+          // that caused the 1.7 MB "deps" mega-chunk in the previous build.
+          // The cycle was: react-router (vendor) → react (vendor) → back into
+          // deps which also imported react-router → Rollup loop.
+          if (id.includes('/react/') || id.includes('/react-dom/'))    return 'vendor'
+          if (id.includes('react-router'))                             return 'router'
+
+          // UI primitives
           if (id.includes('@radix-ui') || id.includes('lucide-react')) return 'ui'
-          if (id.includes('@tanstack')) return 'query'
+
+          // Data-fetching / state
+          if (id.includes('@tanstack'))                                return 'query'
+
+          // Everything else (date-fns, zod, clsx, etc.) goes here.
+          // With pages lazy-loaded this chunk is now much smaller because
+          // page-only deps ship inside their own async chunk.
           return 'deps'
         },
       },

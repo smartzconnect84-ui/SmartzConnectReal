@@ -91,10 +91,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let isMounted = true
 
+    // ── Safety timeout ────────────────────────────────────────────────────────
+    // If Supabase is unreachable (cold start, DNS failure, CF block) getSession()
+    // may hang indefinitely, leaving loading=true and the app stuck on the
+    // splash screen. After 10 seconds we clear loading so the user can at least
+    // see the public/unauthenticated view instead of a spinner forever.
+    const loadingTimer = setTimeout(() => {
+      if (isMounted) setLoading(false)
+    }, 10_000)
+
     // ── Initial session ───────────────────────────────────────────────────────
     // Await role resolution before clearing loading so AdminRoute never sees
     // a stale role on page refresh and redirects admins to /app/feed.
     supabase.auth.getSession().then(async ({ data: { session } }) => {
+      clearTimeout(loadingTimer)
       if (!isMounted) return
       const uid = session?.user?.id ?? null
       currentUserIdRef.current = uid
@@ -117,6 +127,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         }
       }
+      if (isMounted) setLoading(false)
+    }).catch(() => {
+      // getSession() itself threw (network error, malformed response, etc.)
+      clearTimeout(loadingTimer)
       if (isMounted) setLoading(false)
     })
 
@@ -196,6 +210,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       isMounted = false
+      clearTimeout(loadingTimer)
       subscription.unsubscribe()
     }
   }, [])
