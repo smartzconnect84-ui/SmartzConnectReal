@@ -288,7 +288,7 @@ export default function HomePage() {
                 </p>
                 <div className="mt-6 flex items-center justify-center gap-2">
                   <div className="h-px flex-1" style={{ background: 'linear-gradient(to right, transparent, rgba(236,72,153,0.4))' }} />
-                  <span className="text-xs text-[#EC4899]/70 font-bold tracking-widest uppercase">-CEO, Shedrick K. Nungehn-</span>
+                  <span className="text-xs text-yellow-400 font-bold tracking-widest uppercase">-CEO, Shedrick K. Nungehn-</span>
                   <div className="h-px flex-1" style={{ background: 'linear-gradient(to left, transparent, rgba(236,72,153,0.4))' }} />
                 </div>
               </div>
@@ -464,7 +464,9 @@ export default function HomePage() {
 
             {/* Text */}
             <motion.div {...up()}>
-              <Badge icon={CheckCircle} label="Why Choose Us?" className="mb-5" />
+              <div className="flex justify-center">
+                <Badge icon={CheckCircle} label="Why Choose Us?" className="mb-5" />
+              </div>
               <Heading>
                 More Than Just{' '}
                 <span style={{ background: 'linear-gradient(135deg, #EC4899 0%, #DC2626 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
@@ -634,20 +636,20 @@ export default function HomePage() {
               </p>
             </motion.div>
 
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <div className="flex flex-row items-center justify-center gap-3">
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }} transition={{ type: 'spring', stiffness: 400, damping: 20 }}>
                 <Link to="/register"
-                  className="inline-flex items-center gap-2.5 px-10 py-4 rounded-2xl font-black text-base text-white"
+                  className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl font-black text-sm text-white"
                   style={{ background: 'linear-gradient(135deg, #EC4899 0%, #BE185D 100%)', boxShadow: '0 8px 40px rgba(236,72,153,0.42)' }}>
-                  <UserPlus className="w-5 h-5" />
-                  Create Your Free Account
+                  <UserPlus className="w-4 h-4" />
+                  Join Free
                 </Link>
               </motion.div>
               <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }} transition={{ type: 'spring', stiffness: 400, damping: 20 }}>
                 <Link to="/login"
-                  className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl font-bold text-sm text-white/70 hover:text-white transition-all"
+                  className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl font-bold text-sm text-white/70 hover:text-white transition-all"
                   style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.12)' }}>
-                  Already a member? Sign In
+                  Sign In
                 </Link>
               </motion.div>
             </div>
