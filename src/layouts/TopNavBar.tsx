@@ -8,7 +8,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useTheme } from '@/contexts/ThemeContext'
-import { useLiveChat } from '@/contexts/LiveChatContext'
+import { openTawkChat } from '@/lib/tawk'
 import { supabase } from '@/lib/supabase'
 
 const logoImg = '/logo.png'
@@ -23,7 +23,6 @@ interface TopNavBarProps {
 export default function TopNavBar({ unreadMessages, unreadNotifs, onMenuToggle, drawerOpen }: TopNavBarProps) {
   const { user, signOut } = useAuth()
   const { theme, toggleTheme } = useTheme()
-  const { setOpen, setDismissed, setUnreadCount, unreadCount, dismissed } = useLiveChat()
   const [searchFocused, setSearchFocused] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchExpanded, setSearchExpanded] = useState(false)
@@ -192,13 +191,10 @@ export default function TopNavBar({ unreadMessages, unreadNotifs, onMenuToggle, 
 
         {/* Support chat — sm+ */}
         <button
-          onClick={() => { setOpen(true); setDismissed(false); setUnreadCount(0) }}
+          onClick={() => openTawkChat()}
           title="Support Chat"
           className="relative hidden sm:flex w-9 h-9 rounded-xl dark:bg-white/5 bg-gray-100 items-center justify-center hover:bg-pink-500/10 dark:text-gray-400 text-gray-600 transition-colors">
-          <MessageCircle className={`w-4 h-4 ${dismissed && unreadCount > 0 ? 'text-brand-pink' : ''}`} />
-          {unreadCount > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-brand-pink text-white text-[8px] font-black flex items-center justify-center">{unreadCount}</span>
-          )}
+          <MessageCircle className="w-4 h-4" />
         </button>
 
         {/* Messages */}

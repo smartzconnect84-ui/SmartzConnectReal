@@ -8,7 +8,7 @@ import {
 } from 'lucide-react'
 const logoImg = '/logo.png'
 import { useTheme } from '@/contexts/ThemeContext'
-import { useLiveChat } from '@/contexts/LiveChatContext'
+import { openTawkChat } from '@/lib/tawk'
 import { useAuth } from '@/hooks/useAuth'
 
 const businessItems = [
@@ -73,7 +73,6 @@ function DropdownMenu({ items, onClose }: DropdownMenuProps) {
 
 export default function Navbar() {
   const { theme, toggleTheme } = useTheme()
-  const { dismissed, setOpen, setDismissed, unreadCount, setUnreadCount } = useLiveChat()
   const { session, isAdmin } = useAuth()
   const isSignedIn = !!session
   const dashboardHref = isAdmin ? '/admin' : '/app/feed'
@@ -198,22 +197,15 @@ export default function Navbar() {
             {/* Right actions */}
             <div className="flex items-center gap-2">
               {/* Live Chat icon */}
-              {dismissed && (
-                <motion.button
-                  onClick={() => { setDismissed(false); setOpen(true); setUnreadCount(0) }}
-                  whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.93 }}
-                  title="Open support chat"
-                  className="relative w-9 h-9 rounded-xl flex items-center justify-center text-[#FF1493]"
-                  style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}
-                >
-                  <MessageCircle className="w-4 h-4" />
-                  {unreadCount > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-pink-500 text-white text-[8px] font-black flex items-center justify-center">
-                      {unreadCount}
-                    </span>
-                  )}
-                </motion.button>
-              )}
+              <motion.button
+                onClick={() => openTawkChat()}
+                whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.93 }}
+                title="Open support chat"
+                className="relative w-9 h-9 rounded-xl flex items-center justify-center text-[#FF1493]"
+                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}
+              >
+                <MessageCircle className="w-4 h-4" />
+              </motion.button>
 
               {/* Theme toggle */}
               <motion.button
@@ -364,17 +356,12 @@ export default function Navbar() {
                 <div className="h-px bg-white/8 my-2" />
 
                 {/* Live chat in mobile */}
-                {dismissed && (
-                  <button
-                    onClick={() => { setDismissed(false); setOpen(true); setMobileOpen(false) }}
-                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-white font-semibold hover:bg-white/8 hover:text-purple-300 transition-all"
-                  >
-                    <MessageCircle className="w-4 h-4 text-pink-400" /> Support Chat
-                    {unreadCount > 0 && (
-                      <span className="ml-auto px-1.5 py-0.5 rounded-full bg-pink-500 text-white text-[10px] font-black">{unreadCount}</span>
-                    )}
-                  </button>
-                )}
+                <button
+                  onClick={() => { openTawkChat(); setMobileOpen(false) }}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-white font-semibold hover:bg-white/8 hover:text-purple-300 transition-all"
+                >
+                  <MessageCircle className="w-4 h-4 text-pink-400" /> Support Chat
+                </button>
 
                 <div className="flex gap-2 px-2 pb-1">
                   {/* Sign In (Purple) — auto-switches to Dashboard (Blue) once signed in */}

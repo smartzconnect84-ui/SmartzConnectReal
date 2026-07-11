@@ -16,12 +16,10 @@ function ComingSoon({ title }: { title: string }) {
 import { ThemeProvider } from '@/contexts/ThemeContext'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { StreamProvider } from '@/contexts/StreamContext'
-import { LiveChatProvider } from '@/contexts/LiveChatContext'
 import { LiveKitCallProvider } from '@/contexts/LiveKitCallContext'
 import { initOneSignal } from '@/lib/onesignal'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
-import LiveChat from '@/components/LiveChat'
 import LiveKitCall from '@/components/LiveKitCall'
 import CookieBanner from '@/components/CookieBanner'
 import { AnnouncementProvider } from '@/contexts/AnnouncementContext'
@@ -134,14 +132,12 @@ export default function App() {
       <AnnouncementProvider>
       <AuthProvider>
         <StreamProvider>
-          <LiveChatProvider>
           <LiveKitCallProvider>
           <BrowserRouter>
           <NotificationProvider>
           <TourProvider>
             <AppInit />
             <NetworkStatusToast />
-            <LiveChat />
             <LiveKitCall />
             <CookieBanner />
             <PWAInstallPrompt />
@@ -253,7 +249,6 @@ export default function App() {
           </NotificationProvider>
           </BrowserRouter>
           </LiveKitCallProvider>
-          </LiveChatProvider>
         </StreamProvider>
       </AuthProvider>
       </AnnouncementProvider>

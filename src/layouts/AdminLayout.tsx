@@ -9,7 +9,7 @@ import {
   Check
 } from 'lucide-react'
 import { useTheme } from '@/contexts/ThemeContext'
-import { useLiveChat } from '@/contexts/LiveChatContext'
+import { openTawkChat } from '@/lib/tawk'
 import { useNotifications } from '@/contexts/NotificationContext'
 import AnnouncementBanner from '@/components/AnnouncementBanner'
 import { supabase } from '@/lib/supabase'
@@ -53,7 +53,6 @@ export default function AdminLayout() {
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const { theme, toggleTheme } = useTheme()
-  const { dismissed, setOpen, setDismissed, unreadCount, setUnreadCount } = useLiveChat()
   const { notifications, unreadCount: notifUnread, markRead, markAllRead } = useNotifications()
   const navigate = useNavigate()
   const mainRef = useRef<HTMLElement>(null)
@@ -317,19 +316,14 @@ export default function AdminLayout() {
             </div>
           </div>
           <div className="flex items-center gap-2.5 sm:gap-3 flex-shrink-0">
-            {/* Live Chat icon — shown in admin topbar when dismissed */}
-            {dismissed && (
-              <button
-                onClick={() => { setDismissed(false); setOpen(true); setUnreadCount(0) }}
-                title="Open support chat"
-                className="relative w-8 h-8 rounded-xl dark:bg-white/5 bg-gray-100 flex items-center justify-center hover:bg-pink-500/10 transition-colors"
-              >
-                <MessageCircle className="w-4 h-4 dark:text-gray-400 text-gray-600" />
-                {unreadCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-brand-pink text-white text-[8px] font-black flex items-center justify-center">{unreadCount}</span>
-                )}
-              </button>
-            )}
+            {/* Live Chat icon — opens Tawk.to support widget */}
+            <button
+              onClick={() => openTawkChat()}
+              title="Open support chat"
+              className="relative w-8 h-8 rounded-xl dark:bg-white/5 bg-gray-100 flex items-center justify-center hover:bg-pink-500/10 transition-colors"
+            >
+              <MessageCircle className="w-4 h-4 dark:text-gray-400 text-gray-600" />
+            </button>
             {/* Notification bell — wired to NotificationContext */}
             <div ref={bellRef} className="relative">
               <button

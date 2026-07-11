@@ -5,7 +5,7 @@ import {
   ExternalLink, CheckCircle, AlertCircle, Zap, Shield, CreditCard,
   Users, Tv, Car, ShoppingBag, BookOpen, Headphones
 } from 'lucide-react'
-import { useLiveChat } from '@/contexts/LiveChatContext'
+import { openTawkChat } from '@/lib/tawk'
 
 const SUPPORT_EMAIL = 'support@smartzconnect.com'
 const BUSINESS_EMAIL = 'business@smartzconnect.com'
@@ -153,13 +153,10 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 }
 
 export default function HelpSupportPage() {
-  const { setOpen, setDismissed, setUnreadCount } = useLiveChat()
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
 
   const openChat = () => {
-    setDismissed(false)
-    setOpen(true)
-    setUnreadCount(0)
+    openTawkChat()
   }
 
   return (
