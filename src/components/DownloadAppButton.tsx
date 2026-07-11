@@ -5,8 +5,8 @@ import { usePWAInstall } from '@/hooks/usePWAInstall'
 import IOSInstallModal from '@/components/IOSInstallModal'
 
 interface DownloadAppButtonProps {
-  /** 'primary' = brand gradient, 'secondary' = glass/outline, 'green' = emerald gradient */
-  variant?: 'primary' | 'secondary' | 'green'
+  /** 'primary' = brand gradient, 'secondary' = glass/outline, 'green' = emerald gradient, 'yellow' = amber gradient (Download/Get Started CTA) */
+  variant?: 'primary' | 'secondary' | 'green' | 'yellow'
   className?: string
 }
 
@@ -49,6 +49,10 @@ export default function DownloadAppButton({ variant = 'primary', className = '' 
     green: {
       className: 'text-white',
       style: { background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)', boxShadow: '0 6px 24px rgba(16,185,129,0.35)' },
+    },
+    yellow: {
+      className: 'text-black',
+      style: { background: 'linear-gradient(135deg, #FDE047 0%, #F59E0B 100%)', boxShadow: '0 6px 24px rgba(245,158,11,0.35)' },
     },
   }
 
