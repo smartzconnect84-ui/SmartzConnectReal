@@ -1,78 +1,79 @@
 /**
- * SmartzConnect Service Worker
- * Provides basic offline support and asset caching for PWA installation.
+ * SmartzConnect Service Worker — silent auto-update
+ *
+ * Update policy:
+ *  • New SW installs in the background while the user is on the page.
+ *  • skipWaiting() is called immediately so the new SW activates as soon
+ *    as possible without waiting for all tabs to close.
+ *  • After claiming clients the SW posts SW_UPDATED to every open window.
+ *  • The client-side handler (PWAAutoUpdate) reloads only when the tab is
+ *    hidden (user not actively looking at the screen), so the update is
+ *    completely invisible. If the tab is visible it waits for the next
+ *    visibilitychange → hidden event before reloading.
+ *  • First-install is safe: the client checks whether a previous SW was in
+ *    control before the message arrives; if not, no reload happens.
  */
 
-const CACHE_NAME = 'smartzconnect-v4'
+const CACHE_NAME = 'smartzconnect-v5'
 
-// ── Pre-cache: ONLY the bare minimum needed for an offline shell ─────────────
-// IMPORTANT: cache.addAll() is atomic — one failed/slow fetch kills the whole
-// SW install and leaves the browser "loading" the manifest forever.
-// Rule: only list files that are < 50 KB and guaranteed to exist at deploy time.
-// Do NOT include large images (logo.png, pwa-logo.png etc.) here.
 const PRECACHE_URLS = [
   '/',
   '/manifest.json',
-  '/icon-192.png',   // 26 KB — safe
+  '/icon-192.png',   // 26 KB — only small guaranteed files
 ]
 
-// ── Install: pre-cache the app shell ─────────────────────────────────────────
+// ── Install ───────────────────────────────────────────────────────────────────
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache =>
-      // Cache each URL individually so a single failure doesn't abort install.
       Promise.allSettled(
         PRECACHE_URLS.map(url =>
-          cache.add(url).catch(err =>
-            console.warn('[SW] Pre-cache failed for', url, err)
-          )
+          cache.add(url).catch(err => console.warn('[SW] pre-cache miss:', url, err))
         )
       )
     )
   )
-  // Do NOT call self.skipWaiting() here automatically.
-  // If we did, the SW would take over immediately, fire 'controllerchange',
-  // and PWAUpdatePrompt would call window.location.reload() while the page
-  // is still downloading chunks — causing the ring to restart every visit.
-  // skipWaiting is only sent explicitly by the user clicking "Reload" in
-  // the PWAUpdatePrompt banner.
+  // Activate immediately — don't wait for existing tabs to close.
+  // The client-side handler delays its reload until the tab is hidden,
+  // so active users are never interrupted.
+  self.skipWaiting()
 })
 
-// Allow the page to explicitly promote a waiting worker once the user
-// confirms the "Update available" prompt.
-self.addEventListener('message', event => {
-  if (event.data?.type === 'SKIP_WAITING') self.skipWaiting()
-})
-
-// ── Activate: clean up stale caches ──────────────────────────────────────────
+// ── Activate ──────────────────────────────────────────────────────────────────
 self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
-        keys
-          .filter(key => key !== CACHE_NAME)
-          .map(key => caches.delete(key))
+    // 1. Remove stale caches from old versions.
+    caches.keys()
+      .then(keys => Promise.all(
+        keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
+      ))
+      // 2. Take control of all open clients.
+      .then(() => self.clients.claim())
+      // 3. Tell every open window that a fresh version is now active.
+      //    The client decides when to reload (immediately if hidden, or on
+      //    next hide) — no banner, no user interaction required.
+      .then(() =>
+        self.clients
+          .matchAll({ type: 'window', includeUncontrolled: false })
+          .then(clients => clients.forEach(c => c.postMessage({ type: 'SW_UPDATED' })))
       )
-    )
   )
-  self.clients.claim()
 })
 
-// ── Fetch: network-first for navigation, cache-first for static assets ────────
+// ── Fetch ─────────────────────────────────────────────────────────────────────
 self.addEventListener('fetch', event => {
   const { request } = event
   const url = new URL(request.url)
 
-  // Only handle same-origin GET requests
   if (request.method !== 'GET') return
   if (url.origin !== self.location.origin) return
 
-  const isNavigate = request.mode === 'navigate'
-  const isAsset = /\.(js|css|png|jpg|jpeg|webp|svg|ico|woff2?|ttf)$/.test(url.pathname)
+  const isNavigate   = request.mode === 'navigate'
+  const isHashedAsset = /\/assets\//.test(url.pathname)
+  const isStaticFile  = /\.(js|css|png|jpg|jpeg|webp|svg|ico|woff2?|ttf)$/.test(url.pathname)
 
   if (isNavigate) {
-    // Network-first: always try to get the freshest HTML shell.
-    // Fall back to cached '/' for offline support.
+    // Network-first: always serve the freshest HTML shell.
     event.respondWith(
       fetch(request).catch(() =>
         caches.match('/').then(r => r ?? new Response('Offline', { status: 503 }))
@@ -81,36 +82,28 @@ self.addEventListener('fetch', event => {
     return
   }
 
-  if (isAsset) {
-    // Cache-first: hashed asset filenames are immutable after build.
-    // Un-hashed assets (logo.png, icons) use stale-while-revalidate.
-    const isHashedAsset = /\/assets\//.test(url.pathname)
-    if (isHashedAsset) {
-      event.respondWith(
-        caches.match(request).then(cached => {
-          if (cached) return cached
-          return fetch(request).then(response => {
-            if (response.ok) {
-              const clone = response.clone()
-              caches.open(CACHE_NAME).then(cache => cache.put(request, clone))
-            }
-            return response
-          })
-        })
-      )
-    } else {
-      // Stale-while-revalidate for non-hashed public assets
-      event.respondWith(
-        caches.open(CACHE_NAME).then(async cache => {
-          const cached = await cache.match(request)
-          const fetchPromise = fetch(request).then(response => {
-            if (response.ok) cache.put(request, response.clone())
-            return response
-          }).catch(() => cached)
-          return cached ?? fetchPromise
-        })
-      )
-    }
+  if (isHashedAsset) {
+    // Cache-first: content-hashed filenames never change.
+    event.respondWith(
+      caches.match(request).then(cached => cached ?? fetch(request).then(res => {
+        if (res.ok) caches.open(CACHE_NAME).then(c => c.put(request, res.clone()))
+        return res
+      }))
+    )
+    return
   }
-  // All other requests (XHR/fetch API calls) pass through without interception
+
+  if (isStaticFile) {
+    // Stale-while-revalidate for non-hashed public assets (icons, logo, etc.)
+    event.respondWith(
+      caches.open(CACHE_NAME).then(async cache => {
+        const cached = await cache.match(request)
+        const fresh  = fetch(request).then(res => {
+          if (res.ok) cache.put(request, res.clone())
+          return res
+        }).catch(() => cached)
+        return cached ?? fresh
+      })
+    )
+  }
 })
