@@ -1,0 +1,131 @@
+Upgrade the existing SmartzTV Admin system into a cloud-based broadcast management system.
+
+IMPORTANT:
+- Do not use Ant Media Server.
+- Do not require self-hosted streaming servers.
+- Use a managed streaming provider architecture.
+
+The system must support OBS Studio and vMix broadcasting through cloud streaming services.
+
+====================================
+STREAMING ARCHITECTURE
+====================================
+
+Broadcast workflow:
+
+OBS Studio / vMix
+        |
+        |
+RTMP Stream
+        |
+        |
+Mux Live Streaming Platform
+        |
+        |
+HLS Playback URL
+        |
+        |
+SmartzTV Public Player
+
+
+====================================
+ADMIN SMARTZTV CONTROL
+====================================
+
+Create a simple broadcast management dashboard.
+
+Admin can:
+
+- Create TV channels
+- Edit channels
+- Delete channels
+- Activate/deactivate channels
+- Feature channels
+
+Channel fields:
+
+- Channel name
+- Logo
+- Cover image
+- Description
+- Category
+- Mux Stream ID
+- Playback URL
+- Stream status
+- Current program
+- Schedule
+
+
+====================================
+LIVE BROADCAST SETUP
+====================================
+
+Create a Broadcast Setup wizard.
+
+Admin can:
+
+1. Create a live stream in Mux
+2. Store the Stream ID securely
+3. Store playback URL
+4. Assign stream to a SmartzTV channel
+5. Activate the channel
+
+Display:
+
+- RTMP ingest information for OBS/vMix
+- Stream status
+- Playback status
+
+Never expose API keys or stream credentials publicly.
+
+
+====================================
+SMARTZTV PUBLIC CONNECTION
+====================================
+
+Connect the existing public SmartzTV player to the backend.
+
+When admin updates:
+
+- Channel
+- Stream
+- Status
+- Schedule
+
+The public page updates automatically.
+
+
+====================================
+DATABASE
+====================================
+
+Use existing Supabase tables.
+
+Do not create duplicates.
+
+Store:
+
+Channels
+Streams
+Schedules
+Programs
+Favorites
+Analytics
+
+
+====================================
+FUTURE READY
+====================================
+
+Prepare for:
+
+- Multiple TV channels
+- 24/7 broadcasting
+- Live events
+- Recorded shows
+- Advertisements
+- Subscriptions
+- Mobile apps
+- Smart TV apps
+
+Build a simple professional TV station management system without requiring server hosting.

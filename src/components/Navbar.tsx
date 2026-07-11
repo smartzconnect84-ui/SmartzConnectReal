@@ -250,7 +250,7 @@ export default function Navbar() {
                 transition={{ type: 'spring', stiffness: 440 }}
                 className="h-7 w-auto object-contain"
               />
-              <span className="font-display font-black text-base hidden sm:block tracking-tight leading-none">
+              <span className="font-display font-black text-base tracking-tight leading-none">
                 <span className="bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent">Smartz</span>
                 <span className="text-white">Connect</span>
               </span>
@@ -289,7 +289,7 @@ export default function Navbar() {
                 onClick={() => openTawkChat()}
                 whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.91 }}
                 title="Live support"
-                className="hidden sm:flex w-8 h-8 rounded-xl items-center justify-center text-white/35 hover:text-white/75 transition-colors duration-150"
+                className="flex w-8 h-8 rounded-xl items-center justify-center text-white/35 hover:text-white/75 transition-colors duration-150"
               >
                 <MessageCircle className="w-[15px] h-[15px]" />
               </motion.button>
@@ -298,7 +298,7 @@ export default function Navbar() {
               <motion.button
                 onClick={toggleTheme}
                 whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.91 }}
-                className="hidden sm:flex w-8 h-8 rounded-xl items-center justify-center text-white/35 hover:text-white/75 transition-colors duration-150"
+                className="flex w-8 h-8 rounded-xl items-center justify-center text-white/35 hover:text-white/75 transition-colors duration-150"
               >
                 {theme === 'dark' ? <Sun className="w-[15px] h-[15px]" /> : <Moon className="w-[15px] h-[15px]" />}
               </motion.button>
@@ -494,19 +494,6 @@ export default function Navbar() {
                 </div>
 
                 <div className="h-px bg-white/6 mx-2 my-1" />
-
-                {/* Utility */}
-                <div className="flex gap-1.5 px-1">
-                  <button onClick={() => { openTawkChat(); setMobileOpen(false) }}
-                    className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[12px] font-medium text-white/50 hover:text-white hover:bg-white/4 transition-all">
-                    <MessageCircle className="w-3.5 h-3.5 text-pink-400" /> Support
-                  </button>
-                  <button onClick={toggleTheme}
-                    className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[12px] font-medium text-white/50 hover:text-white hover:bg-white/4 transition-all">
-                    {theme === 'dark' ? <Sun className="w-3.5 h-3.5 text-amber-400" /> : <Moon className="w-3.5 h-3.5 text-purple-400" />}
-                    {theme === 'dark' ? 'Light' : 'Dark'}
-                  </button>
-                </div>
 
                 {/* Auth */}
                 <div className="flex gap-2 px-1 pb-1 pt-0.5">
