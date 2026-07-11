@@ -171,7 +171,7 @@ export default function AdminLayout() {
             >
               {({ isActive }) => (
                 <>
-                  <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-white' : ''}`} />
+                  <Icon className={`w-6 h-6 flex-shrink-0 ${isActive ? 'text-white' : ''}`} />
                   {!collapsed && (
                     <span className="text-sm font-semibold truncate">{item.label}</span>
                   )}
@@ -200,7 +200,7 @@ export default function AdminLayout() {
             } ${collapsed ? 'justify-center' : ''}`
           }
         >
-          <Crown className="w-5 h-5 flex-shrink-0" />
+          <Crown className="w-6 h-6 flex-shrink-0" />
           {!collapsed && <span className="text-sm font-bold">CEO Panel</span>}
         </NavLink>
       </div>
@@ -211,14 +211,14 @@ export default function AdminLayout() {
           onClick={toggleTheme}
           className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl dark:text-gray-400 text-gray-600 hover:dark:bg-white/5 hover:bg-pink-50 hover:text-brand-pink transition-all ${collapsed ? 'justify-center' : ''}`}
         >
-          {theme === 'dark' ? <Sun className="w-5 h-5 flex-shrink-0" /> : <Moon className="w-5 h-5 flex-shrink-0" />}
+          {theme === 'dark' ? <Sun className="w-6 h-6 flex-shrink-0" /> : <Moon className="w-6 h-6 flex-shrink-0" />}
           {!collapsed && <span className="text-sm font-semibold">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>}
         </button>
         <button
           onClick={() => navigate('/')}
           className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl dark:text-gray-400 text-gray-600 hover:dark:bg-white/5 hover:bg-pink-50 hover:text-brand-pink transition-all ${collapsed ? 'justify-center' : ''}`}
         >
-          <LogOut className="w-5 h-5 flex-shrink-0" />
+          <LogOut className="w-6 h-6 flex-shrink-0" />
           {!collapsed && <span className="text-sm font-semibold">Exit Admin</span>}
         </button>
       </div>
@@ -242,8 +242,8 @@ export default function AdminLayout() {
           title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           {collapsed
-            ? <ChevronRight className="w-3.5 h-3.5 dark:text-gray-400 text-gray-600" />
-            : <ChevronLeft className="w-3.5 h-3.5 dark:text-gray-400 text-gray-600" />
+            ? <ChevronRight className="w-[17px] h-[17px] dark:text-gray-400 text-gray-600" />
+            : <ChevronLeft className="w-[17px] h-[17px] dark:text-gray-400 text-gray-600" />
           }
         </button>
       </motion.aside>
@@ -281,8 +281,8 @@ export default function AdminLayout() {
         {/* Top bar */}
         <header className="flex items-center justify-between gap-4 px-4 sm:px-6 lg:px-8 py-3.5 min-h-[64px] dark:bg-[#080510] bg-white border-b dark:border-white/6 border-gray-200 flex-shrink-0 z-10 shadow-sm dark:shadow-black/20">
           <div className="flex items-center gap-3 min-w-0 flex-1">
-            <button onClick={() => setMobileOpen(true)} className="md:hidden w-8 h-8 rounded-lg dark:bg-white/5 bg-gray-100 flex items-center justify-center">
-              <Menu className="w-4 h-4 dark:text-gray-400 text-gray-600" />
+            <button onClick={() => setMobileOpen(true)} className="md:hidden w-9 h-9 rounded-lg dark:bg-white/5 bg-gray-100 flex items-center justify-center">
+              <Menu className="w-[19px] h-[19px] dark:text-gray-400 text-gray-600" />
             </button>
             <div className="relative hidden sm:block">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 dark:text-gray-500 text-gray-400" />
@@ -321,20 +321,20 @@ export default function AdminLayout() {
             <button
               onClick={() => openTawkChat()}
               title="Open support chat"
-              className="relative w-8 h-8 rounded-xl dark:bg-white/5 bg-gray-100 flex items-center justify-center hover:bg-pink-500/10 transition-colors"
+              className="relative w-9 h-9 rounded-xl dark:bg-white/5 bg-gray-100 flex items-center justify-center hover:bg-pink-500/10 transition-colors"
             >
-              <MessageCircle className="w-4 h-4 dark:text-gray-400 text-gray-600" />
+              <MessageCircle className="w-[19px] h-[19px] dark:text-gray-400 text-gray-600" />
             </button>
             {/* Notification bell — wired to NotificationContext */}
             <div ref={bellRef} className="relative">
               <button
                 onClick={() => setBellOpen(o => !o)}
                 title="Notifications"
-                className="relative w-8 h-8 rounded-xl dark:bg-white/5 bg-gray-100 flex items-center justify-center hover:bg-pink-500/10 transition-colors"
+                className="relative w-9 h-9 rounded-xl dark:bg-white/5 bg-gray-100 flex items-center justify-center hover:bg-pink-500/10 transition-colors"
               >
-                <Bell className="w-4 h-4 dark:text-gray-400 text-gray-600" />
+                <Bell className="w-[19px] h-[19px] dark:text-gray-400 text-gray-600" />
                 {notifUnread > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-brand-pink text-white text-[8px] font-black flex items-center justify-center">
+                  <span className="absolute -top-0.5 -right-0.5 w-[18px] h-[18px] rounded-full bg-brand-pink text-white text-[8px] font-black flex items-center justify-center">
                     {notifUnread > 9 ? '9+' : notifUnread}
                   </span>
                 )}

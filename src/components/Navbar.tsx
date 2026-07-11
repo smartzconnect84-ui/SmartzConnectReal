@@ -291,7 +291,7 @@ export default function Navbar() {
                 title="Live support"
                 className="flex w-8 h-8 rounded-xl items-center justify-center text-white/35 hover:text-white/75 transition-colors duration-150"
               >
-                <MessageCircle className="w-[15px] h-[15px]" />
+                <MessageCircle className="w-[18px] h-[18px]" />
               </motion.button>
 
               {/* Divider */}
@@ -345,8 +345,8 @@ export default function Navbar() {
               >
                 <AnimatePresence mode="wait">
                   {mobileOpen
-                    ? <motion.span key="x"  initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.13 }}><X    className="w-4 h-4" /></motion.span>
-                    : <motion.span key="m"  initial={{ rotate: 90, opacity: 0 }}  animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }} transition={{ duration: 0.13 }}><Menu className="w-4 h-4" /></motion.span>
+                    ? <motion.span key="x"  initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.13 }}><X    className="w-[19px] h-[19px]" /></motion.span>
+                    : <motion.span key="m"  initial={{ rotate: 90, opacity: 0 }}  animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }} transition={{ duration: 0.13 }}><Menu className="w-[19px] h-[19px]" /></motion.span>
                   }
                 </AnimatePresence>
               </motion.button>

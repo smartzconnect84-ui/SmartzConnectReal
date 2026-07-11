@@ -237,15 +237,15 @@ export default function AppShell() {
                   transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                 />
               )}
-              <div className={`relative z-10 w-6 h-6 flex items-center justify-center transition-all ${active ? 'scale-110' : 'group-hover:scale-105'}`}>
-                <Icon className={`w-5 h-5 transition-colors ${active ? 'text-brand-pink' : 'dark:text-gray-500 text-gray-400'}`} />
+              <div className={`relative z-10 w-7 h-7 flex items-center justify-center transition-all ${active ? 'scale-110' : 'group-hover:scale-105'}`}>
+                <Icon className={`w-6 h-6 transition-colors ${active ? 'text-brand-pink' : 'dark:text-gray-500 text-gray-400'}`} />
                 {item.label === 'Chat' && unreadMessages > 0 && !active && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-brand-pink text-white text-[8px] font-black flex items-center justify-center">
+                  <span className="absolute -top-1 -right-1 w-[18px] h-[18px] rounded-full bg-brand-pink text-white text-[8px] font-black flex items-center justify-center">
                     {unreadMessages > 9 ? '9+' : unreadMessages}
                   </span>
                 )}
                 {item.label === 'Alerts' && unreadNotifs > 0 && !active && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-brand-pink text-white text-[8px] font-black flex items-center justify-center">
+                  <span className="absolute -top-1 -right-1 w-[18px] h-[18px] rounded-full bg-brand-pink text-white text-[8px] font-black flex items-center justify-center">
                     {unreadNotifs > 9 ? '9+' : unreadNotifs}
                   </span>
                 )}

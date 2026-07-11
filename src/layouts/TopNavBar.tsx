@@ -57,16 +57,16 @@ export default function TopNavBar({ unreadMessages, unreadNotifs, onMenuToggle, 
       {/* Mobile: hamburger */}
       <button
         onClick={onMenuToggle}
-        className="md:hidden w-8 h-8 sm:w-9 sm:h-9 rounded-xl dark:bg-white/5 bg-gray-100 flex items-center justify-center flex-shrink-0 transition-colors hover:bg-pink-500/10"
+        className="md:hidden w-9 h-9 sm:w-10 sm:h-10 rounded-xl dark:bg-white/5 bg-gray-100 flex items-center justify-center flex-shrink-0 transition-colors hover:bg-pink-500/10"
         aria-label="Toggle menu"
       >
         <AnimatePresence mode="wait" initial={false}>
           {drawerOpen
             ? <motion.span key="x" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.15 }}>
-                <X className="w-4 h-4 dark:text-gray-400 text-gray-600" />
+                <X className="w-[19px] h-[19px] dark:text-gray-400 text-gray-600" />
               </motion.span>
             : <motion.span key="m" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }} transition={{ duration: 0.15 }}>
-                <Menu className="w-4 h-4 dark:text-gray-400 text-gray-600" />
+                <Menu className="w-[19px] h-[19px] dark:text-gray-400 text-gray-600" />
               </motion.span>
           }
         </AnimatePresence>
@@ -90,12 +90,12 @@ export default function TopNavBar({ unreadMessages, unreadNotifs, onMenuToggle, 
           setSearchExpanded(true)
           setTimeout(() => searchInputRef.current?.focus(), 50)
         }}
-        className="sm:hidden w-8 h-8 rounded-xl dark:bg-white/5 bg-gray-100 flex items-center justify-center flex-shrink-0 hover:bg-pink-500/10 transition-colors"
+        className="sm:hidden w-9 h-9 rounded-xl dark:bg-white/5 bg-gray-100 flex items-center justify-center flex-shrink-0 hover:bg-pink-500/10 transition-colors"
         aria-label="Search"
         aria-expanded={searchExpanded}
         aria-controls="mobile-search-overlay"
       >
-        <Search className="w-[15px] h-[15px] dark:text-gray-500 text-gray-400" />
+        <Search className="w-[18px] h-[18px] dark:text-gray-500 text-gray-400" />
       </button>
 
       {/* Mobile spacer — pushes right-side icons to the far right */}
@@ -182,39 +182,39 @@ export default function TopNavBar({ unreadMessages, unreadNotifs, onMenuToggle, 
 
         {/* Video call — md+ */}
         <Link to="/app/calls/video" title="Video Call"
-          className="hidden md:flex w-9 h-9 rounded-xl dark:bg-white/5 bg-gray-100 items-center justify-center hover:bg-blue-500/10 hover:text-blue-400 dark:text-gray-400 text-gray-600 transition-colors">
-          <Video className="w-4 h-4" />
+          className="hidden md:flex w-10 h-10 rounded-xl dark:bg-white/5 bg-gray-100 items-center justify-center hover:bg-blue-500/10 hover:text-blue-400 dark:text-gray-400 text-gray-600 transition-colors">
+          <Video className="w-[19px] h-[19px]" />
         </Link>
 
         {/* Audio call — md+ */}
         <Link to="/app/calls/audio" title="Audio Call"
-          className="hidden md:flex w-9 h-9 rounded-xl dark:bg-white/5 bg-gray-100 items-center justify-center hover:bg-green-500/10 hover:text-green-400 dark:text-gray-400 text-gray-600 transition-colors">
-          <Phone className="w-4 h-4" />
+          className="hidden md:flex w-10 h-10 rounded-xl dark:bg-white/5 bg-gray-100 items-center justify-center hover:bg-green-500/10 hover:text-green-400 dark:text-gray-400 text-gray-600 transition-colors">
+          <Phone className="w-[19px] h-[19px]" />
         </Link>
 
         {/* Support chat — sm+ */}
         <button
           onClick={() => openTawkChat()}
           title="Support Chat"
-          className="relative hidden sm:flex w-9 h-9 rounded-xl dark:bg-white/5 bg-gray-100 items-center justify-center hover:bg-pink-500/10 dark:text-gray-400 text-gray-600 transition-colors">
-          <MessageCircle className="w-4 h-4" />
+          className="relative hidden sm:flex w-10 h-10 rounded-xl dark:bg-white/5 bg-gray-100 items-center justify-center hover:bg-pink-500/10 dark:text-gray-400 text-gray-600 transition-colors">
+          <MessageCircle className="w-[19px] h-[19px]" />
         </button>
 
         {/* Messages */}
-        <Link to="/app/matches" className="relative w-8 h-8 sm:w-9 sm:h-9 rounded-xl dark:bg-white/5 bg-gray-100 flex items-center justify-center hover:bg-pink-500/10 dark:text-gray-400 text-gray-600 transition-colors">
-          <MessageCircle className="w-[15px] h-[15px] sm:w-4 sm:h-4" />
+        <Link to="/app/matches" className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-xl dark:bg-white/5 bg-gray-100 flex items-center justify-center hover:bg-pink-500/10 dark:text-gray-400 text-gray-600 transition-colors">
+          <MessageCircle className="w-[18px] h-[18px] sm:w-5 sm:h-5" />
           {unreadMessages > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-brand-pink text-white text-[7px] sm:text-[8px] font-black flex items-center justify-center">
+            <span className="absolute -top-0.5 -right-0.5 w-4 h-4 sm:w-[18px] sm:h-[18px] rounded-full bg-brand-pink text-white text-[8px] sm:text-[9px] font-black flex items-center justify-center">
               {unreadMessages > 9 ? '9+' : unreadMessages}
             </span>
           )}
         </Link>
 
         {/* Notifications */}
-        <Link to="/app/notifications" className="relative w-8 h-8 sm:w-9 sm:h-9 rounded-xl dark:bg-white/5 bg-gray-100 flex items-center justify-center hover:bg-pink-500/10 dark:text-gray-400 text-gray-600 transition-colors">
-          <Bell className="w-[15px] h-[15px] sm:w-4 sm:h-4" />
+        <Link to="/app/notifications" className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-xl dark:bg-white/5 bg-gray-100 flex items-center justify-center hover:bg-pink-500/10 dark:text-gray-400 text-gray-600 transition-colors">
+          <Bell className="w-[18px] h-[18px] sm:w-5 sm:h-5" />
           {unreadNotifs > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-brand-pink text-white text-[7px] sm:text-[8px] font-black flex items-center justify-center">
+            <span className="absolute -top-0.5 -right-0.5 w-4 h-4 sm:w-[18px] sm:h-[18px] rounded-full bg-brand-pink text-white text-[8px] sm:text-[9px] font-black flex items-center justify-center">
               {unreadNotifs > 9 ? '9+' : unreadNotifs}
             </span>
           )}
@@ -231,8 +231,8 @@ export default function TopNavBar({ unreadMessages, unreadNotifs, onMenuToggle, 
                 ? <img src={profileData.avatar_url} alt={displayName} className="w-full h-full object-cover" />
                 : initial}
             </div>
-            {isPremium && <Crown className="w-3 h-3 text-yellow-400 hidden sm:block" />}
-            <ChevronDown className={`w-3 h-3 dark:text-gray-400 text-gray-500 hidden sm:block transition-transform duration-200 ${profileOpen ? 'rotate-180' : ''}`} />
+            {isPremium && <Crown className="w-[14px] h-[14px] text-yellow-400 hidden sm:block" />}
+            <ChevronDown className={`w-[14px] h-[14px] dark:text-gray-400 text-gray-500 hidden sm:block transition-transform duration-200 ${profileOpen ? 'rotate-180' : ''}`} />
           </button>
 
           <AnimatePresence>

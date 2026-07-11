@@ -14,7 +14,7 @@
  *    control before the message arrives; if not, no reload happens.
  */
 
-const CACHE_NAME = 'smartzconnect-v5'
+const CACHE_NAME = 'smartzconnect-v6'
 
 const PRECACHE_URLS = [
   '/',
