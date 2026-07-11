@@ -27,37 +27,16 @@ export default defineConfig({
     target: 'es2020',
     // Lower the warning threshold now that we're code-splitting
     chunkSizeWarningLimit: 600,
-    rollupOptions: {
-      output: {
-        manualChunks(id) {
-          if (!id.includes('node_modules')) return
-
-          // Heavy third-party SDKs — each in its own chunk so they're only
-          // downloaded when the feature is first used (chat, video, etc.)
-          if (id.includes('stream-chat') || id.includes('stream-io')) return 'stream'
-          if (id.includes('framer-motion'))                            return 'motion'
-          if (id.includes('@supabase'))                                return 'supabase'
-          if (id.includes('livekit'))                                  return 'livekit'
-
-          // React core — separate from react-router to break the circular dep
-          // that caused the 1.7 MB "deps" mega-chunk in the previous build.
-          // The cycle was: react-router (vendor) → react (vendor) → back into
-          // deps which also imported react-router → Rollup loop.
-          if (id.includes('/react/') || id.includes('/react-dom/'))    return 'vendor'
-          if (id.includes('react-router'))                             return 'router'
-
-          // UI primitives
-          if (id.includes('@radix-ui') || id.includes('lucide-react')) return 'ui'
-
-          // Data-fetching / state
-          if (id.includes('@tanstack'))                                return 'query'
-
-          // Everything else (date-fns, zod, clsx, etc.) goes here.
-          // With pages lazy-loaded this chunk is now much smaller because
-          // page-only deps ship inside their own async chunk.
-          return 'deps'
-        },
-      },
-    },
+    // NOTE: manual vendor chunking (splitting node_modules by package name
+    // into 'vendor'/'router'/'deps'/etc.) was removed. Hand-rolled
+    // manualChunks repeatedly produced circular chunk dependencies (e.g.
+    // "vendor" <-> "deps" <-> "router") that Rollup resolves by hoisting
+    // `var` declarations across chunk boundaries. When minified this turns
+    // into "Cannot access 'X' before initialization" (TDZ) errors that only
+    // appear in the production build (never in dev, since Vite dev doesn't
+    // bundle/minify) — this was the recurring "stuck on Loading
+    // SmartzConnect..." bug on the deployed site. Rollup's automatic
+    // chunking (still split per-route via React.lazy() in App.tsx) is safe
+    // and avoids this class of bug entirely.
   },
 })

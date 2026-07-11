@@ -41,7 +41,14 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd /home/runner/workspace && node deploy-api.mjs 2>&1 | tee /tmp/vercel-deploy.log; echo \"EXIT:$?\""
+args = "cd /home/runner/workspace && npx vercel --prod --yes --archive=tgz --token=\"$VERCEL_TOKEN\" 2>&1 | tee /tmp/vercel-deploy.log; echo \"EXIT:$?\""
+
+[workflows.workflow.metadata]
+outputType = "console"
+
+[[ports]]
+localPort = 3000
+externalPort = 3000
 
 [[ports]]
 localPort = 5000

@@ -1,6 +1,7 @@
 - [SUFY upload proxy](sufy-upload-proxy.md) — use sufy-presign (already deployed as ESZIP bundle) not sufy-upload; Management API deploys raw JS which never boots (BOOT_ERROR).
 - [Auth session persistence fix](auth-session-fix.md) — role-flicker fix: getSession() awaits resolveRole before setLoading(false); all role writes are isMounted-guarded.
 - [Vercel pnpm fix](vercel-pnpm-fix.md) — npm v10 "Exit handler never called" on Vercel; switch to pnpm with onlyBuiltDependencies for esbuild.
+- [Vite manualChunks TDZ bug](vite-manualchunks-tdz-bug.md) — hand-rolled manualChunks caused prod-only "stuck on loading splash" via TDZ ReferenceError; removed manualChunks, use dynamic import() instead.
 - [Dev-only integrations](dev-integrations.md) — OneSignal is production-domain-only; Turnstile now guards only on VITE_TURNSTILE_SITE_KEY being set (hostname check removed — works on any domain including previews).
 - [ESLint config](eslint-config.md) — react-hooks/set-state-in-effect and purity turned off (false positives on async fetch patterns); no-unused-vars ignores _-prefixed vars; any/exhaustive-deps/static-components are warnings not errors; .local/** and supabase/** are ignored.
 - [Responsive breakpoint strategy](responsive-strategy.md) — sm=640px for minor tweaks, md=768px for multi-column grids/tablet layout, lg=1024px for full sidebar and desktop layout.

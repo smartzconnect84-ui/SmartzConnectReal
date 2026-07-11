@@ -10,9 +10,14 @@ description: How to deploy to Vercel from this Replit workspace
 - `.vercel/project.json` is in place — do NOT delete it.
 
 ## Deploy command
+The "Deploy to Vercel" workflow runs this (also runnable directly via shell):
 ```
 VERCEL_TOKEN="<from secret VERCEL_TOKEN>" npx vercel --prod --yes --archive=tgz --token="<token>"
 ```
+A prior `deploy-api.mjs` (raw Vercel REST API upload, bypassing the CLI) was
+removed — it can't do a real build step, so it either uploads stale/unbuilt
+output or Vercel's API rejects the payload shape (`additionalProperty
+projectId`). The CLI archive approach is the only one that reliably works.
 
 **Why `--archive=tgz`:** Without it, Vercel CLI errors with "files should NOT have more than 15000 items" (received ~23296). The tgz archive bundles the workspace into a single tarball.
 
