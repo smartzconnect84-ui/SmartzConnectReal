@@ -41,4 +41,32 @@ export function openTawkChat() {
   }, 300)
 }
 
+/**
+ * Hides Tawk.to's own floating launcher bubble so it doesn't duplicate our
+ * custom FloatingSupportWidget. Safe to call before the script has loaded —
+ * retries briefly, same pattern as `openTawkChat`.
+ */
+export function hideTawkWidget() {
+  const api = window.Tawk_API
+  if (api?.hideWidget) {
+    api.hideWidget()
+    return
+  }
+  let attempts = 0
+  const retry = setInterval(() => {
+    attempts += 1
+    if (window.Tawk_API?.hideWidget) {
+      window.Tawk_API.hideWidget()
+      clearInterval(retry)
+    } else if (attempts >= 10) {
+      clearInterval(retry)
+    }
+  }, 300)
+}
+
+/** Restores Tawk.to's own launcher bubble (not used by default; kept for parity). */
+export function showTawkWidget() {
+  window.Tawk_API?.showWidget?.()
+}
+
 export {}

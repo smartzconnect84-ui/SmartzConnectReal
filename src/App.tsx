@@ -29,6 +29,7 @@ import PWAInstallPrompt from '@/components/PWAInstallPrompt'
 import PWAUpdatePrompt from '@/components/PWAUpdatePrompt'
 import NotificationPrompt from '@/components/NotificationPrompt'
 import NetworkStatusToast from '@/components/NetworkStatusToast'
+import FloatingSupportWidget from '@/components/FloatingSupportWidget'
 import { TourProvider } from '@/contexts/TourContext'
 import TourOverlay from '@/components/tour/TourOverlay'
 import { NotificationProvider } from '@/contexts/NotificationContext'
@@ -85,6 +86,7 @@ import BlogPage            from '@/pages/public/BlogPage'
 import BlogPostPage        from '@/pages/public/BlogPostPage'
 import WorldStagePage      from '@/pages/public/WorldStagePage'
 import CmsPage             from '@/pages/public/CmsPage'
+import HelpSupportPage     from '@/pages/public/HelpSupportPage'
 
 import AdminDashboard      from '@/pages/admin/AdminDashboard'
 import AdminUsers          from '@/pages/admin/AdminUsers'
@@ -145,6 +147,7 @@ export default function App() {
             <PWAUpdatePrompt />
             <NotificationPrompt />
             <TourOverlay />
+            <FloatingSupportWidget />
             <Routes>
               {/* Public */}
               <Route path="/"            element={<PublicLayout><HomePage /></PublicLayout>} />
@@ -179,6 +182,7 @@ export default function App() {
               <Route path="/blog/:slug"     element={<PublicLayout><BlogPostPage /></PublicLayout>} />
               <Route path="/world-stage"    element={<PublicLayout><WorldStagePage /></PublicLayout>} />
               <Route path="/pages/:slug"    element={<PublicLayout><CmsPage /></PublicLayout>} />
+              <Route path="/help"           element={<PublicLayout><HelpSupportPage /></PublicLayout>} />
 
               {/* App — protected */}
               <Route path="/app" element={
@@ -209,6 +213,7 @@ export default function App() {
                 <Route path="saved"         element={<SavedPostsPage />} />
                 <Route path="referrals"     element={<ReferralsPage />} />
                 <Route path="worldstage"    element={<WorldStageVotePage />} />
+                <Route path="help"          element={<Navigate to="/help" replace />} />
                 <Route path="pages"         element={<ComingSoon title="Pages" />} />
                 <Route path="events"        element={<ComingSoon title="Events" />} />
                 <Route path="jobs"          element={<ComingSoon title="Jobs" />} />

@@ -1,8 +1,9 @@
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Heart, Shield, Zap, Globe, MessageCircle, ArrowRight, ExternalLink } from 'lucide-react'
+import { Heart, Shield, Zap, Globe, MessageCircle, ExternalLink } from 'lucide-react'
 import AnimatedStat from '@/components/AnimatedStat'
 import { useSiteConfig, SITE_IMAGE_KEYS } from '@/contexts/SiteConfigContext'
+import { openTawkChat } from '@/lib/tawk'
 const defaultLogoImg = '/logo.png'
 
 /* ── Wired & live links only ─────────────────────────────────────────── */
@@ -24,9 +25,12 @@ const nav = {
     { label: 'World Stage',     href: '/world-stage'    },
     { label: 'Pricing',         href: '/pricing'        },
   ],
-  Legal: [
+  Support: [
+    { label: 'Help & Support',  href: '/help'           },
+    { label: 'Live Support',    action: 'tawk' as const },
     { label: 'Privacy Policy',  href: '/privacy'        },
     { label: 'Terms of Service',href: '/terms'          },
+    { label: 'Cookie Policy',   href: '/cookie-policy'  },
   ],
 }
 
@@ -118,7 +122,14 @@ export default function Footer() {
                 <ul className="space-y-2.5">
                   {links.map(link => (
                     <li key={link.label}>
-                      {'external' in link && link.external ? (
+                      {'action' in link && link.action === 'tawk' ? (
+                        <button
+                          onClick={() => openTawkChat()}
+                          className="text-[13px] text-white/35 hover:text-white/70 transition-colors text-left"
+                        >
+                          {link.label}
+                        </button>
+                      ) : 'external' in link && link.external ? (
                         <a
                           href={link.href}
                           target="_blank" rel="noopener noreferrer"
@@ -128,7 +139,7 @@ export default function Footer() {
                           <ExternalLink className="w-2.5 h-2.5 opacity-0 group-hover:opacity-100 transition-opacity" />
                         </a>
                       ) : (
-                        <Link to={link.href}
+                        <Link to={'href' in link ? link.href : '#'}
                           className="text-[13px] text-white/35 hover:text-white/70 transition-colors">
                           {link.label}
                         </Link>
