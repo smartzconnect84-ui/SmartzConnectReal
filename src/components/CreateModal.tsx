@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence, useMotionValue } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -455,9 +455,19 @@ export default function CreateModal() {
   const [open, setOpen] = useState(false)
   const [activeModal, setActiveModal] = useState<ActiveModal>(null)
   const [activeStory, setActiveStory] = useState(false)
-  const dragX = useMotionValue(0)
   const dragY = useMotionValue(0)
   const didDragRef = useRef(false)
+
+  // Restore saved vertical position on mount
+  useEffect(() => {
+    const saved = parseFloat(localStorage.getItem('fab_y') ?? '0')
+    if (!isNaN(saved)) dragY.set(saved)
+  }, [])
+
+  const saveDragY = () => {
+    localStorage.setItem('fab_y', String(dragY.get()))
+    setTimeout(() => { didDragRef.current = false }, 50)
+  }
 
   const handleOption = (action: string) => {
     setOpen(false)
@@ -488,13 +498,14 @@ export default function CreateModal() {
 
       {/* Draggable group: button + menu move together */}
       <motion.div
-        drag
+        drag="y"
         dragMomentum={false}
         dragElastic={0}
-        style={{ x: dragX, y: dragY }}
+        dragConstraints={{ top: -(window.innerHeight - 160), bottom: 80 }}
+        style={{ y: dragY }}
         onDragStart={() => { didDragRef.current = false }}
         onDrag={() => { didDragRef.current = true }}
-        onDragEnd={() => { setTimeout(() => { didDragRef.current = false }, 50) }}
+        onDragEnd={saveDragY}
         className="fixed bottom-20 md:bottom-6 right-4 md:right-6 z-50 touch-none select-none"
       >
         {/* Create Menu — anchored above the button */}
