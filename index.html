@@ -88,6 +88,12 @@
           mobile: { xOffset: 20, yOffset: 20, position: 'br' },
         },
       };
+      // Start hidden — <TawkController> (src/components/TawkController.tsx)
+      // decides when to show it: only on public-site routes, and only if the
+      // user hasn't dismissed it down to the small "Live Support" icon.
+      Tawk_API.onLoad = function () {
+        if (Tawk_API.hideWidget) Tawk_API.hideWidget();
+      };
       (function () {
         var s1 = document.createElement("script"), s0 = document.getElementsByTagName("script")[0];
         s1.async = true;

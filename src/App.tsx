@@ -29,6 +29,7 @@ import PWAInstallPrompt from '@/components/PWAInstallPrompt'
 import PWAUpdatePrompt from '@/components/PWAUpdatePrompt'
 import NotificationPrompt from '@/components/NotificationPrompt'
 import NetworkStatusToast from '@/components/NetworkStatusToast'
+import TawkController from '@/components/TawkController'
 import { TourProvider } from '@/contexts/TourContext'
 import TourOverlay from '@/components/tour/TourOverlay'
 import { NotificationProvider } from '@/contexts/NotificationContext'
@@ -140,6 +141,7 @@ export default function App() {
           <TourProvider>
             <AppInit />
             <NetworkStatusToast />
+            <TawkController />
             <LiveKitCall />
             <CookieBanner />
             <PWAInstallPrompt />
