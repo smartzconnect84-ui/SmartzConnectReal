@@ -167,17 +167,6 @@ export default function RegisterPage() {
 
       <div className="w-full max-w-md relative z-[3]">
 
-        {/* Back link */}
-        <div className="mb-5">
-          <Link
-            to="/"
-            className="inline-flex items-center gap-1.5 text-xs text-white/40 hover:text-white/70 transition-colors group"
-          >
-            <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
-            Back to website
-          </Link>
-        </div>
-
         {/* Logo */}
         <div className="flex items-center justify-center gap-2.5 mb-7">
           <div className="relative">
@@ -523,6 +512,17 @@ export default function RegisterPage() {
             </Link>
           </p>
         )}
+
+        {/* Back link */}
+        <div className="flex justify-center mt-6">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-1.5 text-xs text-white/40 hover:text-white/70 transition-colors group"
+          >
+            <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
+            Back to website
+          </Link>
+        </div>
       </div>
     </div>
   )

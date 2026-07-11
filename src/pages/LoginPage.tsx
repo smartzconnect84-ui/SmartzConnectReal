@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Eye, EyeOff, Loader2 } from 'lucide-react'
+import { Eye, EyeOff, Loader2, ArrowLeft } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import TurnstileWidget from '@/components/TurnstileWidget'
 
@@ -277,12 +277,13 @@ export default function LoginPage() {
         </Link>
       </div>
 
-      {/* Back to home */}
+      {/* Back to website */}
       <Link
         to="/"
-        className="mt-5 text-xs text-white/35 hover:text-white/60 transition-colors"
+        className="mt-5 inline-flex items-center gap-1.5 text-xs text-white/40 hover:text-white/70 transition-colors group"
       >
-        ← Back to home
+        <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
+        Back to website
       </Link>
 
       </div>{/* end content z-[3] wrapper */}
