@@ -83,6 +83,8 @@ export default function SettingsPage() {
   const [exportDone, setExportDone] = useState(false)
   const [verifyLoading, setVerifyLoading] = useState(false)
   const [verifyDone, setVerifyDone] = useState(false)
+  const [verifyStatus, setVerifyStatus] = useState<'idle' | 'pending' | 'verified'>('idle')
+  const [verifyReason, setVerifyReason] = useState('')
 
   const [notifPrefs,   setNotifPrefs]   = useState<NotifPrefs>(DEFAULT_NOTIF)
   const [privacyPrefs, setPrivacyPrefs] = useState<PrivacyPrefs>(DEFAULT_PRIVACY)
@@ -93,7 +95,7 @@ export default function SettingsPage() {
     if (!user) return
     const { data, error } = await supabase
       .from('profiles')
-      .select('preferences')
+      .select('preferences, is_verified')
       .eq('id', user.id)
       .single()
     if (error) { setLoadError('Could not load preferences.'); return }
@@ -101,6 +103,20 @@ export default function SettingsPage() {
     if (prefs.notifications) setNotifPrefs({ ...DEFAULT_NOTIF, ...prefs.notifications })
     if (prefs.privacy)       setPrivacyPrefs({ ...DEFAULT_PRIVACY, ...prefs.privacy })
     if (prefs.appearance)    setAppearance({ ...DEFAULT_APPEARANCE, ...prefs.appearance })
+
+    // Check verification status
+    if (data?.is_verified) {
+      setVerifyStatus('verified')
+    } else {
+      const { data: req } = await supabase
+        .from('verification_requests')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('status', 'pending')
+        .maybeSingle()
+      if (req) setVerifyStatus('pending')
+      else setVerifyStatus('idle')
+    }
   }, [user])
 
   useEffect(() => { loadPrefs() }, [loadPrefs])
@@ -180,26 +196,14 @@ export default function SettingsPage() {
     if (!user) return
     setVerifyLoading(true)
     try {
-      // Check if a pending request already exists
-      const { data: existing } = await supabase
-        .from('verification_requests')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('status', 'pending')
-        .maybeSingle()
-      if (existing) {
-        // Already pending — just show success
-        setVerifyDone(true)
-        setTimeout(() => setVerifyDone(false), 4000)
-        setVerifyLoading(false)
-        return
-      }
       const { error } = await supabase.from('verification_requests').insert({
         user_id: user.id,
         status: 'pending',
         submitted_at: new Date().toISOString(),
+        notes: verifyReason,
       })
       if (error) throw error
+      setVerifyStatus('pending')
       setVerifyDone(true)
       setTimeout(() => setVerifyDone(false), 4000)
     } catch (err: any) {
@@ -383,14 +387,43 @@ export default function SettingsPage() {
             <div className="w-14 h-14 rounded-2xl bg-purple-500/10 flex items-center justify-center">
               <Shield className="w-7 h-7 text-purple-500" />
             </div>
-            <p className="text-sm dark:text-gray-300 text-gray-700 text-center">
-              Get a verified badge on your profile to build trust with other members. Our team reviews requests within 48 hours.
-            </p>
-            <button onClick={handleVerificationRequest} disabled={verifyLoading || verifyDone}
-              className="px-6 py-2.5 rounded-xl bg-purple-500 text-white text-sm font-bold hover:bg-purple-600 transition-colors disabled:opacity-60 flex items-center gap-2">
-              {verifyLoading ? <div className="w-4 h-4 border border-white/40 border-t-white rounded-full animate-spin" /> : verifyDone ? <Check className="w-4 h-4" /> : <Shield className="w-4 h-4" />}
-              {verifyLoading ? 'Submitting…' : verifyDone ? 'Request Submitted!' : 'Apply for Verification'}
-            </button>
+
+            {verifyStatus === 'verified' ? (
+              <div className="flex flex-col items-center gap-2">
+                <span className="flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-500 font-bold text-sm">
+                  <Check className="w-4 h-4" /> Verified ✓
+                </span>
+                <p className="text-xs dark:text-gray-400 text-gray-500 text-center">Your profile has a verified badge visible to all members.</p>
+              </div>
+            ) : verifyStatus === 'pending' ? (
+              <div className="flex flex-col items-center gap-2">
+                <span className="flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-500 font-bold text-sm">
+                  <RefreshCw className="w-4 h-4" /> Under Review
+                </span>
+                <p className="text-xs dark:text-gray-400 text-gray-500 text-center">Your verification request is being reviewed. We'll notify you within 48 hours.</p>
+              </div>
+            ) : (
+              <>
+                <p className="text-sm dark:text-gray-300 text-gray-700 text-center">
+                  Get a verified badge on your profile to build trust with other members. Our team reviews requests within 48 hours.
+                </p>
+                <div className="w-full space-y-2">
+                  <label className="text-xs font-semibold dark:text-gray-400 text-gray-600">Why do you want verification?</label>
+                  <textarea
+                    value={verifyReason}
+                    onChange={e => setVerifyReason(e.target.value)}
+                    placeholder="Briefly explain why you'd like a verified badge…"
+                    rows={3}
+                    className="w-full px-3 py-2 rounded-xl dark:bg-white/5 bg-gray-50 border dark:border-white/8 border-gray-200 dark:text-white text-gray-900 text-sm focus:outline-none focus:border-purple-500 resize-none"
+                  />
+                </div>
+                <button onClick={handleVerificationRequest} disabled={verifyLoading || verifyDone || !verifyReason.trim()}
+                  className="px-6 py-2.5 rounded-xl bg-purple-500 text-white text-sm font-bold hover:bg-purple-600 transition-colors disabled:opacity-60 flex items-center gap-2">
+                  {verifyLoading ? <div className="w-4 h-4 border border-white/40 border-t-white rounded-full animate-spin" /> : verifyDone ? <Check className="w-4 h-4" /> : <Shield className="w-4 h-4" />}
+                  {verifyLoading ? 'Submitting…' : verifyDone ? 'Request Submitted!' : 'Apply for Verification'}
+                </button>
+              </>
+            )}
           </div>
         </Section>
 

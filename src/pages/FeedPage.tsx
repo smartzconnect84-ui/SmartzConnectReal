@@ -306,7 +306,13 @@ function StoryViewerOverlay({
         {story.mediaType === 'text' ? (
           <div className={`w-full h-[360px] bg-gradient-to-br ${story.bgColor || 'from-pink-500 to-rose-600'} flex items-center justify-center p-8`}>
             <p className="text-white text-center font-bold text-2xl leading-snug break-words">
-              {story.textContent || ''}
+              {story.textContent
+                ? story.textContent.split(/(@\w[\w\s]*?\b)/).map((part, i) =>
+                    /^@/.test(part)
+                      ? <span key={i} className="text-yellow-300 font-black">{part}</span>
+                      : part
+                  )
+                : ''}
             </p>
           </div>
         ) : story.mediaUrl.match(/\.(mp4|webm|mov)$/i) ? (
@@ -391,6 +397,8 @@ function StoriesBar({ user, onStoriesLoaded }: { user: { id?: string; email?: st
   const [postingTextStory, setPostingTextStory] = useState(false)
   const [myAvatar, setMyAvatar] = useState<string | null>(null)
   const [myDisplayName, setMyDisplayName] = useState<string | null>(null)
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null)
+  const [mentionResults, setMentionResults] = useState<{ id: string; full_name: string }[]>([])
 
   // Fetch current user's own profile avatar + display name
   useEffect(() => {
@@ -404,6 +412,38 @@ function StoriesBar({ user, onStoriesLoaded }: { user: { id?: string; email?: st
       })
     return () => { mounted = false }
   }, [user?.id])
+
+  // Fetch mention suggestions when query changes
+  useEffect(() => {
+    if (!mentionQuery) { setMentionResults([]); return }
+    let cancelled = false
+    supabase.from('profiles').select('id,full_name').ilike('full_name', `%${mentionQuery}%`).limit(5)
+      .then(({ data }) => { if (!cancelled) setMentionResults((data as { id: string; full_name: string }[]) ?? []) })
+    return () => { cancelled = true }
+  }, [mentionQuery])
+
+  const handleTextStoryChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const val = e.target.value
+    setTextContent(val)
+    const words = val.split(/\s/)
+    const lastWord = words[words.length - 1]
+    if (lastWord.startsWith('@') && lastWord.length > 1) {
+      setMentionQuery(lastWord.slice(1))
+    } else {
+      setMentionQuery(null)
+    }
+  }
+
+  const handleMentionSelect = (m: { id: string; full_name: string }) => {
+    const words = textContent.split(/(\s)/)
+    const idx = words.length - 1
+    if (words[idx].startsWith('@')) {
+      words[idx] = `@${m.full_name}`
+    }
+    setTextContent(words.join(''))
+    setMentionQuery(null)
+    setMentionResults([])
+  }
 
   const handleTextStorySubmit = async () => {
     if (!textContent.trim() || !user?.id) return
@@ -529,14 +569,31 @@ function StoriesBar({ user, onStoriesLoaded }: { user: { id?: string; email?: st
                     </p>
                   </div>
                   <div className="p-4 space-y-3">
-                    <textarea
-                      value={textContent}
-                      onChange={e => setTextContent(e.target.value)}
-                      placeholder="What's on your mind?"
-                      rows={3}
-                      maxLength={200}
-                      className="w-full px-3 py-2.5 rounded-xl dark:bg-white/5 bg-gray-50 border dark:border-white/8 border-gray-200 text-sm dark:text-white text-gray-900 focus:outline-none resize-none"
-                    />
+                    <div className="relative">
+                      <textarea
+                        value={textContent}
+                        onChange={handleTextStoryChange}
+                        placeholder="What's on your mind? Type @ to mention someone…"
+                        rows={3}
+                        maxLength={200}
+                        className="w-full px-3 py-2.5 rounded-xl dark:bg-white/5 bg-gray-50 border dark:border-white/8 border-gray-200 text-sm dark:text-white text-gray-900 focus:outline-none resize-none focus:border-brand-pink transition-colors"
+                      />
+                      {/* Mention dropdown */}
+                      {mentionResults.length > 0 && (
+                        <div className="absolute left-0 right-0 top-full mt-1 z-20 dark:bg-[#1A1428] bg-white border dark:border-white/10 border-gray-200 rounded-xl shadow-xl overflow-hidden">
+                          {mentionResults.map(m => (
+                            <button key={m.id} type="button"
+                              onMouseDown={e => { e.preventDefault(); handleMentionSelect(m) }}
+                              className="w-full text-left px-3 py-2 text-sm dark:text-white text-gray-900 dark:hover:bg-white/8 hover:bg-gray-50 transition-colors flex items-center gap-2">
+                              <span className="w-6 h-6 rounded-full bg-love-gradient flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                                {m.full_name?.[0]?.toUpperCase() ?? '?'}
+                              </span>
+                              <span>{m.full_name}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                     {/* BG color picker */}
                     <div className="flex gap-2">
                       {TEXT_STORY_BG_OPTIONS.map(opt => (

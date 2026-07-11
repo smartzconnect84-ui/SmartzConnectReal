@@ -381,13 +381,74 @@ function ListingModal({ onClose }: { onClose: () => void }) {
   )
 }
 
-/* ──────────────── Story Upload Redirect ──────────────── */
+/* ──────────────── Story Modal (tabbed: Photo/Video + Text Story) ──────────────── */
+const TEXT_STORY_BG_OPTIONS = [
+  { value: 'from-pink-500 to-rose-600',    label: 'Rose'   },
+  { value: 'from-violet-500 to-purple-600', label: 'Violet' },
+  { value: 'from-blue-500 to-cyan-600',    label: 'Ocean'  },
+  { value: 'from-amber-500 to-orange-600', label: 'Sunset' },
+  { value: 'from-emerald-500 to-teal-600', label: 'Forest' },
+  { value: 'from-slate-700 to-slate-900',  label: 'Dark'   },
+]
+
+interface MentionResult { id: string; full_name: string }
+
 function StoryModal({ onClose }: { onClose: () => void }) {
   const { user } = useAuth()
   const fileRef = useRef<HTMLInputElement>(null)
+  const [tab, setTab] = useState<'media' | 'text'>('media')
+
+  // Media tab state
   const [uploading, setUploading] = useState(false)
-  const [done, setDone] = useState(false)
+  const [mediaDone, setMediaDone] = useState(false)
   const [error, setError] = useState('')
+
+  // Text story state
+  const [textContent, setTextContent] = useState('')
+  const [selectedBg, setSelectedBg] = useState(TEXT_STORY_BG_OPTIONS[0].value)
+  const [textDone, setTextDone] = useState(false)
+  const [submittingText, setSubmittingText] = useState(false)
+  const [textError, setTextError] = useState('')
+
+  // Mention state
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null)
+  const [mentionResults, setMentionResults] = useState<MentionResult[]>([])
+  const [mentions, setMentions] = useState<MentionResult[]>([])
+
+  // Fetch mention suggestions whenever mentionQuery changes
+  useEffect(() => {
+    if (!mentionQuery) { setMentionResults([]); return }
+    let cancelled = false
+    supabase.from('profiles').select('id,full_name').ilike('full_name', `%${mentionQuery}%`).limit(5)
+      .then(({ data }) => { if (!cancelled) setMentionResults((data as MentionResult[]) ?? []) })
+    return () => { cancelled = true }
+  }, [mentionQuery])
+
+  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const val = e.target.value
+    setTextContent(val)
+    // Detect @query at cursor
+    const words = val.split(/\s/)
+    const lastWord = words[words.length - 1]
+    if (lastWord.startsWith('@') && lastWord.length > 1) {
+      setMentionQuery(lastWord.slice(1))
+    } else {
+      setMentionQuery(null)
+    }
+  }
+
+  const handleMentionSelect = (m: MentionResult) => {
+    // Replace trailing @query with @Name
+    const words = textContent.split(/(\s)/)
+    const idx = words.length - 1
+    if (words[idx].startsWith('@')) {
+      words[idx] = `@${m.full_name}`
+    }
+    setTextContent(words.join(''))
+    setMentions(prev => [...prev.filter(x => x.id !== m.id), m])
+    setMentionQuery(null)
+    setMentionResults([])
+  }
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]; if (!file || !user) return
@@ -401,37 +462,131 @@ function StoryModal({ onClose }: { onClose: () => void }) {
       return
     }
     const { error: insertErr } = await supabase.from('stories').insert({
-      author_id: user.id,   // NOT NULL in original schema
-      user_id: user.id,     // alias added in schema_patch_v1
+      author_id: user.id,
+      user_id: user.id,
       media_url: publicUrl,
       media_type: file.type.startsWith('video/') ? 'video' : 'image',
       expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
     })
     setUploading(false)
     if (insertErr) { setError(insertErr.message); return }
-    setDone(true); setTimeout(onClose, 1800)
+    setMediaDone(true); setTimeout(onClose, 1800)
   }
+
+  const handleTextSubmit = async () => {
+    if (!textContent.trim() || !user) return
+    setSubmittingText(true); setTextError('')
+    const { error: err } = await supabase.from('stories').insert({
+      author_id: user.id,
+      user_id: user.id,
+      media_url: '',
+      media_type: 'text',
+      text_content: textContent.trim(),
+      bg_color: selectedBg,
+      expires_at: new Date(Date.now() + 86400000).toISOString(),
+    })
+    setSubmittingText(false)
+    if (err) { setTextError(err.message); return }
+    setTextDone(true); setTimeout(onClose, 1800)
+  }
+
+  const done = mediaDone || textDone
 
   return (
     <ModalShell title="Add Story" subtitle="Share a moment — disappears in 24 hours" onClose={onClose}>
       {done ? <SuccessBadge label="Story Posted!" /> : (
-        <div className="p-5">
-          <input ref={fileRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleFile} />
-          <button onClick={() => fileRef.current?.click()} disabled={uploading}
-            className="w-full h-48 rounded-2xl border-2 border-dashed dark:border-white/10 border-gray-200 flex flex-col items-center justify-center gap-3 hover:border-pink-500/50 hover:bg-pink-500/5 transition-all group">
-            {uploading
-              ? <><Loader2 className="w-8 h-8 animate-spin text-brand-pink" /><p className="text-sm font-semibold dark:text-white text-gray-900">Uploading your story…</p></>
-              : <>
-                  <div className="w-14 h-14 rounded-2xl bg-love-soft flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Image className="w-7 h-7 text-brand-pink" />
+        <div className="p-5 space-y-4">
+          {/* Tabs */}
+          <div className="flex gap-1 p-1 rounded-xl dark:bg-white/5 bg-gray-100">
+            {(['media', 'text'] as const).map(t => (
+              <button key={t} onClick={() => setTab(t)}
+                className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${tab === t ? 'bg-love-gradient text-white shadow-sm' : 'dark:text-gray-400 text-gray-500'}`}>
+                {t === 'media' ? '📷 Photo / Video' : '✏️ Text Story'}
+              </button>
+            ))}
+          </div>
+
+          {tab === 'media' ? (
+            <>
+              <input ref={fileRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleFile} />
+              <button onClick={() => fileRef.current?.click()} disabled={uploading}
+                className="w-full h-48 rounded-2xl border-2 border-dashed dark:border-white/10 border-gray-200 flex flex-col items-center justify-center gap-3 hover:border-pink-500/50 hover:bg-pink-500/5 transition-all group">
+                {uploading
+                  ? <><Loader2 className="w-8 h-8 animate-spin text-brand-pink" /><p className="text-sm font-semibold dark:text-white text-gray-900">Uploading your story…</p></>
+                  : <>
+                      <div className="w-14 h-14 rounded-2xl bg-love-soft flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <Image className="w-7 h-7 text-brand-pink" />
+                      </div>
+                      <div className="text-center">
+                        <p className="text-sm font-bold dark:text-white text-gray-900">Choose Photo or Video</p>
+                        <p className="text-xs dark:text-gray-500 text-gray-400 mt-1">Up to 50MB · Disappears in 24h</p>
+                      </div>
+                    </>}
+              </button>
+              {error && <p className="text-xs text-red-400">{error}</p>}
+            </>
+          ) : (
+            <>
+              {/* Live preview */}
+              <div className={`w-full h-44 rounded-2xl bg-gradient-to-br ${selectedBg} flex items-center justify-center p-6`}>
+                <p className="text-white text-center font-bold text-lg leading-snug break-words">
+                  {textContent || 'Your story text here…'}
+                </p>
+              </div>
+
+              {/* Textarea with mention support */}
+              <div className="relative">
+                <textarea
+                  value={textContent}
+                  onChange={handleTextChange}
+                  placeholder="What's on your mind? Type @ to mention someone…"
+                  rows={3}
+                  maxLength={200}
+                  className="w-full px-3 py-2.5 rounded-xl dark:bg-white/5 bg-gray-50 border dark:border-white/8 border-gray-200 text-sm dark:text-white text-gray-900 focus:outline-none focus:border-brand-pink resize-none transition-colors"
+                />
+                <span className={`absolute bottom-2 right-3 text-[10px] font-semibold ${textContent.length > 180 ? 'text-red-400' : 'dark:text-gray-600 text-gray-400'}`}>
+                  {textContent.length}/200
+                </span>
+
+                {/* Mention dropdown */}
+                {mentionResults.length > 0 && (
+                  <div className="absolute left-0 right-0 top-full mt-1 z-20 dark:bg-[#1A1428] bg-white border dark:border-white/10 border-gray-200 rounded-xl shadow-xl overflow-hidden">
+                    {mentionResults.map(m => (
+                      <button key={m.id} type="button"
+                        onMouseDown={e => { e.preventDefault(); handleMentionSelect(m) }}
+                        className="w-full text-left px-3 py-2 text-sm dark:text-white text-gray-900 dark:hover:bg-white/8 hover:bg-gray-50 transition-colors flex items-center gap-2">
+                        <span className="w-6 h-6 rounded-full bg-love-gradient flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                          {m.full_name?.[0]?.toUpperCase() ?? '?'}
+                        </span>
+                        <span>{m.full_name}</span>
+                      </button>
+                    ))}
                   </div>
-                  <div className="text-center">
-                    <p className="text-sm font-bold dark:text-white text-gray-900">Choose Photo or Video</p>
-                    <p className="text-xs dark:text-gray-500 text-gray-400 mt-1">Up to 50MB · Disappears in 24h</p>
-                  </div>
-                </>}
-          </button>
-          {error && <p className="text-xs text-red-400 mt-3">{error}</p>}
+                )}
+              </div>
+
+              {/* Background color picker */}
+              <div className="space-y-1.5">
+                <p className="text-[11px] font-semibold dark:text-gray-400 text-gray-500 uppercase tracking-wider">Background</p>
+                <div className="flex gap-2">
+                  {TEXT_STORY_BG_OPTIONS.map(opt => (
+                    <button key={opt.value} onClick={() => setSelectedBg(opt.value)}
+                      title={opt.label}
+                      className={`w-8 h-8 rounded-full bg-gradient-to-br ${opt.value} flex-shrink-0 transition-transform ${selectedBg === opt.value ? 'scale-125 ring-2 ring-white ring-offset-2 dark:ring-offset-[#130E1E] ring-offset-white' : 'hover:scale-110'}`}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {textError && <p className="text-xs text-red-400">{textError}</p>}
+
+              <button onClick={handleTextSubmit} disabled={!textContent.trim() || submittingText}
+                className="w-full py-3 rounded-xl bg-love-gradient text-white text-sm font-bold disabled:opacity-40 hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-lg shadow-pink-500/25">
+                {submittingText ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                {submittingText ? 'Posting…' : 'Share Text Story'}
+              </button>
+            </>
+          )}
         </div>
       )}
     </ModalShell>

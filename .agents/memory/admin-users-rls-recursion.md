@@ -11,3 +11,5 @@ Could not fix this session: `SUPABASE_DB_PASSWORD` (and psql direct connection) 
 
 **Why noted:** so a future session doesn't need to re-discover this from scratch — go straight to inspecting/rewriting the RLS policies on `platform_settings`/`system_announcements` (and whatever helper function they use to check admin status) once a working DB write path exists.
 **How to apply:** once psql or Management API access works, run `select policyname, qual from pg_policies where tablename in ('platform_settings','system_announcements');` and fix any subquery that re-enters `admin_users`' RLS instead of using a `SECURITY DEFINER` helper like `is_admin_user()`.
+
+Update (2026-07-11): `viewEnvVars`/the secrets list report `SUPABASE_DB_PASSWORD` as present, but `printenv`/`os.environ` in the shell see it as an empty string, so `psql` still can't authenticate. This looks like a secret that's registered but not actually populated — don't keep retrying psql with it; if unblocking this is needed, ask the user to re-enter the `SUPABASE_DB_PASSWORD` secret value.

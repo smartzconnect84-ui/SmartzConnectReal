@@ -53,7 +53,9 @@ export default function AdminUsers() {
   const [users, setUsers] = useState<AppUser[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
-  const [filter, setFilter] = useState<'all' | 'banned' | 'verified' | 'vip' | 'premium' | 'admins'>('all')
+  const [filter, setFilter] = useState<'all' | 'banned' | 'verified' | 'vip' | 'premium' | 'admins' | 'verification_requests'>('all')
+  const [verificationRequests, setVerificationRequests] = useState<any[]>([])
+  const [verifyReqLoading, setVerifyReqLoading] = useState(false)
   const [selected, setSelected] = useState<AppUser | null>(null)
   const [actionLoading, setActionLoading] = useState(false)
   const [total, setTotal] = useState(0)
@@ -96,7 +98,21 @@ export default function AdminUsers() {
     setLoading(false)
   }
 
-  useEffect(() => { fetchUsers() }, [search, filter])
+  const fetchVerificationRequests = async () => {
+    setVerifyReqLoading(true)
+    const { data } = await supabase
+      .from('verification_requests')
+      .select('id, user_id, status, submitted_at, notes, profiles(full_name, avatar_url, email:id)')
+      .order('submitted_at', { ascending: false })
+      .limit(100)
+    setVerificationRequests(data || [])
+    setVerifyReqLoading(false)
+  }
+
+  useEffect(() => {
+    if (filter === 'verification_requests') fetchVerificationRequests()
+    else fetchUsers()
+  }, [search, filter])
 
   const doAction = async (action: string, user: AppUser) => {
     setActionLoading(true)
@@ -122,6 +138,29 @@ export default function AdminUsers() {
     setSelected(null)
     setConfirmAction(null)
     setActionLoading(false)
+  }
+
+  const approveVerification = async (requestId: number, userId: string) => {
+    try {
+      await Promise.all([
+        supabase.from('profiles').update({ is_verified: true }).eq('id', userId),
+        supabase.from('verification_requests').update({ status: 'approved' }).eq('id', requestId),
+      ])
+      showToast('User verified successfully')
+      fetchVerificationRequests()
+    } catch {
+      showToast('Action failed.', false)
+    }
+  }
+
+  const rejectVerification = async (requestId: number) => {
+    try {
+      await supabase.from('verification_requests').update({ status: 'rejected' }).eq('id', requestId)
+      showToast('Request rejected')
+      fetchVerificationRequests()
+    } catch {
+      showToast('Action failed.', false)
+    }
   }
 
   const changeRole = async (newRole: string, user: AppUser) => {
@@ -202,16 +241,66 @@ export default function AdminUsers() {
             className="w-full pl-9 pr-4 py-2.5 rounded-xl dark:bg-white/5 bg-gray-50 border dark:border-white/8 border-gray-200 dark:text-white text-gray-900 text-sm focus:outline-none focus:border-brand-pink" />
         </div>
         <div className="flex gap-2 flex-wrap">
-          {(['all','admins','banned','verified','vip','premium'] as const).map(f => (
+          {(['all','admins','banned','verified','vip','premium','verification_requests'] as const).map(f => (
             <button key={f} onClick={() => setFilter(f)}
               className={`px-3 py-2 rounded-xl text-xs font-semibold capitalize transition-all ${filter === f ? 'bg-love-gradient text-white' : 'dark:bg-white/5 bg-gray-100 dark:text-gray-400 text-gray-600 hover:text-brand-pink'}`}>
-              {f}
+              {f === 'verification_requests' ? '🛡 Verify Requests' : f}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Table */}
+      {/* Verification Requests list */}
+      {filter === 'verification_requests' ? (
+        <div className="space-y-3">
+          {verifyReqLoading ? (
+            <div className="flex items-center justify-center py-16">
+              <RefreshCw className="w-6 h-6 animate-spin text-brand-pink" />
+            </div>
+          ) : verificationRequests.length === 0 ? (
+            <div className="text-center py-12 dark:text-gray-500 text-gray-400 text-sm">No verification requests</div>
+          ) : (
+            verificationRequests.map((req: any) => {
+              const prof = req.profiles as any
+              const name = prof?.full_name || 'Unknown'
+              const avatar = prof?.avatar_url
+              return (
+                <motion.div key={req.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                  className="dark:bg-[#130E1E] bg-white rounded-2xl border dark:border-white/6 border-gray-200 p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-love-gradient flex items-center justify-center text-white font-bold text-sm flex-shrink-0 overflow-hidden">
+                      {avatar ? <img src={avatar} alt={name} className="w-full h-full object-cover" /> : name[0]?.toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold dark:text-white text-gray-900 text-sm truncate">{name}</p>
+                      <p className="text-xs dark:text-gray-500 text-gray-400">{new Date(req.submitted_at).toLocaleDateString()}</p>
+                      {req.notes && <p className="text-xs dark:text-gray-400 text-gray-600 mt-1 italic">"{req.notes}"</p>}
+                    </div>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border flex-shrink-0 ${
+                      req.status === 'pending' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
+                      req.status === 'approved' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' :
+                      'bg-red-500/10 text-red-500 border-red-500/20'
+                    }`}>{req.status}</span>
+                  </div>
+                  {req.status === 'pending' && (
+                    <div className="flex gap-2 mt-3">
+                      <button onClick={() => approveVerification(req.id, req.user_id)}
+                        className="flex-1 py-2 rounded-xl text-xs font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 hover:bg-emerald-500/20 transition-all">
+                        ✅ Approve
+                      </button>
+                      <button onClick={() => rejectVerification(req.id)}
+                        className="flex-1 py-2 rounded-xl text-xs font-bold bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500/20 transition-all">
+                        ❌ Reject
+                      </button>
+                    </div>
+                  )}
+                </motion.div>
+              )
+            })
+          )}
+        </div>
+      ) : (
+      /* Table */
       <div className="dark:bg-[#130E1E] bg-white rounded-2xl border dark:border-white/6 border-gray-200 overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center py-16">
@@ -281,6 +370,7 @@ export default function AdminUsers() {
           </div>
         )}
       </div>
+      )}
 
       {/* Action modal */}
       <AnimatePresence>

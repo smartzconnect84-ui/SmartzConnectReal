@@ -7,6 +7,7 @@ import {
   Radio, ShoppingBag, Car, MapPin, Star, Infinity, Smartphone,
   ChevronDown, ChevronUp, CreditCard, Wallet,
 } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
 
 /* ─────────────── Currency data ─────────────── */
 const CURRENCIES = [
@@ -286,6 +287,43 @@ export default function PricingPage() {
   const [currency, setCurrency] = useState('USD')
   const [openFaq, setOpenFaq]   = useState<number | null>(null)
   const [showAll, setShowAll]   = useState(false)
+  const [activePlans, setActivePlans] = useState<Plan[]>(plans)
+
+  useEffect(() => {
+    let mounted = true
+    supabase
+      .from('plans')
+      .select('*')
+      .eq('is_active', true)
+      .order('sort_order', { ascending: true })
+      .then(({ data, error }) => {
+        if (!mounted) return
+        if (!error && data && data.length >= 2) {
+          const mapped: Plan[] = data.map((row: any) => {
+            // Match to hardcoded plan for style/icon/layout defaults
+            const base = plans.find(p => p.name.toLowerCase() === (row.name ?? '').toLowerCase()) ?? plans[0]
+            const features: Feature[] = Array.isArray(row.features)
+              ? row.features.map((f: any) =>
+                  typeof f === 'string'
+                    ? { text: f, included: true }
+                    : { text: f.text ?? '', included: f.included !== false, highlight: f.highlight ?? false }
+                )
+              : base.features
+            return {
+              ...base,
+              name: row.name ?? base.name,
+              priceUSD: typeof row.price_usd === 'number' ? row.price_usd : base.priceUSD,
+              badge: row.badge ?? base.badge,
+              tagline: row.tagline ?? base.tagline,
+              features,
+            }
+          })
+          setActivePlans(mapped)
+        }
+        // on error or < 2 rows, keep hardcoded fallback
+      })
+    return () => { mounted = false }
+  }, [])
 
   const displayedCurrencies = showAll ? CURRENCIES : CURRENCIES.filter(c => c.popular)
 
@@ -360,7 +398,7 @@ export default function PricingPage() {
       <section className="pb-16 sm:pb-20" ref={plansRef}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5 lg:gap-6 mb-16">
-            {plans.map((plan, i) => {
+            {activePlans.map((plan, i) => {
               const Icon = plan.icon
               const price = getPrice(plan)
               const isYearlyDiscount = billing === 'yearly' && plan.priceUSD > 0
@@ -436,7 +474,7 @@ export default function PricingPage() {
             className="hidden md:block overflow-hidden rounded-3xl border dark:border-white/8 border-gray-200 dark:bg-[#130E1E] bg-white shadow-xl mb-16">
             <div className="grid grid-cols-4 border-b dark:border-white/6 border-gray-100 bg-gradient-to-r dark:from-white/2 from-gray-50 to-transparent">
               <div className="p-5"><p className="font-bold dark:text-gray-300 text-gray-700 text-sm">Feature comparison</p></div>
-              {plans.map(p => (
+              {activePlans.map(p => (
                 <div key={p.name} className="p-5 text-center border-l dark:border-white/5 border-gray-100">
                   <p className="font-black text-sm dark:text-white text-gray-900">{p.emoji} {p.name}</p>
                   <p className="text-xs dark:text-gray-500 text-gray-400 mt-0.5">
@@ -535,7 +573,7 @@ export default function PricingPage() {
             {/* Header */}
             <div className="grid grid-cols-4 bg-gradient-to-r dark:from-white/3 from-gray-50 to-transparent border-b dark:border-white/6 border-gray-100">
               <div className="p-4 text-xs font-bold dark:text-gray-400 text-gray-500 uppercase tracking-wider">Currency</div>
-              {plans.map(p => (
+              {activePlans.map(p => (
                 <div key={p.name} className="p-4 text-center text-xs font-bold dark:text-gray-400 text-gray-500 uppercase tracking-wider">
                   {p.emoji} {p.name}
                 </div>
@@ -551,7 +589,7 @@ export default function PricingPage() {
                     <p className="text-[10px] dark:text-gray-500 text-gray-400">{cur.name}</p>
                   </div>
                 </div>
-                {plans.map(p => (
+                {activePlans.map(p => (
                   <div key={p.name} className="p-4 text-center flex items-center justify-center">
                     <span className={`text-xs font-bold ${p.priceUSD === 0 ? 'text-emerald-500' : 'dark:text-white text-gray-900'}`}>
                       {p.priceUSD === 0 ? 'Free' : toLocal(billing === 'yearly' ? p.priceUSD * 0.8 : p.priceUSD, cur.code)}
@@ -579,7 +617,7 @@ export default function PricingPage() {
                           <p className="text-[10px] dark:text-gray-500 text-gray-400">{cur.name}</p>
                         </div>
                       </div>
-                      {plans.map(p => (
+                      {activePlans.map(p => (
                         <div key={p.name} className="p-4 text-center flex items-center justify-center">
                           <span className={`text-xs font-bold ${p.priceUSD === 0 ? 'text-emerald-500' : 'dark:text-white text-gray-900'}`}>
                             {p.priceUSD === 0 ? 'Free' : toLocal(billing === 'yearly' ? p.priceUSD * 0.8 : p.priceUSD, cur.code)}

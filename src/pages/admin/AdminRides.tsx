@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Car, RefreshCw, MapPin, User, Star } from 'lucide-react'
+import { Car, RefreshCw, MapPin, User, Star, CheckCircle, X } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
 interface RideRequest {
@@ -29,6 +29,18 @@ interface Driver {
   created_at: string
 }
 
+interface DriverApplication {
+  id: number
+  user_id: string
+  vehicle_type: string
+  phone: string
+  license_number: string
+  driver_license_url: string | null
+  vehicle_reg_url: string | null
+  status: string
+  created_at: string
+}
+
 const statusColor: Record<string, string> = {
   pending: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
   accepted: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
@@ -40,9 +52,17 @@ const statusColor: Record<string, string> = {
 export default function AdminRides() {
   const [rides, setRides] = useState<RideRequest[]>([])
   const [drivers, setDrivers] = useState<Driver[]>([])
+  const [applications, setApplications] = useState<DriverApplication[]>([])
   const [loading, setLoading] = useState(true)
-  const [tab, setTab] = useState<'rides' | 'drivers'>('rides')
+  const [appsLoading, setAppsLoading] = useState(false)
+  const [tab, setTab] = useState<'rides' | 'drivers' | 'applications'>('rides')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null)
+
+  const showToast = (msg: string, ok = true) => {
+    setToast({ msg, ok })
+    setTimeout(() => setToast(null), 3000)
+  }
 
   const fetchData = async () => {
     setLoading(true)
@@ -55,11 +75,58 @@ export default function AdminRides() {
     setLoading(false)
   }
 
+  const fetchApplications = async () => {
+    setAppsLoading(true)
+    try {
+      const { data, error } = await supabase
+        .from('driver_applications')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100)
+      if (error) {
+        // Table might not exist yet
+        setApplications([])
+      } else {
+        setApplications(data || [])
+      }
+    } catch {
+      setApplications([])
+    }
+    setAppsLoading(false)
+  }
+
   useEffect(() => { fetchData() }, [])
+
+  useEffect(() => {
+    if (tab === 'applications') fetchApplications()
+  }, [tab])
 
   const verifyDriver = async (id: number, verified: boolean) => {
     await supabase.from('drivers').update({ is_verified: !verified }).eq('id', id)
     await fetchData()
+  }
+
+  const approveApplication = async (app: DriverApplication) => {
+    try {
+      await Promise.all([
+        supabase.from('profiles').update({ is_driver: true }).eq('id', app.user_id),
+        supabase.from('driver_applications').update({ status: 'approved' }).eq('id', app.id),
+      ])
+      showToast('Application approved — user is now a driver')
+      fetchApplications()
+    } catch {
+      showToast('Failed to approve application', false)
+    }
+  }
+
+  const rejectApplication = async (id: number) => {
+    try {
+      await supabase.from('driver_applications').update({ status: 'rejected' }).eq('id', id)
+      showToast('Application rejected')
+      fetchApplications()
+    } catch {
+      showToast('Failed to reject application', false)
+    }
   }
 
   const filteredRides = rides.filter(r => statusFilter === 'all' || r.status === statusFilter)
@@ -73,6 +140,15 @@ export default function AdminRides() {
 
   return (
     <div className="p-4 sm:p-6 space-y-6">
+
+      {/* Toast */}
+      {toast && (
+        <div className={`fixed top-4 right-4 z-[100] flex items-center gap-2 px-4 py-3 rounded-xl shadow-xl text-sm font-medium ${toast.ok ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'}`}>
+          {toast.ok ? <CheckCircle className="w-4 h-4" /> : <X className="w-4 h-4" />}
+          {toast.msg}
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-display font-black text-2xl dark:text-white text-gray-900">SmartzRide</h1>
@@ -93,15 +169,79 @@ export default function AdminRides() {
       </div>
 
       <div className="flex gap-2 p-1 dark:bg-white/5 bg-gray-100 rounded-xl w-fit">
-        {(['rides', 'drivers'] as const).map(t => (
+        {(['rides', 'drivers', 'applications'] as const).map(t => (
           <button key={t} onClick={() => setTab(t)}
             className={`px-4 py-2 rounded-lg text-sm font-semibold capitalize transition-all ${tab === t ? 'bg-love-gradient text-white shadow-sm' : 'dark:text-gray-400 text-gray-600 hover:text-brand-pink'}`}>
-            {t === 'rides' ? '🚗 Rides' : '👤 Drivers'}
+            {t === 'rides' ? '🚗 Rides' : t === 'drivers' ? '👤 Drivers' : '📋 Applications'}
           </button>
         ))}
       </div>
 
-      {loading ? (
+      {tab === 'applications' ? (
+        appsLoading ? (
+          <div className="flex items-center justify-center py-16"><RefreshCw className="w-6 h-6 animate-spin text-brand-pink" /></div>
+        ) : applications.length === 0 ? (
+          <div className="text-center py-12 dark:text-gray-500 text-gray-400 text-sm">No driver applications yet</div>
+        ) : (
+          <div className="space-y-3">
+            {applications.map(app => (
+              <motion.div key={app.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                className="dark:bg-[#130E1E] bg-white rounded-2xl p-5 border dark:border-white/6 border-gray-200">
+                <div className="flex items-start justify-between gap-4 mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-love-gradient flex items-center justify-center text-white font-bold flex-shrink-0">
+                      <User className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="font-bold dark:text-white text-gray-900 text-sm">Application #{app.id}</p>
+                      <p className="text-xs dark:text-gray-400 text-gray-600">{app.vehicle_type} · {app.phone}</p>
+                      <p className="text-xs dark:text-gray-500 text-gray-400">License: {app.license_number}</p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end gap-1.5">
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                      app.status === 'pending' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
+                      app.status === 'approved' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' :
+                      'bg-red-500/10 text-red-500 border-red-500/20'
+                    }`}>{app.status}</span>
+                    <span className="text-[10px] dark:text-gray-500 text-gray-400">{new Date(app.created_at).toLocaleDateString()}</span>
+                  </div>
+                </div>
+
+                {(app.driver_license_url || app.vehicle_reg_url) && (
+                  <div className="flex gap-2 mb-3">
+                    {app.driver_license_url && (
+                      <a href={app.driver_license_url} target="_blank" rel="noopener noreferrer"
+                        className="flex-1 py-1.5 rounded-lg text-xs font-semibold text-center dark:bg-white/5 bg-gray-50 dark:text-gray-300 text-gray-600 border dark:border-white/8 border-gray-200 hover:text-brand-pink transition-colors truncate">
+                        📄 Driver License
+                      </a>
+                    )}
+                    {app.vehicle_reg_url && (
+                      <a href={app.vehicle_reg_url} target="_blank" rel="noopener noreferrer"
+                        className="flex-1 py-1.5 rounded-lg text-xs font-semibold text-center dark:bg-white/5 bg-gray-50 dark:text-gray-300 text-gray-600 border dark:border-white/8 border-gray-200 hover:text-brand-pink transition-colors truncate">
+                        📋 Vehicle Reg
+                      </a>
+                    )}
+                  </div>
+                )}
+
+                {app.status === 'pending' && (
+                  <div className="flex gap-2">
+                    <button onClick={() => approveApplication(app)}
+                      className="flex-1 py-2 rounded-xl text-xs font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 hover:bg-emerald-500/20 transition-all">
+                      ✅ Approve Driver
+                    </button>
+                    <button onClick={() => rejectApplication(app.id)}
+                      className="flex-1 py-2 rounded-xl text-xs font-bold bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500/20 transition-all">
+                      ❌ Reject
+                    </button>
+                  </div>
+                )}
+              </motion.div>
+            ))}
+          </div>
+        )
+      ) : loading ? (
         <div className="flex items-center justify-center py-16"><RefreshCw className="w-6 h-6 animate-spin text-brand-pink" /></div>
       ) : tab === 'rides' ? (
         <>

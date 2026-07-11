@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { MapPin, Car, Clock, Star, Shield, ChevronRight, Navigation, Phone, Zap, Users, DollarSign, RefreshCw } from 'lucide-react'
+import { MapPin, Car, Clock, Star, Shield, ChevronRight, Navigation, Phone, Zap, Users, DollarSign, RefreshCw, Upload, Check } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
+import { uploadToSufy } from '@/lib/sufy'
 
 const rideTypes = [
   { id: 'standard', name: 'Standard', emoji: '🚗', desc: 'Affordable everyday rides',   basePrice: 2.50, perKm: 0.80, eta: '3–5 min',  capacity: 4 },
@@ -32,6 +33,17 @@ export default function RidePage() {
   const [recentTrips, setRecentTrips] = useState<Trip[]>([])
   const [loadingDrivers, setLoadingDrivers] = useState(true)
   const [loadingTrips, setLoadingTrips] = useState(true)
+
+  // Driver application state
+  const [driverForm, setDriverForm] = useState({ vehicle_type: 'Sedan', phone: '', license_number: '' })
+  const [driverLicenseFile, setDriverLicenseFile] = useState<File | null>(null)
+  const [vehicleRegFile, setVehicleRegFile] = useState<File | null>(null)
+  const [driverSubmitting, setDriverSubmitting] = useState(false)
+  const [driverSuccess, setDriverSuccess] = useState(false)
+  const [driverWhatsApp, setDriverWhatsApp] = useState(false)
+  const [driverError, setDriverError] = useState<string | null>(null)
+  const licenseInputRef = useRef<HTMLInputElement>(null)
+  const vehicleRegInputRef = useRef<HTMLInputElement>(null)
 
   const selected = rideTypes.find(r => r.id === selectedType)!
   const distance = 4.2
@@ -95,6 +107,46 @@ export default function RidePage() {
   }
 
   const cancelRide = () => { setStep('book'); setPickup(''); setDropoff('') }
+
+  const submitDriverApplication = async () => {
+    if (!user) return
+    if (!driverForm.phone || !driverForm.license_number || !driverLicenseFile || !vehicleRegFile) {
+      setDriverError('Please fill all fields and upload both documents.')
+      setTimeout(() => setDriverError(null), 4000)
+      return
+    }
+    setDriverSubmitting(true)
+    setDriverError(null)
+    try {
+      const [licenseUrl, regUrl] = await Promise.all([
+        uploadToSufy(driverLicenseFile, 'documents'),
+        uploadToSufy(vehicleRegFile, 'documents'),
+      ])
+      const { error } = await supabase.from('driver_applications').insert({
+        user_id: user.id,
+        vehicle_type: driverForm.vehicle_type,
+        phone: driverForm.phone,
+        license_number: driverForm.license_number,
+        driver_license_url: licenseUrl,
+        vehicle_reg_url: regUrl,
+        status: 'pending',
+        created_at: new Date().toISOString(),
+      })
+      if (error) {
+        if (error.code === '42P01') {
+          setDriverWhatsApp(true)
+        } else {
+          throw error
+        }
+      } else {
+        setDriverSuccess(true)
+      }
+    } catch (err: any) {
+      setDriverError(err?.message || 'Failed to submit application.')
+      setTimeout(() => setDriverError(null), 5000)
+    }
+    setDriverSubmitting(false)
+  }
 
   return (
     <div className="h-full flex flex-col dark:bg-[#0D0A14] bg-gray-50">
@@ -267,49 +319,97 @@ export default function RidePage() {
           </div>
         )}
 
-        {/* Drivers tab */}
+        {/* Driver Application tab */}
         {activeTab === 'driver' && (
-          <div className="p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="font-bold dark:text-white text-gray-900">Available Drivers</h2>
-              <button onClick={fetchDrivers} className="w-8 h-8 rounded-xl dark:bg-white/5 bg-gray-100 flex items-center justify-center hover:text-brand-pink transition-colors">
-                <RefreshCw className="w-3.5 h-3.5 dark:text-gray-400 text-gray-600" />
-              </button>
+          <div className="p-4 space-y-4">
+            <div>
+              <h2 className="font-bold dark:text-white text-gray-900">Become a Driver</h2>
+              <p className="text-xs dark:text-pink-300/60 text-gray-500 mt-0.5">Apply to drive on the SmartzRide platform</p>
             </div>
-            {loadingDrivers ? (
-              <div className="flex flex-col items-center justify-center py-12 gap-3">
-                <div className="w-8 h-8 rounded-full border-2 border-pink-500/30 border-t-pink-500 animate-spin" />
-                <p className="text-sm dark:text-pink-300/60 text-gray-500">Loading drivers…</p>
+
+            {driverSuccess ? (
+              <div className="flex flex-col items-center gap-3 py-10 text-center">
+                <div className="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                  <Check className="w-8 h-8 text-emerald-500" />
+                </div>
+                <p className="font-bold dark:text-white text-gray-900">Application Submitted!</p>
+                <p className="text-sm dark:text-pink-300/60 text-gray-500">Our team will review your application within 48 hours.</p>
               </div>
-            ) : nearbyDrivers.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 gap-3 text-center">
-                <div className="text-4xl">🚗</div>
-                <p className="font-bold dark:text-white text-gray-900">No drivers online yet</p>
-                <p className="text-sm dark:text-pink-300/60 text-gray-500">Drivers will appear here as they register on the platform</p>
+            ) : driverWhatsApp ? (
+              <div className="flex flex-col items-center gap-3 py-8 text-center dark:bg-[#130E1E] bg-white rounded-2xl border dark:border-purple-900/20 border-gray-100 p-5">
+                <div className="text-4xl">📱</div>
+                <p className="font-bold dark:text-white text-gray-900">Application Received</p>
+                <p className="text-sm dark:text-pink-300/60 text-gray-500">Your application has been received. Contact <span className="font-bold dark:text-white text-gray-900">+231776679963</span> on WhatsApp to complete.</p>
+                <a href="https://wa.me/231776679963" target="_blank" rel="noopener noreferrer"
+                  className="px-6 py-2.5 rounded-xl bg-emerald-500 text-white text-sm font-bold hover:bg-emerald-600 transition-colors">
+                  Open WhatsApp
+                </a>
               </div>
             ) : (
-              nearbyDrivers.map((driver) => (
-                <div key={driver.id} className="dark:bg-[#130E1E] bg-white rounded-2xl border dark:border-purple-900/20 border-gray-100 p-4 flex items-center gap-4 shadow-sm">
-                  <div className="relative flex-shrink-0">
-                    <div className="w-12 h-12 rounded-full dark:bg-purple-900/20 bg-gray-100 flex items-center justify-center text-2xl overflow-hidden">
-                      {driver.avatar_url ? <img src={driver.avatar_url} alt={driver.name} className="w-full h-full object-cover" /> : driver.emoji}
-                    </div>
-                    {driver.online && <div className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-500 border-2 dark:border-[#130E1E] border-white" />}
+              <div className="space-y-3">
+                {/* Vehicle Type */}
+                <div className="dark:bg-[#130E1E] bg-white rounded-2xl border dark:border-purple-900/20 border-gray-100 p-4 space-y-3">
+                  <p className="text-xs font-bold dark:text-gray-400 text-gray-500 uppercase tracking-wider">Vehicle Details</p>
+                  <div>
+                    <label className="text-xs font-semibold dark:text-gray-300 text-gray-700 block mb-1">Vehicle Type</label>
+                    <select value={driverForm.vehicle_type} onChange={e => setDriverForm(f => ({ ...f, vehicle_type: e.target.value }))}
+                      className="w-full px-3 py-2.5 rounded-xl dark:bg-white/5 bg-gray-50 border dark:border-white/8 border-gray-200 dark:text-white text-gray-900 text-sm focus:outline-none focus:border-brand-pink">
+                      {['Sedan', 'SUV', 'Motorcycle', 'Tricycle', 'Van'].map(v => (
+                        <option key={v} value={v}>{v}</option>
+                      ))}
+                    </select>
                   </div>
-                  <div className="flex-1">
-                    <p className="font-bold dark:text-white text-gray-900">{driver.name}</p>
-                    <p className="text-xs dark:text-purple-300/60 text-gray-500">{driver.car}</p>
-                    <div className="flex items-center gap-1 mt-1">
-                      <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
-                      <span className="text-xs font-bold dark:text-white text-gray-900">{driver.rating}</span>
-                      <span className="text-[10px] dark:text-purple-400/60 text-gray-400">· {driver.distance}</span>
-                    </div>
+                  <div>
+                    <label className="text-xs font-semibold dark:text-gray-300 text-gray-700 block mb-1">Phone Number</label>
+                    <input value={driverForm.phone} onChange={e => setDriverForm(f => ({ ...f, phone: e.target.value }))}
+                      placeholder="+231 XX XXX XXXX" type="tel"
+                      className="w-full px-3 py-2.5 rounded-xl dark:bg-white/5 bg-gray-50 border dark:border-white/8 border-gray-200 dark:text-white text-gray-900 text-sm focus:outline-none focus:border-brand-pink placeholder:dark:text-purple-400/50 placeholder:text-gray-400" />
                   </div>
-                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${driver.online ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'dark:bg-white/5 bg-gray-100 dark:text-gray-500 text-gray-400 dark:border-white/8 border-gray-200'}`}>
-                    {driver.online ? 'Online' : 'Offline'}
-                  </span>
+                  <div>
+                    <label className="text-xs font-semibold dark:text-gray-300 text-gray-700 block mb-1">License Number</label>
+                    <input value={driverForm.license_number} onChange={e => setDriverForm(f => ({ ...f, license_number: e.target.value }))}
+                      placeholder="Driver's license number"
+                      className="w-full px-3 py-2.5 rounded-xl dark:bg-white/5 bg-gray-50 border dark:border-white/8 border-gray-200 dark:text-white text-gray-900 text-sm focus:outline-none focus:border-brand-pink placeholder:dark:text-purple-400/50 placeholder:text-gray-400" />
+                  </div>
                 </div>
-              ))
+
+                {/* Documents */}
+                <div className="dark:bg-[#130E1E] bg-white rounded-2xl border dark:border-purple-900/20 border-gray-100 p-4 space-y-3">
+                  <p className="text-xs font-bold dark:text-gray-400 text-gray-500 uppercase tracking-wider">Documents</p>
+
+                  <div>
+                    <label className="text-xs font-semibold dark:text-gray-300 text-gray-700 block mb-1">Driver's License Photo</label>
+                    <input ref={licenseInputRef} type="file" accept="image/*" className="hidden"
+                      onChange={e => setDriverLicenseFile(e.target.files?.[0] || null)} />
+                    <button onClick={() => licenseInputRef.current?.click()}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border text-sm transition-all ${driverLicenseFile ? 'border-emerald-500/40 dark:bg-emerald-500/10 bg-emerald-50 text-emerald-600' : 'dark:border-white/8 border-gray-200 dark:bg-white/5 bg-gray-50 dark:text-gray-400 text-gray-600 hover:border-brand-pink/50'}`}>
+                      {driverLicenseFile ? <Check className="w-4 h-4 flex-shrink-0" /> : <Upload className="w-4 h-4 flex-shrink-0" />}
+                      <span className="truncate">{driverLicenseFile ? driverLicenseFile.name : 'Upload license photo'}</span>
+                    </button>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-semibold dark:text-gray-300 text-gray-700 block mb-1">Vehicle Registration Photo</label>
+                    <input ref={vehicleRegInputRef} type="file" accept="image/*" className="hidden"
+                      onChange={e => setVehicleRegFile(e.target.files?.[0] || null)} />
+                    <button onClick={() => vehicleRegInputRef.current?.click()}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border text-sm transition-all ${vehicleRegFile ? 'border-emerald-500/40 dark:bg-emerald-500/10 bg-emerald-50 text-emerald-600' : 'dark:border-white/8 border-gray-200 dark:bg-white/5 bg-gray-50 dark:text-gray-400 text-gray-600 hover:border-brand-pink/50'}`}>
+                      {vehicleRegFile ? <Check className="w-4 h-4 flex-shrink-0" /> : <Upload className="w-4 h-4 flex-shrink-0" />}
+                      <span className="truncate">{vehicleRegFile ? vehicleRegFile.name : 'Upload registration photo'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {driverError && (
+                  <p className="text-xs text-red-400 text-center">{driverError}</p>
+                )}
+
+                <button onClick={submitDriverApplication} disabled={driverSubmitting}
+                  className="w-full py-3.5 rounded-2xl bg-love-gradient text-white font-bold text-sm shadow-xl shadow-pink-500/20 disabled:opacity-60 flex items-center justify-center gap-2">
+                  {driverSubmitting ? <div className="w-4 h-4 border border-white/40 border-t-white rounded-full animate-spin" /> : <Car className="w-4 h-4" />}
+                  {driverSubmitting ? 'Submitting…' : 'Submit Application'}
+                </button>
+              </div>
             )}
           </div>
         )}

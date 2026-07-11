@@ -1,8 +1,10 @@
-import { useRef } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { motion, useInView } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import { ExternalLink, Users, Zap, Shield, Star, MapPin, Calendar } from 'lucide-react'
+import { LinkedinIcon, TwitterIcon } from '@/components/icons/SocialIcons'
 import { useSiteConfig, SITE_IMAGE_KEYS } from '@/contexts/SiteConfigContext'
+import { supabase } from '@/lib/supabase'
 
 const values = [
   { emoji: '🌍', title: 'Africa First',       desc: 'Every decision starts with: "Is this right for Africa?" We build for our continent, by our continent.' },
@@ -22,11 +24,153 @@ const CEO = {
   contact_url: 'https://wa.me/231776679963',
 }
 
+type TeamMember = {
+  id: string
+  full_name: string
+  role: string
+  photo_url: string | null
+  bio: string | null
+  country: string | null
+  linkedin_url: string | null
+  twitter_url: string | null
+  is_advisor: boolean
+  display_order: number
+}
+
+function TeamCardSkeleton() {
+  return (
+    <div className="dark:bg-[#130E1E] bg-white rounded-3xl border dark:border-white/8 border-gray-100 shadow-xl overflow-hidden animate-pulse">
+      <div className="flex flex-col md:flex-row">
+        <div className="md:w-80 lg:w-96 flex-shrink-0 h-72 md:h-80 bg-gray-200 dark:bg-white/10" />
+        <div className="flex-1 p-6 sm:p-8 lg:p-10 flex flex-col justify-center gap-4">
+          <div className="h-4 w-32 rounded-full bg-gray-200 dark:bg-white/10" />
+          <div className="h-7 w-56 rounded-full bg-gray-200 dark:bg-white/10" />
+          <div className="h-4 w-28 rounded-full bg-gray-200 dark:bg-white/10" />
+          <div className="space-y-2">
+            <div className="h-3 w-full rounded-full bg-gray-200 dark:bg-white/10" />
+            <div className="h-3 w-5/6 rounded-full bg-gray-200 dark:bg-white/10" />
+            <div className="h-3 w-4/6 rounded-full bg-gray-200 dark:bg-white/10" />
+          </div>
+          <div className="flex gap-2 mt-2">
+            {[1, 2, 3].map(k => (
+              <div key={k} className="h-6 w-20 rounded-full bg-gray-200 dark:bg-white/10" />
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function MemberCard({ member, inView, delay }: { member: TeamMember; inView: boolean; delay: number }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 32 }} animate={inView ? { opacity: 1, y: 0 } : {}} transition={{ delay }}
+      className="dark:bg-[#130E1E] bg-white rounded-3xl border dark:border-white/8 border-gray-100 shadow-2xl overflow-hidden"
+    >
+      <div className="flex flex-col md:flex-row">
+        {/* Photo */}
+        <div className="relative md:w-80 lg:w-96 flex-shrink-0 h-72 md:h-auto min-h-[320px]">
+          {member.photo_url ? (
+            <img src={member.photo_url} alt={member.full_name} className="w-full h-full object-cover object-top" />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-purple-600/30 to-pink-600/30 flex items-center justify-center">
+              <Users className="w-20 h-20 text-white/30" />
+            </div>
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent md:bg-gradient-to-r md:from-transparent md:to-transparent" />
+          {/* Mobile name overlay */}
+          <div className="absolute bottom-4 left-5 md:hidden">
+            <p className="font-black text-white text-xl leading-tight">{member.full_name}</p>
+            <p className="text-pink-300 text-sm font-semibold">{member.role}</p>
+          </div>
+          {/* Country badge */}
+          {member.country && (
+            <div className="absolute top-4 right-4 px-2.5 py-1 rounded-full bg-black/50 backdrop-blur-sm text-white text-xs font-semibold flex items-center gap-1">
+              <MapPin className="w-3 h-3" /> {member.country}
+            </div>
+          )}
+          {/* Advisor badge */}
+          {member.is_advisor && (
+            <div className="absolute top-4 left-4 px-2.5 py-1 rounded-full bg-amber-500/80 backdrop-blur-sm text-white text-xs font-bold">
+              Advisor
+            </div>
+          )}
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 p-6 sm:p-8 lg:p-10 flex flex-col justify-center">
+          {/* Desktop name */}
+          <div className="hidden md:block mb-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r from-purple-600/20 to-pink-600/20 border border-purple-500/20 mb-3">
+              <Star className="w-3.5 h-3.5 text-amber-400" />
+              <span className="text-xs font-bold text-purple-300">{member.is_advisor ? 'Advisor' : 'Team Member'}</span>
+            </div>
+            <h3 className="font-display font-black text-2xl sm:text-3xl dark:text-white text-gray-900 mb-1">{member.full_name}</h3>
+            <p className="text-base text-pink-400 font-semibold">{member.role}</p>
+          </div>
+
+          {/* Bio */}
+          {member.bio && (
+            <p className="text-sm sm:text-base dark:text-gray-300 text-gray-700 leading-relaxed mb-6">
+              {member.bio}
+            </p>
+          )}
+
+          {/* Social links */}
+          {(member.linkedin_url || member.twitter_url) && (
+            <div className="flex flex-wrap gap-3 pt-4 border-t dark:border-white/8 border-gray-100">
+              {member.linkedin_url && (
+                <a href={member.linkedin_url} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl dark:bg-white/6 bg-gray-100 dark:text-white text-gray-700 text-sm font-semibold hover:dark:bg-white/10 hover:bg-gray-200 transition-colors border dark:border-white/8 border-gray-200">
+                  <LinkedinIcon className="w-4 h-4" /> LinkedIn
+                </a>
+              )}
+              {member.twitter_url && (
+                <a href={member.twitter_url} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl dark:bg-white/6 bg-gray-100 dark:text-white text-gray-700 text-sm font-semibold hover:dark:bg-white/10 hover:bg-gray-200 transition-colors border dark:border-white/8 border-gray-200">
+                  <TwitterIcon className="w-4 h-4" /> Twitter
+                </a>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </motion.div>
+  )
+}
+
 export default function TeamPage() {
   const ref = useRef(null)
   const inView = useInView(ref, { once: true, margin: '-60px' })
   const siteConfig = useSiteConfig()
   const bgUrl = siteConfig.get(SITE_IMAGE_KEYS.teamPageBg)
+
+  const [members, setMembers] = useState<TeamMember[] | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let mounted = true
+    supabase
+      .from('team_members')
+      .select('*')
+      .eq('is_active', true)
+      .order('display_order', { ascending: true })
+      .then(({ data, error }) => {
+        if (!mounted) return
+        if (!error && data && data.length > 0) {
+          setMembers(data as TeamMember[])
+        } else {
+          setMembers(null)
+        }
+        setLoading(false)
+      })
+    return () => { mounted = false }
+  }, [])
+
+  // Determine first member (CEO equivalent) for feature card, rest as grid
+  const featureMember = members?.[0] ?? null
+  const restMembers = members && members.length > 1 ? members.slice(1) : []
 
   return (
     <div className="dark:bg-[#080510] bg-gray-50 min-h-screen pt-16 sm:pt-20">
@@ -78,7 +222,7 @@ export default function TeamPage() {
           </div>
         </motion.div>
 
-        {/* ── Founder Spotlight ── */}
+        {/* ── Leadership Team ── */}
         <motion.div
           initial={{ opacity: 0, y: 32 }} animate={inView ? { opacity: 1, y: 0 } : {}} transition={{ delay: 0.1 }}
           className="mb-14 sm:mb-20"
@@ -90,76 +234,90 @@ export default function TeamPage() {
             <p className="dark:text-gray-400 text-gray-600 mt-2 text-xs sm:text-sm">Driving SmartzConnect's mission across Africa and beyond.</p>
           </div>
 
-          {/* CEO Card — full-width feature layout */}
-          <div className="dark:bg-[#130E1E] bg-white rounded-3xl border dark:border-white/8 border-gray-100 shadow-2xl overflow-hidden">
-            <div className="flex flex-col md:flex-row">
+          {loading ? (
+            /* Loading skeletons */
+            <div className="space-y-6">
+              {[1, 2, 3].map(k => <TeamCardSkeleton key={k} />)}
+            </div>
+          ) : featureMember ? (
+            /* Dynamic from DB */
+            <div className="space-y-6">
+              {members!.map((member, i) => (
+                <MemberCard key={member.id} member={member} inView={inView} delay={0.1 + i * 0.08} />
+              ))}
+            </div>
+          ) : (
+            /* Fallback: hardcoded CEO block */
+            <div className="dark:bg-[#130E1E] bg-white rounded-3xl border dark:border-white/8 border-gray-100 shadow-2xl overflow-hidden">
+              <div className="flex flex-col md:flex-row">
 
-              {/* Photo */}
-              <div className="relative md:w-80 lg:w-96 flex-shrink-0 h-72 md:h-auto min-h-[320px]">
-                <img
-                  src={CEO.photo_url}
-                  alt={CEO.full_name}
-                  className="w-full h-full object-cover object-top"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent md:bg-gradient-to-r md:from-transparent md:to-transparent" />
-                {/* Mobile name overlay */}
-                <div className="absolute bottom-4 left-5 md:hidden">
-                  <p className="font-black text-white text-xl leading-tight">{CEO.full_name}</p>
-                  <p className="text-pink-300 text-sm font-semibold">{CEO.role}</p>
-                </div>
-                {/* Country badge */}
-                <div className="absolute top-4 right-4 px-2.5 py-1 rounded-full bg-black/50 backdrop-blur-sm text-white text-xs font-semibold flex items-center gap-1">
-                  <MapPin className="w-3 h-3" /> {CEO.country}
-                </div>
-              </div>
-
-              {/* Content */}
-              <div className="flex-1 p-6 sm:p-8 lg:p-10 flex flex-col justify-center">
-
-                {/* Desktop name */}
-                <div className="hidden md:block mb-4">
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r from-purple-600/20 to-pink-600/20 border border-purple-500/20 mb-3">
-                    <Star className="w-3.5 h-3.5 text-amber-400" />
-                    <span className="text-xs font-bold text-purple-300">Founder & Visionary</span>
+                {/* Photo */}
+                <div className="relative md:w-80 lg:w-96 flex-shrink-0 h-72 md:h-auto min-h-[320px]">
+                  <img
+                    src={CEO.photo_url}
+                    alt={CEO.full_name}
+                    className="w-full h-full object-cover object-top"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent md:bg-gradient-to-r md:from-transparent md:to-transparent" />
+                  {/* Mobile name overlay */}
+                  <div className="absolute bottom-4 left-5 md:hidden">
+                    <p className="font-black text-white text-xl leading-tight">{CEO.full_name}</p>
+                    <p className="text-pink-300 text-sm font-semibold">{CEO.role}</p>
                   </div>
-                  <h3 className="font-display font-black text-2xl sm:text-3xl dark:text-white text-gray-900 mb-1">{CEO.full_name}</h3>
-                  <p className="text-base text-pink-400 font-semibold">{CEO.role}</p>
+                  {/* Country badge */}
+                  <div className="absolute top-4 right-4 px-2.5 py-1 rounded-full bg-black/50 backdrop-blur-sm text-white text-xs font-semibold flex items-center gap-1">
+                    <MapPin className="w-3 h-3" /> {CEO.country}
+                  </div>
                 </div>
 
-                {/* Joined */}
-                <div className="flex items-center gap-1.5 mb-4">
-                  <Calendar className="w-3.5 h-3.5 dark:text-gray-500 text-gray-400" />
-                  <span className="text-xs dark:text-gray-500 text-gray-400">Building since {CEO.joined_year}</span>
-                </div>
+                {/* Content */}
+                <div className="flex-1 p-6 sm:p-8 lg:p-10 flex flex-col justify-center">
 
-                {/* Bio */}
-                <p className="text-sm sm:text-base dark:text-gray-300 text-gray-700 leading-relaxed mb-6">
-                  {CEO.bio}
-                </p>
+                  {/* Desktop name */}
+                  <div className="hidden md:block mb-4">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r from-purple-600/20 to-pink-600/20 border border-purple-500/20 mb-3">
+                      <Star className="w-3.5 h-3.5 text-amber-400" />
+                      <span className="text-xs font-bold text-purple-300">Founder & Visionary</span>
+                    </div>
+                    <h3 className="font-display font-black text-2xl sm:text-3xl dark:text-white text-gray-900 mb-1">{CEO.full_name}</h3>
+                    <p className="text-base text-pink-400 font-semibold">{CEO.role}</p>
+                  </div>
 
-                {/* Skills */}
-                <div className="flex flex-wrap gap-2 mb-6">
-                  {CEO.skills.map(s => (
-                    <span key={s} className="text-xs font-semibold px-3 py-1 rounded-full bg-gradient-to-r from-purple-600/15 to-pink-600/15 dark:text-purple-300 text-purple-700 border dark:border-purple-500/20 border-purple-200">
-                      {s}
-                    </span>
-                  ))}
-                </div>
+                  {/* Joined */}
+                  <div className="flex items-center gap-1.5 mb-4">
+                    <Calendar className="w-3.5 h-3.5 dark:text-gray-500 text-gray-400" />
+                    <span className="text-xs dark:text-gray-500 text-gray-400">Building since {CEO.joined_year}</span>
+                  </div>
 
-                {/* Actions */}
-                <div className="flex flex-wrap gap-3 pt-4 border-t dark:border-white/8 border-gray-100">
-                  <a href={CEO.contact_url} target="_blank" rel="noopener noreferrer"
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white text-sm font-bold shadow-lg shadow-purple-600/25 hover:opacity-90 transition-opacity">
-                    <Shield className="w-4 h-4" /> Contact CEO
-                  </a>
-                  <Link to="/register"
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl dark:bg-white/6 bg-gray-100 dark:text-white text-gray-700 text-sm font-semibold hover:dark:bg-white/10 hover:bg-gray-200 transition-colors border dark:border-white/8 border-gray-200">
-                    <ExternalLink className="w-4 h-4" /> Join the Platform
-                  </Link>
+                  {/* Bio */}
+                  <p className="text-sm sm:text-base dark:text-gray-300 text-gray-700 leading-relaxed mb-6">
+                    {CEO.bio}
+                  </p>
+
+                  {/* Skills */}
+                  <div className="flex flex-wrap gap-2 mb-6">
+                    {CEO.skills.map(s => (
+                      <span key={s} className="text-xs font-semibold px-3 py-1 rounded-full bg-gradient-to-r from-purple-600/15 to-pink-600/15 dark:text-purple-300 text-purple-700 border dark:border-purple-500/20 border-purple-200">
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex flex-wrap gap-3 pt-4 border-t dark:border-white/8 border-gray-100">
+                    <a href={CEO.contact_url} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white text-sm font-bold shadow-lg shadow-purple-600/25 hover:opacity-90 transition-opacity">
+                      <Shield className="w-4 h-4" /> Contact CEO
+                    </a>
+                    <Link to="/register"
+                      className="flex items-center gap-2 px-5 py-2.5 rounded-xl dark:bg-white/6 bg-gray-100 dark:text-white text-gray-700 text-sm font-semibold hover:dark:bg-white/10 hover:bg-gray-200 transition-colors border dark:border-white/8 border-gray-200">
+                      <ExternalLink className="w-4 h-4" /> Join the Platform
+                    </Link>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
         </motion.div>
 
         {/* ── Mission Stats ── */}

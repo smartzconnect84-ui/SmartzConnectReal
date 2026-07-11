@@ -11,6 +11,33 @@ import { notifyUser } from '@/lib/notify'
 
 const defaultEmojis = ['👩🏾', '👨🏿', '👩🏽', '👨🏾', '👩🏿', '👨🏽']
 
+const COUNTRY_FLAGS: Record<string, string> = {
+  'Nigeria': '🇳🇬',
+  'Ghana': '🇬🇭',
+  'Kenya': '🇰🇪',
+  'South Africa': '🇿🇦',
+  'Ethiopia': '🇪🇹',
+  'Egypt': '🇪🇬',
+  'Tanzania': '🇹🇿',
+  'Uganda': '🇺🇬',
+  'Cameroon': '🇨🇲',
+  'Liberia': '🇱🇷',
+  'Sierra Leone': '🇸🇱',
+  'Ivory Coast': '🇨🇮',
+  'Senegal': '🇸🇳',
+  'Rwanda': '🇷🇼',
+  'Zimbabwe': '🇿🇼',
+  'USA': '🇺🇸',
+  'United States': '🇺🇸',
+  'UK': '🇬🇧',
+  'United Kingdom': '🇬🇧',
+  'France': '🇫🇷',
+  'Germany': '🇩🇪',
+  'Canada': '🇨🇦',
+  'India': '🇮🇳',
+  'Brazil': '🇧🇷',
+}
+
 const segments = ['💕', '🔥', '⭐', '💎', '🎯', '✨', '🌟', '💫', '🎪', '🎭', '🎨', '🎵']
 const SEGMENT_COUNT = segments.length
 const SEGMENT_ANGLE = 360 / SEGMENT_COUNT
@@ -142,7 +169,7 @@ export default function SpinChatPage() {
     const updatePresence = () =>
       supabase.from('profiles').update({ last_seen: new Date().toISOString() }).eq('id', user.id)
     updatePresence()
-    const interval = setInterval(updatePresence, 120_000)
+    const interval = setInterval(updatePresence, 30_000)
     return () => clearInterval(interval)
   }, [user?.id])
 
@@ -172,7 +199,7 @@ export default function SpinChatPage() {
         .from('profiles')
         .select('id, full_name, date_of_birth, avatar_url, country, bio, interests, last_seen, relationship_goal')
         .order('last_seen', { ascending: false })
-        .limit(50)
+        .limit(300)
 
       // Exclude current user from the spin pool
       if (user?.id) q = q.neq('id', user.id)
@@ -193,7 +220,7 @@ export default function SpinChatPage() {
             age,
             emoji: defaultEmojis[i % defaultEmojis.length],
             country: p.country || 'Africa',
-            flag: '🌍',
+            flag: COUNTRY_FLAGS[p.country] ?? '🌍',
             interests: p.interests
               ? (Array.isArray(p.interests) ? p.interests.slice(0, 3) : String(p.interests).split(',').map((s: string) => s.trim()).slice(0, 3))
               : [],
@@ -309,9 +336,10 @@ export default function SpinChatPage() {
     const presencePool = others.filter(p => spinActiveIds.has(p.id))
     // Priority 2: users seen within 5 minutes
     const onlinePool = others.filter(p => now - p.lastSeenMs < 300_000)
-    // Only connect to people who are actually online right now — never fall
-    // back to offline profiles, so Spin & Chat always feels "live".
-    const pool = presencePool.length > 0 ? presencePool : onlinePool
+    // Priority 3: users seen within 15 minutes
+    const recentPool = others.filter(p => now - p.lastSeenMs < 900_000)
+    // Pick the best non-empty pool; only show noOnlineSpinners if ALL are empty.
+    const pool = presencePool.length > 0 ? presencePool : onlinePool.length > 0 ? onlinePool : recentPool
     if (pool.length === 0) { setNoOnlineSpinners(true); setPhase('idle'); return }
     setNoOnlineSpinners(false)
 
@@ -474,6 +502,14 @@ export default function SpinChatPage() {
                   {poolProfiles.length} people ready to connect
                 </p>
               </div>
+
+              {/* Active spinners count */}
+              {spinActiveIds.size > 0 && (
+                <div className="flex items-center gap-2 px-4 py-2 rounded-full dark:bg-emerald-500/10 bg-emerald-50 border border-emerald-500/20 text-xs text-emerald-500 font-semibold">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  {spinActiveIds.size} {spinActiveIds.size === 1 ? 'person' : 'people'} spinning now
+                </div>
+              )}
 
               <motion.button onClick={spin} disabled={phase === 'spinning'}
                 whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
