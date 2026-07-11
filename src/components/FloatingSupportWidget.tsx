@@ -5,10 +5,10 @@ import { LifeBuoy, MessageCircle, HelpCircle, X, ChevronLeft, ChevronRight, Grip
 import { openTawkChat, hideTawkWidget } from '@/lib/tawk'
 
 const DISMISS_KEY = 'sc_support_widget_dismissed'
-const POS_KEY = 'sc_support_widget_corner'
 
-const SIZE = 56       // FAB diameter
-const MARGIN = 20      // resting distance from the viewport edge
+const SIZE = 56           // FAB diameter
+const MARGIN = 20         // resting distance from the viewport edge
+const DEFAULT_CORNER: Corner = 'br'  // always start here until user drags
 
 type Corner = 'br' | 'bl' | 'tr' | 'tl'
 
@@ -31,14 +31,6 @@ function nearestCorner(x: number, y: number): Corner {
   return 'tl'
 }
 
-function loadCorner(): Corner {
-  try {
-    const v = sessionStorage.getItem(POS_KEY)
-    if (v === 'br' || v === 'bl' || v === 'tr' || v === 'tl') return v
-  } catch { /* ignore */ }
-  return 'br'
-}
-
 /**
  * Global floating "support" launcher shown on every non-admin page.
  * Replaces Tawk.to's own launcher bubble (hidden via hideTawkWidget) with a
@@ -55,7 +47,8 @@ export default function FloatingSupportWidget() {
   const [dismissed, setDismissed] = useState(() => {
     try { return sessionStorage.getItem(DISMISS_KEY) === '1' } catch { return false }
   })
-  const [corner, setCorner] = useState<Corner>(loadCorner)
+  // Always start at the default corner; position only changes once the user drags.
+  const [corner, setCorner] = useState<Corner>(DEFAULT_CORNER)
   const [dragging, setDragging] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
 
@@ -103,7 +96,6 @@ export default function FloatingSupportWidget() {
     const clampedY = Math.min(Math.max(finalY, MARGIN), vh - SIZE - MARGIN)
     const next = nearestCorner(clampedX, clampedY)
     setCorner(next)
-    try { sessionStorage.setItem(POS_KEY, next) } catch { /* ignore */ }
     // Treat a near-zero drag as a tap, so the FAB still opens the menu.
     const dist = Math.hypot(info.offset.x, info.offset.y)
     if (dist < 6) setOpen(v => !v)
