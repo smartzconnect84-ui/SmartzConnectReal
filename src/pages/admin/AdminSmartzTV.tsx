@@ -389,6 +389,7 @@ function BroadcastSetupModal({ channel, onClose, onChannelUpdated }: {
 function CreateEditChannelModal({ channel, onClose, onSave }: {
   channel?: TVChannel | null; onClose: () => void; onSave: (ch: TVChannel) => void
 }) {
+  const { user } = useAuth()
   const [name, setName] = useState(channel?.name || '')
   const [description, setDescription] = useState(channel?.description || '')
   const [category, setCategory] = useState(channel?.category || 'General')
@@ -420,7 +421,7 @@ function CreateEditChannelModal({ channel, onClose, onSave }: {
         onSave(data as TVChannel)
       } else {
         const { data, error: err } = await supabase
-          .from('tv_channels').insert({ ...payload, is_active: false, is_featured: false, display_order: 0 })
+          .from('tv_channels').insert({ ...payload, owner_id: user!.id, is_active: false, is_featured: false, display_order: 0 })
           .select().single()
         if (err) throw err
         onSave(data as TVChannel)
