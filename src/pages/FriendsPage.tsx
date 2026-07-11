@@ -31,7 +31,7 @@ function Avatar({ profile, size = 10 }: { profile: Profile; size?: number }) {
   )
 }
 
-function ProfileCard({ profile, onFollow }: { profile: Profile; onFollow: (id: string, following: boolean) => void }) {
+function ProfileCard({ profile, onFollow, currentUserId }: { profile: Profile; onFollow: (id: string, following: boolean) => void; currentUserId?: string }) {
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
 
@@ -41,10 +41,17 @@ function ProfileCard({ profile, onFollow }: { profile: Profile; onFollow: (id: s
     setLoading(false)
   }
 
+  const goToProfile = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (profile.id !== currentUserId) navigate(`/app/user/${profile.id}`)
+  }
+
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
       className="flex items-center gap-3 p-3 dark:bg-[#130E1E] bg-white rounded-2xl border dark:border-white/6 border-gray-100">
-      <Avatar profile={profile} size={12} />
+      <div onClick={goToProfile} className="cursor-pointer flex-shrink-0">
+        <Avatar profile={profile} size={12} />
+      </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
           <p className="text-sm font-bold dark:text-white text-gray-900 truncate">
@@ -272,7 +279,7 @@ export default function FriendsPage() {
               </div>
             )}
             {getList().map(profile => (
-              <ProfileCard key={profile.id} profile={profile} onFollow={handleFollow} />
+              <ProfileCard key={profile.id} profile={profile} onFollow={handleFollow} currentUserId={user?.id} />
             ))}
           </div>
         )}

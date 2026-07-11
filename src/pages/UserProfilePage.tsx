@@ -97,6 +97,44 @@ export default function UserProfilePage() {
     loadMyProfile()
   }, [loadProfile, loadStats, checkFollowing, loadMyProfile])
 
+  // Track profile view and notify (fire-and-forget, never blocks rendering)
+  useEffect(() => {
+    if (!profile || !user?.id || profile.id === user.id) return
+    const viewerId = user.id
+    const viewedUserId = profile.id
+    ;(async () => {
+      try {
+        // Always insert the new view row (for analytics)
+        await supabase.from('profile_views').insert({ viewer_id: viewerId, viewed_user_id: viewedUserId })
+
+        // Only notify once per viewer per profile per rolling 24h window
+        const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+        const { data: recentViews } = await supabase
+          .from('profile_views')
+          .select('id')
+          .eq('viewer_id', viewerId)
+          .eq('viewed_user_id', viewedUserId)
+          .gte('created_at', since)
+          .limit(2)
+
+        // recentViews will include the row we just inserted; only notify if this is the first (count === 1)
+        if (recentViews && recentViews.length <= 1) {
+          const viewerName = myProfile?.full_name || 'Someone'
+          notifyUser({
+            userId: viewedUserId,
+            type: 'profile_view',
+            title: 'Profile view',
+            message: `${viewerName} viewed your profile`,
+            actionUrl: '/app/profile',
+            emoji: '👀',
+          }).catch(() => {})
+        }
+      } catch {
+        // Silently swallow — view tracking must never affect rendering
+      }
+    })()
+  }, [profile, user?.id, myProfile])
+
   const handleFollow = async () => {
     if (!user?.id || !userId || followLoading) return
     setFollowLoading(true)

@@ -21,9 +21,22 @@ export function AuthLayout({
   maxWidth = 'max-w-md',
 }: AuthLayoutProps) {
   return (
-    <div className="min-h-screen dark:bg-[#080510] bg-gray-50 relative flex flex-col items-center justify-center p-4 py-10 overflow-hidden">
+    <div className="min-h-screen relative flex flex-col items-center justify-center p-4 py-10 overflow-hidden">
+      {/* Full-bleed background photo */}
+      <div
+        className="absolute inset-0 z-0"
+        style={{
+          backgroundImage: 'url(/hero-networking.jpg)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+        }}
+      />
+      {/* Stronger dark overlay for admin — keeps it professional */}
+      <div className="absolute inset-0 z-[1] bg-black/75" />
+
       {/* Ambient background layers */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+      <div className="absolute inset-0 z-[2] pointer-events-none overflow-hidden">
         <div className="absolute top-0 left-1/2 -translate-x-1/4 w-[700px] h-[500px] rounded-full bg-pink-500/8 blur-[120px]" />
         <div className="absolute bottom-0 right-1/4 w-[500px] h-[400px] rounded-full bg-purple-500/8 blur-[100px]" />
         <div className="absolute top-1/2 left-0 w-[300px] h-[300px] rounded-full bg-pink-500/4 blur-[80px]" />
@@ -31,22 +44,22 @@ export function AuthLayout({
 
       {/* Floating orbs */}
       <motion.div
-        className="absolute top-16 right-16 w-3 h-3 rounded-full bg-brand-pink/30 hidden lg:block"
+        className="absolute top-16 right-16 w-3 h-3 rounded-full bg-brand-pink/30 hidden lg:block z-[3]"
         animate={{ y: [0, -16, 0], opacity: [0.3, 0.8, 0.3] }}
         transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
       />
       <motion.div
-        className="absolute bottom-24 left-20 w-2 h-2 rounded-full bg-brand-purple/40 hidden lg:block"
+        className="absolute bottom-24 left-20 w-2 h-2 rounded-full bg-brand-purple/40 hidden lg:block z-[3]"
         animate={{ y: [0, 12, 0], opacity: [0.4, 0.9, 0.4] }}
         transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
       />
       <motion.div
-        className="absolute top-1/3 right-8 w-1.5 h-1.5 rounded-full bg-brand-blush/40 hidden lg:block"
+        className="absolute top-1/3 right-8 w-1.5 h-1.5 rounded-full bg-brand-blush/40 hidden lg:block z-[3]"
         animate={{ y: [0, -10, 0], opacity: [0.3, 0.7, 0.3] }}
         transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
       />
 
-      <div className={`w-full ${maxWidth} relative`}>
+      <div className={`w-full ${maxWidth} relative z-[3]`}>
         {showBack && (
           <div className="mb-5">
             <Link

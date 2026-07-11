@@ -131,10 +131,23 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#080614] relative flex flex-col items-center justify-center p-4 py-10 overflow-hidden">
+    <div className="min-h-screen relative flex flex-col items-center justify-center p-4 py-10 overflow-hidden">
+
+      {/* Full-bleed background photo */}
+      <div
+        className="absolute inset-0 z-0"
+        style={{
+          backgroundImage: 'url(/hero-friends.jpg)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+        }}
+      />
+      {/* Dark overlay so text stays legible */}
+      <div className="absolute inset-0 z-[1] bg-black/60" />
 
       {/* Ambient background */}
-      <div className="absolute inset-0 pointer-events-none">
+      <div className="absolute inset-0 z-[2] pointer-events-none">
         <div className="absolute top-0 left-1/2 -translate-x-1/4 w-[700px] h-[500px] rounded-full bg-purple-600/30 blur-[90px]" />
         <div className="absolute bottom-0 right-1/4 w-[500px] h-[400px] rounded-full bg-pink-600/25 blur-[70px]" />
         <div className="absolute top-1/2 left-0 w-[300px] h-[300px] rounded-full bg-violet-500/20 blur-[55px]" />
@@ -142,17 +155,17 @@ export default function RegisterPage() {
 
       {/* Floating orbs */}
       <motion.div
-        className="absolute top-16 right-16 w-3 h-3 rounded-full bg-purple-400/30 hidden lg:block"
+        className="absolute top-16 right-16 w-3 h-3 rounded-full bg-purple-400/30 hidden lg:block z-[3]"
         animate={{ y: [0, -16, 0], opacity: [0.3, 0.8, 0.3] }}
         transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
       />
       <motion.div
-        className="absolute bottom-24 left-20 w-2 h-2 rounded-full bg-pink-400/40 hidden lg:block"
+        className="absolute bottom-24 left-20 w-2 h-2 rounded-full bg-pink-400/40 hidden lg:block z-[3]"
         animate={{ y: [0, 12, 0], opacity: [0.4, 0.9, 0.4] }}
         transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
       />
 
-      <div className="w-full max-w-md relative">
+      <div className="w-full max-w-md relative z-[3]">
 
         {/* Back link */}
         <div className="mb-5">

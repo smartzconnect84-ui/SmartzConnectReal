@@ -523,15 +523,26 @@ export default function SpinChatPage() {
                 className="w-full max-w-sm dark:bg-[#130E1E] bg-white rounded-2xl border dark:border-white/8 border-gray-100 p-4 shadow-lg">
                 <div className="flex items-center gap-4">
                   {currentProfile.avatar_url ? (
-                    <img src={currentProfile.avatar_url} alt={currentProfile.name} className="w-16 h-16 rounded-2xl object-cover flex-shrink-0" />
+                    <img
+                      src={currentProfile.avatar_url}
+                      alt={currentProfile.name}
+                      className="w-16 h-16 rounded-2xl object-cover flex-shrink-0 cursor-pointer"
+                      onClick={(e) => { e.stopPropagation(); if (!anonymous) navigate(`/app/user/${currentProfile.id}`) }}
+                    />
                   ) : (
-                    <div className="w-16 h-16 rounded-2xl bg-love-gradient flex items-center justify-center text-3xl flex-shrink-0">
+                    <div
+                      className="w-16 h-16 rounded-2xl bg-love-gradient flex items-center justify-center text-3xl flex-shrink-0 cursor-pointer"
+                      onClick={(e) => { e.stopPropagation(); if (!anonymous) navigate(`/app/user/${currentProfile.id}`) }}
+                    >
                       {currentProfile.emoji}
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-bold dark:text-white text-gray-900">{anonymous ? 'Anonymous' : currentProfile.name}</h3>
+                      <h3
+                        className={`font-bold dark:text-white text-gray-900${!anonymous ? ' cursor-pointer hover:text-fuchsia-500 transition-colors' : ''}`}
+                        onClick={(e) => { e.stopPropagation(); if (!anonymous) navigate(`/app/user/${currentProfile.id}`) }}
+                      >{anonymous ? 'Anonymous' : currentProfile.name}</h3>
                       {currentProfile.online && <span className="px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-500 text-[9px] font-bold">ONLINE</span>}
                     </div>
                     <p className="text-xs dark:text-gray-400 text-gray-500">{currentProfile.age} · {currentProfile.flag} {anonymous ? 'Somewhere' : currentProfile.country}</p>

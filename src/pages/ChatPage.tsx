@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ArrowLeft, Phone, Video, MoreVertical, Send, Paperclip,
@@ -123,6 +123,7 @@ function mapStreamMessage(m: any, myId: string): Message {
 export default function ChatPage() {
   const { id } = useParams<{ id: string }>()
   const { user } = useAuth()
+  const navigate = useNavigate()
   const { connected } = useStream()
   const { initiateCall } = useLiveKitCall()
 
@@ -636,14 +637,20 @@ export default function ChatPage() {
         <Link to="/app/matches" className="w-8 h-8 rounded-xl dark:bg-pink-100 bg-gray-100 flex items-center justify-center hover:text-brand-pink transition-colors">
           <ArrowLeft className="w-4 h-4 dark:text-gray-700 text-gray-600" />
         </Link>
-        <div className="relative">
+        <div
+          className="relative cursor-pointer"
+          onClick={() => { if (id && id !== user?.id) navigate(`/app/user/${id}`) }}
+        >
           <div className="w-10 h-10 rounded-full dark:bg-pink-100 bg-gray-100 flex items-center justify-center text-xl overflow-hidden ring-2 ring-purple-500/20">
             {person?.avatar_url ? <img src={person.avatar_url} alt={person.name} className="w-full h-full object-cover" /> : (person?.emoji || '👤')}
           </div>
           {person?.online && <div className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 dark:border-white border-white" />}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-bold text-sm dark:text-gray-900 text-gray-900 truncate">{person?.name || 'Chat'}</p>
+          <p
+            className="font-bold text-sm dark:text-gray-900 text-gray-900 truncate cursor-pointer hover:text-brand-pink transition-colors"
+            onClick={() => { if (id && id !== user?.id) navigate(`/app/user/${id}`) }}
+          >{person?.name || 'Chat'}</p>
           <p className={`text-[11px] font-medium ${connected ? (person?.online ? 'text-emerald-500' : 'text-pink-500') : 'text-gray-400'}`}>
             {!connected ? (connectTimeout ? 'Offline — check connection' : 'Connecting…') : otherTyping ? '✍️ typing…' : person?.online ? '● Active now' : 'Last seen recently'}
           </p>

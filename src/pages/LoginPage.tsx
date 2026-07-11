@@ -69,20 +69,36 @@ export default function LoginPage() {
 
   return (
     <div
-      className="min-h-screen flex flex-col items-center justify-center px-4 py-10 relative overflow-hidden text-[#f2f0f5] bg-[Black]"
+      className="min-h-screen flex flex-col items-center justify-center px-4 py-10 relative overflow-hidden text-[#f2f0f5]"
       style={{
         background: 'radial-gradient(ellipse 120% 100% at 75% 60%, #4a1a6b 0%, #2d1155 25%, #1a0a35 50%, #0d0520 75%, #080414 100%)',
       }}
     >
+      {/* Full-bleed background photo */}
+      <div
+        className="absolute inset-0 z-0"
+        style={{
+          backgroundImage: 'url(/hero-couple.jpg)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+        }}
+      />
+      {/* Dark overlay so text stays legible */}
+      <div className="absolute inset-0 z-[1] bg-black/60" />
+
       {/* Ambient glow blobs */}
-      <div className="absolute inset-0 pointer-events-none">
+      <div className="absolute inset-0 z-[2] pointer-events-none">
         <div className="absolute top-0 right-0 w-[500px] h-[500px] rounded-full bg-purple-700/45 blur-[80px]" />
         <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full bg-indigo-900/55 blur-[70px]" />
         <div className="absolute top-1/3 right-1/4 w-[300px] h-[300px] rounded-full bg-pink-800/35 blur-[60px]" />
       </div>
 
+      {/* Content (above background layers) */}
+      <div className="relative z-[3] flex flex-col items-center w-full px-4">
+
       {/* Logo */}
-      <div className="relative flex items-center gap-2.5 mb-8">
+      <div className="flex items-center gap-2.5 mb-8">
         <img src={logoImg} alt="SmartzConnect" className="w-9 h-9 object-contain" />
         <span className="font-display font-black text-xl tracking-tight text-white">
           Smartz<span className="text-purple-400">Connect</span>
@@ -268,6 +284,8 @@ export default function LoginPage() {
       >
         ← Back to home
       </Link>
+
+      </div>{/* end content z-[3] wrapper */}
     </div>
   )
 }

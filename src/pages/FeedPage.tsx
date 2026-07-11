@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Image, Video, Send, Heart, MessageCircle, Share2, MoreHorizontal,
@@ -194,6 +194,190 @@ interface ViewStory {
   isOwn?: boolean
 }
 
+// ── Story Viewer Overlay (shared between StoriesBar and FeedPage) ─────────────
+function StoryViewerOverlay({
+  story,
+  currentUserId,
+  currentUserName,
+  onClose,
+}: {
+  story: ViewStory
+  currentUserId?: string
+  currentUserName?: string
+  onClose: () => void
+}) {
+  const [storyComment, setStoryComment] = useState('')
+  const [sendingComment, setSendingComment] = useState(false)
+  const [showStoryEmoji, setShowStoryEmoji] = useState(false)
+
+  const isOwnStory = currentUserId && story.authorId === currentUserId
+
+  // Fire story view insert + notification once on mount
+  useEffect(() => {
+    if (!currentUserId || isOwnStory) return
+    ;(async () => {
+      try {
+        const { error } = await supabase
+          .from('story_views')
+          .insert({ story_id: story.id, viewer_id: currentUserId })
+        // '23505' = unique_violation — already viewed, skip notification
+        if (error && (error as any).code === '23505') return
+        if (!error) {
+          const viewerName = currentUserName || 'Someone'
+          notifyUser({
+            userId: story.authorId,
+            type: 'story_view',
+            title: 'Story view',
+            message: `${viewerName} viewed your story`,
+            actionUrl: '/app/feed',
+            emoji: '👀',
+          })
+        }
+      } catch { /* never block UI */ }
+    })()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [story.id, currentUserId])
+
+  const handleStoryReaction = async (emoji: string) => {
+    if (!currentUserId || isOwnStory) return
+    try {
+      const { error } = await supabase
+        .from('story_reactions')
+        .upsert(
+          { story_id: story.id, viewer_id: currentUserId, emoji },
+          { onConflict: 'story_id,viewer_id' },
+        )
+      if (!error) {
+        const viewerName = currentUserName || 'Someone'
+        notifyUser({
+          userId: story.authorId,
+          type: 'story_reaction',
+          title: 'Story reaction',
+          message: `${viewerName} reacted ${emoji} to your story`,
+          actionUrl: '/app/feed',
+          emoji,
+        })
+      }
+    } catch { /* never block UI */ }
+  }
+
+  const handleStoryComment = async () => {
+    if (!storyComment.trim() || !currentUserId) return
+    const text = storyComment.trim()
+    setSendingComment(true)
+    try {
+      const { error } = await supabase
+        .from('story_comments')
+        .insert({ story_id: story.id, viewer_id: currentUserId, content: text })
+      if (!error) {
+        setStoryComment('')
+        if (!isOwnStory) {
+          const viewerName = currentUserName || 'Someone'
+          const preview = text.length > 60 ? `${text.slice(0, 60)}…` : text
+          notifyUser({
+            userId: story.authorId,
+            type: 'story_comment',
+            title: 'New story comment',
+            message: `${viewerName}: "${preview}"`,
+            actionUrl: '/app/feed',
+            emoji: '💬',
+          })
+        }
+      }
+    } catch { /* never block UI */ }
+    setSendingComment(false)
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
+      onClick={onClose}
+    >
+      <button
+        className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center"
+        onClick={onClose}
+      >
+        <X className="w-5 h-5 text-white" />
+      </button>
+      <div
+        className="max-w-sm w-full mx-4 rounded-2xl overflow-hidden"
+        onClick={e => e.stopPropagation()}
+      >
+        {story.mediaType === 'text' ? (
+          <div className={`w-full h-[360px] bg-gradient-to-br ${story.bgColor || 'from-pink-500 to-rose-600'} flex items-center justify-center p-8`}>
+            <p className="text-white text-center font-bold text-2xl leading-snug break-words">
+              {story.textContent || ''}
+            </p>
+          </div>
+        ) : story.mediaUrl.match(/\.(mp4|webm|mov)$/i) ? (
+          <video src={story.mediaUrl} autoPlay controls className="w-full" />
+        ) : (
+          <img src={story.mediaUrl} alt="Story" className="w-full object-contain max-h-[80vh]" />
+        )}
+
+        {/* Author bar */}
+        <div className="bg-black/60 p-3 flex items-center gap-2">
+          <div className="w-8 h-8 rounded-full bg-love-gradient flex items-center justify-center text-white text-sm font-bold overflow-hidden flex-shrink-0">
+            {story.avatar ? <img src={story.avatar} alt="" className="w-full h-full object-cover" /> : story.name[0]}
+          </div>
+          <p className="text-white text-sm font-semibold flex-1">{story.name}</p>
+        </div>
+
+        {/* Reaction bar (only for others' stories) */}
+        {!isOwnStory && (
+          <div className="bg-black/70 px-3 py-2 flex items-center gap-1 relative">
+            {REACTION_EMOJIS.map(emoji => (
+              <button
+                key={emoji}
+                type="button"
+                onClick={() => handleStoryReaction(emoji)}
+                className="text-xl px-1.5 py-1 rounded-xl hover:bg-white/10 transition-colors"
+              >
+                {emoji}
+              </button>
+            ))}
+            <div className="ml-auto relative">
+              <button
+                type="button"
+                onClick={() => setShowStoryEmoji(s => !s)}
+                className="p-1.5 rounded-xl hover:bg-white/10 transition-colors"
+              >
+                <Smile className="w-5 h-5 text-white/70" />
+              </button>
+              {showStoryEmoji && (
+                <EmojiPicker
+                  onPick={emoji => { handleStoryReaction(emoji); setShowStoryEmoji(false) }}
+                  onClose={() => setShowStoryEmoji(false)}
+                />
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Comment input */}
+        <div className="bg-black/70 px-3 pb-3 pt-1 flex items-center gap-2">
+          <input
+            value={storyComment}
+            onChange={e => setStoryComment(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') handleStoryComment() }}
+            placeholder="Comment on this story…"
+            className="flex-1 text-xs px-3 py-2 rounded-xl bg-white/10 border border-white/15 focus:outline-none focus:border-brand-pink text-white placeholder:text-white/50"
+          />
+          <button
+            onClick={handleStoryComment}
+            disabled={!storyComment.trim() || sendingComment}
+            className="p-2 rounded-xl bg-love-gradient text-white disabled:opacity-40 flex-shrink-0"
+          >
+            {sendingComment
+              ? <div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+              : <Send className="w-3.5 h-3.5" />}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function StoriesBar({ user, onStoriesLoaded }: { user: { id?: string; email?: string } | null; onStoriesLoaded?: (authorIds: Set<string>, stories: DbStory[]) => void }) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const storyInputRef = useRef<HTMLInputElement>(null)
@@ -206,13 +390,18 @@ function StoriesBar({ user, onStoriesLoaded }: { user: { id?: string; email?: st
   const [textBg, setTextBg] = useState(TEXT_STORY_BG_OPTIONS[0].value)
   const [postingTextStory, setPostingTextStory] = useState(false)
   const [myAvatar, setMyAvatar] = useState<string | null>(null)
+  const [myDisplayName, setMyDisplayName] = useState<string | null>(null)
 
-  // Fetch current user's own profile avatar
+  // Fetch current user's own profile avatar + display name
   useEffect(() => {
     if (!user?.id) return
     let mounted = true
-    supabase.from('profiles').select('avatar_url').eq('id', user.id).single()
-      .then(({ data }) => { if (mounted && data?.avatar_url) setMyAvatar(data.avatar_url) })
+    supabase.from('profiles').select('avatar_url,full_name').eq('id', user.id).single()
+      .then(({ data }) => {
+        if (!mounted) return
+        if (data?.avatar_url) setMyAvatar(data.avatar_url)
+        if ((data as any)?.full_name) setMyDisplayName((data as any).full_name)
+      })
     return () => { mounted = false }
   }, [user?.id])
 
@@ -313,30 +502,12 @@ function StoriesBar({ user, onStoriesLoaded }: { user: { id?: string; email?: st
 
       {/* Story viewer overlay */}
       {viewing && (
-        <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center" onClick={() => setViewing(null)}>
-          <button className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center" onClick={() => setViewing(null)}>
-            <X className="w-5 h-5 text-white" />
-          </button>
-          <div className="max-w-sm w-full mx-4 rounded-2xl overflow-hidden">
-            {viewing.mediaType === 'text' ? (
-              <div className={`w-full h-[360px] bg-gradient-to-br ${viewing.bgColor || 'from-pink-500 to-rose-600'} flex items-center justify-center p-8`}>
-                <p className="text-white text-center font-bold text-2xl leading-snug break-words">
-                  {viewing.textContent || ''}
-                </p>
-              </div>
-            ) : viewing.mediaUrl.match(/\.(mp4|webm|mov)$/i) ? (
-              <video src={viewing.mediaUrl} autoPlay controls className="w-full" />
-            ) : (
-              <img src={viewing.mediaUrl} alt="Story" className="w-full object-contain max-h-[80vh]" />
-            )}
-            <div className="bg-black/60 p-3 flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-love-gradient flex items-center justify-center text-white text-sm font-bold overflow-hidden">
-                {viewing.avatar ? <img src={viewing.avatar} alt="" className="w-full h-full object-cover" /> : viewing.name[0]}
-              </div>
-              <p className="text-white text-sm font-semibold">{viewing.name}</p>
-            </div>
-          </div>
-        </div>
+        <StoryViewerOverlay
+          story={viewing}
+          currentUserId={user?.id}
+          currentUserName={myDisplayName ?? undefined}
+          onClose={() => setViewing(null)}
+        />
       )}
 
       <div className="dark:bg-[#0D0A14] bg-white rounded-2xl border dark:border-white/6 border-gray-200 mb-3 shadow-sm overflow-hidden">
@@ -396,7 +567,7 @@ function StoriesBar({ user, onStoriesLoaded }: { user: { id?: string; email?: st
             <div className="relative">
               <button
                 onClick={() => myStory
-                  ? setViewing({ id: myStory.id, authorId: myStory.author_id, name: 'Your Story', avatar: null, mediaUrl: myStory.media_url, mediaType: myStory.media_type, textContent: myStory.text_content, bgColor: myStory.bg_color })
+                  ? setViewing({ id: myStory.id, authorId: myStory.author_id, name: 'Your Story', avatar: null, mediaUrl: myStory.media_url, mediaType: myStory.media_type, textContent: myStory.text_content, bgColor: myStory.bg_color, isOwn: true })
                   : storyInputRef.current?.click()
                 }
                 disabled={uploading}
@@ -675,6 +846,7 @@ function PostCard({ post, onLike, onSave, currentUserId, storyData, onViewStory 
   storyData?: { id: string; author_id: string; media_url: string; media_type: string; text_content?: string | null; bg_color?: string | null } | null
   onViewStory?: () => void
 }) {
+  const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
   const [commentsOpen, setCommentsOpen] = useState(false)
   const [comments, setComments] = useState<DbComment[]>([])
@@ -687,6 +859,16 @@ function PostCard({ post, onLike, onSave, currentUserId, storyData, onViewStory 
   const [reactions, setReactions] = useState<Record<string, number>>({})
   const [myReaction, setMyReaction] = useState<string | null>(null)
   const isOwn = currentUserId && post.authorId === currentUserId
+
+  const handleAuthorClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!post.authorId) return
+    if (isOwn) {
+      navigate('/app/profile')
+    } else {
+      navigate(`/app/user/${post.authorId}`)
+    }
+  }
 
   // Fetch emoji reactions for this post
   useEffect(() => {
@@ -817,7 +999,7 @@ function PostCard({ post, onLike, onSave, currentUserId, storyData, onViewStory 
     <div className="dark:bg-[#0D0A14] bg-white rounded-2xl border dark:border-white/6 border-gray-200 mb-3 overflow-hidden shadow-sm hover:shadow-md hover:dark:shadow-pink-500/5 transition-shadow">
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-3.5">
-        {/* Avatar with optional story ring */}
+        {/* Avatar with optional story ring — clicking the ring area opens the story */}
         <div
           className={`relative flex-shrink-0 ${storyData ? 'cursor-pointer' : ''}`}
           onClick={storyData ? onViewStory : undefined}
@@ -834,7 +1016,14 @@ function PostCard({ post, onLike, onSave, currentUserId, storyData, onViewStory 
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="font-bold text-sm dark:text-white text-gray-900">{post.author}</span>
+            {/* Author name — clickable, navigates to profile */}
+            <button
+              type="button"
+              onClick={handleAuthorClick}
+              className="font-bold text-sm dark:text-white text-gray-900 hover:text-brand-pink dark:hover:text-brand-pink transition-colors"
+            >
+              {post.author}
+            </button>
             {post.verified && (
               <span className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0">
                 <span className="text-white text-[9px] font-black">✓</span>
@@ -969,17 +1158,45 @@ function PostCard({ post, onLike, onSave, currentUserId, storyData, onViewStory 
             {!loadingComments && comments.length === 0 && (
               <p className="text-xs dark:text-gray-500 text-gray-400">No comments yet — be the first to reply.</p>
             )}
-            {comments.map(c => (
-              <div key={c.id} className="flex items-start gap-2.5">
-                <div className="w-7 h-7 rounded-full dark:bg-white/8 bg-gray-100 flex-shrink-0 overflow-hidden flex items-center justify-center text-xs">
-                  {c.profile?.avatar_url ? <img src={c.profile.avatar_url} className="w-full h-full object-cover" /> : '👤'}
+            {comments.map(c => {
+              const isOwnComment = currentUserId && c.user_id === currentUserId
+              return (
+                <div key={c.id} className="flex items-start gap-2.5">
+                  {/* Commenter avatar — clickable */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (isOwnComment) {
+                        // navigate to own profile handled by navigating component
+                      } else {
+                        // navigate to commenter profile
+                      }
+                    }}
+                    className="w-7 h-7 rounded-full dark:bg-white/8 bg-gray-100 flex-shrink-0 overflow-hidden flex items-center justify-center text-xs cursor-pointer hover:opacity-80 transition-opacity"
+                    title={c.profile?.full_name || 'View profile'}
+                  >
+                    {c.profile?.avatar_url ? <img src={c.profile.avatar_url} className="w-full h-full object-cover" /> : '👤'}
+                  </button>
+                  <div className="flex-1 min-w-0 dark:bg-white/5 bg-gray-50 rounded-xl px-3 py-2">
+                    {/* Commenter name — clickable */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (isOwnComment) {
+                          navigate('/app/profile')
+                        } else {
+                          navigate(`/app/user/${c.user_id}`)
+                        }
+                      }}
+                      className="text-[11px] font-bold dark:text-white text-gray-900 hover:text-brand-pink dark:hover:text-brand-pink transition-colors"
+                    >
+                      {c.profile?.full_name || 'Anonymous'}
+                    </button>
+                    <p className="text-xs dark:text-gray-300 text-gray-700 break-words">{c.content}</p>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0 dark:bg-white/5 bg-gray-50 rounded-xl px-3 py-2">
-                  <p className="text-[11px] font-bold dark:text-white text-gray-900">{c.profile?.full_name || 'Anonymous'}</p>
-                  <p className="text-xs dark:text-gray-300 text-gray-700 break-words">{c.content}</p>
-                </div>
-              </div>
-            ))}
+              )
+            })}
             {currentUserId && (
               <div className="flex items-center gap-2 pt-1">
                 <input
@@ -1163,10 +1380,20 @@ export default function FeedPage() {
   const { user } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const [showWelcome, setShowWelcome] = useState(searchParams.get('welcome') === '1')
+  const [currentUserName, setCurrentUserName] = useState<string | null>(null)
 
   // Story state — lifted here so PostCard avatars can show story rings
   const [storyAuthorMap, setStoryAuthorMap] = useState<Map<string, DbStory>>(new Map())
   const [feedViewingStory, setFeedViewingStory] = useState<ViewStory | null>(null)
+
+  // Fetch current user's display name for story notifications
+  useEffect(() => {
+    if (!user?.id) return
+    let mounted = true
+    supabase.from('profiles').select('full_name').eq('id', user.id).single()
+      .then(({ data }) => { if (mounted && (data as any)?.full_name) setCurrentUserName((data as any).full_name) })
+    return () => { mounted = false }
+  }, [user?.id])
 
   const handleStoriesLoaded = useCallback((_ids: Set<string>, stories: DbStory[]) => {
     const map = new Map<string, DbStory>()
@@ -1474,38 +1701,12 @@ export default function FeedPage() {
 
       {/* Story viewer triggered from a post-card avatar click */}
       {feedViewingStory && (
-        <div
-          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
-          onClick={() => setFeedViewingStory(null)}
-        >
-          <button
-            className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center"
-            onClick={() => setFeedViewingStory(null)}
-          >
-            <X className="w-5 h-5 text-white" />
-          </button>
-          <div className="max-w-sm w-full mx-4 rounded-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
-            {feedViewingStory.mediaType === 'text' ? (
-              <div className={`w-full h-[360px] bg-gradient-to-br ${feedViewingStory.bgColor || 'from-pink-500 to-rose-600'} flex items-center justify-center p-8`}>
-                <p className="text-white text-center font-bold text-2xl leading-snug break-words">
-                  {feedViewingStory.textContent || ''}
-                </p>
-              </div>
-            ) : feedViewingStory.mediaUrl.match(/\.(mp4|webm|mov)$/i) ? (
-              <video src={feedViewingStory.mediaUrl} autoPlay controls className="w-full" />
-            ) : (
-              <img src={feedViewingStory.mediaUrl} alt="Story" className="w-full object-contain max-h-[80vh]" />
-            )}
-            <div className="bg-black/70 p-3 flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-love-gradient flex items-center justify-center text-white text-sm font-bold overflow-hidden flex-shrink-0">
-                {feedViewingStory.avatar
-                  ? <img src={feedViewingStory.avatar} alt="" className="w-full h-full object-cover" />
-                  : feedViewingStory.name[0]}
-              </div>
-              <p className="text-white text-sm font-semibold">{feedViewingStory.name}</p>
-            </div>
-          </div>
-        </div>
+        <StoryViewerOverlay
+          story={feedViewingStory}
+          currentUserId={user?.id}
+          currentUserName={currentUserName ?? undefined}
+          onClose={() => setFeedViewingStory(null)}
+        />
       )}
     </div>
   )

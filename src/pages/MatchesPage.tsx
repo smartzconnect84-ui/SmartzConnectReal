@@ -417,12 +417,17 @@ export default function MatchesPage() {
                   onClick={() => navigate(`/app/chat/${thread.otherUserId}`)}
                   className="flex items-center gap-3 px-4 py-3.5 cursor-pointer hover:dark:bg-white/3 hover:bg-pink-50/30 transition-colors active:scale-[0.99]"
                 >
-                  <Avatar
-                    src={thread.avatar}
-                    name={thread.name}
-                    size="md"
-                    online={thread.online}
-                  />
+                  <div
+                    onClick={(e) => { e.stopPropagation(); navigate(`/app/user/${thread.otherUserId}`) }}
+                    className="cursor-pointer"
+                  >
+                    <Avatar
+                      src={thread.avatar}
+                      name={thread.name}
+                      size="md"
+                      online={thread.online}
+                    />
+                  </div>
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-0.5">

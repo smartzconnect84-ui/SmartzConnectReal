@@ -61,21 +61,34 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <div className="min-h-screen dark:bg-[#080510] bg-gray-50 relative flex flex-col items-center justify-center p-5 py-10 overflow-hidden">
+    <div className="min-h-screen relative flex flex-col items-center justify-center p-5 py-10 overflow-hidden">
+      {/* Full-bleed background photo */}
+      <div
+        className="absolute inset-0 z-0"
+        style={{
+          backgroundImage: 'url(/hero-networking.jpg)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+        }}
+      />
+      {/* Stronger dark overlay for admin — keeps it professional */}
+      <div className="absolute inset-0 z-[1] bg-black/75" />
+
       {/* Background */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+      <div className="absolute inset-0 z-[2] pointer-events-none overflow-hidden">
         <div className="absolute top-0 left-1/2 -translate-x-1/3 w-[600px] h-[400px] rounded-full bg-amber-500/20 blur-[65px]" />
         <div className="absolute bottom-0 left-0 w-[400px] h-[300px] rounded-full bg-purple-500/22 blur-[55px]" />
         <div className="absolute top-1/3 right-0 w-[300px] h-[300px] rounded-full bg-pink-500/18 blur-[50px]" />
       </div>
 
       {/* Floating particles */}
-      <motion.div className="absolute top-20 right-20 w-2 h-2 rounded-full bg-amber-400/30 hidden lg:block"
+      <motion.div className="absolute top-20 right-20 w-2 h-2 rounded-full bg-amber-400/30 hidden lg:block z-[3]"
         animate={{ y: [0, -12, 0] }} transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }} />
-      <motion.div className="absolute bottom-28 left-24 w-1.5 h-1.5 rounded-full bg-brand-pink/30 hidden lg:block"
+      <motion.div className="absolute bottom-28 left-24 w-1.5 h-1.5 rounded-full bg-brand-pink/30 hidden lg:block z-[3]"
         animate={{ y: [0, 10, 0] }} transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut', delay: 1 }} />
 
-      <div className="w-full max-w-[420px] relative">
+      <div className="w-full max-w-[420px] relative z-[3]">
         {/* Back link */}
         <div className="mb-6">
           <Link to="/" className="inline-flex items-center gap-1.5 text-xs dark:text-gray-500 text-gray-400 hover:text-brand-pink transition-colors group">
