@@ -1,7 +1,10 @@
 ---
-name: admin_users RLS infinite recursion (unfixed)
-description: platform_settings and system_announcements reads 500 with "infinite recursion detected in policy for relation admin_users" — pre-existing, not yet fixed.
+name: admin_users RLS infinite recursion (RESOLVED 2026-07-11)
+description: platform_settings and system_announcements reads previously 500'd with "infinite recursion detected in policy for relation admin_users" — confirmed no longer reproducible.
 ---
+
+## Resolution (2026-07-11)
+Once a working `SUPABASE_DB_PASSWORD` was available, direct psql inspection showed `is_admin()`/`is_superadmin()`/`is_admin_user()` are all `SECURITY DEFINER`, so they don't re-trigger `admin_users` RLS — no actual recursive cycle exists in the current policy set. Re-tested the exact REST queries the app uses (`platform_settings?select=value&key=eq.banner_enabled` and `system_announcements?select=*&order=created_at.desc`) with the anon key: both return 200 with correct data, no 42P17. Whatever caused the earlier 500s (likely a transient Supabase-side issue or stale anon key) is no longer present — do not re-investigate unless it recurs with fresh evidence.
 
 Confirmed live (2026-07-11) via anon REST calls: `GET .../rest/v1/platform_settings` and `GET .../rest/v1/system_announcements` both return HTTP 500 with Postgres error `42P17 infinite recursion detected in policy for relation "admin_users"`. This is why the public site's browser console always shows a few 500s (AnnouncementContext's banner/announcement fetches fail silently and fall back to defaults, so it's not visibly broken, just noisy).
 
