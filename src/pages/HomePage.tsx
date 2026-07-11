@@ -213,7 +213,9 @@ export default function HomePage() {
 
             {/* Text */}
             <motion.div {...up()}>
-              <Badge icon={Globe} label="About SmartzConnect" className="mb-5" />
+              <div className="flex justify-center">
+                <Badge icon={Globe} label="About SmartzConnect" className="mb-5" />
+              </div>
               <Heading>
                 One Platform.<br />
                 <span style={{ background: 'linear-gradient(135deg, #EC4899 0%, #DC2626 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
