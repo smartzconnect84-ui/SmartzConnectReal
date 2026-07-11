@@ -492,8 +492,10 @@ export default function Navbar() {
                 {/* Auth */}
                 <div className="flex gap-2 px-1 pb-1 pt-0.5">
                   <Link to={isSignedIn ? dashboardHref : '/login'}
-                    className="flex-1 py-2.5 rounded-xl text-center text-[13px] font-medium text-white/60 transition-all"
-                    style={{ border: '1px solid rgba(255,255,255,0.10)' }}>
+                    className="flex-1 py-2.5 rounded-xl text-center text-[13px] font-semibold text-white transition-all"
+                    style={isSignedIn
+                      ? { border: '1px solid rgba(255,255,255,0.10)' }
+                      : { background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)', border: '1px solid #EC4899', boxShadow: '0 0 0 1px rgba(236,72,153,0.25), 0 2px 12px rgba(22,163,74,0.20)' }}>
                     {isSignedIn ? 'Dashboard' : 'Sign in'}
                   </Link>
                   {!isSignedIn && (
