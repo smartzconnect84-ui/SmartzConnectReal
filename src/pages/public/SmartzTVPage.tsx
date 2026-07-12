@@ -2,15 +2,15 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence, useInView } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import {
-  Tv, Play, Users, Gift, TrendingUp, Mic, Video, Crown, Zap,
+  Tv, Play, Pause, Users, Gift, TrendingUp, Mic, Video, Crown, Zap,
   Signal, Clapperboard, Eye, RefreshCw, Radio, Loader2, Volume2, VolumeX,
-  Maximize2, Globe, Heart, Share2, MessageSquare, X, CheckCircle,
+  Maximize2, Heart, Share2, MessageSquare, X, CheckCircle,
   Calendar, Clock, Antenna, AlertCircle,
 } from 'lucide-react'
-import MuxPlayer from '@mux/mux-player-react'
 import { supabase } from '@/lib/supabase'
 import { Room, RoomEvent, Track } from 'livekit-client'
 import { useSiteConfig, SITE_IMAGE_KEYS } from '@/contexts/SiteConfigContext'
+import SmartzTVPlayer from '@/components/SmartzTVPlayer'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -48,6 +48,10 @@ interface LiveStream {
   thumbnail_url: string | null; creator_id: string; creator_name?: string; creator_avatar?: string | null
 }
 
+interface TVVideo {
+  id: string; title: string; video_url: string; thumbnail_url: string | null; view_count: number
+}
+
 const features = [
   { icon: Video,      title: 'Go Live Instantly',     desc: 'Stream to thousands of viewers across Africa with one tap. No equipment needed — just your phone.',  color: 'from-violet-500 to-purple-600' },
   { icon: Gift,       title: 'Earn from Gifts',        desc: 'Fans send virtual gifts during your streams. Convert them to real cash via Mobile Money.',             color: 'from-pink-500 to-rose-600' },
@@ -57,86 +61,37 @@ const features = [
   { icon: Crown,      title: 'Creator Monetisation',   desc: 'Subscriptions, tips, brand deals, and exclusive content — multiple income streams in one place.',     color: 'from-yellow-500 to-amber-600' },
 ]
 
-// ── Mux Player (official @mux/mux-player-react, realtime live playback) ────────
+// ── Mux Player (modern click-to-play/pause live playback) ──────────────────────
 
 function LiveStreamPlayer({ channel }: { channel: TVChannel }) {
-  const playerRef = useRef<any>(null)
-  const [status, setStatus] = useState<'loading' | 'playing' | 'error'>('loading')
-
-  useEffect(() => { setStatus('loading') }, [channel.id])
-
-  // Wire up the underlying <mux-player> element's native media events — the
-  // only reliable way to know if a "live" playback ID is actually receiving
-  // segments right now vs. just idling.
-  useEffect(() => {
-    const el = playerRef.current
-    if (!el) return
-    const onPlaying = () => setStatus('playing')
-    const onError = () => setStatus('error')
-    const onWaiting = () => setStatus(s => (s === 'playing' ? s : 'loading'))
-    el.addEventListener('playing', onPlaying)
-    el.addEventListener('error', onError)
-    el.addEventListener('waiting', onWaiting)
-    return () => {
-      el.removeEventListener('playing', onPlaying)
-      el.removeEventListener('error', onError)
-      el.removeEventListener('waiting', onWaiting)
-    }
-  }, [channel.id])
-
   return (
-    <div className="relative w-full aspect-video rounded-2xl overflow-hidden shadow-2xl shadow-black/50 border border-violet-500/20 bg-black">
-      {channel.mux_playback_id ? (
-        <MuxPlayer
-          ref={playerRef}
-          streamType="live"
-          playbackId={channel.mux_playback_id}
-          autoPlay="muted"
-          muted
-          playsInline
-          primaryColor="#ffffff"
-          accentColor="#8b5cf6"
-          metadata={{ video_title: channel.name, viewer_user_id: 'anonymous' }}
-          style={{ width: '100%', height: '100%' } as any}
-        />
-      ) : (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/70 px-6 text-center">
-          <Antenna className="w-10 h-10 text-violet-400/40" />
-          <p className="text-sm text-white/60 font-semibold">Broadcast not started</p>
-        </div>
-      )}
-
-      {channel.mux_playback_id && status === 'loading' && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/60 pointer-events-none">
-          <Loader2 className="w-8 h-8 text-violet-400 animate-spin" />
-          <p className="text-sm text-white/70">Connecting to live stream…</p>
-        </div>
-      )}
-
-      {channel.mux_playback_id && status === 'error' && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/80 px-6 text-center pointer-events-none">
-          <AlertCircle className="w-10 h-10 text-amber-400/60" />
-          <p className="text-sm text-white/70 font-semibold">Stream not available</p>
-          <p className="text-xs text-white/40">The channel may have just gone offline. Check back soon.</p>
-        </div>
-      )}
-
-      {/* LIVE badge */}
-      <div className="absolute top-3 left-3 flex items-center gap-2 pointer-events-none">
-        <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-500 text-white text-[11px] font-black shadow-lg">
-          <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> LIVE
-        </span>
-        {channel.viewer_count > 0 && (
-          <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/50 text-white text-[11px] backdrop-blur-sm">
-            <Eye className="w-3 h-3" /> {channel.viewer_count.toLocaleString()}
-          </span>
-        )}
-      </div>
-    </div>
+    <SmartzTVPlayer
+      playbackId={channel.mux_playback_id}
+      poster={channel.cover_url}
+      isLive
+      title={channel.name}
+      viewerCount={channel.viewer_count}
+      accentColor="#8b5cf6"
+    />
   )
 }
 
-// ── "Coming Soon" placeholder (shown when nothing is live) ─────────────────────
+// ── Replay player (shown when nothing is live but a recent recording exists) ──
+
+function ReplayPlayer({ video }: { video: TVVideo }) {
+  return (
+    <SmartzTVPlayer
+      videoUrl={video.video_url}
+      poster={video.thumbnail_url}
+      isLive={false}
+      title={video.title}
+      viewerCount={video.view_count}
+      accentColor="#8b5cf6"
+    />
+  )
+}
+
+// ── "Coming Soon" placeholder (shown when nothing is live or recorded) ─────────
 
 function ComingSoonPlayer({ channel }: { channel: TVChannel | null }) {
   return (
@@ -297,6 +252,7 @@ function MuxTVSection() {
   const [selected, setSelected] = useState<TVChannel | null>(null)
   const [nextSchedule, setNextSchedule] = useState<TVScheduleEntry | null>(null)
   const [schedule, setSchedule] = useState<TVScheduleEntry[]>([])
+  const [replay, setReplay] = useState<TVVideo | null>(null)
 
   const load = useCallback(async (sig: { cancelled: boolean }, silent = false) => {
     if (!silent) setLoading(true)
@@ -361,6 +317,20 @@ function MuxTVSection() {
   }, [selected?.id])
 
   const isLive = !!selected && selected.stream_status === 'active' && !!selected.mux_playback_id
+
+  // Nothing live right now → fall back to the most recent recorded broadcast
+  // so visitors can still watch SmartzTV content ("Live … and after").
+  useEffect(() => {
+    if (isLive) { setReplay(null); return }
+    let cancelled = false
+    supabase.from('tv_videos').select('id, title, video_url, thumbnail_url, view_count')
+      .not('video_url', 'is', null)
+      .order('created_at', { ascending: false }).limit(1)
+      .then(({ data }) => {
+        if (!cancelled) setReplay(((data as TVVideo[]) || [])[0] || null)
+      })
+    return () => { cancelled = true }
+  }, [isLive])
 
   if (loading) {
     return (
@@ -435,7 +405,9 @@ function MuxTVSection() {
         {/* Player — full content width, responsive 16:9 */}
         {isLive && selected
           ? <LiveStreamPlayer channel={selected} />
-          : <ComingSoonPlayer channel={selected} />}
+          : replay
+            ? <ReplayPlayer video={replay} />
+            : <ComingSoonPlayer channel={selected} />}
 
         {/* Now Playing */}
         <NowPlayingCard channel={selected} isLive={isLive} nextSchedule={nextSchedule} />
@@ -470,7 +442,8 @@ function PublicLiveTVPlayer({ broadcast }: { broadcast: AdminBroadcast }) {
   const commentsEndRef = useRef<HTMLDivElement>(null)
   const [connected, setConnected] = useState(false)
   const [muted, setMuted] = useState(true)
-  const [lkError, setLkError] = useState('')
+  const [paused, setPaused] = useState(false)
+  const [lkError] = useState('')
   const [connecting, setConnecting] = useState(true)
   const [viewerCount, setViewerCount] = useState(broadcast.viewer_count || 0)
   const [showChat, setShowChat] = useState(false)
@@ -539,6 +512,15 @@ function PublicLiveTVPlayer({ broadcast }: { broadcast: AdminBroadcast }) {
   }, [muted])
 
   useEffect(() => {
+    videoRef.current?.querySelectorAll('video, audio').forEach(el => {
+      const media = el as HTMLMediaElement
+      if (paused) media.pause(); else void media.play?.().catch(() => {})
+    })
+  }, [paused, connected])
+
+  const togglePaused = () => setPaused(p => !p)
+
+  useEffect(() => {
     let isMounted = true
     supabase.from('stream_comments').select('id, content, created_at, profiles:user_id(full_name, avatar_url)')
       .eq('stream_id', broadcast.id).eq('is_deleted', false).order('created_at', { ascending: true }).limit(60)
@@ -577,6 +559,13 @@ function PublicLiveTVPlayer({ broadcast }: { broadcast: AdminBroadcast }) {
           <div ref={videoRef} className={`absolute inset-0 [&>video]:w-full [&>video]:h-full [&>video]:object-cover transition-opacity ${connected ? 'opacity-100' : 'opacity-0'}`} />
           {connecting && !connected && !lkError && (<div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/60"><Loader2 className="w-8 h-8 text-violet-400 animate-spin" /><p className="text-sm text-white/70">Connecting…</p></div>)}
           {lkError && (<div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/70 px-6 text-center"><Tv className="w-10 h-10 text-white/30" /><p className="text-sm text-white/60">{lkError}</p></div>)}
+          {paused && connected && (
+            <button onClick={togglePaused} aria-label="Play"
+              className="absolute inset-0 m-auto w-14 h-14 rounded-full flex items-center justify-center text-white z-10"
+              style={{ background: 'linear-gradient(135deg, #8b5cf6, rgba(0,0,0,0.55))', backdropFilter: 'blur(6px)', boxShadow: '0 8px 30px rgba(139,92,246,0.5)' }}>
+              <Play className="w-6 h-6 ml-0.5" fill="white" />
+            </button>
+          )}
           <div className="absolute inset-0 pointer-events-none">
             <div className="absolute top-0 left-0 right-0 flex items-center justify-between p-3 bg-gradient-to-b from-black/70 to-transparent">
               <div className="flex items-center gap-2"><span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-500 text-white text-[11px] font-black"><span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> LIVE</span>{broadcast.category && (<span className="px-2 py-0.5 rounded-full bg-black/50 text-white text-[10px] font-semibold backdrop-blur-sm">{broadcast.category}</span>)}</div>
@@ -586,6 +575,10 @@ function PublicLiveTVPlayer({ broadcast }: { broadcast: AdminBroadcast }) {
               <div className="flex items-end justify-between">
                 <div><p className="text-white font-bold text-sm leading-tight drop-shadow-lg line-clamp-1">{broadcast.title}</p><p className="text-white/60 text-[11px] mt-0.5">{broadcast.creator_name}</p></div>
                 <div className="flex items-center gap-1.5 pointer-events-auto">
+                  <button onClick={togglePaused} aria-label={paused ? 'Play' : 'Pause'}
+                    className="w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/70 transition-colors">
+                    {paused ? <Play className="w-3.5 h-3.5" /> : <Pause className="w-3.5 h-3.5" />}
+                  </button>
                   <button onClick={() => { if (liked) return; setLiked(true); setLikeCount(c => c + 1); setLikeAnim(true); setTimeout(() => setLikeAnim(false), 700) }}
                     className={`relative w-8 h-8 rounded-full backdrop-blur-sm flex items-center justify-center text-white transition-all ${liked ? 'bg-red-500' : 'bg-black/50 hover:bg-black/70'}`}>
                     <Heart className={`w-3.5 h-3.5 ${liked ? 'fill-white' : ''} ${likeAnim ? 'scale-150' : ''} transition-transform`} />
@@ -596,7 +589,7 @@ function PublicLiveTVPlayer({ broadcast }: { broadcast: AdminBroadcast }) {
                   </button>
                   <button onClick={handleShare} className="w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/70 transition-colors"><Share2 className="w-3.5 h-3.5" /></button>
                   <button onClick={() => setMuted(m => !m)} className="w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/70 transition-colors">{muted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}</button>
-                  <button onClick={() => { const el = playerWrapRef.current; if (!el) return; document.fullscreenElement ? document.exitFullscreen?.() : el.requestFullscreen?.() }} className="w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/70 transition-colors"><Maximize2 className="w-3.5 h-3.5" /></button>
+                  <button onClick={() => { const el = playerWrapRef.current; if (!el) return; if (document.fullscreenElement) { document.exitFullscreen?.() } else { el.requestFullscreen?.() } }} className="w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/70 transition-colors"><Maximize2 className="w-3.5 h-3.5" /></button>
                 </div>
               </div>
             </div>

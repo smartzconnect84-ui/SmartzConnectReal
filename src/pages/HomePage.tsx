@@ -39,11 +39,12 @@ const cardItem: Variants = {
 /*  DATA                                                                       */
 /* ────────────────────────────────────────────────────────────────────────── */
 
+// Colors match each product's own dedicated sub-page brand identity (src/pages/public/*)
 const SERVICES = [
   {
-    emoji: '❤️', icon: Heart, name: 'SmartzDating',
-    color: 'from-[#EC4899] to-[#DC2626]',
-    glow: 'shadow-pink-600/30',
+    emoji: '❤️', icon: Heart, name: 'SmartzDating', route: '/smartzdating',
+    color: 'from-pink-500 to-rose-500',
+    glow: 'shadow-pink-500/30',
     features: ['Smart Matching', 'Swipe & Match', 'Verified Profiles', 'Messaging', 'Voice & Video Calls', 'AI Recommendations'],
     desc: 'Find meaningful relationships with AI-powered matching, verified profiles, and safe communication tools.',
   },
@@ -55,44 +56,44 @@ const SERVICES = [
     desc: 'Learn in-demand skills and earn certifications with courses built for African learners and creators.',
   },
   {
-    emoji: '👥', icon: Users, name: 'SmartzSocial',
-    color: 'from-[#EC4899] to-rose-700',
-    glow: 'shadow-pink-500/30',
+    emoji: '👥', icon: Users, name: 'SmartzSocial', route: '/smartzsocial',
+    color: 'from-blue-500 to-violet-600',
+    glow: 'shadow-blue-500/30',
     features: ['Posts', 'Stories', 'Reels', 'Groups', 'Pages', 'Live Streaming', 'Messaging'],
     desc: "Share life's moments, go live, join communities, and stay close to the people who matter.",
   },
   {
-    emoji: '🚗', icon: Car, name: 'SmartzRide',
-    color: 'from-rose-700 to-[#DC2626]',
-    glow: 'shadow-rose-700/30',
+    emoji: '🚗', icon: Car, name: 'SmartzRide', route: '/smartzride',
+    color: 'from-emerald-500 to-teal-500',
+    glow: 'shadow-emerald-500/30',
     features: ['Ride Booking', 'Driver Platform', 'Live Tracking', 'Scheduled Trips', 'Secure Payments'],
     desc: 'Safe, affordable ride-hailing with verified drivers and real-time tracking across African cities.',
   },
   {
-    emoji: '📦', icon: Package, name: 'SmartzDelivery',
-    color: 'from-[#DC2626] to-rose-800',
-    glow: 'shadow-red-700/30',
+    emoji: '📦', icon: Package, name: 'SmartzDelivery', route: '/smartzdelivery',
+    color: 'from-blue-500 to-indigo-600',
+    glow: 'shadow-blue-500/30',
     features: ['Food Delivery', 'Grocery Delivery', 'Parcel Delivery', 'Courier Services', 'Live Tracking'],
     desc: 'Fast, reliable local delivery connecting vendors with customers across every neighbourhood.',
   },
   {
-    emoji: '🛍', icon: ShoppingBag, name: 'SmartzMarket',
-    color: 'from-rose-600 to-[#EC4899]',
-    glow: 'shadow-rose-600/30',
+    emoji: '🛍', icon: ShoppingBag, name: 'SmartzMarket', route: '/smartzmarket',
+    color: 'from-amber-500 to-orange-500',
+    glow: 'shadow-amber-500/30',
     features: ['Buy & Sell', 'Business Stores', 'Digital Products', 'Secure Checkout'],
     desc: "Africa's social marketplace — list products and reach millions of buyers.",
   },
   {
-    emoji: '📢', icon: Megaphone, name: 'SmartzAds',
-    color: 'from-[#EC4899] to-[#DC2626]',
-    glow: 'shadow-pink-700/30',
+    emoji: '📢', icon: Megaphone, name: 'SmartzAds', route: '/smartzads',
+    color: 'from-fuchsia-500 to-pink-600',
+    glow: 'shadow-fuchsia-500/30',
     features: ['Sponsored Ads', 'Campaign Management', 'Analytics', 'Audience Targeting'],
     desc: 'Run powerful ad campaigns targeted to Africa\'s most engaged digital community.',
   },
   {
-    emoji: '📺', icon: Tv, name: 'SmartzTV',
-    color: 'from-[#DC2626] to-[#EC4899]',
-    glow: 'shadow-red-600/30',
+    emoji: '📺', icon: Tv, name: 'SmartzTV', route: '/smartztv',
+    color: 'from-violet-600 to-purple-600',
+    glow: 'shadow-violet-600/30',
     features: ['Videos', 'Live Streaming', 'Creator Channels', 'Podcasts', 'Entertainment', 'Education'],
     desc: 'Broadcast to millions, earn virtual gifts, and build your creator empire on SmartzTV.',
   },
@@ -322,26 +323,32 @@ export default function HomePage() {
             className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
             {SERVICES.map((s) => {
               const Icon = s.icon
+              const CardTag = s.route ? Link : 'div'
+              const cardProps = s.route ? { to: s.route } : {}
               return (
                 <motion.div key={s.name} variants={cardItem}
                   whileHover={{ y: -6, scale: 1.02 }}
                   transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-                  className="group p-5 sm:p-6 rounded-2xl relative overflow-hidden cursor-default flex flex-col items-center text-center"
-                  style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                  {/* Hover glow overlay */}
-                  <div className={`absolute inset-0 bg-gradient-to-br ${s.color} opacity-0 group-hover:opacity-[0.08] transition-opacity duration-500 rounded-2xl`} />
-                  {/* Top accent line */}
-                  <div className={`absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r ${s.color} opacity-0 group-hover:opacity-70 transition-opacity duration-300`} />
+                >
+                  <CardTag
+                    {...(cardProps as any)}
+                    className={`group p-5 sm:p-6 rounded-2xl relative overflow-hidden flex flex-col items-center text-center h-full ${s.route ? 'cursor-pointer' : 'cursor-default'}`}
+                    style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                    {/* Hover glow overlay */}
+                    <div className={`absolute inset-0 bg-gradient-to-br ${s.color} opacity-0 group-hover:opacity-[0.08] transition-opacity duration-500 rounded-2xl`} />
+                    {/* Top accent line */}
+                    <div className={`absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r ${s.color} opacity-0 group-hover:opacity-70 transition-opacity duration-300`} />
 
-                  <motion.div whileHover={{ y: -3 }} transition={{ type: 'spring', stiffness: 300 }} className="relative mb-4">
-                    <PhoneMock icon={Icon} emoji={s.emoji} color={s.color} />
-                  </motion.div>
+                    <motion.div whileHover={{ y: -3 }} transition={{ type: 'spring', stiffness: 300 }} className="relative mb-4">
+                      <PhoneMock icon={Icon} emoji={s.emoji} color={s.color} />
+                    </motion.div>
 
-                  <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${s.color} flex items-center justify-center mb-3 shadow-lg ${s.glow} relative`}>
-                    <Icon className="w-4.5 h-4.5 text-white" />
-                  </div>
-                  <h3 className="font-display font-black text-sm sm:text-base text-white leading-tight mb-1.5 relative">{s.name}</h3>
-                  <p className="text-white/50 text-[13px] sm:text-sm leading-relaxed relative">{s.desc}</p>
+                    <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${s.color} flex items-center justify-center mb-3 shadow-lg ${s.glow} relative`}>
+                      <Icon className="w-4.5 h-4.5 text-white" />
+                    </div>
+                    <h3 className="font-display font-black text-sm sm:text-base text-white leading-tight mb-1.5 relative">{s.name}</h3>
+                    <p className="text-white/50 text-[13px] sm:text-sm leading-relaxed relative">{s.desc}</p>
+                  </CardTag>
                 </motion.div>
               )
             })}
