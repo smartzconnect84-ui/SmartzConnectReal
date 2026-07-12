@@ -59,3 +59,4 @@
 - [Navbar product grouping](navbar-product-grouping.md) — Commerce/Social nav columns driven by COMMERCE_SLUGS list, independent of services.category (DB category ≠ nav bucket).
 
 - [Vercel token empty despite existing](vercel-token-empty-refresh.md) — VERCEL_TOKEN resolved as empty (len 0) in shell though marked configured; fixed by requestSecrets() re-entry, not code changes.
+- [Learning courses & quiz system](learning-quiz-system.md) — full course/lesson/quiz/cert pipeline; admin at /admin/learning, user at /app/course/:courseId.
