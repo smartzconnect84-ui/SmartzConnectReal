@@ -6,6 +6,7 @@ import { AwsClient } from 'https://esm.sh/aws4fetch@1.0.20'
 const ALLOWED_FOLDERS = [
   'avatars', 'covers', 'photos', 'stories',
   'marketplace', 'posts', 'voice-notes', 'documents',
+  'pages', 'events', 'jobs', 'learning',
 ]
 
 // Hard limit: 50 MB per upload.

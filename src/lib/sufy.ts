@@ -9,6 +9,10 @@ export type SufyFolder =
   | 'posts'
   | 'voice-notes'
   | 'documents'
+  | 'pages'
+  | 'events'
+  | 'jobs'
+  | 'learning'
 
 interface UploadResponse {
   publicUrl: string
