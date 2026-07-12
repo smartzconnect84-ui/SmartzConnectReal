@@ -8,6 +8,7 @@ import {
   Star, Zap, Award, TrendingUp, Handshake, GraduationCap,
   Wifi, Smartphone, BadgeCheck,
 } from 'lucide-react'
+import { useServices } from '@/hooks/useServices'
 
 /* ── animation helpers ── */
 const up = (delay = 0) => ({

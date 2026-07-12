@@ -1,8 +1,9 @@
 import { useRef } from 'react'
 import { motion, useInView } from 'framer-motion'
 import { Link } from 'react-router-dom'
-import { Package, MapPin, Clock, Shield, Truck, DollarSign, Smartphone, Zap, CheckCircle, BarChart3 } from 'lucide-react'
+import { Package, MapPin, Clock, Shield, Truck, DollarSign, Smartphone, Zap, CheckCircle, BarChart3, Users, Globe } from 'lucide-react'
 import { useSiteConfig, SITE_IMAGE_KEYS } from '@/contexts/SiteConfigContext'
+import { usePublicStats, fmtCount } from '@/hooks/usePublicStats'
 
 const features = [
   { icon: Clock,      title: 'Same-Day Delivery',    desc: 'Order before 2PM and receive your package the same day in supported cities.',                        color: 'from-blue-500 to-indigo-600' },
@@ -27,18 +28,23 @@ const steps = [
   { step: '04', title: 'Delivered!',        desc: 'Package delivered safely. Rate your experience and pay via Mobile Money.',      emoji: '✅' },
 ]
 
-const stats = [
-  { value: '500K+', label: 'Deliveries Made',    icon: '📦' },
-  { value: '98.5%', label: 'On-Time Rate',        icon: '⏱️' },
-  { value: '12K+',  label: 'Delivery Riders',    icon: '🏍️' },
-  { value: '6',     label: 'Cities Covered',     icon: '🏙️' },
-]
-
 export default function SmartzDeliveryPage() {
   const ref = useRef(null)
   const inView = useInView(ref, { once: true, margin: '-80px' })
   const siteConfig = useSiteConfig()
   const bgUrl = siteConfig.get(SITE_IMAGE_KEYS.deliveryPageBg)
+
+  // Live counts from real tables
+  const liveStats   = usePublicStats()
+  const driverCount = fmtCount(liveStats.registeredDrivers, '—')
+  const memberCount = fmtCount(liveStats.totalUsers, '—')
+
+  const stats = [
+    { value: memberCount,  label: 'Platform Members',    icon: '👤' },
+    { value: driverCount,  label: 'Registered Riders',   icon: '🏍️' },
+    { value: '6',          label: 'Cities Targeted',     icon: '🏙️' },
+    { value: '3+',         label: 'Countries',           icon: '🌍' },
+  ]
 
   return (
     <div className="dark:bg-[#080510] bg-gray-50 min-h-screen">
@@ -111,7 +117,7 @@ export default function SmartzDeliveryPage() {
         </div>
       </section>
 
-      {/* Stats */}
+      {/* Stats — live counts from real tables */}
       <section className="py-12 dark:bg-[#0D0A14] bg-white border-y dark:border-white/5 border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
@@ -204,8 +210,8 @@ export default function SmartzDeliveryPage() {
             </div>
             <div className="text-center">
               <div className="text-8xl mb-4">📦</div>
-              <p className="font-display font-black text-4xl text-blue-500">98.5%</p>
-              <p className="dark:text-gray-400 text-gray-600 text-sm">On-time delivery rate</p>
+              <p className="font-display font-black text-4xl text-blue-500">{driverCount}</p>
+              <p className="dark:text-gray-400 text-gray-600 text-sm">Registered Delivery Riders</p>
             </div>
           </div>
         </div>

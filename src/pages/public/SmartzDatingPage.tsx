@@ -6,11 +6,12 @@ import {
   UserPlus, Lock, Globe, Sparkles, MessageCircle, CheckCircle,
 } from 'lucide-react'
 import { useSiteConfig, SITE_IMAGE_KEYS } from '@/contexts/SiteConfigContext'
+import { usePublicStats, fmtCount } from '@/hooks/usePublicStats'
 
 const features = [
   {
     icon: Sparkles,   title: 'Smart Matching',
-    desc: 'Our AI learns your preferences and surfaces genuinely compatible matches — not just faces.',
+    desc: 'Our system surfaces genuinely compatible matches based on your preferences and interests.',
     color: 'from-pink-500 to-rose-600',
   },
   {
@@ -40,13 +41,6 @@ const features = [
   },
 ]
 
-const stats = [
-  { value: '500K+', label: 'Active Members',   icon: Users },
-  { value: '47+',   label: 'Countries',         icon: Globe },
-  { value: '98%',   label: 'Verified Profiles', icon: CheckCircle },
-  { value: '4.8★',  label: 'Match Quality',     icon: Star },
-]
-
 export default function SmartzDatingPage() {
   const ref    = useRef(null)
   const heroRef = useRef(null)
@@ -54,6 +48,18 @@ export default function SmartzDatingPage() {
   const heroIn  = useInView(heroRef, { once: true })
   const siteConfig = useSiteConfig()
   const bgUrl = siteConfig.get(SITE_IMAGE_KEYS.datingPageBg)
+
+  // Live counts from real tables
+  const liveStats   = usePublicStats()
+  const memberCount = fmtCount(liveStats.totalUsers, '—')
+  const matchCount  = fmtCount(liveStats.totalMatches, '—')
+
+  const stats = [
+    { value: memberCount, label: 'Registered Members', icon: Users },
+    { value: '47+',       label: 'Countries',           icon: Globe },
+    { value: matchCount,  label: 'Matches Made',        icon: Heart },
+    { value: '4.8★',      label: 'Match Quality',       icon: Star },
+  ]
 
   return (
     <div className="dark:bg-[#080510] bg-gray-50 min-h-screen pt-[72px] sm:pt-20">
@@ -170,7 +176,7 @@ export default function SmartzDatingPage() {
               <div className="space-y-3.5">
                 {[
                   { icon: CheckCircle, text: '100% profile verification before matching' },
-                  { icon: Shield,      text: 'AI-powered harassment and scam detection' },
+                  { icon: Shield,      text: 'Harassment and scam detection built-in' },
                   { icon: Lock,        text: 'Private mode — browse without being seen' },
                   { icon: Heart,       text: 'Smart match suggestions, not random swipes' },
                   { icon: MapPin,      text: 'Precise distance control and city filters' },
@@ -201,7 +207,7 @@ export default function SmartzDatingPage() {
             Ready to Find Your Match?
           </h2>
           <p className="text-lg dark:text-gray-400 text-gray-600 mb-8">
-            Join half a million people already finding meaningful connections on SmartzDating.
+            Join a growing community finding meaningful connections on SmartzDating.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link to="/register"

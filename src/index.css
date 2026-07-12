@@ -235,4 +235,48 @@
   .public-site .text-base { font-size: 1.0625rem !important; line-height: 1.65rem !important; }
   .public-site p,
   .public-site .lead      { font-size: 1.0625rem !important; line-height: 1.65rem !important; }
+
+  /* ────────────────────────────────────────────────────────────────
+     CHAT THEME — CSS custom properties set by ThemeContext
+     via applyChatTheme() → document.documentElement.style.setProperty
+     ──────────────────────────────────────────────────────────────── */
+
+  /* Sender (mine) bubbles */
+  .chat-bubble-mine {
+    background: var(--chat-bubble-mine, linear-gradient(135deg,#FF4D8D 0%,#9B5DE5 100%)) !important;
+    color: var(--chat-bubble-mine-text, #ffffff) !important;
+  }
+
+  /* Receiver (theirs) bubbles — light mode */
+  .chat-bubble-theirs {
+    background-color: var(--chat-bubble-theirs, #f3f4f6) !important;
+    color: var(--chat-bubble-theirs-text, #111827) !important;
+    border-color: transparent !important;
+  }
+
+  /* Dark mode receiver bubbles — blend with dark surface */
+  .dark .chat-bubble-theirs {
+    background-color: color-mix(in srgb, var(--chat-bubble-theirs, #f3f4f6) 18%, #1a1326) !important;
+    color: color-mix(in srgb, var(--chat-bubble-theirs-text, #111827) 20%, #e2e8f0) !important;
+    border-color: rgba(255,255,255,0.06) !important;
+  }
+
+  /* Chat background */
+  .chat-page-bg {
+    background-color: var(--chat-bg, #f9fafb) !important;
+  }
+  .dark .chat-page-bg {
+    background-color: var(--chat-bg-dark, #0f0a1a) !important;
+  }
+
+  /* Chat accent (border highlights, typing dots, etc.) */
+  .chat-accent-dot {
+    background-color: var(--chat-accent, #EC4899) !important;
+  }
+  .chat-accent-border {
+    border-color: var(--chat-accent, #EC4899) !important;
+  }
+  .chat-accent-text {
+    color: var(--chat-accent, #EC4899) !important;
+  }
 }

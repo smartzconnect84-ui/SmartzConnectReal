@@ -8,6 +8,7 @@ import {
   Route, Bike, Bus,
 } from 'lucide-react'
 import { useSiteConfig, SITE_IMAGE_KEYS } from '@/contexts/SiteConfigContext'
+import { usePublicStats, fmtCount } from '@/hooks/usePublicStats'
 
 const features = [
   {
@@ -65,6 +66,11 @@ export default function SmartzRidePage() {
   const heroIn  = useInView(heroRef, { once: true })
   const siteConfig = useSiteConfig()
   const bgUrl = siteConfig.get(SITE_IMAGE_KEYS.ridePageBg)
+
+  // Live counts from real tables
+  const liveStats     = usePublicStats()
+  const driverCount   = fmtCount(liveStats.registeredDrivers, '—')
+  const memberCount   = fmtCount(liveStats.totalUsers, '—')
 
   return (
     <div className="dark:bg-[#080510] bg-gray-50 min-h-screen pt-[72px] sm:pt-20">
@@ -137,6 +143,31 @@ export default function SmartzRidePage() {
             🚗 SmartzRide is launching first in <strong className="text-emerald-500">Monrovia, Liberia</strong> —
             then expanding city by city across Africa. Join the waitlist by signing up today.
           </p>
+        </div>
+      </section>
+
+      {/* ── Live platform stats ── */}
+      <section className="py-10 dark:bg-[#0D0A14] bg-white border-b dark:border-white/5 border-gray-100">
+        <div className="max-w-4xl mx-auto px-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
+            {[
+              { label: 'Registered Drivers', value: driverCount,  icon: Car },
+              { label: 'Platform Members',   value: memberCount,  icon: Users },
+              { label: 'Cities Targeted',    value: '6',          icon: Navigation },
+              { label: 'Countries',          value: '3+',         icon: Globe },
+            ].map((s, i) => {
+              const Icon = s.icon
+              return (
+                <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center mx-auto mb-2 shadow-md shadow-emerald-500/20">
+                    <Icon className="w-5 h-5 text-white" />
+                  </div>
+                  <p className="font-display font-black text-2xl sm:text-3xl bg-gradient-to-r from-emerald-400 to-teal-500 bg-clip-text text-transparent">{s.value}</p>
+                  <p className="text-sm dark:text-gray-400 text-gray-500 mt-0.5 font-medium">{s.label}</p>
+                </motion.div>
+              )
+            })}
+          </div>
         </div>
       </section>
 
@@ -222,11 +253,6 @@ export default function SmartzRidePage() {
                   Keep more of what you earn. Get paid weekly via Mobile Money.
                   No boss, no fixed hours — just you and the road.
                 </p>
-
-                <div className="flex items-baseline gap-3 mb-6">
-                  <span className="font-display font-black text-4xl text-emerald-500">$800+</span>
-                  <span className="text-sm dark:text-gray-400 text-gray-600">average monthly earnings</span>
-                </div>
 
                 <Link to="/register"
                   className="inline-flex items-center gap-2 px-7 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold text-base shadow-xl shadow-emerald-500/25 hover:scale-[1.03] transition-all">

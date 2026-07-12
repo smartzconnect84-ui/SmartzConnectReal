@@ -114,6 +114,7 @@ const AdminTeam            = lazy(() => import('@/pages/admin/AdminTeam'))
 const AdminBlog            = lazy(() => import('@/pages/admin/AdminBlog'))
 const AdminAuditLogs       = lazy(() => import('@/pages/admin/AdminAuditLogs'))
 const AdminCEO             = lazy(() => import('@/pages/admin/AdminCEO'))
+const AdminServices        = lazy(() => import('@/pages/admin/AdminServices'))
 const AdminTour            = lazy(() => import('@/pages/admin/AdminTour'))
 const AdminWorldStage      = lazy(() => import('@/pages/admin/AdminWorldStage'))
 const AdminEmail           = lazy(() => import('@/pages/admin/AdminEmail'))
@@ -275,7 +276,8 @@ export default function App() {
                   <Route path="team"          element={<AdminTeam />} />
                   <Route path="blog"          element={<AdminBlog />} />
                   <Route path="audit"         element={<AdminAuditLogs />} />
-                  <Route path="ceo"           element={<AdminCEO />} />
+                  <Route path="ceo"           element={<AdminRoute requireRole="ceo"><AdminCEO /></AdminRoute>} />
+                  <Route path="services"      element={<AdminServices />} />
                   <Route path="tour"          element={<AdminTour />} />
                   <Route path="worldstage"    element={<AdminWorldStage />} />
                   <Route path="email"         element={<AdminEmail />} />

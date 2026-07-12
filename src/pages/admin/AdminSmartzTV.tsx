@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import ImageUploader from '@/components/admin/ImageUploader'
+import AdminPersonalStudio from '@/components/admin/AdminPersonalStudio'
+import SmartzTVPlayer from '@/components/SmartzTVPlayer'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Tv, Eye, CheckCircle, XCircle, Play, Users, Search, Loader2,
@@ -153,9 +155,12 @@ function BroadcastSetupModal({ channel, onClose, onChannelUpdated }: {
   const [localChannel, setLocalChannel] = useState(channel)
   const [streamStatus, setStreamStatus] = useState<TVChannel['stream_status']>(channel.stream_status)
   const [polling, setPolling] = useState(false)
+  const [goingLive, setGoingLive] = useState(false)
+  const [endingLive, setEndingLive] = useState(false)
+  const [showPreview, setShowPreview] = useState(false)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  // Poll stream status when ready
+  // Poll stream status when ready — updates both local state and DB (via edge fn)
   useEffect(() => {
     if (step !== 'ready' || !localChannel.mux_stream_id) return
     const poll = async () => {
@@ -164,7 +169,11 @@ function BroadcastSetupModal({ channel, onClose, onChannelUpdated }: {
         const { data, error } = await supabase.functions.invoke('mux-stream-status', {
           body: { stream_id: localChannel.mux_stream_id, channel_id: localChannel.id },
         })
-        if (!error && data?.status) setStreamStatus(data.status)
+        if (!error && data?.status) {
+          setStreamStatus(data.status as TVChannel['stream_status'])
+          // Keep localChannel in sync with what Mux reports
+          setLocalChannel(prev => ({ ...prev, stream_status: data.status }))
+        }
       } catch { /* silent */ }
       setPolling(false)
     }
@@ -191,6 +200,7 @@ function BroadcastSetupModal({ channel, onClose, onChannelUpdated }: {
         rtmp_url:        data.rtmp_url,
         playback_url:    data.playback_url,
         stream_status:   'idle',
+        is_active:       false,
       }
       setLocalChannel(updated)
       onChannelUpdated(updated)
@@ -199,6 +209,46 @@ function BroadcastSetupModal({ channel, onClose, onChannelUpdated }: {
       setError(e.message || 'Unexpected error')
     }
     setCreating(false)
+  }
+
+  // Go Live — flips is_active to true so public SmartzTV page shows the stream
+  const handleGoLive = async () => {
+    if (!localChannel.mux_stream_id) return
+    setGoingLive(true)
+    const { error: dbErr } = await supabase
+      .from('tv_channels')
+      .update({ is_active: true })
+      .eq('id', localChannel.id)
+    if (dbErr) { setError(dbErr.message || 'Failed to go live'); setGoingLive(false); return }
+    const updated = { ...localChannel, is_active: true }
+    setLocalChannel(updated)
+    onChannelUpdated(updated)
+    setGoingLive(false)
+  }
+
+  // End Live — flips is_active to false AND deletes the Mux stream
+  const handleEndLive = async () => {
+    if (!localChannel.mux_stream_id) return
+    if (!confirm('End the live broadcast? This will hide the stream from the public page and delete the Mux stream. OBS/vMix will lose the connection.')) return
+    setEndingLive(true)
+    // 1. Mark channel hidden from public first
+    await supabase.from('tv_channels').update({ is_active: false }).eq('id', localChannel.id)
+    // 2. Delete Mux stream (clears all Mux fields + stream_status from DB via edge fn)
+    const { error: fnErr } = await supabase.functions.invoke('mux-delete-stream', {
+      body: { stream_id: localChannel.mux_stream_id, channel_id: localChannel.id },
+    })
+    if (fnErr) { setError('Failed to delete Mux stream'); setEndingLive(false); return }
+    const updated: TVChannel = {
+      ...localChannel,
+      mux_stream_id: null, mux_playback_id: null, stream_key: null,
+      rtmp_url: null, playback_url: null, stream_status: 'idle', is_active: false,
+    }
+    setLocalChannel(updated)
+    onChannelUpdated(updated)
+    setStep('overview')
+    setShowPreview(false)
+    if (pollRef.current) clearInterval(pollRef.current)
+    setEndingLive(false)
   }
 
   const handleDeleteStream = async () => {
@@ -211,23 +261,21 @@ function BroadcastSetupModal({ channel, onClose, onChannelUpdated }: {
     const updated: TVChannel = {
       ...localChannel,
       mux_stream_id: null, mux_playback_id: null, stream_key: null,
-      rtmp_url: null, playback_url: null, stream_status: 'idle',
+      rtmp_url: null, playback_url: null, stream_status: 'idle', is_active: false,
     }
     setLocalChannel(updated)
     onChannelUpdated(updated)
     setStep('overview')
+    setShowPreview(false)
     if (pollRef.current) clearInterval(pollRef.current)
   }
 
-  const toggleActive = async () => {
-    const next = !localChannel.is_active
-    await supabase.from('tv_channels').update({ is_active: next }).eq('id', localChannel.id)
-    const updated = { ...localChannel, is_active: next }
-    setLocalChannel(updated)
-    onChannelUpdated(updated)
-  }
-
   const sc = streamStatusConfig[streamStatus] || streamStatusConfig.idle
+
+  // Encoder is connected when Mux reports 'active'
+  const encoderConnected = streamStatus === 'active'
+  // Stream is publicly live when encoder is connected AND is_active is true
+  const isPubliclyLive = encoderConnected && localChannel.is_active
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -235,10 +283,10 @@ function BroadcastSetupModal({ channel, onClose, onChannelUpdated }: {
       onClick={onClose}>
       <motion.div initial={{ scale: 0.95, y: 16 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95 }}
         onClick={e => e.stopPropagation()}
-        className="w-full max-w-lg bg-[#0A0714] rounded-2xl border border-white/10 overflow-hidden shadow-2xl">
+        className="w-full max-w-xl bg-[#0A0714] rounded-2xl border border-white/10 overflow-hidden shadow-2xl max-h-[90vh] overflow-y-auto">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-white/8 bg-gradient-to-r from-violet-900/30 to-blue-900/30">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-white/8 bg-gradient-to-r from-violet-900/30 to-blue-900/30 sticky top-0 z-10 bg-[#0A0714]">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-violet-500/20 border border-violet-500/30 flex items-center justify-center overflow-hidden">
               {localChannel.logo_url
@@ -268,8 +316,8 @@ function BroadcastSetupModal({ channel, onClose, onChannelUpdated }: {
                   {[
                     ['1', 'Create a Mux live stream — get RTMP credentials'],
                     ['2', 'Enter the RTMP URL + Stream Key into OBS or vMix'],
-                    ['3', 'Click Go Live in OBS — your channel goes live on SmartzTV'],
-                    ['4', 'Viewers watch via HLS on the public SmartzTV page'],
+                    ['3', 'Start streaming in OBS — preview appears here (admin-only)'],
+                    ['4', 'Click "Go Live" to publish to the public SmartzTV page'],
                   ].map(([n, t]) => (
                     <div key={n} className="flex items-start gap-2.5">
                       <span className="w-5 h-5 rounded-full bg-violet-500/20 text-violet-400 text-[10px] font-black flex items-center justify-center flex-shrink-0 mt-0.5">{n}</span>
@@ -303,25 +351,109 @@ function BroadcastSetupModal({ channel, onClose, onChannelUpdated }: {
           {/* ── Stream ready ── */}
           {step === 'ready' && localChannel.mux_stream_id && (
             <>
-              {/* Status badge */}
-              <div className="flex items-center justify-between">
+              {/* ── Status bar ── */}
+              <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold border ${sc.bg} ${sc.color}`}>
                   <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} />
                   {sc.label}
                   {polling && <Loader2 className="w-3 h-3 animate-spin ml-1" />}
                 </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={toggleActive}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
-                      localChannel.is_active
-                        ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/25 hover:bg-emerald-500/25'
-                        : 'bg-white/5 text-gray-400 border-white/10 hover:bg-white/10'
-                    }`}>
-                    {localChannel.is_active ? <><Power className="w-3 h-3" /> Active</> : <><PowerOff className="w-3 h-3" /> Inactive</>}
-                  </button>
-                </div>
+                {isPubliclyLive && (
+                  <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border bg-red-500/15 text-red-400 border-red-500/25">
+                    <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
+                    PUBLIC — LIVE
+                  </span>
+                )}
               </div>
+
+              {/* ── ADMIN PREVIEW — shown when encoder is connected, regardless of is_active ── */}
+              {encoderConnected && localChannel.mux_playback_id && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                      <Eye className="w-3.5 h-3.5" /> Admin Preview
+                      <span className="font-normal text-gray-400 ml-1">— only you can see this</span>
+                    </p>
+                    <button
+                      onClick={() => setShowPreview(p => !p)}
+                      className="text-[11px] text-gray-400 hover:text-white transition-colors underline underline-offset-2"
+                    >
+                      {showPreview ? 'Hide' : 'Show'} preview
+                    </button>
+                  </div>
+
+                  <AnimatePresence>
+                    {showPreview && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="overflow-hidden"
+                      >
+                        {/* Admin-only HLS preview via SmartzTVPlayer */}
+                        <div className="rounded-xl overflow-hidden border border-amber-500/20">
+                          <SmartzTVPlayer
+                            playbackId={localChannel.mux_playback_id}
+                            poster={localChannel.cover_url}
+                            isLive
+                            title={`[ADMIN PREVIEW] ${localChannel.name}`}
+                            accentColor="#f59e0b"
+                          />
+                        </div>
+                        <p className="mt-1.5 text-[10px] text-amber-500/70 text-center">
+                          ⚠️ Admin-only preview — public viewers cannot see this until you click "Go Live"
+                        </p>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {/* ── Go Live / End Live controls ── */}
+                  <div className="flex gap-2 pt-1">
+                    {!localChannel.is_active ? (
+                      <button
+                        onClick={handleGoLive}
+                        disabled={goingLive}
+                        className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-lg shadow-red-500/20 hover:opacity-90 transition-opacity disabled:opacity-60"
+                      >
+                        {goingLive
+                          ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Publishing…</>
+                          : <><Radio className="w-3.5 h-3.5" /> Go Live — Publish to Public TV</>
+                        }
+                      </button>
+                    ) : (
+                      <button
+                        onClick={handleEndLive}
+                        disabled={endingLive}
+                        className="flex-1 py-2.5 rounded-xl bg-red-500/15 text-red-400 border border-red-500/30 text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-red-500/25 transition-colors disabled:opacity-60"
+                      >
+                        {endingLive
+                          ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Ending…</>
+                          : <><PhoneOff className="w-3.5 h-3.5" /> End Live &amp; Remove from Public TV</>
+                        }
+                      </button>
+                    )}
+                  </div>
+
+                  {error && (
+                    <div className="p-2.5 rounded-xl bg-red-500/10 border border-red-500/20 flex items-start gap-2">
+                      <AlertCircle className="w-3.5 h-3.5 text-red-400 flex-shrink-0 mt-0.5" />
+                      <p className="text-xs text-red-300">{error}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ── Not yet connected — waiting for OBS ── */}
+              {!encoderConnected && (
+                <div className="p-3 rounded-xl bg-amber-500/5 border border-amber-500/15 flex items-start gap-2">
+                  <Info className="w-3.5 h-3.5 text-amber-400 flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-amber-200/70">
+                    Start streaming in OBS/vMix using the credentials below. Once your encoder connects,
+                    an <strong className="text-amber-300">admin-only HLS preview</strong> will appear here so you can
+                    verify audio/video quality before clicking <strong className="text-amber-300">Go Live</strong>.
+                  </p>
+                </div>
+              )}
 
               {/* OBS Setup box */}
               <div className="p-3 rounded-xl bg-blue-500/5 border border-blue-500/15">
@@ -332,7 +464,7 @@ function BroadcastSetupModal({ channel, onClose, onChannelUpdated }: {
                   <li>Open OBS → Settings → Stream → Service: <strong className="text-white">Custom</strong></li>
                   <li>Paste the <strong className="text-white">RTMP Server</strong> below into the Server field</li>
                   <li>Paste the <strong className="text-white">Stream Key</strong> below into the Stream Key field</li>
-                  <li>Click Apply → Start Streaming</li>
+                  <li>Click Apply → Start Streaming in OBS</li>
                 </ol>
               </div>
 
@@ -342,7 +474,7 @@ function BroadcastSetupModal({ channel, onClose, onChannelUpdated }: {
                   <CopyField label="Stream Key (OBS Stream Key / vMix Password)" value={localChannel.stream_key} secret />
                 )}
                 {localChannel.playback_url && (
-                  <CopyField label="HLS Playback URL (for testing)" value={localChannel.playback_url} />
+                  <CopyField label="HLS Playback URL (for external testing)" value={localChannel.playback_url} />
                 )}
               </div>
 
@@ -369,10 +501,12 @@ function BroadcastSetupModal({ channel, onClose, onChannelUpdated }: {
                   className="flex-1 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-white/10 transition-colors">
                   <ExternalLink className="w-3.5 h-3.5" /> Public TV
                 </button>
-                <button onClick={handleDeleteStream}
-                  className="flex-1 py-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-red-500/20 transition-colors">
-                  <Trash2 className="w-3.5 h-3.5" /> Delete Stream
-                </button>
+                {!localChannel.is_active && (
+                  <button onClick={handleDeleteStream}
+                    className="flex-1 py-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-red-500/20 transition-colors">
+                    <Trash2 className="w-3.5 h-3.5" /> Delete Stream
+                  </button>
+                )}
               </div>
             </>
           )}
@@ -1437,10 +1571,14 @@ function LiveTVPanel({ streams }: { streams: Stream[] }) {
 //  MAIN COMPONENT
 // ══════════════════════════════════════════════════════════════════════════════
 
-export default function AdminSmartzTV() {
+// ══════════════════════════════════════════════════════════════════════════════
+//  STUDIO 1 — SmartzTV (Mux + LiveKit public broadcast)
+// ══════════════════════════════════════════════════════════════════════════════
+
+function Studio1SmartzTV() {
   const { user } = useAuth()
 
-  // Top-level tab
+  // Inner tab within Studio 1
   const [topTab, setTopTab] = useState<'channels' | 'streams'>('channels')
 
   // Streams state (existing)
@@ -1547,7 +1685,22 @@ export default function AdminSmartzTV() {
   }
 
   return (
-    <div className="p-4 sm:p-6 space-y-5 relative">
+    <div className="space-y-5">
+      {/* Studio 1 label */}
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-violet-600 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-500/20">
+          <Tv className="w-5 h-5 text-white" />
+        </div>
+        <div>
+          <h2 className="font-display font-black text-lg dark:text-white text-gray-900">
+            Studio 1 · SmartzTV
+          </h2>
+          <p className="text-xs dark:text-gray-400 text-gray-500">
+            Mux RTMP/OBS + LiveKit WebRTC · broadcasts to public /smartztv page · <code className="text-[11px]">is_admin_broadcast = true</code>
+          </p>
+        </div>
+      </div>
+
       {/* LiveKit broadcaster overlay */}
       <AnimatePresence>
         {broadcastData && <AdminBroadcaster data={broadcastData} onEnd={() => { setBroadcastData(null); fetchStreams() }} />}
@@ -1570,52 +1723,42 @@ export default function AdminSmartzTV() {
         )}
       </AnimatePresence>
 
-      {/* ── Header ── */}
+      {/* ── Inner tabs: TV Channels | Livestreams ── */}
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="font-display font-black text-2xl dark:text-white text-gray-900 flex items-center gap-2">
-            <Tv className="w-6 h-6 text-brand-pink" /> SmartzTV
-          </h1>
-          <p className="text-sm dark:text-gray-400 text-gray-500 mt-0.5">Cloud broadcast management · Mux + OBS/vMix</p>
+        <div className="flex items-center gap-1 p-1 dark:bg-white/3 bg-gray-100 rounded-2xl w-fit">
+          {([
+            { key: 'channels', label: 'TV Channels', icon: Tv },
+            { key: 'streams',  label: 'Livestreams', icon: Radio },
+          ] as const).map(t => (
+            <button key={t.key} onClick={() => setTopTab(t.key)}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+                topTab === t.key
+                  ? 'dark:bg-white/10 bg-white shadow dark:text-white text-gray-900'
+                  : 'dark:text-gray-400 text-gray-600 hover:dark:text-white hover:text-gray-900'
+              }`}>
+              <t.icon className="w-4 h-4" /> {t.label}
+              {t.key === 'streams' && list.filter(v => v.status === 'live').length > 0 && (
+                <span className="w-4 h-4 rounded-full bg-red-500 text-[9px] font-black text-white flex items-center justify-center">
+                  {list.filter(v => v.status === 'live').length}
+                </span>
+              )}
+            </button>
+          ))}
         </div>
-        <div className="flex items-center gap-2">
-          {topTab === 'streams' && (
-            <>
-              <button onClick={() => setView(v => v === 'manage' ? 'livetv' : 'manage')}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all ${view === 'livetv' ? 'bg-red-500 text-white' : 'dark:bg-white/5 bg-gray-100 dark:text-gray-300 text-gray-700 hover:text-brand-pink'}`}>
-                {view === 'livetv' ? <><span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> Monitor</> : <><Radio className="w-3.5 h-3.5" /> Monitor</>}
-              </button>
-              <button onClick={fetchStreams} className="w-9 h-9 rounded-xl dark:bg-white/5 bg-gray-100 flex items-center justify-center hover:text-brand-pink transition-colors">
-                <RefreshCw className="w-4 h-4 dark:text-gray-400 text-gray-600" />
-              </button>
-              <button onClick={() => setShowCreate(true)} className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-love-gradient text-white text-xs font-bold">
-                <Plus className="w-3.5 h-3.5" /> New Stream
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* ── Top tabs ── */}
-      <div className="flex items-center gap-1 p-1 dark:bg-white/3 bg-gray-100 rounded-2xl w-fit">
-        {([
-          { key: 'channels', label: 'TV Channels', icon: Tv },
-          { key: 'streams',  label: 'Livestreams', icon: Radio },
-        ] as const).map(t => (
-          <button key={t.key} onClick={() => setTopTab(t.key)}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold transition-all ${
-              topTab === t.key
-                ? 'dark:bg-white/10 bg-white shadow dark:text-white text-gray-900'
-                : 'dark:text-gray-400 text-gray-600 hover:dark:text-white hover:text-gray-900'
-            }`}>
-            <t.icon className="w-4 h-4" /> {t.label}
-            {t.key === 'streams' && list.filter(v => v.status === 'live').length > 0 && (
-              <span className="w-4 h-4 rounded-full bg-red-500 text-[9px] font-black text-white flex items-center justify-center">
-                {list.filter(v => v.status === 'live').length}
-              </span>
-            )}
-          </button>
-        ))}
+        {topTab === 'streams' && (
+          <div className="flex items-center gap-2">
+            <button onClick={() => setView(v => v === 'manage' ? 'livetv' : 'manage')}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all ${view === 'livetv' ? 'bg-red-500 text-white' : 'dark:bg-white/5 bg-gray-100 dark:text-gray-300 text-gray-700 hover:text-brand-pink'}`}>
+              {view === 'livetv' ? <><span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> Monitor</> : <><Radio className="w-3.5 h-3.5" /> Monitor</>}
+            </button>
+            <button onClick={fetchStreams} className="w-9 h-9 rounded-xl dark:bg-white/5 bg-gray-100 flex items-center justify-center hover:text-brand-pink transition-colors">
+              <RefreshCw className="w-4 h-4 dark:text-gray-400 text-gray-600" />
+            </button>
+            <button onClick={() => setShowCreate(true)} className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-love-gradient text-white text-xs font-bold">
+              <Plus className="w-3.5 h-3.5" /> New Stream
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ── Channels Tab ── */}
@@ -1766,6 +1909,78 @@ export default function AdminSmartzTV() {
           </AnimatePresence>
         </>
       )}
+    </div>
+  )
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  MAIN PAGE — AdminSmartzTV (two studio tabs)
+// ══════════════════════════════════════════════════════════════════════════════
+
+export default function AdminSmartzTV() {
+  // Studio-level tab (the outermost selection on this page)
+  const [studio, setStudio] = useState<'studio1' | 'studio2'>('studio1')
+
+  return (
+    <div className="p-4 sm:p-6 space-y-5">
+      {/* ── Page header ── */}
+      <div>
+        <h1 className="font-display font-black text-2xl dark:text-white text-gray-900 flex items-center gap-2">
+          <Tv className="w-6 h-6 text-brand-pink" /> SmartzTV Admin
+        </h1>
+        <p className="text-sm dark:text-gray-400 text-gray-500 mt-0.5">
+          Two broadcast studios — choose your destination below
+        </p>
+      </div>
+
+      {/* ── Studio selector tabs ── */}
+      <div className="flex items-center gap-1 p-1 dark:bg-white/3 bg-gray-100 rounded-2xl w-fit">
+        {([
+          {
+            key: 'studio1',
+            label: 'Studio 1 · SmartzTV',
+            sub: 'Public broadcast via Mux + LiveKit',
+            icon: Tv,
+            active: 'bg-gradient-to-r from-violet-600/20 to-purple-600/20 border border-violet-500/30',
+            dot: 'bg-violet-500',
+          },
+          {
+            key: 'studio2',
+            label: 'Studio 2 · Personal Live',
+            sub: 'Community stream via LiveKit only',
+            icon: Radio,
+            active: 'bg-gradient-to-r from-pink-600/20 to-rose-600/20 border border-pink-500/30',
+            dot: 'bg-brand-pink',
+          },
+        ] as const).map(t => (
+          <button
+            key={t.key}
+            onClick={() => setStudio(t.key)}
+            className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${
+              studio === t.key
+                ? `${t.active} dark:text-white text-gray-900 shadow`
+                : 'dark:text-gray-400 text-gray-600 hover:dark:text-white hover:text-gray-900'
+            }`}
+          >
+            <t.icon className={`w-4 h-4 ${studio === t.key ? `text-${t.dot === 'bg-brand-pink' ? 'brand-pink' : 'violet-400'}` : ''}`} />
+            <span>{t.label}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* ── Studio panels ── */}
+      <AnimatePresence mode="wait">
+        {studio === 'studio1' && (
+          <motion.div key="studio1" initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -8 }} transition={{ duration: 0.15 }}>
+            <Studio1SmartzTV />
+          </motion.div>
+        )}
+        {studio === 'studio2' && (
+          <motion.div key="studio2" initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 8 }} transition={{ duration: 0.15 }}>
+            <AdminPersonalStudio />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

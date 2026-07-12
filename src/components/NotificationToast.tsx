@@ -4,7 +4,7 @@ import {
   Bell, MessageCircle, Heart, UserPlus, Zap, Star,
   Gift, Video, Phone, Trophy, X, Volume2,
 } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { streamClient } from '@/lib/stream'
@@ -83,6 +83,7 @@ export function playNotificationSound(soft = false) {
 export default function NotificationToast() {
   const { user } = useAuth()
   const navigate  = useNavigate()
+  const location  = useLocation()
   const [toasts, setToasts]   = useState<ToastItem[]>([])
   const timersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
 
@@ -141,6 +142,11 @@ export default function NotificationToast() {
   }, [user?.id, push])
 
   /* ── 2. Stream: new messages while app is in foreground ─── */
+  // Keep a ref to the current pathname so the handler closure always sees
+  // the latest value without needing to be re-registered on every navigation.
+  const locationRef = useRef(location.pathname)
+  useEffect(() => { locationRef.current = location.pathname }, [location.pathname])
+
   useEffect(() => {
     if (!user?.id || !streamClient) return
 
@@ -171,6 +177,17 @@ export default function NotificationToast() {
       } else {
         link = `/app/chat/${senderId}`
       }
+
+      // ── Suppress toast when the user is already viewing this chat ───────────
+      // If the user is on the exact page this message belongs to, they can see
+      // the message inline — a toast would be redundant and annoying.
+      const currentPath = locationRef.current
+      const isOnTargetPage =
+        (channelType === 'livestream' && currentPath === '/app/worldchat') ||
+        (channelId.startsWith('group-') && currentPath === '/app/groups') ||
+        (channelType !== 'livestream' && !channelId.startsWith('group-') &&
+          currentPath === `/app/chat/${senderId}`)
+      if (isOnTargetPage) return
 
       push({
         id:         `stream:${event.message?.id || Date.now()}`,

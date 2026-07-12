@@ -2,12 +2,14 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Send, Smile, Paperclip, Mic, MicOff, X, CornerUpLeft,
-  Pin, Trash2, Globe, Users, Volume2
+  Pin, Trash2, Globe, Users, Volume2, Palette
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
 import { streamClient } from '@/lib/stream'
 import { useStream } from '@/contexts/StreamContext'
+import { useTheme, CHAT_THEME_PRESETS } from '@/contexts/ThemeContext'
+import type { ChatTheme } from '@/contexts/ThemeContext'
 import type { Channel } from 'stream-chat'
 import EmojiPicker from '@/components/EmojiPicker'
 import TranslateButton from '@/components/TranslateButton'
@@ -44,6 +46,7 @@ interface WCMessage {
 export default function WorldChatPage() {
   const { user } = useAuth()
   const { connected: streamConnected } = useStream()
+  const { chatTheme, setChatTheme } = useTheme()
   const [channel, setChannel] = useState<Channel | null>(null)
   const [messages, setMessages] = useState<WCMessage[]>([])
   const [text, setText] = useState('')
@@ -60,6 +63,7 @@ export default function WorldChatPage() {
   const [voiceError, setVoiceError] = useState<string | null>(null)
   const [connectFailed, setConnectFailed] = useState(false)
   const [notMember, setNotMember] = useState(false)
+  const [showThemePicker, setShowThemePicker] = useState(false)
 
   const endRef = useRef<HTMLDivElement>(null)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -336,7 +340,7 @@ export default function WorldChatPage() {
     d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 
   return (
-    <div className="h-full flex flex-col dark:bg-[#0D0A14] bg-gray-50">
+    <div className="h-full flex flex-col chat-page-bg">
       {/* Voice / mic error banner */}
       <AnimatePresence>
         {voiceError && (
@@ -377,6 +381,13 @@ export default function WorldChatPage() {
             >
               <Pin className="w-3 h-3" /> Pinned {pinnedMessages.length > 0 && `(${pinnedMessages.length})`}
             </button>
+            <button
+              onClick={() => setShowThemePicker(p => !p)}
+              className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${showThemePicker ? 'bg-love-gradient text-white' : 'dark:bg-white/5 bg-gray-100 dark:text-gray-400 text-gray-600 hover:text-brand-pink'}`}
+              title="Chat Theme"
+            >
+              <Palette className="w-4 h-4" />
+            </button>
             <div className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl dark:bg-white/5 bg-gray-100">
               <Users className="w-3 h-3 text-brand-pink" />
               <span className="text-xs dark:text-gray-400 text-gray-600 font-semibold">{onlineCount}</span>
@@ -399,6 +410,34 @@ export default function WorldChatPage() {
                     </div>
                   </div>
                 ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Chat Theme Picker */}
+        <AnimatePresence>
+          {showThemePicker && (
+            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+              className="mt-2 overflow-hidden">
+              <div className="p-3 rounded-2xl dark:bg-white/5 bg-white border dark:border-white/8 border-gray-200">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs font-bold dark:text-gray-300 text-gray-700">Chat Theme</p>
+                  <button onClick={() => setShowThemePicker(false)} className="dark:text-gray-500 text-gray-400 hover:text-red-400"><X className="w-3.5 h-3.5" /></button>
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  {(Object.entries(CHAT_THEME_PRESETS) as [ChatTheme, typeof CHAT_THEME_PRESETS[ChatTheme]][]).map(([key, preset]) => (
+                    <button
+                      key={key}
+                      onClick={() => setChatTheme(key)}
+                      className={`flex flex-col items-center gap-1 px-2 py-1.5 rounded-xl text-xs font-semibold transition-all ${chatTheme === key ? 'ring-2 ring-offset-1 dark:ring-offset-[#130E1E] ring-purple-400 scale-105' : 'opacity-70 hover:opacity-100'}`}
+                      style={{ background: preset.vars.bubbleMine }}
+                    >
+                      <span className="text-lg leading-none">{preset.emoji}</span>
+                      <span className="text-white text-[9px] font-bold drop-shadow">{preset.label}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
             </motion.div>
           )}
@@ -500,8 +539,8 @@ export default function WorldChatPage() {
                   {/* Bubble */}
                   <div className={`px-3 py-2 rounded-2xl text-sm shadow-sm ${
                     mine
-                      ? 'bg-love-gradient text-white rounded-br-sm'
-                      : 'dark:bg-[#1A1326] bg-white border dark:border-white/6 border-gray-200 dark:text-white text-gray-900 rounded-bl-sm'
+                      ? 'chat-bubble-mine rounded-br-sm'
+                      : 'chat-bubble-theirs border dark:border-white/6 border-gray-200 rounded-bl-sm'
                   }`}>
                     {/* Attachments */}
                     {msg.attachments?.map((att, ai) => (

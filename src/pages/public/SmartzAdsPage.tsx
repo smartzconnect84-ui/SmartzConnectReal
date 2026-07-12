@@ -2,9 +2,10 @@ import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   Megaphone, BarChart3, Target, Globe, Users, TrendingUp,
-  CheckCircle, ArrowRight, Mail, Play, Layers,
+  CheckCircle, ArrowRight, Mail, Play, Layers, Zap,
 } from 'lucide-react'
 import { useSiteConfig, SITE_IMAGE_KEYS } from '@/contexts/SiteConfigContext'
+import { usePublicStats, fmtCount } from '@/hooks/usePublicStats'
 
 const adFormats = [
   {
@@ -27,13 +28,6 @@ const adFormats = [
   },
 ]
 
-const benefits = [
-  { icon: Globe,      title: 'Pan-African Reach',   desc: 'Access audiences across 47+ countries in Africa.' },
-  { icon: Users,      title: 'Precise Targeting',    desc: 'Target by country, age, interests, and behaviour.' },
-  { icon: BarChart3,  title: 'Real-Time Analytics', desc: 'Live dashboards showing impressions, clicks, and ROI.' },
-  { icon: TrendingUp, title: 'Performance-Based',    desc: 'Pay for actual results — clicks, views, conversions.' },
-]
-
 const faqs = [
   { q: 'What is the minimum budget?', a: 'We support campaigns starting from any budget. Contact our team to discuss a plan that works for you.' },
   { q: 'How do I track my campaign?', a: 'Once live, your campaign has a real-time dashboard accessible through the SmartzAds portal.' },
@@ -44,6 +38,17 @@ const faqs = [
 export default function SmartzAdsPage() {
   const siteConfig = useSiteConfig()
   const bgUrl = siteConfig.get(SITE_IMAGE_KEYS.adsPageBg)
+
+  // Live audience reach from real users table
+  const liveStats   = usePublicStats()
+  const memberCount = fmtCount(liveStats.totalUsers, '—')
+
+  const benefits = [
+    { icon: Globe,      title: 'Pan-African Reach',   desc: `Access a real, growing audience across 47+ countries in Africa.` },
+    { icon: Users,      title: 'Precise Targeting',    desc: 'Target by country, age, interests, and behaviour.' },
+    { icon: BarChart3,  title: 'Real-Time Analytics', desc: 'Live dashboards showing impressions, clicks, and ROI.' },
+    { icon: TrendingUp, title: 'Performance-Based',    desc: 'Pay for actual results — clicks, views, conversions.' },
+  ]
 
   return (
     <div className="min-h-screen dark:bg-[#080510] bg-gray-50 pt-[72px] sm:pt-20">
@@ -66,7 +71,7 @@ export default function SmartzAdsPage() {
           />
         </div>
 
-        {/* CTA buttons */}
+        {/* CTA buttons — routed to /register so advertisers create an account first */}
         <div className="dark:bg-[#1a0014]/90 bg-pink-50/70 border-t-2 border-pink-500/25 py-6 px-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -74,15 +79,24 @@ export default function SmartzAdsPage() {
             transition={{ duration: 0.5, delay: 0.2 }}
             className="flex flex-col sm:flex-row gap-3 justify-center"
           >
-            <a href="mailto:ads@smartzconnect.com"
+            <Link to="/register"
               className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-love-gradient text-white font-semibold text-sm shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
-              <Megaphone className="w-4 h-4" /> Create Ad
-            </a>
-            <a href="mailto:ads@smartzconnect.com"
+              <Megaphone className="w-4 h-4" /> Create Ad Account
+            </Link>
+            <Link to="/register"
               className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl dark:bg-pink-900/30 bg-white border dark:border-pink-500/20 border-pink-300/50 dark:text-pink-200 text-pink-800 font-semibold text-sm hover:dark:bg-pink-900/50 hover:bg-pink-100 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
-              <TrendingUp className="w-4 h-4" /> Promote Business
-            </a>
+              <TrendingUp className="w-4 h-4" /> Promote Your Business
+            </Link>
           </motion.div>
+        </div>
+      </section>
+
+      {/* ── Audience size stat ── */}
+      <section className="py-8 dark:bg-[#0D0A14] bg-white border-b dark:border-white/5 border-gray-100">
+        <div className="max-w-3xl mx-auto px-4 text-center">
+          <p className="text-sm dark:text-gray-400 text-gray-500 mb-1 uppercase tracking-wider font-semibold">Reach a real audience</p>
+          <p className="font-display font-black text-4xl sm:text-5xl bg-love-gradient bg-clip-text text-transparent">{memberCount}</p>
+          <p className="text-base dark:text-gray-400 text-gray-600 mt-1">registered members across Africa</p>
         </div>
       </section>
 
@@ -151,9 +165,9 @@ export default function SmartzAdsPage() {
           </div>
           <div className="space-y-6">
             {[
-              { step: '01', title: 'Submit Your Campaign', desc: 'Contact our ads team with your campaign goals, budget, and target audience details.' },
-              { step: '02', title: 'Campaign Review',       desc: 'Our team reviews your creative materials and campaign setup within 24–48 hours.' },
-              { step: '03', title: 'Go Live',               desc: "Your campaign goes live across SmartzConnect's platform reaching your target audience." },
+              { step: '01', title: 'Create Your Account', desc: 'Sign up at SmartzConnect and navigate to the SmartzAds portal to get started.' },
+              { step: '02', title: 'Submit Your Campaign', desc: 'Set your campaign goals, budget, target audience, and upload your creative materials.' },
+              { step: '03', title: 'Campaign Review',       desc: 'Our team reviews your creative materials and campaign setup within 24–48 hours.' },
               { step: '04', title: 'Track & Optimise',      desc: 'Monitor real-time performance and work with our team to optimise for better results.' },
             ].map((item, i) => (
               <motion.div key={item.step}
@@ -212,17 +226,17 @@ export default function SmartzAdsPage() {
               </div>
               <h2 className="font-display font-black text-3xl text-white mb-4">Ready to Advertise?</h2>
               <p className="text-white/80 mb-7 max-w-lg mx-auto">
-                Get in touch with our advertising team today and launch your first campaign on Africa's fastest growing social platform.
+                Create your account and launch your first campaign on Africa's fastest growing social platform.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <a href="mailto:ads@smartzconnect.com"
+                <Link to="/register"
                   className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-love-gradient text-white font-bold shadow-xl shadow-pink-500/30 hover:shadow-pink-500/50 hover:scale-105 transition-all text-sm">
-                  <Mail className="w-4 h-4" /> Contact Our Ads Team
-                </a>
-                <Link to="/about"
-                  className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-white/12 backdrop-blur-sm border border-white/25 text-white font-semibold hover:bg-white/22 transition-all text-sm">
-                  Learn More <ArrowRight className="w-4 h-4" />
+                  <Zap className="w-4 h-4" /> Get Started Free
                 </Link>
+                <a href="mailto:ads@smartzconnect.com"
+                  className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-white/12 backdrop-blur-sm border border-white/25 text-white font-semibold hover:bg-white/22 transition-all text-sm">
+                  <Mail className="w-4 h-4" /> Contact Ads Team <ArrowRight className="w-4 h-4" />
+                </a>
               </div>
             </div>
           </div>

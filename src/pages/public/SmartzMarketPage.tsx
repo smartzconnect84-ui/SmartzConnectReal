@@ -8,6 +8,7 @@ import {
   Sparkles, Home, Car, Wrench, Palette,
 } from 'lucide-react'
 import { useSiteConfig, SITE_IMAGE_KEYS } from '@/contexts/SiteConfigContext'
+import { usePublicStats, fmtCount } from '@/hooks/usePublicStats'
 
 const categories = [
   { name: 'Fashion',       icon: Shirt,       color: 'from-pink-500 to-rose-600',     bg: 'bg-pink-500/10' },
@@ -38,7 +39,7 @@ const features = [
   },
   {
     icon: Search, title: 'Smart Search',
-    desc: 'AI-powered search finds exactly what you\'re looking for across all listings instantly.',
+    desc: 'Find exactly what you\'re looking for across all listings instantly.',
     color: 'from-violet-500 to-purple-600',
   },
   {
@@ -51,13 +52,6 @@ const features = [
     desc: 'Daily flash sales with up to 70% off. Set price alerts and never miss a deal.',
     color: 'from-red-500 to-rose-600',
   },
-]
-
-const stats = [
-  { value: '180K+', label: 'Active Listings',    icon: Package },
-  { value: '45K+',  label: 'Verified Sellers',   icon: CheckCircle },
-  { value: '$2.4M', label: 'Monthly Sales',       icon: TrendingUp },
-  { value: '4.8★',  label: 'Buyer Satisfaction',  icon: Star },
 ]
 
 const sellerPerks = [
@@ -76,6 +70,18 @@ export default function SmartzMarketPage() {
   const heroIn  = useInView(heroRef, { once: true })
   const siteConfig = useSiteConfig()
   const bgUrl = siteConfig.get(SITE_IMAGE_KEYS.marketPageBg)
+
+  // Live counts from DB
+  const liveStats = usePublicStats()
+  const listingCount  = fmtCount(liveStats.marketplaceListings, '—')
+  const memberCount   = fmtCount(liveStats.totalUsers, '—')
+
+  const stats = [
+    { value: listingCount, label: 'Active Listings',   icon: Package },
+    { value: memberCount,  label: 'Registered Members', icon: Users },
+    { value: '4.8★',       label: 'Buyer Satisfaction', icon: Star },
+    { value: '47+',        label: 'Countries Reached',  icon: Globe },
+  ]
 
   return (
     <div className="dark:bg-[#080510] bg-gray-50 min-h-screen pt-[72px] sm:pt-20">
@@ -165,8 +171,6 @@ export default function SmartzMarketPage() {
             })}
           </div>
 
-          {/* Hero category grid (smaller version, desktop only) */}
-
           {/* Features grid */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={inView ? { opacity: 1, y: 0 } : {}} transition={{ delay: 0.2 }} className="text-center mb-10">
             <h2 className="font-display font-black text-2xl sm:text-3xl dark:text-white text-gray-900 mb-2">
@@ -208,7 +212,7 @@ export default function SmartzMarketPage() {
                   Start Selling<br />Today — Free
                 </h2>
                 <p className="text-base dark:text-gray-400 text-gray-600 mb-6 leading-relaxed">
-                  List your products in minutes. Reach millions of buyers across Africa.
+                  List your products in minutes. Reach buyers across Africa.
                   Get paid instantly via Mobile Money.
                 </p>
                 <Link to="/register"
@@ -242,10 +246,10 @@ export default function SmartzMarketPage() {
             ))}
           </div>
           <h2 className="font-display font-black text-3xl sm:text-4xl dark:text-white text-gray-900 mb-4">
-            Join 45,000+ Active Sellers
+            Africa's Growing Marketplace
           </h2>
           <p className="text-lg dark:text-gray-400 text-gray-600 mb-8">
-            SmartzMarket is the fastest-growing marketplace in West Africa. Sign up free and start selling in minutes.
+            SmartzMarket connects buyers and sellers across the continent. Sign up free and start selling in minutes.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link to="/register"

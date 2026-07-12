@@ -12,9 +12,10 @@ import { useTheme } from '@/contexts/ThemeContext'
 import { openTawkChat } from '@/lib/tawk'
 import { useAuth } from '@/hooks/useAuth'
 import { useSiteConfig, SITE_IMAGE_KEYS } from '@/contexts/SiteConfigContext'
+import { useServices } from '@/hooks/useServices'
 
-/* ── Nav data ─────────────────────────────────────────────────────────── */
-const products = {
+/* ── Nav data (hardcoded fallback) ────────────────────────────────────── */
+const FALLBACK_PRODUCTS = {
   business: [
     { label: 'SmartzMarket',   href: '/smartzmarket',   icon: ShoppingBag, color: 'text-amber-400',    bg: 'bg-amber-500/10',    desc: 'Buy & sell anything'        },
     { label: 'SmartzRide',     href: '/smartzride',     icon: Car,         color: 'text-emerald-400',  bg: 'bg-emerald-500/10',  desc: 'Ride-hailing across Africa' },
@@ -29,6 +30,21 @@ const products = {
   ],
 }
 
+// Hardcoded icon/style mapping for known service slugs
+const SERVICE_ICON_MAP: Record<string, { icon: typeof ShoppingBag; color: string; bg: string }> = {
+  'smartzmarket':   { icon: ShoppingBag, color: 'text-amber-400',   bg: 'bg-amber-500/10'   },
+  'smartzride':     { icon: Car,         color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
+  'smartzdelivery': { icon: Package,     color: 'text-sky-400',     bg: 'bg-sky-500/10'     },
+  'smartzads':      { icon: Megaphone,   color: 'text-rose-400',    bg: 'bg-rose-500/10'    },
+  'smartzsocial':   { icon: Users,       color: 'text-violet-400',  bg: 'bg-violet-500/10'  },
+  'smartzdating':   { icon: Heart,       color: 'text-pink-400',    bg: 'bg-pink-500/10'    },
+  'smartztv':       { icon: Tv,          color: 'text-purple-400',  bg: 'bg-purple-500/10'  },
+  'spin-chat':      { icon: Zap,         color: 'text-fuchsia-400', bg: 'bg-fuchsia-500/10' },
+  'world-stage':    { icon: Globe,       color: 'text-blue-400',    bg: 'bg-blue-500/10'    },
+}
+
+const COMMERCE_SLUGS = ['smartzmarket','smartzride','smartzdelivery','smartzads']
+
 const company = [
   { label: 'About Us',      href: '/about',        icon: Info,       desc: 'Our story & mission'     },
   { label: 'Our Team',      href: '/team',         icon: Users2,     desc: 'Meet the people behind'  },
@@ -38,6 +54,29 @@ const company = [
 
 /* ── Dropdown: Products (mega, 2-col) ─────────────────────────────────── */
 function ProductsDrop({ onClose }: { onClose: () => void }) {
+  const { services } = useServices()
+
+  // Build business/social lists from DB, fall back to hardcoded if empty
+  let business = FALLBACK_PRODUCTS.business
+  let social = FALLBACK_PRODUCTS.social
+
+  if (services.length > 0) {
+    const commerceItems = services
+      .filter(s => COMMERCE_SLUGS.includes(s.slug))
+      .map(s => {
+        const style = SERVICE_ICON_MAP[s.slug] || { icon: ShoppingBag, color: 'text-gray-400', bg: 'bg-gray-500/10' }
+        return { label: s.name, href: s.route || `/${s.slug}`, icon: style.icon, color: style.color, bg: style.bg, desc: s.description || '' }
+      })
+    const socialItems = services
+      .filter(s => !COMMERCE_SLUGS.includes(s.slug) && s.slug !== 'world-stage')
+      .map(s => {
+        const style = SERVICE_ICON_MAP[s.slug] || { icon: Zap, color: 'text-gray-400', bg: 'bg-gray-500/10' }
+        return { label: s.name, href: s.route || `/${s.slug}`, icon: style.icon, color: style.color, bg: style.bg, desc: s.description || '' }
+      })
+    if (commerceItems.length > 0) business = commerceItems
+    if (socialItems.length > 0) social = socialItems
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10, scale: 0.97 }}
@@ -56,7 +95,7 @@ function ProductsDrop({ onClose }: { onClose: () => void }) {
         {/* Business */}
         <div>
           <p className="px-3 pt-2 pb-2 text-[10px] font-black uppercase tracking-[0.14em] text-white/25">Commerce</p>
-          {products.business.map(item => {
+          {business.map(item => {
             const Icon = item.icon
             return (
               <Link key={item.href} to={item.href} onClick={onClose}
@@ -77,7 +116,7 @@ function ProductsDrop({ onClose }: { onClose: () => void }) {
         <div className="relative">
           <div className="absolute left-0 top-4 bottom-4 w-px bg-white/6" />
           <p className="px-3 pt-2 pb-2 text-[10px] font-black uppercase tracking-[0.14em] text-white/25">Social</p>
-          {products.social.map(item => {
+          {social.map(item => {
             const Icon = item.icon
             return (
               <Link key={item.href} to={item.href} onClick={onClose}
@@ -213,7 +252,31 @@ export default function Navbar() {
   const isActive = (href: string) =>
     href === '/' ? location.pathname === '/' : location.pathname.startsWith(href)
 
-  const prodActive = [...products.business, ...products.social].some(i => location.pathname.startsWith(i.href))
+  const { services: navServices } = useServices()
+
+  // Derive product lists from DB, falling back to hardcoded if the table is empty/missing
+  const mobileProducts = (() => {
+    if (navServices.length === 0) return FALLBACK_PRODUCTS
+    const commerceItems = navServices
+      .filter(s => COMMERCE_SLUGS.includes(s.slug))
+      .map(s => {
+        const style = SERVICE_ICON_MAP[s.slug] || { icon: ShoppingBag, color: 'text-gray-400', bg: 'bg-gray-500/10' }
+        return { label: s.name, href: s.route || `/${s.slug}`, icon: style.icon, color: style.color, bg: style.bg, desc: s.description || '' }
+      })
+    const socialItems = navServices
+      .filter(s => !COMMERCE_SLUGS.includes(s.slug) && s.slug !== 'world-stage')
+      .map(s => {
+        const style = SERVICE_ICON_MAP[s.slug] || { icon: Zap, color: 'text-gray-400', bg: 'bg-gray-500/10' }
+        return { label: s.name, href: s.route || `/${s.slug}`, icon: style.icon, color: style.color, bg: style.bg, desc: s.description || '' }
+      })
+    return {
+      business: commerceItems.length > 0 ? commerceItems : FALLBACK_PRODUCTS.business,
+      social:   socialItems.length > 0   ? socialItems   : FALLBACK_PRODUCTS.social,
+    }
+  })()
+
+  const allProductLinks = [...mobileProducts.business, ...mobileProducts.social]
+  const prodActive = allProductLinks.some(i => location.pathname.startsWith(i.href))
   const compActive = company.some(i => location.pathname.startsWith(i.href))
 
   return (
@@ -401,7 +464,7 @@ export default function Navbar() {
                         <div className="mx-2 mb-1">
                           <p className="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-white/20">Commerce</p>
                           <div className="grid grid-cols-2 gap-0.5">
-                            {products.business.map(item => {
+                            {mobileProducts.business.map(item => {
                               const Icon = item.icon
                               return (
                                 <Link key={item.href} to={item.href}
@@ -416,7 +479,7 @@ export default function Navbar() {
                           </div>
                           <p className="px-3 py-1.5 mt-1 text-[10px] font-black uppercase tracking-widest text-white/20">Social</p>
                           <div className="grid grid-cols-2 gap-0.5">
-                            {products.social.map(item => {
+                            {mobileProducts.social.map(item => {
                               const Icon = item.icon
                               return (
                                 <Link key={item.href} to={item.href}

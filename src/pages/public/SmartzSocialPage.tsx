@@ -6,6 +6,7 @@ import {
   Star, Zap, Share2, TrendingUp, Lock, UserPlus,
 } from 'lucide-react'
 import { useSiteConfig, SITE_IMAGE_KEYS } from '@/contexts/SiteConfigContext'
+import { usePublicStats, fmtCount } from '@/hooks/usePublicStats'
 
 const features = [
   {
@@ -40,13 +41,6 @@ const features = [
   },
 ]
 
-const stats = [
-  { value: '10M+',  label: 'Active Users',      icon: Users },
-  { value: '47+',   label: 'Countries',          icon: Globe },
-  { value: '32.5%', label: 'Avg. Audience Growth', icon: TrendingUp },
-  { value: '4.9★',  label: 'User Satisfaction', icon: Star },
-]
-
 export default function SmartzSocialPage() {
   const ref    = useRef(null)
   const heroRef = useRef(null)
@@ -54,6 +48,17 @@ export default function SmartzSocialPage() {
   const heroIn  = useInView(heroRef, { once: true })
   const siteConfig = useSiteConfig()
   const bgUrl = siteConfig.get(SITE_IMAGE_KEYS.socialPageBg)
+
+  // Live member count from the real users table
+  const liveStats  = usePublicStats()
+  const memberCount = fmtCount(liveStats.totalUsers, '—')
+
+  const stats = [
+    { value: memberCount, label: 'Registered Members', icon: Users },
+    { value: '47+',       label: 'Countries',           icon: Globe },
+    { value: '4.9★',      label: 'User Satisfaction',   icon: Star },
+    { value: '100%',      label: 'Free to Join',        icon: TrendingUp },
+  ]
 
   return (
     <div className="dark:bg-[#080510] bg-gray-50 min-h-screen pt-[72px] sm:pt-20">
@@ -196,7 +201,7 @@ export default function SmartzSocialPage() {
             Be Social. Be SmartzSocial.
           </h2>
           <p className="text-lg dark:text-gray-400 text-gray-600 mb-8">
-            Join 10 million+ users already connecting, sharing, and growing on Africa's premier social platform.
+            Join a growing community connecting, sharing, and growing on Africa's premier social platform.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link to="/register"

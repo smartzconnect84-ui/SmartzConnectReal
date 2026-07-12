@@ -3,10 +3,11 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Bell, Lock, Shield, Crown, Settings, ChevronRight, ChevronDown,
   Sun, Moon, Download, Trash2, LogOut, AlertTriangle,
-  Palette, Globe, Check, Save, X, RefreshCw, Wifi
+  Palette, Globe, Check, Save, X, RefreshCw, Wifi, MessageCircle
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
-import { useTheme } from '@/contexts/ThemeContext'
+import { useTheme, CHAT_THEME_PRESETS } from '@/contexts/ThemeContext'
+import type { ChatTheme } from '@/contexts/ThemeContext'
 import { supabase } from '@/lib/supabase'
 import { useNavigate } from 'react-router-dom'
 import { useOfflineDraft } from '@/lib/offlineDraft'
@@ -71,7 +72,7 @@ const FONT_SCALE: Record<string, string> = {
 
 export default function SettingsPage() {
   const { user, signOut, role } = useAuth()
-  const { theme, toggleTheme } = useTheme()
+  const { theme, toggleTheme, chatTheme, setChatTheme } = useTheme()
   const navigate = useNavigate()
 
   const [openSection, setOpenSection] = useState<string | null>('notifications')
@@ -361,6 +362,25 @@ export default function SettingsPage() {
                 </button>
               ))}
             </div>
+          </div>
+        </Section>
+
+        {/* Chat Theme */}
+        <Section id="chat-theme" icon={MessageCircle} color="text-pink-500" title="Chat Theme" desc="Bubble colors for all your chats">
+          <p className="text-xs dark:text-gray-400 text-gray-500 -mt-1 mb-1">Choose a color theme for chat bubbles. Applied to direct messages, group chats, and world chat.</p>
+          <div className="flex flex-wrap gap-3">
+            {(Object.entries(CHAT_THEME_PRESETS) as [ChatTheme, typeof CHAT_THEME_PRESETS[ChatTheme]][]).map(([key, preset]) => (
+              <button
+                key={key}
+                onClick={() => setChatTheme(key)}
+                className={`flex flex-col items-center gap-1.5 px-3 py-2 rounded-2xl transition-all ${chatTheme === key ? 'ring-2 ring-offset-2 dark:ring-offset-[#130E1E] ring-offset-white ring-purple-400 scale-105 shadow-lg' : 'opacity-60 hover:opacity-90 hover:scale-105'}`}
+                style={{ background: preset.vars.bubbleMine }}
+              >
+                <span className="text-2xl leading-none">{preset.emoji}</span>
+                <span className="text-white text-[10px] font-bold drop-shadow-sm">{preset.label}</span>
+                {chatTheme === key && <Check className="w-3 h-3 text-white" />}
+              </button>
+            ))}
           </div>
         </Section>
 

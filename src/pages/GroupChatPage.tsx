@@ -1,11 +1,14 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, Plus, Users, Lock, Globe, Send, Smile, Mic, MicOff, Play, Pause, Crown, Shield, X, Loader2, RefreshCw, Square, Paperclip, Image as ImageIcon, FileText } from 'lucide-react'
+import { Search, Plus, Users, Lock, Globe, Send, Smile, Mic, MicOff, Play, Pause, Crown, Shield, X, Loader2, RefreshCw, Square, Paperclip, Image as ImageIcon, FileText, Palette, Phone, Video } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { uploadToSufy } from '@/lib/sufy'
 import { useAuth } from '@/hooks/useAuth'
 import { useStream } from '@/contexts/StreamContext'
 import { streamClient } from '@/lib/stream'
+import { useTheme, CHAT_THEME_PRESETS } from '@/contexts/ThemeContext'
+import type { ChatTheme } from '@/contexts/ThemeContext'
+import { useLiveKitCall } from '@/contexts/LiveKitCallContext'
 import EmojiPicker from '@/components/EmojiPicker'
 import TranslateButton from '@/components/TranslateButton'
 import type { Channel } from 'stream-chat'
@@ -38,6 +41,8 @@ interface CreateRoomForm {
 export default function GroupChatPage() {
   const { user } = useAuth()
   const { connected } = useStream()
+  const { chatTheme, setChatTheme } = useTheme()
+  const { initiateCall } = useLiveKitCall()
   const [rooms, setRooms] = useState<Room[]>([])
   const [loadingRooms, setLoadingRooms] = useState(true)
   const [search, setSearch] = useState('')
@@ -52,6 +57,7 @@ export default function GroupChatPage() {
   const [showMembers, setShowMembers] = useState(false)
   const [othersTyping, setOthersTyping] = useState<string[]>([])
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+  const [showThemePicker, setShowThemePicker] = useState(false)
   const [createForm, setCreateForm] = useState<CreateRoomForm>({
     name: '', topic: '', category: 'Dating', type: 'public', emoji: '💬'
   })
@@ -461,6 +467,25 @@ export default function GroupChatPage() {
     setCreating(false)
   }
 
+  // ── Group call initiation via LiveKit (audio or video) ─────────────────────
+  // For group rooms we initiate a call with the room creator/a representative
+  // contact. Since group rooms don't have a single "other user", we use the
+  // activeRoom's Stream channel members to find a call target, falling back to
+  // a room-level LiveKit room so all members sharing the room can join.
+  const handleGroupCall = (type: 'audio' | 'video') => {
+    if (!activeRoom || !user?.id) return
+    // Use the room's Stream channel ID as a stable room identifier so all
+    // members in the group can join the same LiveKit room.
+    const roomId = `group_${(activeRoom.streamChannelId || `group-${activeRoom.id}`).slice(0, 40)}`
+    // initiateCall wires the outgoing call notification + LiveKit room UI
+    // exactly as ChatPage does — no Mux, always LiveKit.
+    initiateCall({
+      contactId:   roomId,   // synthetic ID for the group room
+      contactName: activeRoom.name,
+      type,
+    }).catch(() => {})
+  }
+
   const typingLabel = othersTyping.length === 0 ? null
     : othersTyping.length === 1 ? `${othersTyping[0]} is typing…`
     : `${othersTyping.slice(0, 2).join(', ')} are typing…`
@@ -555,7 +580,7 @@ export default function GroupChatPage() {
       </div>
 
       {/* Chat panel */}
-      <div className={`flex-1 flex flex-col dark:bg-pink-50 bg-gray-50 ${activeRoom ? 'flex' : 'hidden lg:flex'}`}>
+      <div className={`flex-1 flex flex-col chat-page-bg ${activeRoom ? 'flex' : 'hidden lg:flex'}`}>
         {activeRoom ? (
           <>
             {/* Chat header */}
@@ -570,10 +595,51 @@ export default function GroupChatPage() {
                   {typingLabel ?? (activeRoom.members > 0 ? `${activeRoom.members.toLocaleString()} members` : activeRoom.topic)}
                 </p>
               </div>
+              <button onClick={() => handleGroupCall('audio')} className="w-8 h-8 rounded-xl dark:bg-pink-100 bg-gray-100 flex items-center justify-center hover:bg-emerald-500/20 hover:text-emerald-500 transition-colors" title="Voice call">
+                <Phone className="w-4 h-4 dark:text-gray-600 text-gray-600" />
+              </button>
+              <button onClick={() => handleGroupCall('video')} className="w-8 h-8 rounded-xl dark:bg-pink-100 bg-gray-100 flex items-center justify-center hover:bg-brand-pink/20 hover:text-brand-pink transition-colors" title="Video call">
+                <Video className="w-4 h-4 dark:text-gray-600 text-gray-600" />
+              </button>
+              <button onClick={() => setShowThemePicker(p => !p)} className="w-8 h-8 rounded-xl dark:bg-pink-100 bg-gray-100 flex items-center justify-center hover:text-brand-pink transition-colors" title="Chat Theme">
+                <Palette className="w-4 h-4 dark:text-gray-600 text-gray-600" />
+              </button>
               <button onClick={() => setShowMembers(!showMembers)} className="w-8 h-8 rounded-xl dark:bg-pink-100 bg-gray-100 flex items-center justify-center hover:text-brand-pink transition-colors">
                 <Users className="w-4 h-4 dark:text-gray-600 text-gray-600" />
               </button>
             </div>
+
+            {/* Chat Theme Picker */}
+            <AnimatePresence>
+              {showThemePicker && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="overflow-hidden dark:bg-white bg-white border-b dark:border-pink-100 border-gray-100 flex-shrink-0"
+                >
+                  <div className="px-4 py-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-xs font-bold dark:text-gray-700 text-gray-700">Chat Theme</p>
+                      <button onClick={() => setShowThemePicker(false)} className="text-gray-400 hover:text-gray-600"><X className="w-3.5 h-3.5" /></button>
+                    </div>
+                    <div className="flex gap-2 flex-wrap">
+                      {(Object.entries(CHAT_THEME_PRESETS) as [ChatTheme, typeof CHAT_THEME_PRESETS[ChatTheme]][]).map(([key, preset]) => (
+                        <button
+                          key={key}
+                          onClick={() => setChatTheme(key)}
+                          className={`flex flex-col items-center gap-1 px-2 py-1.5 rounded-xl text-xs font-semibold transition-all ${chatTheme === key ? 'ring-2 ring-offset-1 dark:ring-offset-white ring-purple-400 scale-105' : 'opacity-70 hover:opacity-100'}`}
+                          style={{ background: preset.vars.bubbleMine }}
+                        >
+                          <span className="text-lg leading-none">{preset.emoji}</span>
+                          <span className="text-white text-[9px] font-bold drop-shadow">{preset.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Messages */}
             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
@@ -603,10 +669,10 @@ export default function GroupChatPage() {
                       )}
                       <div className={`px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed ${
                         msg.mine
-                          ? 'bg-love-gradient text-white rounded-br-sm'
+                          ? 'chat-bubble-mine rounded-br-sm'
                           : msg.role === 'admin'
                             ? 'dark:bg-purple-100 dark:border dark:border-purple-200 bg-purple-50 dark:text-purple-900 text-purple-900 rounded-bl-sm'
-                            : 'dark:bg-white dark:border dark:border-pink-200 bg-gray-100 dark:text-gray-900 text-gray-900 rounded-bl-sm dark:shadow-sm'
+                            : 'chat-bubble-theirs dark:border rounded-bl-sm dark:shadow-sm'
                       }`}>
                         {msg.type === 'audio' && msg.audioUrl ? (
                           <div className="flex items-center gap-2 min-w-[140px]">
@@ -655,10 +721,10 @@ export default function GroupChatPage() {
                   <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }}
                     className="flex justify-start gap-2">
                     <div className="w-8 h-8 rounded-full dark:bg-pink-100 bg-gray-100 flex items-center justify-center text-sm flex-shrink-0">✍️</div>
-                    <div className="dark:bg-white dark:border dark:border-pink-200 bg-gray-100 rounded-2xl rounded-bl-sm px-4 py-2.5 dark:shadow-sm">
+                    <div className="chat-bubble-theirs dark:border rounded-2xl rounded-bl-sm px-4 py-2.5 dark:shadow-sm">
                       <div className="flex items-center gap-1">
                         {[0, 0.15, 0.3].map((delay, i) => (
-                          <div key={i} className="w-2 h-2 rounded-full bg-pink-400"
+                          <div key={i} className="w-2 h-2 rounded-full chat-accent-dot"
                             style={{ animation: `bounce 1s ${delay}s infinite` }} />
                         ))}
                       </div>

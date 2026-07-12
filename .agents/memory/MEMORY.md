@@ -47,3 +47,4 @@
 - [Offline draft hook](offline-draft.md) — useOfflineDraft in src/lib/offlineDraft.ts; saves to localStorage keyed by szc_draft:<key>; auto-saves on interval + immediately on offline event; integrated in ComposeBox.
 - [AdminEmail catch fix](admin-email-catch.md) — PostgrestFilterBuilder does not expose .catch(); wrap notification insert in try/catch block instead of chaining .catch().
 - [DB password secret pitfalls](db-password-secret-format.md) — users often paste the full connection string instead of just the password; secrets can also show as "set" yet resolve empty in shell/workflow — verify length/shape before trusting.
+- [Service control & public stats architecture](service-control-system.md) — AdminServices gates nav/footer only via useServices(); public marketing pages use usePublicStats() singleton; never put secrets in services table.

@@ -8,6 +8,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { StreamContext } from '@/contexts/StreamContext'
 import { getOrCreateDirectChannel } from '@/lib/stream'
 import { notifyUser } from '@/lib/notify'
+import { useTheme } from '@/contexts/ThemeContext'
 
 const defaultEmojis = ['👩🏾', '👨🏿', '👩🏽', '👨🏾', '👩🏿', '👨🏽']
 
@@ -97,6 +98,7 @@ function scoreMatch(
 export default function SpinChatPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const { chatTheme: _chatTheme } = useTheme()   // ensures CSS vars are applied globally
   const [phase, setPhase] = useState<Phase>('idle')
   const [currentProfile, setCurrentProfile] = useState<SpinProfile | null>(null)
   const [rotation, setRotation] = useState(0)
@@ -648,7 +650,7 @@ export default function SpinChatPage() {
                 <div className="flex-1 overflow-y-auto p-3 space-y-2">
                   {messages.map((m, i) => (
                     <div key={i} className={`flex ${m.mine ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-[80%] px-3 py-2 rounded-2xl text-xs ${m.mine ? 'bg-love-gradient text-white rounded-tr-sm' : 'dark:bg-white/8 bg-gray-100 dark:text-white text-gray-900 rounded-tl-sm'}`}>
+                      <div className={`max-w-[80%] px-3 py-2 rounded-2xl text-xs ${m.mine ? 'chat-bubble-mine rounded-tr-sm' : 'chat-bubble-theirs rounded-tl-sm'}`}>
                         {m.text}
                         <div className="text-[9px] opacity-60 mt-0.5 text-right">{m.time}</div>
                       </div>

@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   ArrowLeft, Phone, Video, MoreVertical, Send, Paperclip,
   Mic, MicOff, Check, CheckCheck, Play, Pause, Flag, X, Loader2, WifiOff, Square,
-  Reply, Sticker, Search
+  Reply, Sticker, Search, Palette
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { uploadToSufy } from '@/lib/sufy'
@@ -13,6 +13,8 @@ import { useLiveKitCall } from '@/contexts/LiveKitCallContext'
 import { useStream } from '@/contexts/StreamContext'
 import { getOrCreateDirectChannel } from '@/lib/stream'
 import { streamClient } from '@/lib/stream'
+import { useTheme, CHAT_THEME_PRESETS } from '@/contexts/ThemeContext'
+import type { ChatTheme } from '@/contexts/ThemeContext'
 import ReportBlockModal from '@/components/ReportBlockModal'
 import EmojiPicker from '@/components/EmojiPicker'
 import TranslateButton from '@/components/TranslateButton'
@@ -126,6 +128,8 @@ export default function ChatPage() {
   const navigate = useNavigate()
   const { connected } = useStream()
   const { initiateCall } = useLiveKitCall()
+  const { chatTheme, setChatTheme } = useTheme()
+  const [showThemePicker, setShowThemePicker] = useState(false)
 
   const [messages, setMessages] = useState<Message[]>([])
   const [participant, setParticipant] = useState<Participant | null>(null)
@@ -630,7 +634,7 @@ export default function ChatPage() {
   )
 
   return (
-    <div className="h-full flex flex-col dark:bg-pink-50 bg-gray-50 relative">
+    <div className="h-full flex flex-col chat-page-bg relative">
 
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-3 dark:bg-white bg-white border-b dark:border-pink-200 border-gray-100 flex-shrink-0">
@@ -669,9 +673,12 @@ export default function ChatPage() {
             <AnimatePresence>
               {showMenu && (
                 <motion.div initial={{ opacity: 0, scale: 0.9, y: -4 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9 }}
-                  className="absolute top-10 right-0 z-20 dark:bg-white bg-white rounded-2xl shadow-xl border dark:border-pink-200 border-gray-100 overflow-hidden min-w-[140px]"
-                  onClick={() => setShowMenu(false)}>
-                  <button onClick={() => setShowReport(true)} className="flex items-center gap-2.5 w-full px-4 py-3 text-sm text-red-500 hover:bg-gray-50 transition-colors">
+                  className="absolute top-10 right-0 z-20 dark:bg-white bg-white rounded-2xl shadow-xl border dark:border-pink-200 border-gray-100 overflow-hidden min-w-[160px]"
+                  onClick={e => e.stopPropagation()}>
+                  <button onClick={() => { setShowThemePicker(p => !p); setShowMenu(false) }} className="flex items-center gap-2.5 w-full px-4 py-3 text-sm dark:text-gray-700 text-gray-700 hover:bg-gray-50 transition-colors">
+                    <Palette className="w-4 h-4 text-purple-400" /> Chat Theme
+                  </button>
+                  <button onClick={() => { setShowReport(true); setShowMenu(false) }} className="flex items-center gap-2.5 w-full px-4 py-3 text-sm text-red-500 hover:bg-gray-50 transition-colors">
                     <Flag className="w-4 h-4" /> Report / Block
                   </button>
                 </motion.div>
@@ -684,6 +691,39 @@ export default function ChatPage() {
       {showReport && participant && (
         <ReportBlockModal open={showReport} onClose={() => setShowReport(false)} targetUserId={participant.id} targetName={participant.name} />
       )}
+
+      {/* Chat Theme Picker Panel */}
+      <AnimatePresence>
+        {showThemePicker && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            className="px-4 py-3 dark:bg-white bg-white border-b dark:border-pink-100 border-gray-100 flex-shrink-0"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-bold dark:text-gray-700 text-gray-700">Chat Theme</p>
+              <button onClick={() => setShowThemePicker(false)} className="text-gray-400 hover:text-gray-600">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              {(Object.entries(CHAT_THEME_PRESETS) as [ChatTheme, typeof CHAT_THEME_PRESETS[ChatTheme]][]).map(([key, preset]) => (
+                <button
+                  key={key}
+                  onClick={() => setChatTheme(key)}
+                  className={`flex flex-col items-center gap-1 px-2 py-1.5 rounded-xl text-xs font-semibold transition-all ${chatTheme === key ? 'ring-2 ring-offset-1 dark:ring-offset-white ring-purple-400 scale-105' : 'opacity-70 hover:opacity-100'}`}
+                  style={{ background: preset.vars.bubbleMine }}
+                >
+                  <span className="text-lg leading-none">{preset.emoji}</span>
+                  <span className="text-white text-[9px] font-bold drop-shadow">{preset.label}</span>
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Messages */}
       <div
@@ -741,8 +781,8 @@ export default function ChatPage() {
                     onClick={e => { e.stopPropagation(); setActionMenuMsgId(actionMenuMsgId === msg.id ? null : msg.id) }}
                     className={`px-4 py-2.5 rounded-2xl cursor-pointer select-none ${
                       msg.mine
-                        ? 'bg-love-gradient text-white rounded-br-sm'
-                        : 'dark:bg-white dark:border dark:border-pink-200 bg-gray-100 dark:text-gray-900 text-gray-900 rounded-bl-sm dark:shadow-sm'
+                        ? 'chat-bubble-mine rounded-br-sm'
+                        : 'chat-bubble-theirs dark:border rounded-bl-sm dark:shadow-sm'
                     }`}
                   >
                     {/* Quoted reply block */}
@@ -869,10 +909,10 @@ export default function ChatPage() {
           {otherTyping && (
             <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }}
               className="flex justify-start">
-              <div className="dark:bg-white dark:border dark:border-pink-200 bg-gray-100 rounded-2xl rounded-bl-sm px-4 py-2.5 dark:shadow-sm">
+              <div className="chat-bubble-theirs dark:border rounded-2xl rounded-bl-sm px-4 py-2.5 dark:shadow-sm">
                 <div className="flex items-center gap-1">
                   {[0, 0.15, 0.3].map((delay, i) => (
-                    <div key={i} className="w-2 h-2 rounded-full bg-pink-400"
+                    <div key={i} className="w-2 h-2 rounded-full chat-accent-dot"
                       style={{ animation: `bounce 1s ${delay}s infinite` }} />
                   ))}
                 </div>
