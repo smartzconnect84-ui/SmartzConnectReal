@@ -70,17 +70,17 @@ export default function SmartzSocialPage() {
       {/* ── Hero ── */}
       <section ref={heroRef}>
         {/* Hero image */}
-        <div className="w-full overflow-hidden relative">
+        <div className="w-full overflow-hidden relative dark:bg-[#04081e] bg-blue-50 flex items-center justify-center">
           {bgUrl && (
             <img src={bgUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
           )}
           <motion.img
             src="/hero-images/social-hero.png"
             alt="SmartzSocial — Connect. Share. Inspire More."
-            className="w-full object-cover object-center relative"
-            style={{ maxHeight: '620px', opacity: bgUrl ? 0.75 : undefined }}
+            className="w-full h-auto max-h-[620px] object-contain relative"
+            style={{ opacity: bgUrl ? 0.85 : undefined }}
             initial={{ opacity: 0, scale: 1.03 }}
-            animate={heroIn ? { opacity: bgUrl ? 0.75 : 1, scale: 1 } : {}}
+            animate={heroIn ? { opacity: bgUrl ? 0.85 : 1, scale: 1 } : {}}
             transition={{ duration: 0.7 }}
           />
         </div>

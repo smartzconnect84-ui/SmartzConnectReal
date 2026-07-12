@@ -26,7 +26,7 @@ const FALLBACK_PRODUCTS = {
     { label: 'SmartzTV',       href: '/smartztv',       icon: Tv,           color: 'text-purple-400',   bg: 'bg-purple-500/10',   desc: 'Live streams & creators'    },
   ],
   social: [
-    { label: 'SmartzSocial',   href: '/app/feed',       icon: Users,       color: 'text-violet-400',   bg: 'bg-violet-500/10',   desc: 'Your social feed'           },
+    { label: 'SmartzSocial',   href: '/smartzsocial',   icon: Users,       color: 'text-violet-400',   bg: 'bg-violet-500/10',   desc: 'Your social feed'           },
     { label: 'SmartzDating',   href: '/app/discover',   icon: Heart,       color: 'text-pink-400',     bg: 'bg-pink-500/10',     desc: 'Match & connect'            },
   ],
 }

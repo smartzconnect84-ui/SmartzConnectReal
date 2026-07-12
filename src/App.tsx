@@ -112,6 +112,8 @@ const AdminServices        = lazy(() => import('@/pages/admin/AdminServices'))
 const AdminTour            = lazy(() => import('@/pages/admin/AdminTour'))
 const AdminWorldStage      = lazy(() => import('@/pages/admin/AdminWorldStage'))
 const AdminEmail           = lazy(() => import('@/pages/admin/AdminEmail'))
+const AdminLearning        = lazy(() => import('@/pages/admin/AdminLearning'))
+const CoursePlayerPage     = lazy(() => import('@/pages/CoursePlayerPage'))
 
 // ── Suspense fallback: thin progress bar only — never blocks the whole screen.
 // The native-splash already handles first-paint. A full-screen overlay here
@@ -248,6 +250,7 @@ export default function App() {
                   <Route path="events"        element={<EventsPage />} />
                   <Route path="jobs"          element={<JobsPage />} />
                   <Route path="learning"      element={<LearningPage />} />
+                  <Route path="course/:courseId" element={<CoursePlayerPage />} />
                 </Route>
 
                 {/* Admin Panel — role-gated: only admin/superadmin/ceo/moderator/support */}
@@ -278,6 +281,7 @@ export default function App() {
                   <Route path="tour"          element={<AdminTour />} />
                   <Route path="worldstage"    element={<AdminWorldStage />} />
                   <Route path="email"         element={<AdminEmail />} />
+                  <Route path="learning"      element={<AdminLearning />} />
                 </Route>
 
                 <Route path="*" element={<Navigate to="/" replace />} />

@@ -141,6 +141,47 @@ const templates: Record<string, (data: Record<string, string>) => { subject: str
       </div>
     `,
   }),
+
+  invoice: (d) => ({
+    subject: `Invoice ${d.invoiceNumber || ''} from ${d.fromName || 'SmartzConnect'} — Total: ${d.total || ''}`,
+    html: `
+      <div style="font-family:sans-serif;max-width:680px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+        <div style="background:linear-gradient(135deg,#ec4899,#a855f7);padding:36px 40px;text-align:center">
+          <h1 style="margin:0;font-size:28px;font-weight:900;color:#fff;">INVOICE</h1>
+          <p style="margin:8px 0 0;color:rgba(255,255,255,0.85);font-size:14px;">${d.invoiceNumber || ''} · Issued ${d.issueDate || ''}${d.dueDate ? ' · Due ' + d.dueDate : ''}</p>
+        </div>
+        <div style="padding:36px 40px;">
+          <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
+            <tr>
+              <td style="vertical-align:top;padding-right:24px;">
+                <p style="font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:#a855f7;margin:0 0 6px;font-weight:700;">From</p>
+                <p style="margin:2px 0;font-size:15px;font-weight:700;color:#1f2937;">${d.fromName || '—'}</p>
+                <p style="margin:2px 0;font-size:13px;color:#6b7280;">${d.fromEmail || ''}</p>
+              </td>
+              <td style="vertical-align:top;">
+                <p style="font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:#a855f7;margin:0 0 6px;font-weight:700;">Bill To</p>
+                <p style="margin:2px 0;font-size:15px;font-weight:700;color:#1f2937;">${d.toName || '—'}</p>
+              </td>
+            </tr>
+          </table>
+          <div style="background:#f9fafb;border-radius:12px;padding:24px;margin-bottom:24px;">
+            <p style="font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:#9ca3af;margin:0 0 12px;font-weight:700;">Invoice Details</p>
+            <p style="margin:0;font-size:13px;color:#6b7280;line-height:1.7;">${(d.notes || '').replace(/\n/g,'<br/>')}</p>
+          </div>
+          <div style="display:flex;justify-content:flex-end;">
+            <div style="background:linear-gradient(135deg,rgba(236,72,153,0.08),rgba(168,85,247,0.08));border:2px solid rgba(168,85,247,0.2);border-radius:12px;padding:16px 24px;text-align:right;">
+              <p style="font-size:12px;color:#9ca3af;margin:0 0 4px;text-transform:uppercase;letter-spacing:0.06em;">Total Due</p>
+              <p style="font-size:28px;font-weight:900;margin:0;background:linear-gradient(135deg,#ec4899,#a855f7);-webkit-background-clip:text;background-clip:text;color:transparent;">${d.total || ''}</p>
+              <p style="font-size:12px;color:#9ca3af;margin:4px 0 0;">${d.currency || 'USD'}</p>
+            </div>
+          </div>
+        </div>
+        <div style="padding:20px 40px;border-top:1px solid #f3f4f6;text-align:center;background:#f9fafb;">
+          <p style="color:#9ca3af;font-size:12px;margin:0;">© ${new Date().getFullYear()} SmartzConnect. This is an automated invoice email.</p>
+        </div>
+      </div>
+    `,
+  }),
 }
 
 serve(async (req) => {

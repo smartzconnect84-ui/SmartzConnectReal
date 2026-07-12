@@ -1,12 +1,14 @@
-import { useMemo, useState } from 'react'
-import { motion } from 'framer-motion'
-import { Plus, Trash2, Download, FileText, Building2, User, Percent, DollarSign } from 'lucide-react'
+import { useMemo, useState, useEffect, useRef } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Plus, Trash2, Download, FileText, Building2, User, Percent, DollarSign, Send, Loader2, CheckCircle, AlertCircle, Search } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
 
 /**
  * General-purpose financial invoice generator — not tied to any SmartzConnect
  * payment/entity record. Company + client info, arbitrary line items, tax and
  * discount, multi-currency, downloadable as a print-ready HTML file (opens
  * as a PDF via the browser's "Print → Save as PDF").
+ * Now supports: Supabase email auto-detect + "Send Invoice by Email".
  */
 
 interface LineItem {
@@ -34,6 +36,12 @@ function newLineItem(): LineItem {
   return { id: Math.random().toString(36).slice(2), description: '', qty: 1, price: 0 }
 }
 
+interface UserEmailSuggestion {
+  id: string
+  full_name: string
+  email: string
+}
+
 export default function InvoiceGeneratorPage() {
   const [invoiceNumber, setInvoiceNumber] = useState(`INV-${Date.now().toString().slice(-6)}`)
   const [issueDate, setIssueDate] = useState(new Date().toISOString().split('T')[0])
@@ -53,6 +61,17 @@ export default function InvoiceGeneratorPage() {
   const [discountPercent, setDiscountPercent] = useState(0)
   const [notes, setNotes] = useState('Thank you for your business.')
 
+  // Email auto-detect state
+  const [emailSuggestions, setEmailSuggestions] = useState<UserEmailSuggestion[]>([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false)
+  const suggestionsRef = useRef<HTMLDivElement>(null)
+  const toEmailRef = useRef<HTMLInputElement>(null)
+
+  // Send by email state
+  const [sending, setSending] = useState(false)
+  const [sendResult, setSendResult] = useState<{ ok: boolean; msg: string } | null>(null)
+
   const symbol = CURRENCIES.find(c => c.code === currency)?.symbol || '$'
 
   const subtotal = useMemo(() => items.reduce((sum, i) => sum + i.qty * i.price, 0), [items])
@@ -67,7 +86,47 @@ export default function InvoiceGeneratorPage() {
   const removeItem = (id: string) => setItems(prev => (prev.length > 1 ? prev.filter(i => i.id !== id) : prev))
   const addItem = () => setItems(prev => [...prev, newLineItem()])
 
-  const handleDownload = () => {
+  // ── Email autocomplete ──────────────────────────────────────────────────────
+  useEffect(() => {
+    const q = toEmail.trim()
+    if (q.length < 2) { setEmailSuggestions([]); setShowSuggestions(false); return }
+    const timer = setTimeout(async () => {
+      setLoadingSuggestions(true)
+      try {
+        const { data } = await supabase
+          .from('profiles')
+          .select('id, full_name, email')
+          .or(`email.ilike.%${q}%,full_name.ilike.%${q}%`)
+          .not('email', 'is', null)
+          .limit(6)
+        setEmailSuggestions((data || []) as UserEmailSuggestion[])
+        setShowSuggestions((data || []).length > 0)
+      } catch { /* ignore */ }
+      setLoadingSuggestions(false)
+    }, 280)
+    return () => clearTimeout(timer)
+  }, [toEmail])
+
+  // Close suggestions on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (suggestionsRef.current && !suggestionsRef.current.contains(e.target as Node) &&
+          toEmailRef.current && !toEmailRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  const selectSuggestion = (s: UserEmailSuggestion) => {
+    setToEmail(s.email || '')
+    if (!toName.trim()) setToName(s.full_name || '')
+    setShowSuggestions(false)
+  }
+
+  // ── Build invoice HTML ──────────────────────────────────────────────────────
+  const buildInvoiceHtml = () => {
     const rowsHtml = items.map(i => `
       <tr>
         <td style="padding:10px 8px;border-bottom:1px solid #eee">${i.description || '—'}</td>
@@ -76,7 +135,7 @@ export default function InvoiceGeneratorPage() {
         <td style="padding:10px 8px;border-bottom:1px solid #eee;text-align:right">${fmt(i.qty * i.price)}</td>
       </tr>`).join('')
 
-    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>${invoiceNumber}</title>
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>${invoiceNumber}</title>
       <style>
         body { font-family: Arial, Helvetica, sans-serif; color: #1a1a1a; max-width: 720px; margin: 40px auto; padding: 0 20px; }
         h1 { font-size: 28px; margin: 0 0 4px; background: linear-gradient(135deg,#ec4899,#a855f7); -webkit-background-clip: text; background-clip: text; color: transparent; }
@@ -114,12 +173,57 @@ export default function InvoiceGeneratorPage() {
         </div>
         ${notes ? `<div class="notes">${notes.replace(/\n/g, '<br/>')}</div>` : ''}
       </body></html>`
+  }
 
+  const handleDownload = () => {
+    const html = buildInvoiceHtml()
     const blob = new Blob([html], { type: 'text/html' })
     const a = document.createElement('a')
     a.href = URL.createObjectURL(blob)
     a.download = `${invoiceNumber}.html`
     a.click()
+  }
+
+  // ── Send invoice by email ───────────────────────────────────────────────────
+  const handleSendEmail = async () => {
+    if (!toEmail.trim()) { setSendResult({ ok: false, msg: 'Enter the recipient email first.' }); return }
+    setSending(true)
+    setSendResult(null)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const invoiceHtml = buildInvoiceHtml()
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({
+          to: toEmail.trim(),
+          template: 'invoice',
+          data: {
+            invoiceNumber,
+            fromName: fromName || 'N/A',
+            fromEmail: fromEmail || '',
+            toName: toName || 'Valued Client',
+            issueDate,
+            dueDate,
+            total: fmt(total),
+            currency,
+            invoiceHtml,
+            notes,
+          },
+        }),
+      })
+      const result = await res.json()
+      if (!res.ok) throw new Error(result.error ? JSON.stringify(result.error) : 'Failed to send')
+      setSendResult({ ok: true, msg: `Invoice sent to ${toEmail}!` })
+    } catch (e: any) {
+      setSendResult({ ok: false, msg: e.message || 'Failed to send invoice.' })
+    }
+    setSending(false)
+    setTimeout(() => setSendResult(null), 5000)
   }
 
   return (
@@ -131,9 +235,20 @@ export default function InvoiceGeneratorPage() {
           </div>
           <div>
             <h1 className="font-display font-black text-2xl">Invoice Generator</h1>
-            <p className="text-sm text-white/40">Create and download a professional invoice for any business or client.</p>
+            <p className="text-sm text-white/40">Create and download or email a professional invoice.</p>
           </div>
         </div>
+
+        {/* Send result toast */}
+        <AnimatePresence>
+          {sendResult && (
+            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+              className={`mt-4 flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold ${sendResult.ok ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/20 text-red-400 border border-red-500/20'}`}>
+              {sendResult.ok ? <CheckCircle className="w-4 h-4 flex-shrink-0" /> : <AlertCircle className="w-4 h-4 flex-shrink-0" />}
+              {sendResult.msg}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <div className="mt-8 space-y-6">
           {/* Invoice meta */}
@@ -170,7 +285,46 @@ export default function InvoiceGeneratorPage() {
               <div className="flex items-center gap-2 text-brand-pink"><User className="w-4 h-4" /><span className="text-xs font-bold uppercase tracking-wide">Bill To (client)</span></div>
               <input className={inp} placeholder="Client name" value={toName} onChange={e => setToName(e.target.value)} />
               <textarea className={inp} rows={2} placeholder="Address" value={toAddress} onChange={e => setToAddress(e.target.value)} />
-              <input className={inp} placeholder="Email" value={toEmail} onChange={e => setToEmail(e.target.value)} />
+              {/* Email with autocomplete */}
+              <div className="relative">
+                <div className="relative">
+                  <input
+                    ref={toEmailRef}
+                    className={inp}
+                    placeholder="Client email (type to search users)"
+                    value={toEmail}
+                    onChange={e => setToEmail(e.target.value)}
+                    onFocus={() => { if (emailSuggestions.length > 0) setShowSuggestions(true) }}
+                    autoComplete="off"
+                  />
+                  {loadingSuggestions && (
+                    <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 animate-spin text-white/30" />
+                  )}
+                  {!loadingSuggestions && toEmail.length >= 2 && (
+                    <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/20" />
+                  )}
+                </div>
+                <AnimatePresence>
+                  {showSuggestions && emailSuggestions.length > 0 && (
+                    <motion.div ref={suggestionsRef} initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                      className="absolute z-50 top-full mt-1 left-0 right-0 bg-[#1a1427] border border-white/10 rounded-xl overflow-hidden shadow-2xl">
+                      {emailSuggestions.map(s => (
+                        <button key={s.id} onMouseDown={() => selectSuggestion(s)}
+                          className="w-full px-3 py-2.5 text-left hover:bg-white/5 transition-colors flex items-center gap-3 border-b border-white/5 last:border-0">
+                          <div className="w-7 h-7 rounded-full bg-love-gradient flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                            {(s.full_name || s.email || '?').charAt(0).toUpperCase()}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm text-white font-semibold truncate">{s.full_name || 'No name'}</p>
+                            <p className="text-xs text-white/40 truncate">{s.email}</p>
+                          </div>
+                        </button>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+              <p className="text-[11px] text-white/20">Start typing an email or name to auto-detect Supabase users</p>
             </div>
           </div>
 
@@ -227,11 +381,19 @@ export default function InvoiceGeneratorPage() {
             </div>
           </div>
 
-          <button onClick={handleDownload}
-            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-love-gradient text-white font-bold shadow-lg shadow-pink-500/20 hover:opacity-90 transition-opacity">
-            <Download className="w-4 h-4" /> Download Invoice
-          </button>
-          <p className="text-center text-[11px] text-white/30">Downloads as an HTML file — open it and use your browser's Print → Save as PDF for a PDF copy.</p>
+          {/* Action buttons */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <button onClick={handleDownload}
+              className="flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-white/10 border border-white/10 text-white font-bold hover:bg-white/15 transition-colors">
+              <Download className="w-4 h-4" /> Download Invoice
+            </button>
+            <button onClick={handleSendEmail} disabled={sending}
+              className="flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-love-gradient text-white font-bold shadow-lg shadow-pink-500/20 hover:opacity-90 transition-opacity disabled:opacity-60">
+              {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              {sending ? 'Sending…' : 'Send Invoice by Email'}
+            </button>
+          </div>
+          <p className="text-center text-[11px] text-white/30">Download opens as HTML — use your browser's Print → Save as PDF for a PDF copy. "Send by Email" delivers the invoice instantly via Supabase.</p>
         </div>
       </div>
     </div>

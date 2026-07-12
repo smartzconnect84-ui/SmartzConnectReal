@@ -77,7 +77,7 @@ function NewsletterSignup() {
 /* ── Hardcoded fallback product links ────────────────────────────────── */
 const FALLBACK_PRODUCTS: { label: string; href: string }[] = [
   { label: 'SmartzDating',    href: '/app/discover'   },
-  { label: 'SmartzSocial',    href: '/app/feed'       },
+  { label: 'SmartzSocial',    href: '/smartzsocial'   },
   { label: 'SmartzTV',        href: '/smartztv'       },
   { label: 'SmartzMarket',    href: '/smartzmarket'   },
   { label: 'SmartzRide',      href: '/smartzride'     },

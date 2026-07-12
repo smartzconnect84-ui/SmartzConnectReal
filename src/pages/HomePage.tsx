@@ -44,59 +44,51 @@ const cardItem: Variants = {
 const SERVICES = [
   {
     emoji: '❤️', icon: Heart, name: 'SmartzDating', route: '/smartzdating',
+    hero: '/hero-images/dating-hero.png',
     color: 'from-pink-500 to-rose-500',
     glow: 'shadow-pink-500/30',
-    features: ['Smart Matching', 'Swipe & Match', 'Verified Profiles', 'Messaging', 'Voice & Video Calls', 'AI Recommendations'],
-    desc: 'Find meaningful relationships with AI-powered matching, verified profiles, and safe communication tools.',
   },
   {
-    emoji: '🎓', icon: GraduationCap, name: 'SmartzLearning',
+    emoji: '🎓', icon: GraduationCap, name: 'SmartzLearning', route: '/smartzlearning',
+    hero: '/smartz-learning-hero.png',
     color: 'from-[#9B5DE5] to-[#EC4899]',
     glow: 'shadow-purple-600/30',
-    features: ['Online Courses', 'Skill Certifications', 'Live Classes', 'Career Training', 'Progress Tracking'],
-    desc: 'Learn in-demand skills and earn certifications with courses built for African learners and creators.',
   },
   {
     emoji: '👥', icon: Users, name: 'SmartzSocial', route: '/smartzsocial',
+    hero: '/hero-images/social-hero.png',
     color: 'from-blue-500 to-violet-600',
     glow: 'shadow-blue-500/30',
-    features: ['Posts', 'Stories', 'Reels', 'Groups', 'Pages', 'Live Streaming', 'Messaging'],
-    desc: "Share life's moments, go live, join communities, and stay close to the people who matter.",
   },
   {
     emoji: '🚗', icon: Car, name: 'SmartzRide', route: '/smartzride',
+    hero: '/hero-images/ride-hero.png',
     color: 'from-emerald-500 to-teal-500',
     glow: 'shadow-emerald-500/30',
-    features: ['Ride Booking', 'Driver Platform', 'Live Tracking', 'Scheduled Trips', 'Secure Payments'],
-    desc: 'Safe, affordable ride-hailing with verified drivers and real-time tracking across African cities.',
   },
   {
     emoji: '📦', icon: Package, name: 'SmartzDelivery', route: '/smartzdelivery',
+    hero: '/hero-images/delivery-hero.png',
     color: 'from-blue-500 to-indigo-600',
     glow: 'shadow-blue-500/30',
-    features: ['Food Delivery', 'Grocery Delivery', 'Parcel Delivery', 'Courier Services', 'Live Tracking'],
-    desc: 'Fast, reliable local delivery connecting vendors with customers across every neighbourhood.',
   },
   {
     emoji: '🛍', icon: ShoppingBag, name: 'SmartzMarket', route: '/smartzmarket',
+    hero: '/smartz-market-hero.png',
     color: 'from-amber-500 to-orange-500',
     glow: 'shadow-amber-500/30',
-    features: ['Buy & Sell', 'Business Stores', 'Digital Products', 'Secure Checkout'],
-    desc: "Africa's social marketplace — list products and reach millions of buyers.",
   },
   {
     emoji: '📢', icon: Megaphone, name: 'SmartzAds', route: '/smartzads',
+    hero: '/smartz-ads-hero.png',
     color: 'from-fuchsia-500 to-pink-600',
     glow: 'shadow-fuchsia-500/30',
-    features: ['Sponsored Ads', 'Campaign Management', 'Analytics', 'Audience Targeting'],
-    desc: 'Run powerful ad campaigns targeted to Africa\'s most engaged digital community.',
   },
   {
     emoji: '📺', icon: Tv, name: 'SmartzTV', route: '/smartztv',
+    hero: '/smartz-tv-hero.png',
     color: 'from-violet-600 to-purple-600',
     glow: 'shadow-violet-600/30',
-    features: ['Videos', 'Live Streaming', 'Creator Channels', 'Podcasts', 'Entertainment', 'Education'],
-    desc: 'Broadcast to millions, earn virtual gifts, and build your creator empire on SmartzTV.',
   },
 ]
 
@@ -158,20 +150,6 @@ function Heading({ children, className = '' }: { children: React.ReactNode; clas
     <h2 className={`font-display font-black sm:text-[2.6rem] lg:text-[3.45rem] text-white mb-4 text-[23px] text-center ${className}`}>
       {children}
     </h2>
-  )
-}
-
-/* ── mini phone mockup used on ecosystem cards ── */
-function PhoneMock({ icon: Icon, emoji, color }: { icon: React.ElementType; emoji: string; color: string }) {
-  return (
-    <div className="relative w-[68px] h-[132px] sm:w-[76px] sm:h-[148px] rounded-[16px] flex-shrink-0"
-      style={{ background: 'linear-gradient(160deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.03) 100%)', border: '1px solid rgba(255,255,255,0.16)', padding: '4px', boxShadow: '0 10px 30px rgba(0,0,0,0.35)' }}>
-      <div className={`relative w-full h-full rounded-[12px] overflow-hidden bg-gradient-to-br ${color} flex items-center justify-center`}>
-        <div className="absolute top-1.5 left-1/2 -translate-x-1/2 w-5 h-1 rounded-full bg-black/25" />
-        <span className="text-2xl sm:text-3xl select-none drop-shadow-sm">{emoji}</span>
-        <Icon className="w-3.5 h-3.5 text-white/70 absolute bottom-2 right-2" />
-      </div>
-    </div>
   )
 }
 
@@ -321,38 +299,28 @@ export default function HomePage() {
           </motion.div>
 
           <motion.div variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-60px' }}
-            className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-            {SERVICES.map((s) => {
-              const Icon = s.icon
-              const CardTag = s.route ? Link : 'div'
-              const cardProps = s.route ? { to: s.route } : {}
-              return (
-                <motion.div key={s.name} variants={cardItem}
-                  whileHover={{ y: -6, scale: 1.02 }}
-                  transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-                >
-                  <CardTag
-                    {...(cardProps as any)}
-                    className={`group p-5 sm:p-6 rounded-2xl relative overflow-hidden flex flex-col items-center text-center h-full ${s.route ? 'cursor-pointer' : 'cursor-default'}`}
-                    style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                    {/* Hover glow overlay */}
-                    <div className={`absolute inset-0 bg-gradient-to-br ${s.color} opacity-0 group-hover:opacity-[0.08] transition-opacity duration-500 rounded-2xl`} />
-                    {/* Top accent line */}
-                    <div className={`absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r ${s.color} opacity-0 group-hover:opacity-70 transition-opacity duration-300`} />
-
-                    <motion.div whileHover={{ y: -3 }} transition={{ type: 'spring', stiffness: 300 }} className="relative mb-4">
-                      <PhoneMock icon={Icon} emoji={s.emoji} color={s.color} />
-                    </motion.div>
-
-                    <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${s.color} flex items-center justify-center mb-3 shadow-lg ${s.glow} relative`}>
-                      <Icon className="w-4.5 h-4.5 text-white" />
-                    </div>
-                    <h3 className="font-display font-black text-sm sm:text-base text-white leading-tight mb-1.5 relative">{s.name}</h3>
-                    <p className="text-white/50 text-[13px] sm:text-sm leading-relaxed relative">{s.desc}</p>
-                  </CardTag>
-                </motion.div>
-              )
-            })}
+            className="grid sm:grid-cols-2 gap-4 sm:gap-5">
+            {SERVICES.map((s) => (
+              <motion.div key={s.name} variants={cardItem}
+                whileHover={{ y: -6, scale: 1.015 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+              >
+                <Link
+                  to={s.route}
+                  className="group block rounded-2xl relative overflow-hidden aspect-[16/10]"
+                  style={{ border: '1px solid rgba(255,255,255,0.08)' }}>
+                  <img
+                    src={s.hero}
+                    alt={s.name}
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                  {/* Hover glow overlay */}
+                  <div className={`absolute inset-0 bg-gradient-to-br ${s.color} opacity-0 group-hover:opacity-[0.12] transition-opacity duration-500`} />
+                  {/* Top accent line */}
+                  <div className={`absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r ${s.color} opacity-0 group-hover:opacity-80 transition-opacity duration-300`} />
+                </Link>
+              </motion.div>
+            ))}
           </motion.div>
         </div>
       </Sec>
