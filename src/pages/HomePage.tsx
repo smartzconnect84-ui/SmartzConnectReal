@@ -80,7 +80,7 @@ const SERVICES = [
     color: 'from-rose-600 to-[#EC4899]',
     glow: 'shadow-rose-600/30',
     features: ['Buy & Sell', 'Business Stores', 'Digital Products', 'Secure Checkout'],
-    desc: "Africa's social marketplace — list products, accept Mobile Money, and reach millions of buyers.",
+    desc: "Africa's social marketplace — list products and reach millions of buyers.",
   },
   {
     emoji: '📢', icon: Megaphone, name: 'SmartzAds',
@@ -124,7 +124,7 @@ const WHY_LIST = [
   'Grow your business with powerful advertising and marketplace tools.',
   'Stay in touch through secure messaging, voice calls, and video calls.',
   'Verified profiles and AI-powered matching built for authentic connections.',
-  'Built in Liberia for Africa and the world — Mobile Money payments accepted.',
+  'Built in Liberia for Africa and the world.',
 ]
 
 /* ── shared section shell ── */
@@ -201,7 +201,7 @@ export default function HomePage() {
                 One secure identity. Dating, social, entertainment, mobility, commerce, learning, and advertising — unified into a single African super app.
               </p>
               <div className="flex flex-wrap gap-2.5">
-                {['Built in Liberia', 'Mobile Money Ready', '195+ Countries'].map(t => (
+                {['Built in Liberia', 'One Free Account', '195+ Countries'].map(t => (
                   <span key={t} className="px-3.5 py-1.5 rounded-full text-xs font-bold text-white/70"
                     style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>{t}</span>
                 ))}
@@ -468,16 +468,36 @@ export default function HomePage() {
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-9">
                   <DownloadAppButton variant="yellow" />
                   <Link to="/register">
-                    <motion.span
-                      whileHover={{ scale: 1.05, y: -1 }}
-                      whileTap={{ scale: 0.96 }}
-                      transition={{ type: 'spring', stiffness: 420, damping: 18 }}
-                      className="inline-flex items-center gap-2 font-bold text-sm sm:text-[15px] rounded-xl px-5 sm:px-7 py-2.5 sm:py-3 text-white cursor-pointer"
-                      style={{ background: 'linear-gradient(135deg, #DC2626 0%, #EC4899 100%)', boxShadow: '0 6px 24px rgba(220,38,38,0.35)' }}
+                    <motion.div
+                      className="relative"
+                      animate={{ scale: [1, 1.03, 1] }}
+                      transition={{ duration: 2.6, repeat: Infinity, ease: 'easeInOut', delay: 0.4 }}
                     >
-                      <UserPlus className="w-4 h-4" />
-                      Create Account
-                    </motion.span>
+                      <motion.span
+                        className="absolute inset-0 rounded-xl pointer-events-none"
+                        animate={{ boxShadow: ['0 0 0 0px rgba(220,38,38,0.5)', '0 0 0 10px rgba(220,38,38,0)', '0 0 0 0px rgba(220,38,38,0)'] }}
+                        transition={{ duration: 2, repeat: Infinity, ease: 'easeOut', repeatDelay: 0.4 }}
+                      />
+                      <motion.span
+                        whileHover={{ scale: 1.1, y: -3 }}
+                        whileTap={{ scale: 0.9, y: 0 }}
+                        transition={{ type: 'spring', stiffness: 450, damping: 15 }}
+                        className="relative inline-flex items-center gap-2 font-bold text-sm sm:text-[15px] rounded-xl px-5 sm:px-7 py-2.5 sm:py-3 text-white cursor-pointer overflow-hidden"
+                        style={{ background: 'linear-gradient(135deg, #DC2626 0%, #EC4899 100%)', boxShadow: '0 6px 24px rgba(220,38,38,0.35)' }}
+                      >
+                        <motion.span
+                          className="absolute inset-0 pointer-events-none"
+                          style={{ background: 'linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.4) 50%, transparent 70%)' }}
+                          initial={{ x: '-120%' }}
+                          whileHover={{ x: '120%' }}
+                          transition={{ duration: 0.7, ease: 'easeInOut' }}
+                        />
+                        <motion.span className="relative flex" whileHover={{ rotate: [0, -12, 12, 0] }} transition={{ duration: 0.5 }}>
+                          <UserPlus className="w-4 h-4" />
+                        </motion.span>
+                        <span className="relative">Create Account</span>
+                      </motion.span>
+                    </motion.div>
                   </Link>
                 </div>
 

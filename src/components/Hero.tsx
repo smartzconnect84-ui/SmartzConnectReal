@@ -39,7 +39,7 @@ const slides: Slide[] = [
   { badge: 'SMARTZDATING',   badgeColor: 'from-[#DC2626] to-[#EC4899]',   headlineWhite: 'One match.',   headlinePurple: 'Every', headlineOrange: 'feeling.',  sub: 'AI-powered compatibility that connects you with someone truly special across Africa and beyond.',                    image: '/hero-date.jpg',        objectPosition: 'center 20%' },
   { badge: 'SMARTZTV',       badgeColor: 'from-[#EC4899] to-rose-700',    headlineWhite: 'Go live.',     headlinePurple: 'Get',   headlineOrange: 'paid.',     sub: 'Broadcast to millions, earn virtual gifts, and build your creator empire on SmartzTV.',                              image: '/hero-networking.jpg',  objectPosition: 'center 25%' },
   { badge: 'SMARTZRIDE',     badgeColor: 'from-rose-700 to-[#DC2626]',    headlineWhite: 'Book a ride.', headlinePurple: 'In',    headlineOrange: 'seconds.',  sub: 'Safe, affordable ride-hailing with verified drivers and real-time tracking across Africa.',                          image: '/hero-friends.jpg',     objectPosition: 'center 25%' },
-  { badge: 'SMARTZMARKET',   badgeColor: 'from-[#DC2626] to-[#EC4899]',   headlineWhite: 'Buy & sell.',  headlinePurple: 'Every', headlineOrange: 'thing.',    sub: "Africa's social marketplace — list products, accept Mobile Money, and reach millions of buyers.",                   image: '/hero-couple.jpg',      objectPosition: 'center 20%' },
+  { badge: 'SMARTZMARKET',   badgeColor: 'from-[#DC2626] to-[#EC4899]',   headlineWhite: 'Buy & sell.',  headlinePurple: 'Every', headlineOrange: 'thing.',    sub: "Africa's social marketplace — list products and reach millions of buyers.",                   image: '/hero-couple.jpg',      objectPosition: 'center 20%' },
   { badge: 'SMARTZDELIVERY', badgeColor: 'from-[#EC4899] to-[#DC2626]',   headlineWhite: 'Deliver fast.',headlinePurple: 'Earn',  headlineOrange: 'more.',     sub: 'Fast, reliable local delivery connecting vendors with customers across every neighbourhood.',                        image: '/hero-scroll.jpg',      objectPosition: 'center 35%' },
   { badge: 'SMARTZADS',      badgeColor: 'from-[#DC2626] to-[#EC4899]',   headlineWhite: 'Reach millions.',headlinePurple: 'In', headlineOrange: 'stantly.',  sub: "Run powerful ad campaigns targeted to Africa's most engaged digital community.",                                    image: '/hero-networking.jpg',  objectPosition: 'center 30%' },
   { badge: 'ONE PLATFORM',   badgeColor: 'from-[#D4AF37] to-[#EC4899]',   headlineWhite: 'Endless',      headlinePurple: 'Connections.', headlineOrange: 'Built for the World.', sub: 'One identity. Eight super-products. Built in Liberia — for Africa and the world.', image: '/hero-date.jpg', objectPosition: 'center 25%' },
@@ -170,23 +170,40 @@ export default function Hero() {
           >
             {/* Join Now */}
             <motion.div
-              whileHover={{ scale: 1.05, y: -1 }}
-              whileTap={{ scale: 0.96 }}
-              transition={{ type: 'spring', stiffness: 420, damping: 18 }}
+              animate={{ scale: [1, 1.03, 1] }}
+              transition={{ duration: 2.6, repeat: Infinity, ease: 'easeInOut' }}
+              whileHover={{ scale: 1.1, y: -3 }}
+              whileTap={{ scale: 0.9, y: 0 }}
               className="relative"
+              style={{ transition: 'none' }}
             >
               {/* Pulsing glow ring */}
               <motion.span
                 className="absolute inset-0 rounded-xl pointer-events-none"
-                animate={{ boxShadow: ['0 0 0 0px rgba(236,72,153,0.55)', '0 0 0 8px rgba(236,72,153,0)', '0 0 0 0px rgba(236,72,153,0)'] }}
-                transition={{ duration: 2.2, repeat: Infinity, ease: 'easeOut', repeatDelay: 0.6 }}
+                animate={{ boxShadow: ['0 0 0 0px rgba(236,72,153,0.55)', '0 0 0 10px rgba(236,72,153,0)', '0 0 0 0px rgba(236,72,153,0)'] }}
+                transition={{ duration: 2, repeat: Infinity, ease: 'easeOut', repeatDelay: 0.4 }}
               />
               <Link
                 to="/register"
-                className="relative inline-flex items-center gap-2 px-5 sm:px-7 py-2.5 sm:py-3 rounded-xl text-white font-bold text-sm sm:text-[15px] transition-all"
+                className="relative inline-flex items-center gap-2 px-5 sm:px-7 py-2.5 sm:py-3 rounded-xl text-white font-bold text-sm sm:text-[15px] transition-all overflow-hidden group"
                 style={{ background: 'linear-gradient(135deg, #EC4899 0%, #BE185D 100%)', boxShadow: '0 6px 24px rgba(236,72,153,0.42)' }}
               >
-                Join Now <ArrowRight className="w-3.5 h-3.5" />
+                {/* Shine sweep */}
+                <motion.span
+                  className="absolute inset-0 pointer-events-none"
+                  style={{ background: 'linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.45) 50%, transparent 70%)' }}
+                  initial={{ x: '-120%' }}
+                  whileHover={{ x: '120%' }}
+                  transition={{ duration: 0.7, ease: 'easeInOut' }}
+                />
+                <span className="relative">Join Now</span>
+                <motion.span
+                  className="relative flex"
+                  whileHover={{ x: 4 }}
+                  transition={{ type: 'spring', stiffness: 400 }}
+                >
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </motion.span>
               </Link>
             </motion.div>
 
