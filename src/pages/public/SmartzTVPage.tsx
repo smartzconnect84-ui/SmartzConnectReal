@@ -5,10 +5,9 @@ import {
   Tv, Play, Users, Gift, TrendingUp, Mic, Video, Crown, Zap,
   Signal, Clapperboard, Eye, RefreshCw, Loader2,
   Share2, CheckCircle,
-  Calendar, Clock, Antenna, AlertCircle,
+  Calendar, Clock, Antenna, AlertCircle, Radio, Wifi,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
-
 import { useSiteConfig, SITE_IMAGE_KEYS } from '@/contexts/SiteConfigContext'
 import SmartzTVPlayer from '@/components/SmartzTVPlayer'
 
@@ -38,7 +37,6 @@ interface TVScheduleEntry {
   category: string | null
 }
 
-
 interface TVVideo {
   id: string; title: string; video_url: string; thumbnail_url: string | null; view_count: number
 }
@@ -52,7 +50,7 @@ const features = [
   { icon: Crown,      title: 'Creator Monetisation',   desc: 'Subscriptions, tips, brand deals, and exclusive content — multiple income streams in one place.',     color: 'from-yellow-500 to-amber-600' },
 ]
 
-// ── Mux Player (modern click-to-play/pause live playback) ──────────────────────
+// ── Live stream player (active Mux stream) ─────────────────────────────────────
 
 function LiveStreamPlayer({ channel }: { channel: TVChannel }) {
   return (
@@ -67,7 +65,7 @@ function LiveStreamPlayer({ channel }: { channel: TVChannel }) {
   )
 }
 
-// ── Replay player (shown when nothing is live but a recent recording exists) ──
+// ── Replay player (recent recording) ──────────────────────────────────────────
 
 function ReplayPlayer({ video }: { video: TVVideo }) {
   return (
@@ -82,45 +80,157 @@ function ReplayPlayer({ video }: { video: TVVideo }) {
   )
 }
 
-// ── "Coming Soon" placeholder (shown when nothing is live or recorded) ─────────
+// ── Always-on offline player with countdown + scan animation ──────────────────
 
-function ComingSoonPlayer({ channel }: { channel: TVChannel | null }) {
+function OfflinePlayer({
+  channel, countdown, isChecking,
+}: {
+  channel: TVChannel | null
+  countdown: number
+  isChecking: boolean
+}) {
+  const bars = [3, 5, 8, 5, 7, 4, 9, 6, 4, 8, 3, 6, 9, 4, 7]
+
   return (
-    <div className="relative w-full aspect-video rounded-2xl overflow-hidden shadow-2xl shadow-black/40 border border-violet-500/20 bg-gradient-to-br from-[#0e0720] via-[#160830] to-[#1a0a35]">
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 rounded-full bg-violet-600/15 blur-3xl" />
-        {channel?.cover_url && (
-          <img src={channel.cover_url} alt="" className="absolute inset-0 w-full h-full object-cover opacity-10" />
+    <div className="relative w-full aspect-video rounded-2xl overflow-hidden shadow-2xl shadow-black/50 border border-violet-500/20 bg-gradient-to-br from-[#06030f] via-[#0e0720] to-[#130830] select-none">
+
+      {/* Animated scan-line grid */}
+      <div className="absolute inset-0 overflow-hidden opacity-20 pointer-events-none">
+        <div className="absolute inset-0"
+          style={{ backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 23px, rgba(139,92,246,0.15) 24px)', backgroundSize: '100% 24px' }} />
+        <motion.div className="absolute inset-0"
+          style={{ backgroundImage: 'repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(139,92,246,0.08) 40px)', backgroundSize: '40px 100%' }}
+          animate={{ backgroundPositionX: ['0px', '-40px'] }}
+          transition={{ duration: 3, repeat: Infinity, ease: 'linear' }} />
+      </div>
+
+      {/* Cover image tint */}
+      {channel?.cover_url && (
+        <img src={channel.cover_url} alt="" className="absolute inset-0 w-full h-full object-cover opacity-5" />
+      )}
+
+      {/* Ambient glow */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full bg-violet-700/15 blur-3xl" />
+      </div>
+
+      {/* Center signal display */}
+      <div className="relative h-full flex flex-col items-center justify-center text-center px-6 sm:px-10 gap-5">
+
+        {/* Animated signal tower */}
+        <div className="relative">
+          <motion.div
+            className="absolute inset-0 rounded-full bg-violet-500/20"
+            animate={{ scale: [1, 1.8, 1], opacity: [0.6, 0, 0.6] }}
+            transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+          />
+          <motion.div
+            className="absolute inset-0 rounded-full bg-violet-400/15"
+            animate={{ scale: [1, 2.5, 1], opacity: [0.4, 0, 0.4] }}
+            transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
+          />
+          <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-violet-600/80 to-purple-800/80 backdrop-blur-sm border border-violet-400/30 flex items-center justify-center shadow-xl shadow-violet-900/50">
+            <Antenna className="w-8 h-8 sm:w-9 sm:h-9 text-violet-200" />
+          </div>
+        </div>
+
+        {/* Signal level bars (decorative) */}
+        <div className="flex items-end gap-0.5 h-8">
+          {bars.map((h, i) => (
+            <motion.div key={i}
+              className="w-1 rounded-full bg-violet-500/40"
+              style={{ height: `${h * 3}px` }}
+              animate={{ opacity: [0.3, isChecking ? 1 : 0.5, 0.3], height: isChecking ? [`${h * 3}px`, `${Math.min(h * 4, 32)}px`, `${h * 3}px`] : `${h * 3}px` }}
+              transition={{ duration: 0.6, delay: i * 0.04, repeat: Infinity, ease: 'easeInOut' }}
+            />
+          ))}
+        </div>
+
+        <div className="space-y-2">
+          <h3 className="font-display font-black text-lg sm:text-xl text-white/90">
+            {channel ? channel.name : 'SmartzTV'}
+          </h3>
+          <p className="text-sm text-white/40 max-w-sm leading-relaxed">
+            {isChecking
+              ? 'Scanning for live signal…'
+              : `No broadcast in progress. ${channel ? `${channel.name} is` : 'SmartzTV is'} off-air.`}
+          </p>
+          {!isChecking && countdown > 0 && (
+            <p className="text-xs text-violet-400/70 flex items-center justify-center gap-1.5">
+              <Wifi className="w-3 h-3" />
+              Auto-connecting in <span className="font-black text-violet-300 tabular-nums w-4 inline-block">{countdown}</span>s
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Status badge */}
+      <div className="absolute top-3 left-3 pointer-events-none z-10">
+        {isChecking ? (
+          <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-violet-500/20 text-violet-300 text-[11px] font-bold backdrop-blur-sm border border-violet-500/25">
+            <Loader2 className="w-3 h-3 animate-spin" /> CONNECTING
+          </span>
+        ) : (
+          <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/40 text-white/50 text-[11px] font-bold backdrop-blur-sm border border-white/10">
+            <span className="w-1.5 h-1.5 rounded-full bg-gray-500" /> OFFLINE
+          </span>
         )}
       </div>
 
-      <div className="relative h-full flex flex-col items-center justify-center text-center px-6 sm:px-10">
-        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="relative mb-4">
-          <span className="absolute inset-0 rounded-full bg-violet-500/20 animate-ping" />
-          <div className="relative w-14 h-14 sm:w-18 sm:h-18 rounded-full bg-gradient-to-br from-violet-600 to-purple-700 flex items-center justify-center shadow-xl shadow-violet-900/50">
-            <Antenna className="w-7 h-7 sm:w-8 sm:h-8 text-white/80" />
+      {/* Bottom schedule hint */}
+      {channel?.current_program && (
+        <div className="absolute bottom-3 left-3 right-3 pointer-events-none z-10">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-black/50 backdrop-blur-sm border border-white/8 w-fit mx-auto">
+            <Radio className="w-3 h-3 text-violet-400" />
+            <span className="text-[11px] text-white/60">{channel.current_program}</span>
           </div>
-        </motion.div>
-        <h3 className="font-display font-black text-lg sm:text-2xl text-white mb-1.5">Live stream coming soon</h3>
-        <p className="text-sm text-white/50 max-w-sm">
-          {channel ? `${channel.name} isn't broadcasting right now.` : "SmartzTV isn't broadcasting right now."}
-          {' '}We'll switch to the live player automatically the moment a stream starts.
-        </p>
-      </div>
+        </div>
+      )}
+    </div>
+  )
+}
 
-      {/* Muted/offline badge to match the live badge position */}
-      <div className="absolute top-3 left-3 pointer-events-none">
-        <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 text-white/70 text-[11px] font-bold backdrop-blur-sm border border-white/10">
-          <span className="w-1.5 h-1.5 rounded-full bg-gray-400" /> OFFLINE
+// ── Disconnected / reconnecting player ────────────────────────────────────────
+
+function ReconnectingPlayer({ channel }: { channel: TVChannel | null }) {
+  return (
+    <div className="relative w-full aspect-video rounded-2xl overflow-hidden shadow-2xl shadow-black/50 border border-amber-500/20 bg-gradient-to-br from-[#0e0a00] via-[#1a1000] to-[#0f0800]">
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 rounded-full bg-amber-700/10 blur-3xl" />
+      </div>
+      {/* Static noise animation */}
+      <motion.div className="absolute inset-0 opacity-5"
+        animate={{ opacity: [0.03, 0.08, 0.03] }}
+        transition={{ duration: 0.12, repeat: Infinity }}
+        style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\'/%3E%3C/svg%3E")', backgroundSize: 'cover' }} />
+      <div className="relative h-full flex flex-col items-center justify-center text-center px-6 gap-4">
+        <motion.div
+          animate={{ opacity: [1, 0.4, 1] }}
+          transition={{ duration: 0.8, repeat: Infinity }}
+          className="w-16 h-16 rounded-full bg-amber-500/20 border border-amber-500/40 flex items-center justify-center">
+          <Signal className="w-8 h-8 text-amber-400" />
+        </motion.div>
+        <div>
+          <h3 className="font-display font-black text-white/90 text-lg">Signal Lost</h3>
+          <p className="text-sm text-white/40 mt-1">
+            {channel?.name ?? 'The stream'} disconnected. Waiting to reconnect…
+          </p>
+        </div>
+      </div>
+      <div className="absolute top-3 left-3">
+        <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-400 text-[11px] font-bold backdrop-blur-sm border border-amber-500/30">
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" /> DISCONNECTED
         </span>
       </div>
     </div>
   )
 }
 
-// ── Now Playing card ─────────────────────────────────────────────────────────────
+// ── Now Playing card ───────────────────────────────────────────────────────────
 
-function NowPlayingCard({ channel, isLive, nextSchedule }: { channel: TVChannel | null; isLive: boolean; nextSchedule: TVScheduleEntry | null }) {
+function NowPlayingCard({ channel, isLive, nextSchedule }: {
+  channel: TVChannel | null; isLive: boolean; nextSchedule: TVScheduleEntry | null
+}) {
   const [shareToast, setShareToast] = useState(false)
 
   const handleShare = () => {
@@ -163,7 +273,11 @@ function NowPlayingCard({ channel, isLive, nextSchedule }: { channel: TVChannel 
               <p className="font-bold text-sm sm:text-base dark:text-white text-gray-900 truncate">
                 {channel ? channel.name : 'SmartzTV'}
               </p>
-              <span className={`px-2 py-0.5 rounded-full text-[10px] font-black flex-shrink-0 ${isLive ? 'bg-red-500/15 text-red-500 border border-red-500/25' : 'dark:bg-white/10 bg-gray-100 dark:text-gray-400 text-gray-500'}`}>
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-black flex-shrink-0 ${
+                isLive
+                  ? 'bg-red-500/15 text-red-500 border border-red-500/25'
+                  : 'dark:bg-white/10 bg-gray-100 dark:text-gray-400 text-gray-500'
+              }`}>
                 {isLive ? 'NOW PLAYING' : 'OFF AIR'}
               </span>
             </div>
@@ -191,7 +305,7 @@ function NowPlayingCard({ channel, isLive, nextSchedule }: { channel: TVChannel 
   )
 }
 
-// ── Program Schedule section ─────────────────────────────────────────────────────
+// ── Program Schedule ───────────────────────────────────────────────────────────
 
 function ProgramScheduleSection({ schedule }: { schedule: TVScheduleEntry[] }) {
   const fmt = (iso: string) => {
@@ -210,7 +324,6 @@ function ProgramScheduleSection({ schedule }: { schedule: TVScheduleEntry[] }) {
         <div className="flex flex-col items-center justify-center gap-2 py-10 px-6 text-center">
           <Clock className="w-6 h-6 dark:text-gray-600 text-gray-300" />
           <p className="text-sm dark:text-gray-500 text-gray-400">No scheduled programs yet</p>
-          <p className="text-xs dark:text-gray-600 text-gray-400">Check back soon for upcoming broadcasts.</p>
         </div>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 p-4 sm:p-5">
@@ -234,20 +347,32 @@ function ProgramScheduleSection({ schedule }: { schedule: TVScheduleEntry[] }) {
   )
 }
 
-// ── Watch SmartzTV Live section ──────────────────────────────────────────────────
+// ── Live TV Hub — always-on realtime player ────────────────────────────────────
 
-function MuxTVSection() {
-  const [channels, setChannels] = useState<TVChannel[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(false)
-  const [selected, setSelected] = useState<TVChannel | null>(null)
-  const [nextSchedule, setNextSchedule] = useState<TVScheduleEntry | null>(null)
-  const [schedule, setSchedule] = useState<TVScheduleEntry[]>([])
-  const [replay, setReplay] = useState<TVVideo | null>(null)
+const POLL_INTERVAL   = 20   // seconds between auto-checks when offline
+const RECONNECT_FAST  = 5    // seconds between checks when disconnected
 
-  const load = useCallback(async (sig: { cancelled: boolean }, silent = false) => {
+function LiveTVHub() {
+  const [channels, setChannels]           = useState<TVChannel[]>([])
+  const [loading, setLoading]             = useState(true)
+  const [error, setError]                 = useState(false)
+  const [selected, setSelected]           = useState<TVChannel | null>(null)
+  const [nextSchedule, setNextSchedule]   = useState<TVScheduleEntry | null>(null)
+  const [schedule, setSchedule]           = useState<TVScheduleEntry[]>([])
+  const [replay, setReplay]               = useState<TVVideo | null>(null)
+  const [countdown, setCountdown]         = useState(POLL_INTERVAL)
+  const [isChecking, setIsChecking]       = useState(false)
+
+  const countdownRef  = useRef<ReturnType<typeof setInterval> | null>(null)
+  const pollRef       = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // ── Fetch channels ──────────────────────────────────────────────────────────
+  const load = useCallback(async (opts: { silent?: boolean; isCheck?: boolean } = {}) => {
+    const { silent = false, isCheck = false } = opts
     if (!silent) setLoading(true)
+    if (isCheck) setIsChecking(true)
     setError(false)
+
     try {
       const { data, error: err } = await supabase
         .from('tv_channels')
@@ -257,41 +382,82 @@ function MuxTVSection() {
         .order('display_order', { ascending: true })
         .limit(12)
 
-      if (sig.cancelled) return
       if (err) throw err
-
       const list = (data as TVChannel[]) || []
       setChannels(list)
       setSelected(prev => {
-        const live = list.find(c => c.stream_status === 'active')
-        const stillThere = prev ? list.find(c => c.id === prev.id) : null
-        return live || stillThere || list.find(c => c.is_featured) || list[0] || null
+        const live     = list.find(c => c.stream_status === 'active')
+        const stillOld = prev ? list.find(c => c.id === prev.id) : null
+        return live || stillOld || list.find(c => c.is_featured) || list[0] || null
       })
     } catch {
-      if (!sig.cancelled) { setError(true); setChannels([]); setSelected(null) }
+      setError(true)
+    } finally {
+      if (!silent) setLoading(false)
+      if (isCheck) setIsChecking(false)
     }
-    if (!sig.cancelled) setLoading(false)
   }, [])
 
-  // Initial load + realtime updates (any insert/update/delete flips the on-air state
-  // instantly) + a periodic refresh as a safety net if a realtime event is missed.
-  useEffect(() => {
-    const sig = { cancelled: false }
-    void load(sig)
+  // ── Countdown + auto-poll when offline ─────────────────────────────────────
+  const startCountdown = useCallback((seconds: number) => {
+    if (countdownRef.current) clearInterval(countdownRef.current)
+    if (pollRef.current) clearTimeout(pollRef.current)
 
-    const sub = supabase.channel('public-tv-channels')
+    setCountdown(seconds)
+    countdownRef.current = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          if (countdownRef.current) clearInterval(countdownRef.current)
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+
+    pollRef.current = setTimeout(() => {
+      void load({ silent: true, isCheck: true }).then(() => {
+        setSelected(prev => {
+          // Will restart countdown from the effect below
+          return prev
+        })
+      })
+    }, seconds * 1000)
+  }, [load])
+
+  // ── Realtime subscription ───────────────────────────────────────────────────
+  useEffect(() => {
+    void load()
+
+    const sub = supabase.channel('public-tv-hub')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tv_channels' }, () => {
-        const innerSig = { cancelled: false }
-        void load(innerSig, true)
+        void load({ silent: true, isCheck: true })
       })
       .subscribe()
 
-    const interval = setInterval(() => { void load({ cancelled: false }, true) }, 20000)
-
-    return () => { sig.cancelled = true; clearInterval(interval); supabase.removeChannel(sub) }
+    return () => {
+      supabase.removeChannel(sub)
+      if (countdownRef.current) clearInterval(countdownRef.current)
+      if (pollRef.current) clearTimeout(pollRef.current)
+    }
   }, [load])
 
-  // Program schedule for the currently viewed channel
+  // ── When not live, start countdown poll cycle ───────────────────────────────
+  const isLive = !!selected && selected.stream_status === 'active' && !!selected.mux_playback_id
+  const isDisconnected = selected?.stream_status === 'disconnected'
+
+  useEffect(() => {
+    if (isLive) {
+      // Stop any pending countdown when we go live
+      if (countdownRef.current) clearInterval(countdownRef.current)
+      if (pollRef.current) clearTimeout(pollRef.current)
+      return
+    }
+    // Reconnect more aggressively when disconnected
+    const interval = isDisconnected ? RECONNECT_FAST : POLL_INTERVAL
+    startCountdown(interval)
+  }, [isLive, isDisconnected, startCountdown])
+
+  // ── Schedule for selected channel ──────────────────────────────────────────
   useEffect(() => {
     if (!selected) { setSchedule([]); setNextSchedule(null); return }
     let cancelled = false
@@ -307,10 +473,7 @@ function MuxTVSection() {
     return () => { cancelled = true }
   }, [selected?.id])
 
-  const isLive = !!selected && selected.stream_status === 'active' && !!selected.mux_playback_id
-
-  // Nothing live right now → fall back to the most recent recorded broadcast
-  // so visitors can still watch SmartzTV content ("Live … and after").
+  // ── Recent replay when offline ──────────────────────────────────────────────
   useEffect(() => {
     if (isLive) { setReplay(null); return }
     let cancelled = false
@@ -323,62 +486,39 @@ function MuxTVSection() {
     return () => { cancelled = true }
   }, [isLive])
 
-  if (loading) {
-    return (
-      <section className="py-10 sm:py-14 dark:bg-[#06030f] bg-violet-950/5">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
-            <h2 className="font-display font-black text-xl sm:text-2xl dark:text-white text-gray-900">Watch SmartzTV Live</h2>
-          </div>
-          <div className="aspect-video dark:bg-white/5 bg-gray-100 rounded-2xl animate-pulse" />
-          <div className="h-20 mt-4 dark:bg-white/5 bg-gray-100 rounded-2xl animate-pulse" />
-          <div className="h-32 mt-4 dark:bg-white/5 bg-gray-100 rounded-2xl animate-pulse" />
-        </div>
-      </section>
-    )
-  }
-
-  if (error) {
-    return (
-      <section className="py-10 sm:py-14 dark:bg-[#06030f] bg-violet-950/5">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3 mb-6">
-            <Tv className="w-5 h-5 text-violet-400" />
-            <h2 className="font-display font-black text-xl sm:text-2xl dark:text-white text-gray-900">Watch SmartzTV Live</h2>
-          </div>
-          <div className="flex flex-col items-center justify-center gap-3 aspect-video rounded-2xl dark:bg-white/5 bg-gray-100 text-center px-6">
-            <AlertCircle className="w-8 h-8 text-amber-500/70" />
-            <p className="text-sm font-semibold dark:text-white text-gray-800">Couldn't load SmartzTV Live</p>
-            <p className="text-xs dark:text-gray-400 text-gray-500">Check your connection and try again.</p>
-            <button onClick={() => { const sig = { cancelled: false }; void load(sig) }}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-violet-600 text-white text-xs font-bold hover:bg-violet-700 transition-colors">
-              <RefreshCw className="w-3.5 h-3.5" /> Retry
-            </button>
-          </div>
-        </div>
-      </section>
-    )
-  }
-
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <section className="py-10 sm:py-14 dark:bg-[#06030f] bg-violet-950/5">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+
         {/* Header */}
         <div className="flex items-center justify-between mb-5 flex-wrap gap-2">
           <div className="flex items-center gap-3">
-            <span className={`w-2.5 h-2.5 rounded-full ${isLive ? 'bg-red-500 animate-pulse' : 'dark:bg-gray-600 bg-gray-300'}`} />
-            <h2 className="font-display font-black text-xl sm:text-2xl dark:text-white text-gray-900">📺 Watch SmartzTV Live</h2>
+            <motion.span
+              className={`w-2.5 h-2.5 rounded-full ${isLive ? 'bg-red-500' : isDisconnected ? 'bg-amber-500' : 'dark:bg-gray-600 bg-gray-300'}`}
+              animate={isLive || isDisconnected ? { scale: [1, 1.3, 1], opacity: [1, 0.6, 1] } : {}}
+              transition={{ duration: 1.4, repeat: Infinity }}
+            />
+            <h2 className="font-display font-black text-xl sm:text-2xl dark:text-white text-gray-900">
+              📺 {isLive ? 'SmartzTV — Live Now' : 'Watch SmartzTV Live'}
+            </h2>
           </div>
-          <button onClick={() => { const sig = { cancelled: false }; void load(sig) }}
-            className="p-2 rounded-xl dark:bg-white/5 bg-gray-100 hover:text-violet-500 transition-colors">
-            <RefreshCw className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            {!isLive && !loading && (
+              <span className="text-xs dark:text-gray-500 text-gray-400 tabular-nums">
+                {isChecking ? 'Checking signal…' : `Refresh in ${countdown}s`}
+              </span>
+            )}
+            <button onClick={() => void load({ isCheck: true })} disabled={isChecking}
+              className="p-2 rounded-xl dark:bg-white/5 bg-gray-100 hover:text-violet-500 transition-colors disabled:opacity-50">
+              <RefreshCw className={`w-4 h-4 ${isChecking ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
         </div>
 
-        {/* Channel switcher (only shown when multiple official channels exist) */}
+        {/* Channel switcher */}
         {channels.length > 1 && (
-          <div className="flex items-center gap-2 overflow-x-auto pb-3 -mx-1 px-1 scrollbar-none">
+          <div className="flex items-center gap-2 overflow-x-auto pb-3 -mx-1 px-1 scrollbar-none mb-2">
             {channels.map(ch => (
               <button key={ch.id} onClick={() => setSelected(ch)}
                 className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
@@ -386,19 +526,58 @@ function MuxTVSection() {
                     ? 'bg-violet-600 text-white border-violet-600'
                     : 'dark:bg-white/5 bg-white dark:text-gray-300 text-gray-600 dark:border-white/10 border-gray-200 hover:border-violet-400'
                 }`}>
-                {ch.stream_status === 'active' && <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />}
+                {ch.stream_status === 'active' && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                )}
                 {ch.name}
               </button>
             ))}
           </div>
         )}
 
-        {/* Player — full content width, responsive 16:9 */}
-        {isLive && selected
-          ? <LiveStreamPlayer channel={selected} />
-          : replay
-            ? <ReplayPlayer video={replay} />
-            : <ComingSoonPlayer channel={selected} />}
+        {/* ── Always-visible player canvas ── */}
+        <AnimatePresence mode="wait">
+          {loading ? (
+            <motion.div key="loading"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="relative w-full aspect-video rounded-2xl overflow-hidden dark:bg-[#0a0520] bg-gray-900 border border-violet-500/15 flex flex-col items-center justify-center gap-4">
+              <Loader2 className="w-8 h-8 text-violet-400 animate-spin" />
+              <p className="text-sm text-white/40 font-semibold">Connecting to SmartzTV…</p>
+            </motion.div>
+          ) : error ? (
+            <motion.div key="error"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="relative w-full aspect-video rounded-2xl overflow-hidden dark:bg-[#0a0520] bg-gray-900 border border-red-500/20 flex flex-col items-center justify-center gap-4 text-center px-6">
+              <AlertCircle className="w-8 h-8 text-amber-500/70" />
+              <p className="text-sm font-semibold dark:text-white text-white">Couldn't reach SmartzTV</p>
+              <button onClick={() => void load({ isCheck: true })}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-violet-600 text-white text-xs font-bold hover:bg-violet-700 transition-colors">
+                <RefreshCw className="w-3.5 h-3.5" /> Retry
+              </button>
+            </motion.div>
+          ) : isLive && selected ? (
+            <motion.div key={`live-${selected.id}`}
+              initial={{ opacity: 0, scale: 0.99 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
+              transition={{ duration: 0.35 }}>
+              <LiveStreamPlayer channel={selected} />
+            </motion.div>
+          ) : selected?.stream_status === 'disconnected' ? (
+            <motion.div key="disconnected"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <ReconnectingPlayer channel={selected} />
+            </motion.div>
+          ) : replay ? (
+            <motion.div key={`replay-${replay.id}`}
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <ReplayPlayer video={replay} />
+            </motion.div>
+          ) : (
+            <motion.div key="offline"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <OfflinePlayer channel={selected} countdown={countdown} isChecking={isChecking} />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Now Playing */}
         <NowPlayingCard channel={selected} isLive={isLive} nextSchedule={nextSchedule} />
@@ -424,10 +603,9 @@ function MuxTVSection() {
   )
 }
 
-// NOTE: Community LiveKit streams (AdminLiveTVSection) removed intentionally.
-// The public SmartzTV page shows only the Mux-powered channel player.
+// NOTE: Community LiveKit streams removed intentionally.
 
-// ── Main Page ─────────────────────────────────────────────────────────────────
+// ── Main Page ──────────────────────────────────────────────────────────────────
 
 export default function SmartzTVPage() {
   const ref = useRef(null)
@@ -462,9 +640,8 @@ export default function SmartzTVPage() {
         </div>
       </section>
 
-      {/* ── Mux TV Channels (primary) ── */}
-      <MuxTVSection />
-
+      {/* ── Always-on Live TV Hub ── */}
+      <LiveTVHub />
 
       {/* ── Features ── */}
       <section ref={ref} className="py-16 sm:py-24">

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import ImageUploader from '@/components/admin/ImageUploader'
 import AdminPersonalStudio from '@/components/admin/AdminPersonalStudio'
 import SmartzTVPlayer from '@/components/SmartzTVPlayer'
+import StudioBroadcastModal from '@/components/admin/StudioBroadcastModal'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Tv, Eye, CheckCircle, XCircle, Play, Users, Search, Loader2,
@@ -37,6 +38,8 @@ interface TVChannel {
   mux_playback_id: string | null
   stream_key: string | null
   rtmp_url: string | null
+  srt_url: string | null
+  whip_url: string | null
   playback_url: string | null
   stream_status: 'idle' | 'active' | 'disconnected'
   is_active: boolean
@@ -44,6 +47,10 @@ interface TVChannel {
   display_order: number
   current_program: string | null
   viewer_count: number
+  latency_mode: string | null
+  reconnect_window: number | null
+  health_data: Record<string, unknown> | null
+  last_broadcast_at: string | null
   created_at: string
 }
 
@@ -1188,10 +1195,10 @@ function ChannelsTab() {
           <CreateEditChannelModal channel={editChannel} onClose={() => setEditChannel(null)} onSave={ch => { handleChannelSaved(ch); setEditChannel(null) }} />
         )}
         {broadcastChannel && (
-          <BroadcastSetupModal
-            channel={broadcastChannel}
+          <StudioBroadcastModal
+            channel={broadcastChannel as any}
             onClose={() => setBroadcastChannel(null)}
-            onChannelUpdated={ch => { handleChannelSaved(ch); setBroadcastChannel(ch) }}
+            onChannelUpdated={ch => { handleChannelSaved(ch as TVChannel); setBroadcastChannel(ch as TVChannel) }}
           />
         )}
         {scheduleChannel && (
