@@ -76,8 +76,8 @@ export default function SmartzDatingPage() {
             <img src={bgUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
           )}
           <motion.img
-            src="/hero-date.jpg"
-            alt="SmartzDating — Find Your Match"
+            src="/hero-images/dating-hero.png"
+            alt="SmartzDating — Find Love. Build Forever."
             className="w-full object-cover object-center relative"
             style={{ maxHeight: '620px', opacity: bgUrl ? 0.75 : undefined }}
             initial={{ opacity: 0, scale: 1.03 }}

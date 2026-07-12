@@ -75,8 +75,8 @@ export default function SmartzSocialPage() {
             <img src={bgUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
           )}
           <motion.img
-            src="/smartz-social-hero.png"
-            alt="SmartzSocial — Connect. Engage. Grow Together."
+            src="/hero-images/social-hero.png"
+            alt="SmartzSocial — Connect. Share. Inspire More."
             className="w-full object-cover object-center relative"
             style={{ maxHeight: '620px', opacity: bgUrl ? 0.75 : undefined }}
             initial={{ opacity: 0, scale: 1.03 }}
