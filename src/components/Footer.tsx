@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Heart, Shield, Zap, Globe, MessageCircle, ExternalLink } from 'lucide-react'
-import AnimatedStat from '@/components/AnimatedStat'
 import { useSiteConfig, SITE_IMAGE_KEYS } from '@/contexts/SiteConfigContext'
 import { openTawkChat } from '@/lib/tawk'
 import { useServices } from '@/hooks/useServices'
@@ -37,13 +36,6 @@ const SUPPORT_LINKS: NavLink[] = [
   { label: 'Privacy Policy',  href: '/privacy'        },
   { label: 'Terms of Service',href: '/terms'          },
   { label: 'Cookie Policy',   href: '/cookie-policy'  },
-]
-
-const stats = [
-  { value: '15K+', label: 'Active Users', delay: 0   },
-  { value: '195+', label: 'Countries',    delay: 100 },
-  { value: '8K+',  label: 'Connected',    delay: 200 },
-  { value: '1K+',  label: 'Matches',      delay: 300 },
 ]
 
 /* ── AnimateIn wrapper ───────────────────────────────────────────────── */
@@ -97,26 +89,6 @@ export default function Footer() {
 
       {/* Top gradient border */}
       <div className="h-px bg-gradient-to-r from-transparent via-pink-500/35 to-transparent" />
-
-      {/* ── Stats row ─────────────────────────────────────────────── */}
-      <div style={{ background: 'rgba(255,255,255,0.025)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-        <div className="max-w-5xl mx-auto px-6">
-          <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-white/5">
-            {stats.map(s => (
-              <AnimatedStat
-                key={s.label}
-                value={s.value}
-                label={s.label}
-                delay={s.delay}
-                duration={1800}
-                className="py-5 px-4 text-center"
-                valueClass="font-display font-black text-xl sm:text-2xl bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent tabular-nums"
-                labelClass="text-[11px] text-white/35 mt-0.5 font-medium"
-              />
-            ))}
-          </div>
-        </div>
-      </div>
 
       {/* ── Main links ────────────────────────────────────────────── */}
       <div className="max-w-5xl mx-auto px-6 py-12 sm:py-14">
