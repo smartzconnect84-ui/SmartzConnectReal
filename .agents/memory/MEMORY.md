@@ -49,3 +49,4 @@
 - [DB password secret pitfalls](db-password-secret-format.md) — users often paste the full connection string instead of just the password; secrets can also show as "set" yet resolve empty in shell/workflow — verify length/shape before trusting.
 - [Service control & public stats architecture](service-control-system.md) — AdminServices gates nav/footer only via useServices(); public marketing pages use usePublicStats() singleton; never put secrets in services table.
 - [Community features — Pages/Events/Jobs/Learning](community-features-pages-events-jobs-learning.md) — replaced ComingSoon stubs with real DB-backed list+create features mirroring MarketplacePage's pattern.
+- [Edge function deployment](edge-function-deployment.md) — use global supabase CLI v2.109.1 (not npx@1.x); deploy all 16 functions with --use-api -j 4 in one command.
