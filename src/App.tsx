@@ -1,18 +1,5 @@
 import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { Clock } from 'lucide-react'
-
-function ComingSoon({ title }: { title: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 text-center">
-      <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center mb-5 shadow-lg">
-        <Clock className="w-8 h-8 text-white" />
-      </div>
-      <h2 className="text-2xl font-bold dark:text-white text-gray-900 mb-2">{title}</h2>
-      <p className="text-gray-500 dark:text-gray-400 max-w-sm">This feature is coming soon. Stay tuned for updates!</p>
-    </div>
-  )
-}
 
 // ── Core providers & layouts (always needed immediately — static imports) ──
 import { ThemeProvider }         from '@/contexts/ThemeContext'
@@ -85,6 +72,10 @@ const SpinChatPage         = lazy(() => import('@/pages/SpinChatPage'))
 const FeedPage             = lazy(() => import('@/pages/FeedPage'))
 const NotificationsPage    = lazy(() => import('@/pages/NotificationsPage'))
 const MarketplacePage      = lazy(() => import('@/pages/MarketplacePage'))
+const CommunityPagesPage   = lazy(() => import('@/pages/CommunityPagesPage'))
+const EventsPage           = lazy(() => import('@/pages/EventsPage'))
+const JobsPage              = lazy(() => import('@/pages/JobsPage'))
+const LearningPage          = lazy(() => import('@/pages/LearningPage'))
 const SmartzTVPage         = lazy(() => import('@/pages/SmartzTVPage'))
 const RidePage             = lazy(() => import('@/pages/RidePage'))
 const SubscriptionsPage    = lazy(() => import('@/pages/SubscriptionsPage'))
@@ -247,10 +238,10 @@ export default function App() {
                   <Route path="referrals"     element={<ReferralsPage />} />
                   <Route path="worldstage"    element={<WorldStageVotePage />} />
                   <Route path="help"          element={<Navigate to="/help" replace />} />
-                  <Route path="pages"         element={<ComingSoon title="Pages" />} />
-                  <Route path="events"        element={<ComingSoon title="Events" />} />
-                  <Route path="jobs"          element={<ComingSoon title="Jobs" />} />
-                  <Route path="learning"      element={<ComingSoon title="Learning" />} />
+                  <Route path="pages"         element={<CommunityPagesPage />} />
+                  <Route path="events"        element={<EventsPage />} />
+                  <Route path="jobs"          element={<JobsPage />} />
+                  <Route path="learning"      element={<LearningPage />} />
                 </Route>
 
                 {/* Admin Panel — role-gated: only admin/superadmin/ceo/moderator/support */}

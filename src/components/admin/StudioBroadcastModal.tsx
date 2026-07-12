@@ -910,7 +910,7 @@ export default function StudioBroadcastModal({
                         { label: 'Latency Mode',      value: (healthData?.latency_mode as string) || latencyMode || 'low' },
                         { label: 'Reconnect Window',  value: `${(healthData?.reconnect_window as number) || 60}s` },
                         { label: 'Max Duration',      value: `${Math.floor(((healthData?.max_continuous_duration as number) || 43200) / 3600)}h` },
-                        { label: 'Last Checked',      value: (healthData?.checked_at as string) ? new Date(healthData.checked_at as string).toLocaleTimeString() : '—' },
+                        { label: 'Last Checked',      value: (healthData?.checked_at as string) ? new Date(healthData!.checked_at as string).toLocaleTimeString() : '—' },
                         { label: 'Last Broadcast',    value: localChannel.last_broadcast_at ? new Date(localChannel.last_broadcast_at).toLocaleString() : 'Never' },
                       ].map(r => (
                         <div key={r.label} className="flex items-start justify-between gap-3">
