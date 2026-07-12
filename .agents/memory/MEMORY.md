@@ -50,3 +50,7 @@
 - [Service control & public stats architecture](service-control-system.md) — AdminServices gates nav/footer only via useServices(); public marketing pages use usePublicStats() singleton; never put secrets in services table.
 - [Community features — Pages/Events/Jobs/Learning](community-features-pages-events-jobs-learning.md) — replaced ComingSoon stubs with real DB-backed list+create features mirroring MarketplacePage's pattern.
 - [Edge function deployment](edge-function-deployment.md) — use global supabase CLI v2.109.1 (not npx@1.x); deploy all 16 functions with --use-api -j 4 in one command.
+- [PostgREST anon insert + RETURNING gotcha](postgrest-anon-insert-returning.md) — anon INSERT with a passing check() can still 401 if the client calls .select() and there's no SELECT policy for anon; drop .select() for public-form inserts.
+- [Secrets stuck empty despite "available"](secrets-stuck-empty-fix.md) — secrets listed as configured resolved as empty strings (len 0) in both shell and app; fixed by requestSecrets() re-entry, not by any code change.
+- [Story reaction/comment → DM linking](story-reaction-dm-link.md) — sendStoryEventToChat() in src/lib/stream.ts turns story reactions/comments into real Stream Chat DMs to the author via getOrCreateDirectChannel.
+- [Tawk dismiss-chip overlap bug](tawk-dismiss-chip-overlap.md) — custom "×" chip near Tawk's own controls could get clicked while its chat window was open, hiding the whole widget; gate the chip on Tawk's own chat-open lifecycle event.

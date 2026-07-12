@@ -246,8 +246,6 @@ export default function AdminEmail() {
     a.click()
   }
 
-  const selectedAudience = AUDIENCES.find(a => a.id === form.audience)!
-
   return (
     <div className="p-4 sm:p-6 space-y-6">
 
