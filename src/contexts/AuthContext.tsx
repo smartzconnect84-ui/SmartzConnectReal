@@ -161,6 +161,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           linkOneSignalUser(uid)
           if (session?.user?.email) applyPendingProfile(uid, undefined, session.user.email)
           applyStoredReferralCode(uid)
+          // Opportunistic cleanup: revert any referral-granted Premium/VIP
+          // subscription that has passed its 14-day validity window. Cheap,
+          // idempotent, best-effort — safe to fire on every sign-in since it
+          // only touches rows with subscription_source = 'referral' that are
+          // already expired.
+          supabase.rpc('revert_expired_referral_subscriptions').then(() => {}, () => {})
           // NOTE: do NOT auto-call requestNotificationPermission() here.
           // Calling Notification.requestPermission() without a user gesture
           // gets silently queued (never resolved) by most browsers, and a
