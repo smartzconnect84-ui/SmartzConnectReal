@@ -3,12 +3,12 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Layout, Image as ImageIcon, FileText, Settings2, Plus, Trash2, Edit,
   Save, X, GripVertical, WifiOff, CheckCircle2, RefreshCw, Globe, EyeOff,
-  BookOpen, Megaphone, Users, CreditCard, Star,
+  BookOpen, Megaphone, CreditCard, Star, HelpCircle, ChevronDown, ChevronUp,
 } from 'lucide-react'
 import { cmsList, cmsSave, cmsDelete, pendingSyncCount, flushQueue } from '@/lib/contentSync'
 import ImageUploader from '@/components/admin/ImageUploader'
 
-type Tab = 'settings' | 'hero' | 'pages' | 'media' | 'blog' | 'announcements' | 'team' | 'plans'
+type Tab = 'settings' | 'hero' | 'pages' | 'media' | 'blog' | 'announcements' | 'plans' | 'faqs'
 
 interface SiteConfigRow { id: string; key: string; value: string; type: string; label: string; group: string }
 interface HeroSlideRow {
@@ -34,16 +34,14 @@ interface AnnouncementRow {
   id: string; title: string; message: string; type: string
   is_active: boolean; expires_at: string | null; created_at: string
 }
-interface TeamMemberRow {
-  id: string; full_name: string; role: string; photo_url: string | null
-  bio: string | null; country: string | null; linkedin_url: string | null
-  twitter_url: string | null; is_active: boolean; display_order: number
-  organization: string | null; is_advisor: boolean
-}
 interface PlanRow {
   id: string; name: string; slug: string; price_usd: number; price_lrd: number
   billing_cycle: string; features: string[] | null; is_active: boolean
   sort_order: number; badge: string | null
+}
+interface FaqRow {
+  id: string; question: string; answer: string; category: string | null
+  is_active: boolean; sort_order: number; page_context: string; created_at: string
 }
 
 const TABS: { id: Tab; label: string; icon: typeof Layout }[] = [
@@ -52,8 +50,8 @@ const TABS: { id: Tab; label: string; icon: typeof Layout }[] = [
   { id: 'pages', label: 'Pages', icon: FileText },
   { id: 'blog', label: 'Blog Posts', icon: BookOpen },
   { id: 'announcements', label: 'Announcements', icon: Megaphone },
-  { id: 'team', label: 'Team Members', icon: Users },
   { id: 'plans', label: 'Plans & Pricing', icon: CreditCard },
+  { id: 'faqs', label: 'FAQ Items', icon: HelpCircle },
   { id: 'media', label: 'Media Library', icon: ImageIcon },
 ]
 
@@ -131,8 +129,8 @@ export default function AdminCMS() {
       {tab === 'pages' && <PagesTab />}
       {tab === 'blog' && <BlogTab />}
       {tab === 'announcements' && <AnnouncementsTab />}
-      {tab === 'team' && <TeamTab />}
       {tab === 'plans' && <PlansTab />}
+      {tab === 'faqs' && <FaqsTab />}
       {tab === 'media' && <MediaTab />}
     </div>
   )
@@ -777,133 +775,6 @@ function AnnouncementsTab() {
   )
 }
 
-/* ─────────────────────────── Team Members ─────────────────────────── */
-function TeamTab() {
-  const [members, setMembers] = useState<TeamMemberRow[]>([])
-  const [loading, setLoading] = useState(true)
-  const [editing, setEditing] = useState<TeamMemberRow | null>(null)
-
-  const load = useCallback(async () => {
-    setLoading(true)
-    setMembers(await cmsList<TeamMemberRow>('team_members', { orderBy: 'display_order' }))
-    setLoading(false)
-  }, [])
-
-  useEffect(() => { load() }, [load])
-
-  const startNew = () => setEditing({
-    id: crypto.randomUUID(), full_name: '', role: '', photo_url: null,
-    bio: null, country: null, linkedin_url: null, twitter_url: null,
-    is_active: true, display_order: members.length, organization: null, is_advisor: false,
-  })
-
-  const save = async () => {
-    if (!editing?.full_name || !editing.role) { alert('Name and role are required'); return }
-    const saved = await cmsSave('team_members', editing)
-    setMembers(prev => {
-      const idx = prev.findIndex(p => p.id === saved.id)
-      if (idx >= 0) { const copy = [...prev]; copy[idx] = saved; return copy }
-      return [...prev, saved]
-    })
-    setEditing(null)
-  }
-
-  const remove = async (member: TeamMemberRow) => {
-    if (!confirm(`Remove ${member.full_name} from the team?`)) return
-    setMembers(prev => prev.filter(m => m.id !== member.id))
-    await cmsDelete('team_members', member.id)
-  }
-
-  if (loading) return <SkeletonBlock />
-
-  if (editing) {
-    return (
-      <div className="rounded-2xl dark:bg-white/5 bg-white border dark:border-white/8 border-gray-200 p-4 space-y-3">
-        <div className="flex items-center justify-between">
-          <p className="text-sm font-bold dark:text-white text-gray-900">{editing.full_name ? 'Edit member' : 'New team member'}</p>
-          <button onClick={() => setEditing(null)} className="w-8 h-8 rounded-lg flex items-center justify-center dark:text-gray-400 text-gray-500 hover:dark:bg-white/10 hover:bg-gray-100"><X className="w-4 h-4" /></button>
-        </div>
-        <div className="grid sm:grid-cols-2 gap-3">
-          <ImageUploader label="Photo" folder="avatars" value={editing.photo_url} assetName={`team-${editing.id}`}
-            onChange={url => setEditing({ ...editing, photo_url: url })} />
-          <div className="space-y-2">
-            <div>
-              <p className="text-xs font-semibold dark:text-gray-400 text-gray-600 mb-1">Full name</p>
-              <input value={editing.full_name} onChange={e => setEditing({ ...editing, full_name: e.target.value })}
-                className="w-full px-3 py-2 rounded-lg text-sm dark:bg-white/5 bg-gray-50 border dark:border-white/10 border-gray-200 dark:text-white text-gray-900 focus:outline-none focus:border-brand-pink" />
-            </div>
-            <div>
-              <p className="text-xs font-semibold dark:text-gray-400 text-gray-600 mb-1">Role / title</p>
-              <input value={editing.role} onChange={e => setEditing({ ...editing, role: e.target.value })}
-                className="w-full px-3 py-2 rounded-lg text-sm dark:bg-white/5 bg-gray-50 border dark:border-white/10 border-gray-200 dark:text-white text-gray-900 focus:outline-none focus:border-brand-pink" />
-            </div>
-            <div>
-              <p className="text-xs font-semibold dark:text-gray-400 text-gray-600 mb-1">Country</p>
-              <input value={editing.country ?? ''} onChange={e => setEditing({ ...editing, country: e.target.value })}
-                className="w-full px-3 py-2 rounded-lg text-sm dark:bg-white/5 bg-gray-50 border dark:border-white/10 border-gray-200 dark:text-white text-gray-900 focus:outline-none focus:border-brand-pink" />
-            </div>
-          </div>
-        </div>
-        <div>
-          <p className="text-xs font-semibold dark:text-gray-400 text-gray-600 mb-1">Bio</p>
-          <textarea rows={3} value={editing.bio ?? ''} onChange={e => setEditing({ ...editing, bio: e.target.value })}
-            className="w-full px-3 py-2 rounded-lg text-sm dark:bg-white/5 bg-gray-50 border dark:border-white/10 border-gray-200 dark:text-white text-gray-900 focus:outline-none focus:border-brand-pink resize-y" />
-        </div>
-        <div className="grid sm:grid-cols-2 gap-3">
-          <div>
-            <p className="text-xs font-semibold dark:text-gray-400 text-gray-600 mb-1">LinkedIn URL</p>
-            <input value={editing.linkedin_url ?? ''} onChange={e => setEditing({ ...editing, linkedin_url: e.target.value })}
-              className="w-full px-3 py-2 rounded-lg text-sm dark:bg-white/5 bg-gray-50 border dark:border-white/10 border-gray-200 dark:text-white text-gray-900 focus:outline-none focus:border-brand-pink" />
-          </div>
-          <div>
-            <p className="text-xs font-semibold dark:text-gray-400 text-gray-600 mb-1">Twitter URL</p>
-            <input value={editing.twitter_url ?? ''} onChange={e => setEditing({ ...editing, twitter_url: e.target.value })}
-              className="w-full px-3 py-2 rounded-lg text-sm dark:bg-white/5 bg-gray-50 border dark:border-white/10 border-gray-200 dark:text-white text-gray-900 focus:outline-none focus:border-brand-pink" />
-          </div>
-        </div>
-        <div className="flex items-center gap-4">
-          <label className="flex items-center gap-2 text-sm font-semibold dark:text-gray-300 text-gray-700 cursor-pointer">
-            <input type="checkbox" checked={editing.is_active} onChange={e => setEditing({ ...editing, is_active: e.target.checked })} />
-            Visible on site
-          </label>
-          <label className="flex items-center gap-2 text-sm font-semibold dark:text-gray-300 text-gray-700 cursor-pointer">
-            <input type="checkbox" checked={editing.is_advisor} onChange={e => setEditing({ ...editing, is_advisor: e.target.checked })} />
-            Advisor (not core team)
-          </label>
-        </div>
-        <button onClick={save} className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-bold bg-love-gradient text-white shadow-lg shadow-pink-500/20">
-          <Save className="w-4 h-4" /> Save Member
-        </button>
-      </div>
-    )
-  }
-
-  return (
-    <div className="space-y-3">
-      {members.length === 0 && <EmptyState label="No team members yet" />}
-      {members.map(m => (
-        <div key={m.id} className="flex items-center gap-3 rounded-2xl dark:bg-white/5 bg-white border dark:border-white/8 border-gray-200 p-3.5">
-          <div className="w-12 h-12 rounded-xl overflow-hidden dark:bg-white/5 bg-gray-100 flex-shrink-0 flex items-center justify-center">
-            {m.photo_url ? <img src={m.photo_url} className="w-full h-full object-cover" /> : <Users className="w-4 h-4 dark:text-gray-500 text-gray-400" />}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5">
-              <p className="text-sm font-bold dark:text-white text-gray-900 truncate">{m.full_name}</p>
-              {m.is_advisor && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-500">Advisor</span>}
-            </div>
-            <p className="text-xs dark:text-gray-500 text-gray-500 truncate">{m.role}{m.country ? ` · ${m.country}` : ''}</p>
-          </div>
-          {!m.is_active && <span className="text-[10px] font-bold dark:text-gray-500 text-gray-400 flex-shrink-0">Hidden</span>}
-          <button onClick={() => setEditing(m)} className="w-8 h-8 rounded-lg flex items-center justify-center dark:text-gray-400 text-gray-500 hover:dark:bg-white/10 hover:bg-gray-100"><Edit className="w-3.5 h-3.5" /></button>
-          <button onClick={() => remove(m)} className="w-8 h-8 rounded-lg flex items-center justify-center text-red-400 hover:bg-red-500/10"><Trash2 className="w-3.5 h-3.5" /></button>
-        </div>
-      ))}
-      <button onClick={startNew} className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-bold bg-love-gradient text-white shadow-lg shadow-pink-500/20">
-        <Plus className="w-4 h-4" /> Add Member
-      </button>
-    </div>
-  )
-}
 
 /* ─────────────────────────── Plans & Pricing ─────────────────────────── */
 function PlansTab() {
@@ -1087,6 +958,231 @@ function TextField({ label, value, onLocal, onSave }: { label: string; value: st
         onBlur={e => onSave(e.target.value)}
         className="w-full px-2.5 py-1.5 rounded-lg text-xs dark:bg-white/5 bg-gray-50 border dark:border-white/10 border-gray-200 dark:text-white text-gray-900 focus:outline-none focus:border-brand-pink"
       />
+    </div>
+  )
+}
+
+/* ─────────────────────────── FAQ Items ─────────────────────────── */
+function FaqsTab() {
+  const [items, setItems] = useState<FaqRow[]>([])
+  const [loading, setLoading] = useState(true)
+  const [editing, setEditing] = useState<FaqRow | null>(null)
+  const [toast, setToast] = useState<string | null>(null)
+
+  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 3000) }
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    setItems(await cmsList<FaqRow>('faq_items', { orderBy: 'sort_order' }))
+    setLoading(false)
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  const startNew = () => setEditing({
+    id: crypto.randomUUID(),
+    question: '',
+    answer: '',
+    category: null,
+    is_active: true,
+    sort_order: items.length,
+    page_context: 'help',
+    created_at: new Date().toISOString(),
+  })
+
+  const save = async () => {
+    if (!editing?.question?.trim() || !editing.answer?.trim()) {
+      showToast('Question and answer are required')
+      return
+    }
+    const saved = await cmsSave('faq_items', editing)
+    setItems(prev => {
+      const idx = prev.findIndex(p => p.id === saved.id)
+      if (idx >= 0) { const copy = [...prev]; copy[idx] = saved; return copy }
+      return [...prev, saved].sort((a, b) => a.sort_order - b.sort_order)
+    })
+    setEditing(null)
+    showToast('FAQ saved ✓')
+  }
+
+  const remove = async (item: FaqRow) => {
+    if (!confirm(`Delete this FAQ item?`)) return
+    setItems(prev => prev.filter(p => p.id !== item.id))
+    await cmsDelete('faq_items', item.id)
+    showToast('Deleted')
+  }
+
+  const toggleActive = async (item: FaqRow) => {
+    const updated = { ...item, is_active: !item.is_active }
+    setItems(prev => prev.map(p => p.id === item.id ? updated : p))
+    await cmsSave('faq_items', updated)
+  }
+
+  const inp = 'w-full px-3 py-2 rounded-lg text-sm dark:bg-white/5 bg-gray-50 border dark:border-white/10 border-gray-200 dark:text-white text-gray-900 focus:outline-none focus:border-brand-pink'
+
+  const PAGE_CONTEXTS = [
+    { value: 'help',    label: 'Help & Support page' },
+    { value: 'pricing', label: 'Pricing page' },
+    { value: 'ads',     label: 'SmartzAds page' },
+    { value: 'general', label: 'General / Other' },
+  ]
+
+  if (loading) return <SkeletonBlock />
+
+  if (editing) {
+    return (
+      <div className="rounded-2xl dark:bg-white/5 bg-white border dark:border-white/8 border-gray-200 p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-bold dark:text-white text-gray-900">
+            {editing.question ? 'Edit FAQ' : 'New FAQ item'}
+          </p>
+          <button onClick={() => setEditing(null)}
+            className="w-8 h-8 rounded-lg flex items-center justify-center dark:text-gray-400 text-gray-500 hover:dark:bg-white/10 hover:bg-gray-100">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="grid sm:grid-cols-2 gap-3">
+          <div>
+            <p className="text-xs font-semibold dark:text-gray-400 text-gray-600 mb-1">Page context</p>
+            <select value={editing.page_context}
+              onChange={e => setEditing({ ...editing, page_context: e.target.value })}
+              className={inp}>
+              {PAGE_CONTEXTS.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+            </select>
+          </div>
+          <div>
+            <p className="text-xs font-semibold dark:text-gray-400 text-gray-600 mb-1">Category (optional)</p>
+            <input value={editing.category ?? ''}
+              onChange={e => setEditing({ ...editing, category: e.target.value || null })}
+              placeholder="e.g. Billing, Account, Matching"
+              className={inp} />
+          </div>
+        </div>
+
+        <div>
+          <p className="text-xs font-semibold dark:text-gray-400 text-gray-600 mb-1">Question</p>
+          <input value={editing.question}
+            onChange={e => setEditing({ ...editing, question: e.target.value })}
+            placeholder="e.g. How do I reset my password?"
+            className={inp} />
+        </div>
+
+        <div>
+          <p className="text-xs font-semibold dark:text-gray-400 text-gray-600 mb-1">Answer</p>
+          <textarea rows={4}
+            value={editing.answer}
+            onChange={e => setEditing({ ...editing, answer: e.target.value })}
+            placeholder="Provide a clear, helpful answer…"
+            className={`${inp} resize-y`} />
+        </div>
+
+        <div className="flex items-center gap-4 flex-wrap">
+          <div>
+            <p className="text-xs font-semibold dark:text-gray-400 text-gray-600 mb-1">Sort order</p>
+            <input type="number" value={editing.sort_order}
+              onChange={e => setEditing({ ...editing, sort_order: parseInt(e.target.value) || 0 })}
+              className="w-24 px-3 py-2 rounded-lg text-sm dark:bg-white/5 bg-gray-50 border dark:border-white/10 border-gray-200 dark:text-white text-gray-900 focus:outline-none focus:border-brand-pink" />
+          </div>
+          <label className="flex items-center gap-2 text-sm font-semibold dark:text-gray-300 text-gray-700 cursor-pointer mt-4 sm:mt-5">
+            <input type="checkbox" checked={editing.is_active}
+              onChange={e => setEditing({ ...editing, is_active: e.target.checked })} />
+            Active (visible on site)
+          </label>
+        </div>
+
+        <button onClick={save}
+          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-bold bg-love-gradient text-white shadow-lg shadow-pink-500/20">
+          <Save className="w-4 h-4" /> Save FAQ
+        </button>
+      </div>
+    )
+  }
+
+  const grouped = PAGE_CONTEXTS.filter(c => items.some(f => f.page_context === c.value))
+
+  return (
+    <div className="space-y-4">
+      {/* Toast */}
+      {toast && (
+        <div className="fixed top-4 right-4 z-50 px-4 py-2.5 rounded-xl bg-emerald-500 text-white text-sm font-semibold shadow-lg">
+          {toast}
+        </div>
+      )}
+
+      {items.length === 0 && <EmptyState label="No FAQ items yet. Add your first one below." />}
+
+      {/* Group by page context */}
+      {grouped.map(ctx => {
+        const ctxItems = items.filter(f => f.page_context === ctx.value)
+        return (
+          <div key={ctx.value} className="space-y-2">
+            <p className="text-xs font-bold dark:text-gray-400 text-gray-500 uppercase tracking-wide px-1">{ctx.label}</p>
+            {ctxItems.map(item => (
+              <div key={item.id}
+                className="flex items-start gap-3 rounded-2xl dark:bg-white/5 bg-white border dark:border-white/8 border-gray-200 p-3.5">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                    <p className="text-sm font-semibold dark:text-white text-gray-900 truncate flex-1 min-w-0">
+                      {item.question}
+                    </p>
+                    {item.category && (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-400 flex-shrink-0">
+                        {item.category}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs dark:text-gray-500 text-gray-500 line-clamp-2">{item.answer}</p>
+                </div>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  <button onClick={() => toggleActive(item)}
+                    className={`text-[10px] font-bold px-2 py-1 rounded-lg transition-colors ${item.is_active ? 'bg-emerald-500/10 text-emerald-500' : 'dark:bg-white/5 bg-gray-100 dark:text-gray-500 text-gray-400'}`}>
+                    {item.is_active ? 'On' : 'Off'}
+                  </button>
+                  <button onClick={() => setEditing(item)}
+                    className="w-8 h-8 rounded-lg flex items-center justify-center dark:text-gray-400 text-gray-500 hover:dark:bg-white/10 hover:bg-gray-100">
+                    <Edit className="w-3.5 h-3.5" />
+                  </button>
+                  <button onClick={() => remove(item)}
+                    className="w-8 h-8 rounded-lg flex items-center justify-center text-red-400 hover:bg-red-500/10">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )
+      })}
+
+      {/* Also show ungrouped items (unknown page_context) */}
+      {items.filter(f => !PAGE_CONTEXTS.find(c => c.value === f.page_context)).map(item => (
+        <div key={item.id}
+          className="flex items-start gap-3 rounded-2xl dark:bg-white/5 bg-white border dark:border-white/8 border-gray-200 p-3.5">
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold dark:text-white text-gray-900 truncate">{item.question}</p>
+            <p className="text-xs dark:text-gray-500 text-gray-500 line-clamp-2">{item.answer}</p>
+          </div>
+          <div className="flex items-center gap-1 flex-shrink-0">
+            <button onClick={() => toggleActive(item)}
+              className={`text-[10px] font-bold px-2 py-1 rounded-lg transition-colors ${item.is_active ? 'bg-emerald-500/10 text-emerald-500' : 'dark:bg-white/5 bg-gray-100 dark:text-gray-500 text-gray-400'}`}>
+              {item.is_active ? 'On' : 'Off'}
+            </button>
+            <button onClick={() => setEditing(item)}
+              className="w-8 h-8 rounded-lg flex items-center justify-center dark:text-gray-400 text-gray-500 hover:dark:bg-white/10 hover:bg-gray-100">
+              <Edit className="w-3.5 h-3.5" />
+            </button>
+            <button onClick={() => remove(item)}
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-red-400 hover:bg-red-500/10">
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      ))}
+
+      <button onClick={startNew}
+        className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-bold bg-love-gradient text-white shadow-lg shadow-pink-500/20">
+        <Plus className="w-4 h-4" /> Add FAQ Item
+      </button>
     </div>
   )
 }

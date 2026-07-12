@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
@@ -6,6 +6,7 @@ import {
   Heart, Video, Users, Settings, Search,
 } from 'lucide-react'
 import { openTawkChat } from '@/lib/tawk'
+import { cmsList } from '@/lib/contentSync'
 
 const categories = [
   { icon: Heart,     label: 'Dating & Matching',   desc: 'Discover, likes, Spin & Chat' },
@@ -16,7 +17,7 @@ const categories = [
   { icon: Settings,  label: 'Account & Settings',  desc: 'Profile, notifications, login' },
 ]
 
-const faqs = [
+const FALLBACK_FAQS = [
   {
     q: 'How do I reset my password?',
     a: "Go to the login screen and tap \"Forgot password\". Enter the email on your account and we'll send you a reset link. If you don't see it, check your spam folder.",
@@ -43,6 +44,8 @@ const faqs = [
   },
 ]
 
+interface FaqRow { id: string; question: string; answer: string; is_active: boolean; sort_order: number; page_context: string }
+
 function FaqItem({ q, a, defaultOpen = false }: { q: string; a: string; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen)
   return (
@@ -65,6 +68,19 @@ function FaqItem({ q, a, defaultOpen = false }: { q: string; a: string; defaultO
 
 export default function HelpSupportPage() {
   const [query, setQuery] = useState('')
+  const [dbFaqs, setDbFaqs] = useState<FaqRow[]>([])
+
+  useEffect(() => {
+    cmsList<FaqRow>('faq_items', { orderBy: 'sort_order' }).then(rows => {
+      const helpRows = rows.filter(r => r.is_active && r.page_context === 'help')
+      if (helpRows.length > 0) setDbFaqs(helpRows)
+    })
+  }, [])
+
+  const faqs = dbFaqs.length > 0
+    ? dbFaqs.map(r => ({ q: r.question, a: r.answer }))
+    : FALLBACK_FAQS
+
   const filteredFaqs = faqs.filter(f =>
     f.q.toLowerCase().includes(query.toLowerCase()) || f.a.toLowerCase().includes(query.toLowerCase())
   )

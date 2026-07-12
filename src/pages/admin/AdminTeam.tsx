@@ -261,20 +261,20 @@ export default function AdminTeamMembers() {
       </AnimatePresence>
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="font-display font-black text-2xl dark:text-white text-gray-900">Team Members</h1>
           <p className="text-sm dark:text-gray-400 text-gray-500 mt-0.5">
             Manage the SmartzConnect team shown on the public Team page
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <button onClick={fetchMembers} className="p-2 rounded-xl dark:bg-white/5 bg-gray-100 hover:text-brand-pink transition-colors" title="Refresh">
             <RefreshCw className="w-4 h-4" />
           </button>
           <button onClick={cleanDuplicateMembers}
             className="flex items-center gap-2 px-3 py-2 rounded-xl dark:bg-white/5 bg-gray-100 dark:text-gray-400 text-gray-600 text-xs font-semibold hover:text-red-500 transition-colors" title="Remove duplicate members with same name">
-            <Trash2 className="w-3.5 h-3.5" /> Clean Dupes
+            <Trash2 className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Clean Dupes</span>
           </button>
           <button onClick={openAdd}
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-love-gradient text-white text-xs font-bold shadow-lg shadow-pink-500/20 hover:opacity-90 transition-all">
@@ -304,7 +304,7 @@ export default function AdminTeamMembers() {
           <div>
             <p className="font-semibold text-amber-400 text-sm mb-0.5">Database not connected</p>
             <p className="text-xs dark:text-gray-400 text-gray-600">{dbError}</p>
-            <p className="text-xs dark:text-gray-500 text-gray-400 mt-1">Run <code className="font-mono bg-amber-500/10 px-1 rounded">supabase/RUN_IN_SUPABASE.sql</code> in your Supabase SQL Editor to create the team_members table.</p>
+            <p className="text-xs dark:text-gray-500 text-gray-400 mt-1">Check your Supabase connection settings and try refreshing.</p>
           </div>
         </div>
       )}
@@ -332,7 +332,67 @@ export default function AdminTeamMembers() {
             <button onClick={openAdd} className="mt-3 text-xs text-brand-pink font-semibold hover:underline">+ Add first member</button>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+            {/* ── Mobile card view (shown below md) ── */}
+            <div className="md:hidden divide-y dark:divide-white/5 divide-gray-100">
+              {filtered.map((m, i) => (
+                <motion.div key={m.id}
+                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }}
+                  className={`p-4 ${!m.is_active ? 'opacity-50' : ''}`}>
+                  <div className="flex items-start gap-3">
+                    {/* Avatar */}
+                    <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 dark:bg-white/5 bg-gray-100 flex items-center justify-center">
+                      {m.photo_url
+                        ? <img src={m.photo_url} alt={m.full_name} className="w-full h-full object-cover" />
+                        : <span className="text-xl">{m.emoji || '👤'}</span>}
+                    </div>
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
+                        <p className="text-sm font-bold dark:text-white text-gray-900 truncate">{m.full_name}</p>
+                        {m.is_advisor && (
+                          <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-purple-500/15 text-purple-400 border border-purple-500/25">Advisor</span>
+                        )}
+                        <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold border ${
+                          m.is_active ? 'bg-emerald-500/15 text-emerald-500 border-emerald-500/25' : 'dark:bg-white/8 bg-gray-100 dark:text-gray-400 text-gray-500 dark:border-white/10 border-gray-200'
+                        }`}>{m.is_active ? 'Active' : 'Inactive'}</span>
+                      </div>
+                      <p className="text-xs text-brand-pink font-semibold">{m.role}</p>
+                      {m.country && <p className="text-[11px] dark:text-gray-400 text-gray-500 mt-0.5">{m.country}</p>}
+                    </div>
+                  </div>
+                  {/* Mobile action row */}
+                  <div className="flex items-center gap-2 mt-3 pt-3 border-t dark:border-white/5 border-gray-100">
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <button onClick={() => handleReorder(m, 'up')} className="w-9 h-9 rounded-xl dark:bg-white/5 bg-gray-100 flex items-center justify-center">
+                        <ChevronUp className="w-4 h-4 dark:text-gray-400 text-gray-600" />
+                      </button>
+                      <button onClick={() => handleReorder(m, 'down')} className="w-9 h-9 rounded-xl dark:bg-white/5 bg-gray-100 flex items-center justify-center">
+                        <ChevronDown className="w-4 h-4 dark:text-gray-400 text-gray-600" />
+                      </button>
+                    </div>
+                    <div className="flex-1" />
+                    <button onClick={() => openEdit(m)}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl dark:bg-white/5 bg-gray-100 text-xs font-bold dark:text-gray-300 text-gray-700 hover:text-blue-500 transition-colors">
+                      <Edit className="w-3.5 h-3.5" /> Edit
+                    </button>
+                    <button onClick={() => handleToggleActive(m)}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl dark:bg-white/5 bg-gray-100 text-xs font-bold transition-colors"
+                      style={{ color: m.is_active ? '#10B981' : undefined }}>
+                      {m.is_active ? <ToggleRight className="w-3.5 h-3.5" /> : <ToggleLeft className="w-3.5 h-3.5" />}
+                      {m.is_active ? 'On' : 'Off'}
+                    </button>
+                    <button onClick={() => setConfirmDelete(m)}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-red-500/10 text-red-500 text-xs font-bold hover:bg-red-500/20 transition-colors">
+                      <Trash2 className="w-3.5 h-3.5" /> Delete
+                    </button>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* ── Desktop table (hidden on mobile) ── */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b dark:border-white/5 border-gray-100">
@@ -458,6 +518,7 @@ export default function AdminTeamMembers() {
               </tbody>
             </table>
           </div>
+          </>
         )}
       </div>
 

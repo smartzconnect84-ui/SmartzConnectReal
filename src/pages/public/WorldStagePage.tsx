@@ -107,6 +107,7 @@ interface WSSpotlight {
   followers_label: string
   quote: string
   avatar_emoji: string
+  avatar_url: string | null
   wins: number
 }
 
@@ -410,8 +411,10 @@ export default function WorldStagePage() {
                   className="dark:bg-[#130E1E] bg-white rounded-3xl p-7 border dark:border-white/6 border-gray-100 hover:shadow-xl hover:border-pink-500/20 transition-all"
                 >
                   <div className="flex items-center gap-3 mb-5">
-                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-pink-500 to-violet-600 flex items-center justify-center text-3xl shadow-lg shadow-pink-500/20">
-                      {s.avatar_emoji}
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-pink-500 to-violet-600 flex items-center justify-center text-3xl shadow-lg shadow-pink-500/20 overflow-hidden flex-shrink-0">
+                      {s.avatar_url
+                        ? <img src={s.avatar_url} alt={s.display_name} className="w-full h-full object-cover" />
+                        : s.avatar_emoji}
                     </div>
                     <div>
                       <p className="font-bold dark:text-white text-gray-900">{s.display_name}</p>

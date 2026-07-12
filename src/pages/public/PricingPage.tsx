@@ -292,7 +292,7 @@ export default function PricingPage() {
   useEffect(() => {
     let mounted = true
     supabase
-      .from('plans')
+      .from('subscription_plans')
       .select('*')
       .eq('is_active', true)
       .order('sort_order', { ascending: true })

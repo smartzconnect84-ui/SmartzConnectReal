@@ -157,7 +157,9 @@ function BroadcastSetupModal({ channel, onClose, onChannelUpdated }: {
   const [polling, setPolling] = useState(false)
   const [goingLive, setGoingLive] = useState(false)
   const [endingLive, setEndingLive] = useState(false)
-  const [showPreview, setShowPreview] = useState(false)
+  const [showPreview, setShowPreview] = useState(
+    () => channel.stream_status === 'active' && !!channel.mux_playback_id
+  )
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   // Poll stream status when ready — updates both local state and DB (via edge fn)
@@ -170,9 +172,12 @@ function BroadcastSetupModal({ channel, onClose, onChannelUpdated }: {
           body: { stream_id: localChannel.mux_stream_id, channel_id: localChannel.id },
         })
         if (!error && data?.status) {
-          setStreamStatus(data.status as TVChannel['stream_status'])
+          const newStatus = data.status as TVChannel['stream_status']
+          setStreamStatus(newStatus)
+          // Auto-show preview as soon as encoder connects
+          if (newStatus === 'active') setShowPreview(true)
           // Keep localChannel in sync with what Mux reports
-          setLocalChannel(prev => ({ ...prev, stream_status: data.status }))
+          setLocalChannel(prev => ({ ...prev, stream_status: newStatus }))
         }
       } catch { /* silent */ }
       setPolling(false)
@@ -351,34 +356,46 @@ function BroadcastSetupModal({ channel, onClose, onChannelUpdated }: {
           {/* ── Stream ready ── */}
           {step === 'ready' && localChannel.mux_stream_id && (
             <>
-              {/* ── Status bar ── */}
+              {/* ── Control-room status bar ── */}
               <div className="flex items-center justify-between gap-2 flex-wrap">
+                {/* Encoder / Mux status chip */}
                 <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold border ${sc.bg} ${sc.color}`}>
                   <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} />
-                  {sc.label}
-                  {polling && <Loader2 className="w-3 h-3 animate-spin ml-1" />}
+                  {encoderConnected ? 'LIVE' : streamStatus === 'disconnected' ? 'DISCONNECTED' : 'CONNECTING…'}
+                  {polling && <Loader2 className="w-3 h-3 animate-spin ml-1 opacity-60" />}
                 </div>
-                {isPubliclyLive && (
-                  <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border bg-red-500/15 text-red-400 border-red-500/25">
-                    <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
-                    PUBLIC — LIVE
-                  </span>
-                )}
+
+                <div className="flex items-center gap-2 flex-wrap">
+                  {/* Viewer count when live */}
+                  {encoderConnected && localChannel.viewer_count > 0 && (
+                    <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border bg-white/5 text-gray-300 border-white/10">
+                      <Eye className="w-3 h-3" /> {localChannel.viewer_count.toLocaleString()} watching
+                    </span>
+                  )}
+                  {/* Public broadcast chip */}
+                  {isPubliclyLive && (
+                    <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border bg-red-500/15 text-red-400 border-red-500/25">
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
+                      PUBLIC — ON AIR
+                    </span>
+                  )}
+                </div>
               </div>
 
-              {/* ── ADMIN PREVIEW — shown when encoder is connected, regardless of is_active ── */}
+              {/* ── ADMIN CONTROL-ROOM PREVIEW — shown when encoder is connected ── */}
               {encoderConnected && localChannel.mux_playback_id && (
                 <div className="space-y-2">
+                  {/* Preview header */}
                   <div className="flex items-center justify-between">
                     <p className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
-                      <Eye className="w-3.5 h-3.5" /> Admin Preview
-                      <span className="font-normal text-gray-400 ml-1">— only you can see this</span>
+                      <Eye className="w-3.5 h-3.5" /> Control Room Monitor
+                      <span className="font-normal text-gray-400 ml-1">— admin only</span>
                     </p>
                     <button
                       onClick={() => setShowPreview(p => !p)}
                       className="text-[11px] text-gray-400 hover:text-white transition-colors underline underline-offset-2"
                     >
-                      {showPreview ? 'Hide' : 'Show'} preview
+                      {showPreview ? 'Hide' : 'Show'}
                     </button>
                   </div>
 
@@ -390,19 +407,22 @@ function BroadcastSetupModal({ channel, onClose, onChannelUpdated }: {
                         exit={{ opacity: 0, height: 0 }}
                         className="overflow-hidden"
                       >
-                        {/* Admin-only HLS preview via SmartzTVPlayer */}
-                        <div className="rounded-xl overflow-hidden border border-amber-500/20">
+                        {/* Professional TV control-room monitor — full controls enabled */}
+                        <div className="rounded-xl overflow-hidden border border-amber-500/25 shadow-lg shadow-amber-500/10">
                           <SmartzTVPlayer
                             playbackId={localChannel.mux_playback_id}
                             poster={localChannel.cover_url}
                             isLive
-                            title={`[ADMIN PREVIEW] ${localChannel.name}`}
+                            title={localChannel.name}
+                            viewerCount={localChannel.viewer_count}
                             accentColor="#f59e0b"
                           />
                         </div>
-                        <p className="mt-1.5 text-[10px] text-amber-500/70 text-center">
-                          ⚠️ Admin-only preview — public viewers cannot see this until you click "Go Live"
-                        </p>
+                        {!localChannel.is_active && (
+                          <p className="mt-1.5 text-[10px] text-amber-500/70 text-center">
+                            ⚠️ Admin preview only — click "Go Live" to publish to public TV
+                          </p>
+                        )}
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -449,7 +469,7 @@ function BroadcastSetupModal({ channel, onClose, onChannelUpdated }: {
                   <Info className="w-3.5 h-3.5 text-amber-400 flex-shrink-0 mt-0.5" />
                   <p className="text-xs text-amber-200/70">
                     Start streaming in OBS/vMix using the credentials below. Once your encoder connects,
-                    an <strong className="text-amber-300">admin-only HLS preview</strong> will appear here so you can
+                    the <strong className="text-amber-300">control room monitor</strong> will appear automatically so you can
                     verify audio/video quality before clicking <strong className="text-amber-300">Go Live</strong>.
                   </p>
                 </div>
@@ -782,7 +802,7 @@ function ScheduleModal({ channel, onClose }: { channel: TVChannel; onClose: () =
                   {s.category && <span className="text-[10px] dark:text-gray-500 text-gray-400 mt-0.5 block">{s.category}</span>}
                 </div>
                 <button onClick={() => handleDelete(s.id)}
-                  className="w-6 h-6 rounded-lg dark:bg-white/5 bg-gray-200 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500/20 dark:hover:bg-red-500/20">
+                  className="w-7 h-7 rounded-lg dark:bg-white/5 bg-gray-200 flex items-center justify-center sm:opacity-0 sm:group-hover:opacity-100 opacity-100 transition-all hover:bg-red-500/20 dark:hover:bg-red-500/20 flex-shrink-0">
                   <Trash2 className="w-3 h-3 dark:text-gray-400 text-gray-500 hover:text-red-500" />
                 </button>
               </div>
@@ -816,41 +836,60 @@ function ChannelCard({ channel, onEdit, onDelete, onBroadcast, onSchedule, onTog
       initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.04 }}
       className="dark:bg-[#130E1E] bg-white rounded-2xl border dark:border-white/6 border-gray-200 overflow-hidden group hover:shadow-xl hover:dark:shadow-violet-900/20 transition-all">
 
-      {/* Cover */}
-      <div className="relative h-28 dark:bg-white/5 bg-gray-50 overflow-hidden">
-        {channel.cover_url
-          ? <img src={channel.cover_url} alt={channel.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-          : (
-            <div className="w-full h-full flex items-center justify-center">
-              <Tv className="w-10 h-10 dark:text-gray-700 text-gray-300" />
-            </div>
-          )}
+      {/* Cover / Live preview */}
+      <div className="relative dark:bg-white/5 bg-gray-50 overflow-hidden">
+        {channel.stream_status === 'active' && channel.mux_playback_id ? (
+          /* ── Real-time muted live preview when encoder is connected ── */
+          <div className="w-full">
+            <SmartzTVPlayer
+              playbackId={channel.mux_playback_id}
+              poster={channel.cover_url}
+              isLive
+              title={channel.name}
+              viewerCount={channel.viewer_count}
+              accentColor="#8b5cf6"
+            />
+          </div>
+        ) : (
+          /* ── Static cover thumbnail when not live ── */
+          <div className="relative h-28 overflow-hidden">
+            {channel.cover_url
+              ? <img src={channel.cover_url} alt={channel.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+              : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <Tv className="w-10 h-10 dark:text-gray-700 text-gray-300" />
+                </div>
+              )}
+          </div>
+        )}
 
-        {/* Badges */}
-        <div className="absolute top-2 left-2 flex items-center gap-1 flex-wrap">
+        {/* Badges — overlaid on top of either the player or the static cover */}
+        <div className="absolute top-2 left-2 flex items-center gap-1 flex-wrap z-10 pointer-events-none">
           {channel.is_featured && (
             <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-bold shadow-lg">
               <Star className="w-2.5 h-2.5" /> Featured
             </span>
           )}
-          {channel.is_active && (
+          {channel.is_active && channel.stream_status !== 'active' && (
             <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500 text-white text-[10px] font-bold shadow-lg">
               <Power className="w-2.5 h-2.5" /> Active
             </span>
           )}
         </div>
 
-        {/* Stream status */}
-        <div className="absolute top-2 right-2">
-          <span className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold border ${sc.bg} ${sc.color}`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} />
-            {sc.label}
-          </span>
-        </div>
+        {/* Stream status chip — only shown on static cover; player has its own LIVE badge */}
+        {channel.stream_status !== 'active' && (
+          <div className="absolute top-2 right-2 z-10 pointer-events-none">
+            <span className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold border ${sc.bg} ${sc.color}`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} />
+              {sc.label}
+            </span>
+          </div>
+        )}
 
-        {/* Logo overlay */}
-        {channel.logo_url && (
-          <div className="absolute bottom-2 left-2 w-9 h-9 rounded-lg overflow-hidden border-2 dark:border-white/20 border-white/80 shadow-lg">
+        {/* Logo overlay (only on static cover, not on live player) */}
+        {channel.logo_url && channel.stream_status !== 'active' && (
+          <div className="absolute bottom-2 left-2 w-9 h-9 rounded-lg overflow-hidden border-2 dark:border-white/20 border-white/80 shadow-lg z-10">
             <img src={channel.logo_url} alt={channel.name} className="w-full h-full object-cover" />
           </div>
         )}
@@ -886,27 +925,28 @@ function ChannelCard({ channel, onEdit, onDelete, onBroadcast, onSchedule, onTog
           </div>
         )}
 
-        {/* Action row */}
-        <div className="grid grid-cols-4 gap-1.5 mb-2">
+        {/* Action row — 2×2 grid on very narrow screens, 4-col on normal widths */}
+        <div className="grid grid-cols-2 xs:grid-cols-4 gap-1.5 mb-2">
           <button onClick={onEdit} title="Edit channel"
-            className="flex items-center justify-center py-2 rounded-xl dark:bg-white/5 bg-gray-100 dark:text-gray-400 text-gray-600 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">
-            <Edit2 className="w-3.5 h-3.5" />
+            className="flex items-center justify-center gap-1.5 py-2 rounded-xl dark:bg-white/5 bg-gray-100 dark:text-gray-400 text-gray-600 hover:text-blue-500 dark:hover:text-blue-400 transition-colors text-[11px] font-semibold">
+            <Edit2 className="w-3.5 h-3.5 flex-shrink-0" /><span className="xs:hidden">Edit</span>
           </button>
           <button onClick={onSchedule} title="Schedule"
-            className="flex items-center justify-center py-2 rounded-xl dark:bg-white/5 bg-gray-100 dark:text-gray-400 text-gray-600 hover:text-violet-500 dark:hover:text-violet-400 transition-colors">
-            <Calendar className="w-3.5 h-3.5" />
+            className="flex items-center justify-center gap-1.5 py-2 rounded-xl dark:bg-white/5 bg-gray-100 dark:text-gray-400 text-gray-600 hover:text-violet-500 dark:hover:text-violet-400 transition-colors text-[11px] font-semibold">
+            <Calendar className="w-3.5 h-3.5 flex-shrink-0" /><span className="xs:hidden">Sched</span>
           </button>
           <button onClick={onToggleFeatured} title={channel.is_featured ? 'Unfeature' : 'Feature'}
-            className={`flex items-center justify-center py-2 rounded-xl transition-colors ${
+            className={`flex items-center justify-center gap-1.5 py-2 rounded-xl transition-colors text-[11px] font-semibold ${
               channel.is_featured
                 ? 'dark:bg-amber-500/15 bg-amber-50 text-amber-500'
                 : 'dark:bg-white/5 bg-gray-100 dark:text-gray-400 text-gray-600 hover:text-amber-500'
             }`}>
-            {channel.is_featured ? <Star className="w-3.5 h-3.5 fill-current" /> : <StarOff className="w-3.5 h-3.5" />}
+            {channel.is_featured ? <Star className="w-3.5 h-3.5 fill-current flex-shrink-0" /> : <StarOff className="w-3.5 h-3.5 flex-shrink-0" />}
+            <span className="xs:hidden">{channel.is_featured ? 'Unstar' : 'Star'}</span>
           </button>
           <button onClick={onDelete} title="Delete channel"
-            className="flex items-center justify-center py-2 rounded-xl dark:bg-white/5 bg-gray-100 dark:text-gray-400 text-gray-600 hover:text-red-500 dark:hover:text-red-400 transition-colors">
-            <Trash2 className="w-3.5 h-3.5" />
+            className="flex items-center justify-center gap-1.5 py-2 rounded-xl dark:bg-white/5 bg-gray-100 dark:text-gray-400 text-gray-600 hover:text-red-500 dark:hover:text-red-400 transition-colors text-[11px] font-semibold">
+            <Trash2 className="w-3.5 h-3.5 flex-shrink-0" /><span className="xs:hidden">Del</span>
           </button>
         </div>
 
@@ -924,7 +964,7 @@ function ChannelCard({ channel, onEdit, onDelete, onBroadcast, onSchedule, onTog
                 : 'dark:bg-white/5 bg-gray-100 dark:text-gray-400 text-gray-600 border-transparent hover:text-violet-500 dark:hover:text-violet-400'
             }`}>
             {channel.is_active
-              ? <><Power className="w-3 h-3" /> Channel Active — Visible on TV</>
+              ? <><Power className="w-3 h-3" /> Active — Visible on TV</>
               : <><PowerOff className="w-3 h-3" /> Activate Channel</>}
           </button>
         </div>
@@ -1021,6 +1061,71 @@ function ChannelsTab() {
           </motion.div>
         ))}
       </div>
+
+      {/* ── MUX Live Monitor — shown when at least one channel is broadcasting ── */}
+      {(() => {
+        const live = channels.filter(c => c.stream_status === 'active' && c.mux_playback_id)
+        if (live.length === 0) return null
+        const ch = live[0]
+        return (
+          <div className="rounded-2xl overflow-hidden border border-red-500/25 dark:bg-[#100818] bg-gray-950 shadow-2xl shadow-red-900/20">
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-red-900/40 to-violet-900/30 border-b border-red-500/20">
+              <div className="flex items-center gap-2.5">
+                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                <span className="text-xs font-black text-red-400 uppercase tracking-widest">ON AIR — MUX LIVE</span>
+                <span className="text-xs dark:text-gray-300 text-gray-200 font-semibold">{ch.name}</span>
+                {ch.viewer_count > 0 && (
+                  <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/40 text-white text-[10px]">
+                    <Eye className="w-2.5 h-2.5" /> {ch.viewer_count.toLocaleString()} watching
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                {live.length > 1 && (
+                  <span className="text-[10px] dark:text-gray-400 text-gray-300">{live.length} channels live</span>
+                )}
+                <span className="px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 text-[10px] font-bold border border-red-500/30">
+                  Control Room
+                </span>
+              </div>
+            </div>
+
+            {/* Player */}
+            <div className="p-3 sm:p-4">
+              <div className={`grid gap-3 ${live.length > 1 ? 'lg:grid-cols-[1fr_200px]' : ''}`}>
+                {/* Main player */}
+                <SmartzTVPlayer
+                  playbackId={ch.mux_playback_id}
+                  poster={ch.cover_url}
+                  isLive
+                  title={ch.name}
+                  viewerCount={ch.viewer_count}
+                  accentColor="#8b5cf6"
+                />
+                {/* Channel switcher when multiple are live */}
+                {live.length > 1 && (
+                  <div className="space-y-2 overflow-y-auto max-h-[280px]">
+                    {live.map(c => (
+                      <button
+                        key={c.id}
+                        onClick={() => setBroadcastChannel(c)}
+                        className="w-full text-left p-2 rounded-xl dark:bg-white/5 bg-white/5 hover:dark:bg-violet-500/10 hover:bg-violet-500/10 border border-white/10 transition-colors"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse flex-shrink-0" />
+                          <p className="text-xs font-semibold text-white truncate">{c.name}</p>
+                        </div>
+                        <p className="text-[10px] text-gray-400 mt-0.5">{c.category} · {c.viewer_count} viewers</p>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* Toolbar */}
       <div className="flex flex-wrap gap-3">
