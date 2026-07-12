@@ -5,6 +5,7 @@ import { Eye, EyeOff, Mail, Lock, Loader2, Shield, ArrowLeft, UserCircle2 } from
 import { useAuth } from '@/hooks/useAuth'
 import { AuthInput, AuthError } from '@/components/auth/AuthLayout'
 import { listSwitchableAccounts, switchToAccount, type SwitchableAccount } from '@/lib/accountSwitcher'
+import BrandName from '@/components/BrandName'
 
 const logoImg = '/logo.png'
 
@@ -105,8 +106,7 @@ export default function AdminLoginPage() {
               <div className="absolute inset-0 rounded-xl bg-brand-pink/20 blur-md" />
             </div>
             <span className="font-display font-black text-xl tracking-tight">
-              <span className="text-gradient-love">Smartz</span>
-              <span className="dark:text-white text-gray-900">Connect</span>
+              <BrandName />
             </span>
           </div>
           <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full dark:bg-amber-500/[0.1] bg-amber-50 border dark:border-amber-500/[0.2] border-amber-100">

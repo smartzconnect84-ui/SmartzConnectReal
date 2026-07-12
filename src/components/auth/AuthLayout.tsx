@@ -2,6 +2,7 @@ import { type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { ArrowLeft } from 'lucide-react'
+import BrandName from '@/components/BrandName'
 
 const logoImg = '/logo.png'
 
@@ -79,8 +80,7 @@ export function AuthLayout({
             <div className="absolute inset-0 rounded-xl bg-brand-pink/20 blur-lg" />
           </div>
           <span className="font-display font-black text-xl tracking-tight">
-            <span className="text-gradient-love">Smartz</span>
-            <span className="dark:text-white text-gray-900">Connect</span>
+            <BrandName />
           </span>
         </div>
 

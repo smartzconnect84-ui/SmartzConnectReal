@@ -60,4 +60,43 @@ export function hideTawkWidget() {
   withTawkApi((api) => api.hideWidget?.())
 }
 
+const DISMISS_KEY = 'sc_tawk_dismissed'
+
+/**
+ * Single source of truth for whether the widget should be visible right now:
+ * public-site route + not dismissed this session. Both index.html's
+ * `Tawk_API.onLoad` and <TawkController>'s mount effect call this same
+ * function (instead of each independently calling show/hideWidget), so
+ * whichever one runs last always lands on the correct state — no more race
+ * between "React says show" and "Tawk's own onLoad says hide" depending on
+ * which finishes loading first.
+ */
+export function recomputeTawkVisibility() {
+  try {
+    const path = window.location.pathname
+    const isPublic = !path.startsWith('/app') && !path.startsWith('/admin')
+    const dismissed = sessionStorage.getItem(DISMISS_KEY) === '1'
+    if (isPublic && !dismissed) {
+      showTawkWidget()
+    } else {
+      hideTawkWidget()
+    }
+  } catch {
+    hideTawkWidget()
+  }
+}
+
+// Exposed so the inline Tawk_API.onLoad handler in index.html (which runs
+// outside the React module graph) can trigger the exact same visibility
+// logic React uses, rather than unconditionally hiding the widget.
+if (typeof window !== 'undefined') {
+  window.__recomputeTawkVisibility = recomputeTawkVisibility
+}
+
+declare global {
+  interface Window {
+    __recomputeTawkVisibility?: () => void
+  }
+}
+
 export {}

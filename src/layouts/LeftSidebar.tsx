@@ -9,6 +9,7 @@ import {
 import { useTheme } from '@/contexts/ThemeContext'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
+import BrandName from '@/components/BrandName'
 
 const logoImg = '/logo.png'
 
@@ -121,8 +122,7 @@ export default function LeftSidebar({ unreadMessages, unreadNotifs }: LeftSideba
         <Link to="/app/feed" className="flex items-center gap-2.5 group">
           <img src={logoImg} alt="SmartzConnect" className="w-8 h-8 object-contain group-hover:scale-110 transition-transform flex-shrink-0" />
           <span className="font-display font-bold text-[1.05rem] hidden lg:block">
-            <span className="text-gradient-love">Smartz</span>
-            <span className="dark:text-white text-gray-900">Connect</span>
+            <BrandName />
           </span>
         </Link>
       </div>

@@ -13,6 +13,7 @@ import { openTawkChat } from '@/lib/tawk'
 import { useAuth } from '@/hooks/useAuth'
 import { useSiteConfig, SITE_IMAGE_KEYS } from '@/contexts/SiteConfigContext'
 import { useServices } from '@/hooks/useServices'
+import BrandName from '@/components/BrandName'
 
 /* ── Nav data (hardcoded fallback) ────────────────────────────────────── */
 const FALLBACK_PRODUCTS = {
@@ -26,7 +27,6 @@ const FALLBACK_PRODUCTS = {
     { label: 'SmartzSocial',   href: '/app/feed',       icon: Users,       color: 'text-violet-400',   bg: 'bg-violet-500/10',   desc: 'Your social feed'           },
     { label: 'SmartzDating',   href: '/app/discover',   icon: Heart,       color: 'text-pink-400',     bg: 'bg-pink-500/10',     desc: 'Match & connect'            },
     { label: 'SmartzTV',       href: '/smartztv',       icon: Tv,          color: 'text-purple-400',   bg: 'bg-purple-500/10',   desc: 'Live streams & creators'    },
-    { label: 'Spin & Chat',    href: '/app/spin',        icon: Zap,         color: 'text-fuchsia-400',  bg: 'bg-fuchsia-500/10',  desc: 'Random connections'         },
   ],
 }
 
@@ -39,7 +39,6 @@ const SERVICE_ICON_MAP: Record<string, { icon: typeof ShoppingBag; color: string
   'smartzsocial':   { icon: Users,       color: 'text-violet-400',  bg: 'bg-violet-500/10'  },
   'smartzdating':   { icon: Heart,       color: 'text-pink-400',    bg: 'bg-pink-500/10'    },
   'smartztv':       { icon: Tv,          color: 'text-purple-400',  bg: 'bg-purple-500/10'  },
-  'spin-chat':      { icon: Zap,         color: 'text-fuchsia-400', bg: 'bg-fuchsia-500/10' },
   'world-stage':    { icon: Globe,       color: 'text-blue-400',    bg: 'bg-blue-500/10'    },
 }
 
@@ -314,8 +313,7 @@ export default function Navbar() {
                 className="h-7 w-auto object-contain"
               />
               <span className="font-display font-black text-base tracking-tight leading-none">
-                <span className="bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent">Smartz</span>
-                <span className="text-white">Connect</span>
+                <BrandName />
               </span>
             </Link>
 

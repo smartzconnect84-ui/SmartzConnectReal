@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff, Loader2, ArrowLeft } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import TurnstileWidget from '@/components/TurnstileWidget'
+import BrandName from '@/components/BrandName'
 
 const TURNSTILE_ENABLED = !!import.meta.env.VITE_TURNSTILE_SITE_KEY
 
@@ -100,8 +101,8 @@ export default function LoginPage() {
       {/* Logo */}
       <div className="flex items-center gap-2.5 mb-8">
         <img src={logoImg} alt="SmartzConnect" className="w-9 h-9 object-contain" />
-        <span className="font-display font-black text-xl tracking-tight text-white">
-          Smartz<span className="text-purple-400">Connect</span>
+        <span className="font-display font-black text-xl tracking-tight">
+          <BrandName />
         </span>
       </div>
 

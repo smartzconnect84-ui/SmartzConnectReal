@@ -153,30 +153,34 @@ export default function AdminEmail() {
     }
     setSending(true)
     try {
-      const { error } = await supabase.from('email_campaigns').insert({
-        subject: form.subject.trim(),
-        body: form.body.trim(),
-        audience: form.audience,
-        footer: form.footer,
-        from_email: fromEmail,
-        from_name: fromName,
-        status: 'sent',
-        sent_at: new Date().toISOString(),
-        sent_count: audienceCount(form.audience),
-        opened_count: 0,
+      const { data: sessionData } = await supabase.auth.getSession()
+      const token = sessionData.session?.access_token
+      if (!token) throw new Error('Not authenticated')
+
+      const { data, error } = await supabase.functions.invoke('send-bulk-email', {
+        body: {
+          subject: form.subject.trim(),
+          body: form.body.trim(),
+          audience: form.audience,
+          footer: form.footer,
+          from_email: fromEmail,
+          from_name: fromName,
+        },
+        headers: { Authorization: `Bearer ${token}` },
       })
-      if (error && !error.message.includes('does not exist')) throw error
+      if (error) throw error
+      if (data?.error) throw new Error(data.error)
 
       try {
         await supabase.from('system_notifications').insert({
           type: 'email_campaign',
           title: `Email Sent: ${form.subject}`,
-          body: `Campaign sent to "${form.audience}" audience (${audienceCount(form.audience)} recipients)`,
+          body: `Campaign sent to "${form.audience}" audience (${data?.sent_count ?? 0} recipients)`,
           is_read: false,
         })
       } catch { /* notification logging is best-effort */ }
 
-      showToast(`Email campaign sent to ${audienceCount(form.audience).toLocaleString()} users!`)
+      showToast(`Email campaign sent to ${(data?.sent_count ?? 0).toLocaleString()} of ${(data?.total ?? 0).toLocaleString()} users!`)
       setShowCompose(false)
       setForm({ subject: '', body: '', audience: 'all', footer: form.footer })
       fetchData()
@@ -262,7 +266,7 @@ export default function AdminEmail() {
           </div>
         </div>
         <p className="text-[11px] dark:text-gray-500 text-gray-400 mt-3">
-          Emails are sent via Supabase Edge Functions using the configured SMTP settings. Set <code className="font-mono">SMTP_HOST</code>, <code className="font-mono">SMTP_USER</code>, and <code className="font-mono">SMTP_PASS</code> in your Supabase project secrets.
+          Emails are sent via the <code className="font-mono">send-bulk-email</code> Supabase Edge Function using Resend. Set <code className="font-mono">RESEND_API_KEY</code> in your Supabase project secrets to activate real delivery.
         </p>
       </div>
 

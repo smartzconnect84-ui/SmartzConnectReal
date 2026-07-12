@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { Heart, Camera, MapPin, Sparkles, ChevronRight, ChevronLeft, Check } from 'lucide-react'
+import BrandName from '@/components/BrandName'
 
 const logoImg = '/logo.png'
 
@@ -79,8 +80,7 @@ export default function OnboardingPage() {
             <div className="absolute inset-0 rounded-xl bg-brand-pink/20 blur-md" />
           </div>
           <span className="font-display font-black text-xl tracking-tight">
-            <span className="text-gradient-love">Smartz</span>
-            <span className="dark:text-white text-gray-900">Connect</span>
+            <BrandName />
           </span>
         </div>
 

@@ -4,6 +4,7 @@ import { Heart, Shield, Zap, Globe, MessageCircle, ExternalLink } from 'lucide-r
 import { useSiteConfig, SITE_IMAGE_KEYS } from '@/contexts/SiteConfigContext'
 import { openTawkChat } from '@/lib/tawk'
 import { useServices } from '@/hooks/useServices'
+import BrandName from '@/components/BrandName'
 const defaultLogoImg = '/logo.png'
 
 /* ── Hardcoded fallback product links ────────────────────────────────── */
@@ -15,7 +16,6 @@ const FALLBACK_PRODUCTS: { label: string; href: string }[] = [
   { label: 'SmartzRide',      href: '/smartzride'     },
   { label: 'SmartzDelivery',  href: '/smartzdelivery' },
   { label: 'SmartzAds',       href: '/smartzads'      },
-  { label: 'Spin & Chat',     href: '/app/spin'       },
 ]
 
 type NavLink =
@@ -99,8 +99,7 @@ export default function Footer() {
             <Link to="/" className="flex items-center gap-2.5 mb-5 group">
               <img src={siteConfig.get(SITE_IMAGE_KEYS.logo, defaultLogoImg)} alt="SmartzConnect" className="h-8 w-auto object-contain group-hover:scale-105 transition-transform" />
               <span className="font-display font-black text-base">
-                <span style={{ background: 'linear-gradient(135deg, #EC4899 0%, #9B5DE5 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Smartz</span>
-                <span className="text-white">Connect</span>
+                <BrandName />
               </span>
             </Link>
             <p className="text-[13px] text-white/35 leading-relaxed mb-5 max-w-[200px]">

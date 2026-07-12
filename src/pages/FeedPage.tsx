@@ -13,7 +13,6 @@ import { uploadToSufy } from '@/lib/sufy'
 import { useAuth } from '@/hooks/useAuth'
 import ReportBlockModal from '@/components/ReportBlockModal'
 import { useOfflineDraft } from '@/lib/offlineDraft'
-import AppBadgeTestPanel from '@/components/AppBadgeTestPanel'
 
 // ── Types ───────────────────────────────────────────────────────────────────
 interface Post {
@@ -1683,9 +1682,6 @@ export default function FeedPage() {
               </motion.div>
             )}
           </AnimatePresence>
-
-          {/* TEMPORARY — App Badging API manual test panel, remove when done testing */}
-          <AppBadgeTestPanel />
 
           {/* Stories */}
           <StoriesBar user={user} onStoriesLoaded={handleStoriesLoaded} />

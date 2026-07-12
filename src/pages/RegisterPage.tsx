@@ -7,6 +7,7 @@ import { AuthInput, AuthError, AuthLabel } from '@/components/auth/AuthLayout'
 import { DateOfBirthPicker } from '@/components/auth/DateOfBirthPicker'
 import TurnstileWidget from '@/components/TurnstileWidget'
 import { captureReferralCodeFromUrl, getStoredReferralCode } from '@/lib/referral'
+import BrandName from '@/components/BrandName'
 
 const TURNSTILE_ENABLED = !!import.meta.env.VITE_TURNSTILE_SITE_KEY
 
@@ -174,8 +175,7 @@ export default function RegisterPage() {
             <div className="absolute inset-0 rounded-xl bg-purple-500/20 blur-lg" />
           </div>
           <span className="font-display font-black text-xl tracking-tight">
-            <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Smartz</span>
-            <span className="text-white">Connect</span>
+            <BrandName />
           </span>
         </div>
 

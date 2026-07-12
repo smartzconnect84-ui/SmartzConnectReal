@@ -88,11 +88,19 @@
           mobile: { xOffset: 20, yOffset: 20, position: 'br' },
         },
       };
-      // Start hidden — <TawkController> (src/components/TawkController.tsx)
-      // decides when to show it: only on public-site routes, and only if the
-      // user hasn't dismissed it down to the small "Live Support" icon.
+      // Visibility is decided by the same logic React uses (see
+      // window.__recomputeTawkVisibility, set by src/lib/tawk.ts): shown only
+      // on public-site routes and only if the user hasn't dismissed it this
+      // session. Calling the shared function here — instead of unconditionally
+      // hiding — avoids a race where this onLoad (fired once Tawk's own script
+      // finishes loading over the network) could stomp on a "show" call
+      // <TawkController> already made on mount.
       Tawk_API.onLoad = function () {
-        if (Tawk_API.hideWidget) Tawk_API.hideWidget();
+        if (window.__recomputeTawkVisibility) {
+          window.__recomputeTawkVisibility();
+        } else if (Tawk_API.hideWidget) {
+          Tawk_API.hideWidget();
+        }
       };
       (function () {
         var s1 = document.createElement("script"), s0 = document.getElementsByTagName("script")[0];

@@ -10,6 +10,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useTheme } from '@/contexts/ThemeContext'
 import { openTawkChat } from '@/lib/tawk'
 import { supabase } from '@/lib/supabase'
+import BrandName from '@/components/BrandName'
 
 const logoImg = '/logo.png'
 
@@ -76,8 +77,7 @@ export default function TopNavBar({ unreadMessages, unreadNotifs, onMenuToggle, 
       <Link to="/app/feed" className="flex items-center gap-2 flex-shrink-0">
         <img src={logoImg} alt="SmartzConnect" className="w-7 h-7 object-contain" />
         <span className="font-display font-bold text-[0.95rem] hidden sm:block">
-          <span className="text-gradient-love">Smartz</span>
-          <span className="dark:text-white text-gray-900">Connect</span>
+          <BrandName />
         </span>
       </Link>
 
