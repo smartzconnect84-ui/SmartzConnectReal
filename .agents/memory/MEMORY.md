@@ -57,3 +57,5 @@
 - [Referral → subscription rewards](referral-subscription-rewards.md) — 10/20 confirmed referrals auto-grant free Premium/VIP for 14 days; subscription_source field prevents clobbering paid/admin plans.
 - [admin_users RLS recursion — RESOLVED](admin-users-rls-recursion.md) — root cause was a self-referential policy on admin_users itself; fixed by dropping it in favor of existing SECURITY DEFINER helpers.
 - [Navbar product grouping](navbar-product-grouping.md) — Commerce/Social nav columns driven by COMMERCE_SLUGS list, independent of services.category (DB category ≠ nav bucket).
+
+- [Vercel token empty despite existing](vercel-token-empty-refresh.md) — VERCEL_TOKEN resolved as empty (len 0) in shell though marked configured; fixed by requestSecrets() re-entry, not code changes.
