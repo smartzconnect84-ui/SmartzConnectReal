@@ -109,14 +109,14 @@ begin
   -- spamming a notification for every referral confirmed after the fact.
   if v_existing_grant is null or v_current.subscription_tier is distinct from v_target_tier then
     begin
-      insert into public.notifications (user_id, type, title, body, emoji, data)
+      insert into public.notifications (user_id, type, title, body, emoji, action_url)
       values (
         p_referrer_id, 'system',
         case when v_target_tier = 'vip' then '👑 VIP unlocked!' else '🎉 Premium unlocked!' end,
         'You invited ' || v_confirmed_count || ' friends — enjoy free ' || initcap(v_target_tier) ||
           ' for 14 days, on us!',
         case when v_target_tier = 'vip' then '👑' else '🎉' end,
-        jsonb_build_object('plan', v_target_tier, 'source', 'referral', 'referral_count', v_confirmed_count)
+        '/app/subscriptions'
       );
     exception when undefined_column or undefined_table then
       null; -- notifications shape may differ across environments; grant already applied above
@@ -240,7 +240,7 @@ begin
   perform cron.schedule(
     'revert-expired-referral-subscriptions',
     '0 * * * *', -- hourly
-    $$select public.revert_expired_referral_subscriptions();$$
+    $cron$select public.revert_expired_referral_subscriptions();$cron$
   );
 exception when others then
   -- pg_cron unavailable/unauthorized on this project tier — the client-side
@@ -272,24 +272,31 @@ create trigger trg_mark_subscription_paid_on_payment
   after update on public.mobile_money_payments
   for each row execute procedure public.mark_subscription_paid_on_payment();
 
--- Admin manual "Grant Plan" (AdminSubscriptions.tsx) should also mark the
--- source as admin-granted with no auto-expiry, so it's never reverted by the
--- referral cleanup job. The admin UI writes directly to user_subscriptions
--- + users.subscription_tier; mirror that onto profiles via the same trigger
--- style so both admin flows (uuid-profiles and integer-users) stay in sync
--- whenever a subscriptions/user_subscriptions row is inserted as active.
+-- Admin manual "Grant Plan" (AdminSubscriptions.tsx) writes directly to
+-- user_subscriptions.user_id, which is the legacy INTEGER public.users.id —
+-- not a profiles UUID — and today only updates users.subscription_tier,
+-- never profiles.subscription_tier. That means admin-granted plans silently
+-- didn't gate any real UI feature (the app reads profiles.subscription_tier).
+-- Fix: resolve the profile via users.auth_id and keep both tables' tier +
+-- expiry in sync, tagged 'admin' so the referral cleanup job never touches it.
 create or replace function public.mark_subscription_admin_on_grant()
 returns trigger language plpgsql security definer as $$
+declare
+  v_profile_id uuid;
 begin
-  if NEW.status = 'active' and NEW.payment_ref is not null then
-    -- Admin grants always set a payment_ref/note; best-effort — only apply
-    -- if user_id on this row is actually a profiles UUID (some legacy rows
-    -- use the integer users.id instead, which will simply not match here).
-    update public.profiles
+  if NEW.status = 'active' then
+    select auth_id into v_profile_id from public.users where id = NEW.user_id;
+    if v_profile_id is not null then
+      update public.profiles
+        set subscription_tier = NEW.plan_id,
+            subscription_source = 'admin',
+            subscription_expires_at = NEW.expires_at
+        where id = v_profile_id;
+    end if;
+    update public.users
       set subscription_tier = NEW.plan_id,
-          subscription_source = 'admin',
           subscription_expires_at = NEW.expires_at
-      where id::text = NEW.user_id::text;
+      where id = NEW.user_id;
   end if;
   return NEW;
 exception when others then
@@ -301,3 +308,35 @@ drop trigger if exists trg_mark_subscription_admin_on_grant on public.user_subsc
 create trigger trg_mark_subscription_admin_on_grant
   after insert on public.user_subscriptions
   for each row execute procedure public.mark_subscription_admin_on_grant();
+
+-- Mirror the referral-reward grant/expiry onto public.users too (via
+-- auth_id), so the admin dashboard's view of a user's plan stays consistent
+-- with what actually gates their UI experience on profiles.
+create or replace function public.mirror_subscription_to_users()
+returns trigger language plpgsql security definer as $$
+begin
+  update public.users
+    set subscription_tier = NEW.subscription_tier,
+        subscription_expires_at = NEW.subscription_expires_at
+    where auth_id = NEW.id;
+  return NEW;
+exception when others then
+  return NEW;
+end;
+$$;
+
+drop trigger if exists trg_mirror_subscription_to_users on public.profiles;
+create trigger trg_mirror_subscription_to_users
+  after update of subscription_tier, subscription_source, subscription_expires_at on public.profiles
+  for each row execute procedure public.mirror_subscription_to_users();
+
+-- ── 7. Unrelated pre-existing bug hit while verifying this migration's pages:
+--      admin_users had a self-referential RLS policy ("Admins can see admin
+--      users": EXISTS (SELECT 1 FROM admin_users WHERE auth_id = auth.uid()))
+--      that recurses into its own RLS on evaluation, 500ing (42P17) every
+--      query that touches admin_users — including platform_settings and
+--      system_announcements (loaded on every page via AnnouncementContext).
+--      Redundant with admin_users_select_self; real admin-role checks already
+--      go through the SECURITY DEFINER helpers (is_admin()/is_superadmin()),
+--      which don't re-trigger RLS. Safe to drop.
+drop policy if exists "Admins can see admin users" on public.admin_users;

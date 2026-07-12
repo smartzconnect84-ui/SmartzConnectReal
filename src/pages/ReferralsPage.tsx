@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
-import { Gift, Copy, Check, Users, Phone, MessageCircle, Zap, Clock } from 'lucide-react'
+import { Gift, Copy, Check, Users, Phone, MessageCircle, Zap, Clock, Crown, Sparkles } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import {
   buildReferralLink, fetchMyReferralCode, fetchMyReferrals, fetchMyActivePerks,
-  sumCallCreditMinutes, hasPerk, type ReferralRow, type ReferralPerk,
+  fetchMySubscriptionState, sumCallCreditMinutes, hasPerk,
+  PREMIUM_REFERRAL_THRESHOLD, VIP_REFERRAL_THRESHOLD,
+  type ReferralRow, type ReferralPerk, type ReferralSubscriptionState,
 } from '@/lib/referral'
 
 function timeLeft(expiresAt: string): string {
@@ -19,6 +21,7 @@ export default function ReferralsPage() {
   const [code, setCode] = useState<string | null>(null)
   const [referrals, setReferrals] = useState<ReferralRow[]>([])
   const [perks, setPerks] = useState<ReferralPerk[]>([])
+  const [subState, setSubState] = useState<ReferralSubscriptionState | null>(null)
   const [copied, setCopied] = useState(false)
   const [loading, setLoading] = useState(true)
 
@@ -29,11 +32,13 @@ export default function ReferralsPage() {
       fetchMyReferralCode(user.id),
       fetchMyReferrals(user.id),
       fetchMyActivePerks(user.id),
-    ]).then(([c, r, p]) => {
+      fetchMySubscriptionState(user.id),
+    ]).then(([c, r, p, s]) => {
       if (!isMounted) return
       setCode(c)
       setReferrals(r)
       setPerks(p)
+      setSubState(s)
     }).catch(err => {
       console.error('ReferralsPage: failed to load data', err)
     }).finally(() => {
@@ -47,6 +52,15 @@ export default function ReferralsPage() {
   const callMinutes = sumCallCreditMinutes(perks)
   const unlimitedMsg = perks.find(p => p.perk_type === 'unlimited_messaging')
   const unlimitedSpin = perks.find(p => p.perk_type === 'unlimited_spins')
+
+  const hasActiveReferralReward = subState?.source === 'referral'
+    && !!subState.expiresAt && new Date(subState.expiresAt).getTime() > Date.now()
+  const rewardTier = hasActiveReferralReward ? subState?.tier : null
+  const nextThreshold = confirmedCount >= VIP_REFERRAL_THRESHOLD
+    ? null
+    : confirmedCount >= PREMIUM_REFERRAL_THRESHOLD ? VIP_REFERRAL_THRESHOLD : PREMIUM_REFERRAL_THRESHOLD
+  const nextTierLabel = nextThreshold === VIP_REFERRAL_THRESHOLD ? 'VIP' : 'Premium'
+  const progressPct = nextThreshold ? Math.min(100, Math.round((confirmedCount / nextThreshold) * 100)) : 100
 
   const handleCopy = async () => {
     try {
@@ -86,6 +100,44 @@ export default function ReferralsPage() {
             {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
             {copied ? 'Copied' : 'Copy'}
           </button>
+        </div>
+      </div>
+
+      {/* Referral → subscription milestone */}
+      <div className="dark:bg-[#130E1E] bg-white rounded-2xl border dark:border-white/8 border-gray-200 p-5 mb-6">
+        {rewardTier ? (
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-pink-500 flex items-center justify-center shrink-0">
+              <Crown className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <p className="font-black text-sm dark:text-white text-gray-900">
+                {rewardTier === 'vip' ? 'VIP' : 'Premium'} unlocked — free for {timeLeft(subState!.expiresAt as string)}
+              </p>
+              <p className="text-xs dark:text-gray-400 text-gray-500">Earned by inviting {confirmedCount} friends</p>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center shrink-0">
+              <Sparkles className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <p className="font-black text-sm dark:text-white text-gray-900">
+                Invite {nextThreshold} friends to unlock {nextTierLabel} free for 14 days
+              </p>
+              <p className="text-xs dark:text-gray-400 text-gray-500">
+                {confirmedCount}/{nextThreshold} confirmed referrals
+                {nextThreshold === PREMIUM_REFERRAL_THRESHOLD && ` · then ${VIP_REFERRAL_THRESHOLD} for VIP`}
+              </p>
+            </div>
+          </div>
+        )}
+        <div className="h-2 rounded-full dark:bg-white/10 bg-gray-100 overflow-hidden">
+          <div
+            className="h-full rounded-full bg-love-gradient transition-all"
+            style={{ width: `${progressPct}%` }}
+          />
         </div>
       </div>
 

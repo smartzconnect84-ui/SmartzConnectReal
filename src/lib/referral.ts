@@ -93,3 +93,28 @@ export function sumCallCreditMinutes(perks: ReferralPerk[]): number {
 export function hasPerk(perks: ReferralPerk[], type: ReferralPerk['perk_type']): boolean {
   return perks.some(p => p.perk_type === type)
 }
+
+// ── Referral → subscription milestone rewards ──────────────────────────────
+// Invite 10 confirmed friends → free Premium for 14 days.
+// Invite 20 confirmed friends → free VIP for 14 days.
+export const PREMIUM_REFERRAL_THRESHOLD = 10
+export const VIP_REFERRAL_THRESHOLD = 20
+
+export interface ReferralSubscriptionState {
+  tier: 'free' | 'premium' | 'vip' | null
+  source: 'free' | 'referral' | 'payment' | 'admin' | null
+  expiresAt: string | null
+}
+
+export async function fetchMySubscriptionState(userId: string): Promise<ReferralSubscriptionState> {
+  const { data } = await supabase
+    .from('profiles')
+    .select('subscription_tier, subscription_source, subscription_expires_at')
+    .eq('id', userId)
+    .single()
+  return {
+    tier: (data?.subscription_tier as ReferralSubscriptionState['tier']) ?? 'free',
+    source: (data?.subscription_source as ReferralSubscriptionState['source']) ?? 'free',
+    expiresAt: data?.subscription_expires_at ?? null,
+  }
+}

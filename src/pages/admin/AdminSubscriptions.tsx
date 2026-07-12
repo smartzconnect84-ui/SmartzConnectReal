@@ -141,7 +141,7 @@ export default function AdminSubscriptions() {
           {
             id: 'premium',
             name: 'Premium',
-            price_usd: 9.99,
+            price_usd: 5,
             badge: 'Popular',
             color: 'text-pink-400',
             border: 'border-pink-500/40',
@@ -165,7 +165,7 @@ export default function AdminSubscriptions() {
           {
             id: 'vip',
             name: 'VIP',
-            price_usd: 24.99,
+            price_usd: 10,
             badge: 'Best Value',
             color: 'text-amber-400',
             border: 'border-amber-500/40',

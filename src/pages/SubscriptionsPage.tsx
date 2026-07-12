@@ -117,7 +117,7 @@ const plans = [
     ],
   },
   {
-    id: 'premium', name: 'Premium', price: 9.99, period: '/month', icon: Zap, color: 'from-pink-500 to-rose-600',
+    id: 'premium', name: 'Premium', price: 5, period: '/month', icon: Zap, color: 'from-pink-500 to-rose-600',
     border: 'border-pink-500/40', badge: '🔥 Most Popular', current: true,
     features: [
       { text: 'Unlimited swipes',       ok: true  },
@@ -133,7 +133,7 @@ const plans = [
     ],
   },
   {
-    id: 'vip', name: 'VIP', price: 24.99, period: '/month', icon: Crown, color: 'from-amber-500 to-yellow-600',
+    id: 'vip', name: 'VIP', price: 10, period: '/month', icon: Crown, color: 'from-amber-500 to-yellow-600',
     border: 'border-amber-500/40', badge: '👑 Best Value', current: false,
     features: [
       { text: 'Everything in Premium',  ok: true  },

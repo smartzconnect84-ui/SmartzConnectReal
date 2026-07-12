@@ -54,3 +54,5 @@
 - [Secrets stuck empty despite "available"](secrets-stuck-empty-fix.md) — secrets listed as configured resolved as empty strings (len 0) in both shell and app; fixed by requestSecrets() re-entry, not by any code change.
 - [Story reaction/comment → DM linking](story-reaction-dm-link.md) — sendStoryEventToChat() in src/lib/stream.ts turns story reactions/comments into real Stream Chat DMs to the author via getOrCreateDirectChannel.
 - [Tawk dismiss-chip overlap bug](tawk-dismiss-chip-overlap.md) — custom "×" chip near Tawk's own controls could get clicked while its chat window was open, hiding the whole widget; gate the chip on Tawk's own chat-open lifecycle event.
+- [Referral → subscription rewards](referral-subscription-rewards.md) — 10/20 confirmed referrals auto-grant free Premium/VIP for 14 days; subscription_source field prevents clobbering paid/admin plans.
+- [admin_users RLS recursion — RESOLVED](admin-users-rls-recursion.md) — root cause was a self-referential policy on admin_users itself; fixed by dropping it in favor of existing SECURITY DEFINER helpers.
