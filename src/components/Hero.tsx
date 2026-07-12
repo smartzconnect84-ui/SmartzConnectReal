@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowRight } from 'lucide-react'
 import { cmsList } from '@/lib/contentSync'
 import DownloadAppButton from '@/components/DownloadAppButton'
-import AnimatedStat from '@/components/AnimatedStat'
 
 /* ── Slide types ──────────────────────────────────────────────────────── */
 interface Slide {
@@ -43,15 +42,6 @@ const slides: Slide[] = [
   { badge: 'SMARTZDELIVERY', badgeColor: 'from-[#EC4899] to-[#DC2626]',   headlineWhite: 'Deliver fast.',headlinePurple: 'Earn',  headlineOrange: 'more.',     sub: 'Fast, reliable local delivery connecting vendors with customers across every neighbourhood.',                        image: '/hero-scroll.jpg',      objectPosition: 'center 35%' },
   { badge: 'SMARTZADS',      badgeColor: 'from-[#DC2626] to-[#EC4899]',   headlineWhite: 'Reach millions.',headlinePurple: 'In', headlineOrange: 'stantly.',  sub: "Run powerful ad campaigns targeted to Africa's most engaged digital community.",                                    image: '/hero-networking.jpg',  objectPosition: 'center 30%' },
   { badge: 'ONE PLATFORM',   badgeColor: 'from-[#D4AF37] to-[#EC4899]',   headlineWhite: 'Endless',      headlinePurple: 'Connections.', headlineOrange: 'Built for the World.', sub: 'One identity. Eight super-products. Built in Liberia — for Africa and the world.', image: '/hero-date.jpg', objectPosition: 'center 25%' },
-]
-
-const stats = [
-  { value: '15K+', label: 'USERS',     delay: 0   },
-  { value: '195+', label: 'STATES',    delay: 40  },
-  { value: '1K+',  label: 'STORES',    delay: 80  },
-  { value: '20+',  label: 'DRIVERS',   delay: 120 },
-  { value: '1K+',  label: 'VENDORS',   delay: 160 },
-  { value: '8K+',  label: 'CONNECTED', delay: 200 },
 ]
 
 export default function Hero() {
@@ -247,36 +237,6 @@ export default function Hero() {
         ))}
       </div>
 
-      {/* ── Stats bar — animated count-up ── */}
-      <div
-        className="absolute bottom-0 left-0 right-0 z-20"
-        style={{ background: 'rgba(10,8,22,0.82)', backdropFilter: 'blur(20px)', borderTop: '1px solid rgba(255,255,255,0.07)' }}
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-8">
-          <div className="grid grid-cols-3 sm:grid-cols-6">
-            {stats.map((s, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 14, scale: 0.85 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ type: 'spring', stiffness: 260, damping: 18, delay: s.delay / 1000 }}
-                whileHover={{ backgroundColor: 'rgba(255,255,255,0.04)', scale: 1.05 }}
-                className="py-3.5 sm:py-4 px-3 sm:px-5"
-              >
-                <AnimatedStat
-                  value={s.value}
-                  label={s.label}
-                  delay={s.delay}
-                  duration={900}
-                  className="text-center"
-                  valueClass="font-display font-black sm:text-xl text-white text-[17px] tabular-nums"
-                  labelClass="sm:text-[10px] text-white/40 font-bold tracking-wider mt-0.5 text-[9px]"
-                />
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </div>
     </section>
   )
 }
