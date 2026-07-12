@@ -38,3 +38,33 @@ description: Architecture of the course/lesson/quiz/certificate pipeline added i
 **Why:** Requested features — quiz timer, certificate generator in admin, full course learning flow, invoice email with Supabase user auto-detect.
 
 **How to apply:** Admin creates courses + lessons + quiz questions at /admin/learning. Set pass_score and quiz_timer_secs per course under Timer & Scoring tab. Users take course at /app/course/:id. To issue certificates, RESEND_API_KEY must be set in Supabase edge function secrets.
+
+## Learning Application System (v29)
+- Table: `learning_applications` — user_id (nullable/anon), course_id, full_name, email, phone, motivation, duration_days (3/5/7), cost, currency, status (pending/admin_approved/admin_rejected), admin_notes
+- Schema: schema_v29_learning_applications.sql (applied to live DB)
+- Public route: `/learning/apply/:courseId` — no auth required, pre-fills from profile if logged in
+- Shows: course card, duration picker (3/5/7 days), personal details form, cost summary
+- Realtime: subscribes to `learning_applications` row by ID after submit — shows live approval/rejection toast
+- LearningPage: `application_enabled` + `application_cost` + `currency` fields on courses; Apply button shown if enabled
+
+## Admin Applications tab (AdminLearning)
+- 6th tab in AdminLearning: "Applications"
+- Realtime subscription to learning_applications while on tab
+- Filter: All / Pending / Approved / Rejected
+- Expand each application to see details, notes textarea, Approve/Reject buttons
+- On Approve: update status + send-email (application_approved template) + notifyUser() if user_id
+- On Reject: update status + send-email (application_rejected template) + notifyUser() if user_id
+
+## CEO Certificate Approval flow
+- AdminCEO now has "Staff Management" | "Learning Approvals" view toggle
+- Learning Approvals: fetches certificates where ceo_approved=false with course join
+- Shows grade card (score ring), recipient, course, date, CEO notes field
+- Approve: update ceo_approved=true + call send-certificate edge fn + notifyUser
+- Reject: delete cert + notifyUser
+
+## CoursePlayerPage CEO-approval flow
+- Stage 'pending_ceo': shown after cert form submitted — pulsing CEO crown icon
+- Stage 'ceo_approved': shown when CEO approves (via realtime UPDATE on certificates)
+- sendCertificate() now inserts with ceo_approved:false; does NOT call send-certificate
+- Realtime: subscribes to certificates UPDATE for this user/course; shows ceo_approved stage on approval
+- On page load: checks for existing cert (pending or approved) and restores correct stage

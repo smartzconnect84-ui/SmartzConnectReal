@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   BookOpen, Plus, Loader2, Link2, RefreshCw, Database, Search,
   ExternalLink, Bookmark, Clock, Eye, GraduationCap, Play,
-  ChevronRight, Star, Trophy, Filter
+  ChevronRight, Star, Trophy, Filter, FileText, DollarSign
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
@@ -23,6 +23,7 @@ interface CourseRow {
   id: string; title: string; description: string | null; cover_url: string | null
   category: string; level: string; duration_mins: number; pass_score: number; quiz_timer_secs: number
   lesson_count?: number; question_count?: number
+  application_cost?: number; currency?: string; application_enabled?: boolean
 }
 
 interface NewResource {
@@ -72,7 +73,7 @@ export default function LearningPage() {
     setCoursesLoading(true)
     const { data, error } = await supabase
       .from('courses')
-      .select('id, title, description, cover_url, category, level, duration_mins, pass_score, quiz_timer_secs')
+      .select('id, title, description, cover_url, category, level, duration_mins, pass_score, quiz_timer_secs, application_cost, currency, application_enabled')
       .eq('is_published', true)
       .order('created_at', { ascending: false })
 
@@ -319,6 +320,12 @@ export default function LearningPage() {
                       </span>
                       {filteredCourses[0].lesson_count ? <span className="text-xs dark:text-gray-400 text-gray-500">{filteredCourses[0].lesson_count} lessons</span> : null}
                       {filteredCourses[0].question_count ? <span className="text-xs dark:text-gray-400 text-gray-500">{filteredCourses[0].question_count} quiz questions</span> : null}
+                      {filteredCourses[0].application_enabled && (
+                        <button onClick={e => { e.stopPropagation(); navigate(`/learning/apply/${filteredCourses[0].id}`) }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 border border-white/20 text-white text-xs font-bold hover:bg-white/20 transition-colors">
+                          <FileText className="w-3 h-3" /> Apply
+                        </button>
+                      )}
                       <div className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-love-gradient text-white text-xs font-bold">
                         <Play className="w-3 h-3" /> Start Course
                       </div>
@@ -349,12 +356,25 @@ export default function LearningPage() {
                         {c.lesson_count ? <span className="flex items-center gap-0.5"><BookOpen className="w-3 h-3" /> {c.lesson_count}</span> : null}
                         {c.duration_mins ? <span className="flex items-center gap-0.5"><Clock className="w-3 h-3" /> {c.duration_mins}m</span> : null}
                       </div>
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between gap-2">
                         <span className="text-[10px] dark:text-gray-500 text-gray-400">Pass: {c.pass_score}%</span>
-                        <div className="flex items-center gap-1 text-[10px] font-semibold text-brand-pink">
-                          <ChevronRight className="w-3 h-3" /> Take Course
+                        <div className="flex items-center gap-1">
+                          {c.application_enabled && (
+                            <button onClick={e => { e.stopPropagation(); navigate(`/learning/apply/${c.id}`) }}
+                              className="flex items-center gap-0.5 text-[10px] font-bold text-amber-400 hover:text-amber-300 transition-colors px-1.5 py-0.5 rounded-lg bg-amber-500/10">
+                              <FileText className="w-2.5 h-2.5" /> Apply
+                            </button>
+                          )}
+                          <div className="flex items-center gap-1 text-[10px] font-semibold text-brand-pink">
+                            <ChevronRight className="w-3 h-3" /> Start
+                          </div>
                         </div>
                       </div>
+                      {c.application_cost != null && c.application_cost > 0 && (
+                        <div className="flex items-center gap-0.5 text-[10px] font-bold text-emerald-400 mt-1">
+                          <DollarSign className="w-2.5 h-2.5" /> {c.application_cost} {c.currency || 'USD'} fee
+                        </div>
+                      )}
                     </div>
                   </motion.div>
                 ))}

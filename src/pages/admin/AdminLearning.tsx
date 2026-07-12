@@ -4,8 +4,10 @@ import {
   BookOpen, Plus, Trash2, Edit3, Save, X, ChevronDown, ChevronUp,
   Timer, Award, FileText, Video, List, CheckCircle, AlertCircle,
   Loader2, RefreshCw, Eye, EyeOff, GraduationCap, HelpCircle,
-  ClipboardList, Settings2, Users, BarChart2
+  ClipboardList, Settings2, Users, BarChart2, Bell, Clock, DollarSign,
+  Mail, Phone, UserCheck, UserX, MessageSquare
 } from 'lucide-react'
+import { notifyUser } from '@/lib/notify'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 
@@ -24,6 +26,13 @@ interface Question {
   id: string; course_id: string; question: string; options: string[]
   correct_index: number; explanation: string | null; order_index: number
 }
+interface Application {
+  id: string; user_id: string | null; course_id: string; full_name: string
+  email: string; phone: string | null; motivation: string | null
+  duration_days: number; cost: number; currency: string; status: string
+  admin_notes: string | null; created_at: string
+  courses?: { title: string }
+}
 
 // ─── Tab definitions ──────────────────────────────────────────────────────────
 const TABS = [
@@ -32,6 +41,7 @@ const TABS = [
   { id: 'quiz',     label: 'Quiz Builder',   icon: HelpCircle },
   { id: 'timer',    label: 'Timer & Scoring',icon: Timer },
   { id: 'certs',    label: 'Certificates',   icon: Award },
+  { id: 'apps',     label: 'Applications',   icon: ClipboardList },
 ]
 
 const LEVELS = ['Beginner', 'Intermediate', 'Advanced']
@@ -48,6 +58,7 @@ export default function AdminLearning() {
   const [loading, setLoading] = useState(false)
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null)
   const [certs, setCerts] = useState<any[]>([])
+  const [applications, setApplications] = useState<Application[]>([])
 
   const showToast = (msg: string, ok = true) => {
     setToast({ msg, ok })
@@ -90,6 +101,15 @@ export default function AdminLearning() {
     setCerts(data || [])
   }
 
+  const fetchApplications = async () => {
+    const { data } = await supabase
+      .from('learning_applications')
+      .select('*, courses(title)')
+      .order('created_at', { ascending: false })
+      .limit(200)
+    setApplications(data || [])
+  }
+
   useEffect(() => { fetchCourses() }, [])
   useEffect(() => {
     if (selectedCourseId) {
@@ -98,6 +118,15 @@ export default function AdminLearning() {
     }
   }, [selectedCourseId])
   useEffect(() => { if (tab === 'certs') fetchCerts() }, [tab])
+  useEffect(() => {
+    if (tab !== 'apps') return
+    fetchApplications()
+    const ch = supabase
+      .channel('admin-applications')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'learning_applications' }, () => fetchApplications())
+      .subscribe()
+    return () => { ch.unsubscribe() }
+  }, [tab])
 
   const selectedCourse = courses.find(c => c.id === selectedCourseId)
 
@@ -182,6 +211,15 @@ export default function AdminLearning() {
       {/* ── CERTIFICATES TAB ─────────────────────────────────────────────── */}
       {tab === 'certs' && (
         <CertificatesPanel certs={certs} onRefresh={fetchCerts} />
+      )}
+
+      {/* ── APPLICATIONS TAB ─────────────────────────────────────────────── */}
+      {tab === 'apps' && (
+        <ApplicationsPanel
+          applications={applications}
+          onRefresh={fetchApplications}
+          showToast={showToast}
+        />
       )}
     </div>
   )
@@ -617,6 +655,209 @@ function TimerScoringPanel({ courses, onUpdate, showToast }: {
               </div>
             )
           })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Applications panel ───────────────────────────────────────────────────────
+function ApplicationsPanel({ applications, onRefresh, showToast }: {
+  applications: Application[]; onRefresh: () => void
+  showToast: (m: string, ok?: boolean) => void
+}) {
+  const [filter, setFilter] = useState<'all' | 'pending' | 'admin_approved' | 'admin_rejected'>('all')
+  const [expanded, setExpanded] = useState<string | null>(null)
+  const [notes, setNotes] = useState<Record<string, string>>({})
+  const [acting, setActing] = useState<string | null>(null)
+
+  const filtered = applications.filter(a => filter === 'all' || a.status === filter)
+
+  const pending = applications.filter(a => a.status === 'pending').length
+
+  const act = async (app: Application, newStatus: 'admin_approved' | 'admin_rejected') => {
+    setActing(app.id)
+    const adminNotes = notes[app.id] || ''
+    const { error } = await supabase
+      .from('learning_applications')
+      .update({ status: newStatus, admin_notes: adminNotes || null, admin_reviewed_at: new Date().toISOString() })
+      .eq('id', app.id)
+
+    if (error) { showToast(error.message, false); setActing(null); return }
+
+    // Email notification
+    const template = newStatus === 'admin_approved' ? 'application_approved' : 'application_rejected'
+    await supabase.functions.invoke('send-email', {
+      body: {
+        to: app.email,
+        template,
+        data: {
+          name: app.full_name,
+          courseName: app.courses?.title || 'the course',
+          duration: String(app.duration_days),
+          adminNotes,
+          loginUrl: 'https://smartzconnect.com/login',
+          coursesUrl: 'https://smartzconnect.com/smartzlearning',
+        },
+      },
+    })
+
+    // In-app push notification (only if they have an account)
+    if (app.user_id) {
+      await notifyUser({
+        userId: app.user_id,
+        type: 'learning_application',
+        title: newStatus === 'admin_approved' ? '🎉 Application Approved!' : 'Application Update',
+        message: newStatus === 'admin_approved'
+          ? `Your application for ${app.courses?.title || 'a course'} has been approved. Check your email!`
+          : `Your application for ${app.courses?.title || 'a course'} was not approved. ${adminNotes ? 'See email for details.' : ''}`,
+        actionUrl: '/app/learning',
+        emoji: newStatus === 'admin_approved' ? '✅' : '📋',
+      })
+    }
+
+    showToast(newStatus === 'admin_approved' ? 'Application approved — email sent!' : 'Application rejected — applicant notified')
+    setActing(null)
+    onRefresh()
+  }
+
+  const STATUS_STYLE: Record<string, string> = {
+    pending: 'bg-amber-500/15 text-amber-400',
+    admin_approved: 'bg-emerald-500/15 text-emerald-400',
+    admin_rejected: 'bg-red-500/15 text-red-400',
+  }
+  const STATUS_LABEL: Record<string, string> = {
+    pending: 'Pending', admin_approved: 'Approved', admin_rejected: 'Rejected',
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <p className="text-sm text-white/50">{applications.length} application{applications.length !== 1 ? 's' : ''}</p>
+          {pending > 0 && (
+            <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-400 text-xs font-bold">
+              <Bell className="w-3 h-3" /> {pending} pending
+            </span>
+          )}
+        </div>
+        <button onClick={onRefresh} className="p-2 rounded-xl bg-white/5 hover:bg-white/10 transition-colors">
+          <RefreshCw className="w-4 h-4 text-white/40" />
+        </button>
+      </div>
+
+      {/* Filter tabs */}
+      <div className="flex gap-1 bg-white/5 rounded-xl p-1">
+        {(['all', 'pending', 'admin_approved', 'admin_rejected'] as const).map(f => (
+          <button key={f} onClick={() => setFilter(f)}
+            className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all ${filter === f ? 'bg-love-gradient text-white' : 'text-white/40 hover:text-white'}`}>
+            {f === 'all' ? 'All' : STATUS_LABEL[f]}
+          </button>
+        ))}
+      </div>
+
+      {filtered.length === 0 ? (
+        <div className="text-center py-12">
+          <ClipboardList className="w-10 h-10 mx-auto mb-2 text-white/20" />
+          <p className="text-white/30 text-sm">No applications {filter !== 'all' ? `with status: ${STATUS_LABEL[filter]}` : 'yet'}</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filtered.map(app => (
+            <div key={app.id} className="rounded-2xl bg-white/[0.03] border border-white/8 overflow-hidden">
+              <button
+                onClick={() => setExpanded(expanded === app.id ? null : app.id)}
+                className="w-full flex items-center gap-3 p-4 text-left hover:bg-white/5 transition-colors">
+                <div className="w-9 h-9 rounded-xl bg-love-gradient flex items-center justify-center flex-shrink-0 text-sm font-black text-white">
+                  {app.full_name.charAt(0).toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="font-bold text-white text-sm truncate">{app.full_name}</p>
+                    <span className={`flex-shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold ${STATUS_STYLE[app.status] || 'bg-white/10 text-white/40'}`}>
+                      {STATUS_LABEL[app.status] || app.status}
+                    </span>
+                  </div>
+                  <p className="text-xs text-white/40 truncate">{app.courses?.title || 'Unknown course'} · {app.duration_days} days</p>
+                </div>
+                <div className="flex-shrink-0 text-right">
+                  <p className="text-xs text-white/30">{new Date(app.created_at).toLocaleDateString()}</p>
+                  {app.cost > 0 && (
+                    <p className="text-xs font-bold text-emerald-400">{app.cost} {app.currency}</p>
+                  )}
+                </div>
+                <ChevronDown className={`w-4 h-4 text-white/30 flex-shrink-0 transition-transform ${expanded === app.id ? 'rotate-180' : ''}`} />
+              </button>
+
+              <AnimatePresence>
+                {expanded === app.id && (
+                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                    className="overflow-hidden">
+                    <div className="px-4 pb-4 space-y-4 border-t border-white/8 pt-4">
+                      {/* Details */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="flex items-center gap-2 text-xs text-white/50">
+                          <Mail className="w-3.5 h-3.5 flex-shrink-0" /> <span className="truncate">{app.email}</span>
+                        </div>
+                        {app.phone && (
+                          <div className="flex items-center gap-2 text-xs text-white/50">
+                            <Phone className="w-3.5 h-3.5 flex-shrink-0" /> {app.phone}
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2 text-xs text-white/50">
+                          <Clock className="w-3.5 h-3.5 flex-shrink-0" /> {app.duration_days} Day Study Plan
+                        </div>
+                        {app.cost > 0 && (
+                          <div className="flex items-center gap-2 text-xs text-white/50">
+                            <DollarSign className="w-3.5 h-3.5 flex-shrink-0" /> {app.cost} {app.currency} fee
+                          </div>
+                        )}
+                      </div>
+
+                      {app.motivation && (
+                        <div className="bg-white/5 rounded-xl p-3">
+                          <p className="text-[11px] text-white/30 font-semibold mb-1">MOTIVATION</p>
+                          <p className="text-sm text-white/60 leading-relaxed">{app.motivation}</p>
+                        </div>
+                      )}
+
+                      {app.status === 'pending' && (
+                        <div className="space-y-3">
+                          <div>
+                            <label className="text-xs text-white/30 font-semibold mb-1.5 block flex items-center gap-1.5">
+                              <MessageSquare className="w-3 h-3" /> Notes to applicant (optional)
+                            </label>
+                            <textarea rows={2} placeholder="Add a note that will be included in the notification email..."
+                              className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-brand-pink transition-colors resize-none"
+                              value={notes[app.id] || ''} onChange={e => setNotes(n => ({ ...n, [app.id]: e.target.value }))} />
+                          </div>
+                          <div className="flex gap-2">
+                            <button onClick={() => act(app, 'admin_approved')} disabled={acting === app.id}
+                              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 text-sm font-bold border border-emerald-500/25 transition-colors disabled:opacity-50">
+                              {acting === app.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserCheck className="w-4 h-4" />}
+                              Approve
+                            </button>
+                            <button onClick={() => act(app, 'admin_rejected')} disabled={acting === app.id}
+                              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-red-500/15 hover:bg-red-500/25 text-red-400 text-sm font-bold border border-red-500/20 transition-colors disabled:opacity-50">
+                              {acting === app.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserX className="w-4 h-4" />}
+                              Reject
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {app.status !== 'pending' && app.admin_notes && (
+                        <div className="bg-white/[0.03] rounded-xl p-3 border border-white/8">
+                          <p className="text-[11px] text-white/30 font-semibold mb-1">ADMIN NOTE</p>
+                          <p className="text-sm text-white/50 italic">"{app.admin_notes}"</p>
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          ))}
         </div>
       )}
     </div>

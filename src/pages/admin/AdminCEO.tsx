@@ -3,10 +3,12 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Crown, Users, Shield, Globe, Key, AlertTriangle, Database,
   RefreshCw, Plus, Edit, Trash2, Download, X, Save, CheckCircle,
-  AlertCircle, Loader2, UserCheck
+  AlertCircle, Loader2, UserCheck, GraduationCap, Trophy, Award,
+  Star, Clock, Mail, MessageSquare, ChevronDown
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import ImageUploader from '@/components/admin/ImageUploader'
+import { notifyUser } from '@/lib/notify'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -203,6 +205,13 @@ export default function AdminCEO() {
   const [saving, setSaving]             = useState(false)
   const [selectedRole, setSelectedRole] = useState<RoleKey>('admin')
 
+  // ── Learning Approvals state ─────────────────────────────────────────────────
+  const [ceoView, setCeoView] = useState<'staff' | 'learning'>('staff')
+  const [pendingCerts, setPendingCerts] = useState<any[]>([])
+  const [certsLoading, setCertsLoading] = useState(false)
+  const [ceoNotes, setCeoNotes] = useState<Record<string, string>>({})
+  const [approvingId, setApprovingId] = useState<string | null>(null)
+
   const [modalTab, setModalTab] = useState<'info' | 'responsibilities' | 'tasks'>('info')
 
   const [form, setForm] = useState({
@@ -252,6 +261,78 @@ export default function AdminCEO() {
   }
 
   useEffect(() => { fetchData() }, [])
+
+  const fetchPendingCerts = async () => {
+    setCertsLoading(true)
+    const { data } = await supabase
+      .from('certificates')
+      .select('*, courses(title)')
+      .eq('ceo_approved', false)
+      .order('issued_at', { ascending: false })
+    setPendingCerts(data || [])
+    setCertsLoading(false)
+  }
+  useEffect(() => { if (ceoView === 'learning') fetchPendingCerts() }, [ceoView])
+
+  const approveCert = async (cert: any) => {
+    setApprovingId(cert.id)
+    const notes = ceoNotes[cert.id] || ''
+    const { error } = await supabase
+      .from('certificates')
+      .update({ ceo_approved: true, ceo_approved_at: new Date().toISOString(), ceo_notes: notes || null })
+      .eq('id', cert.id)
+    if (error) { showToast(error.message, false); setApprovingId(null); return }
+
+    // Send the certificate email now that CEO has approved
+    await supabase.functions.invoke('send-certificate', {
+      body: {
+        to: cert.email,
+        recipientName: cert.recipient_name,
+        courseName: cert.courses?.title || 'the course',
+        score: cert.score,
+        certificateCode: cert.certificate_code,
+        issuedDate: new Date(cert.issued_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+        ceoNotes: notes,
+      },
+    })
+
+    // Push notification to learner (if they have an account)
+    if (cert.user_id) {
+      await notifyUser({
+        userId: cert.user_id,
+        type: 'certificate_approved',
+        title: '🎓 Certificate Approved by CEO!',
+        message: `Congratulations! Your certificate for ${cert.courses?.title || 'the course'} has been approved. Check your email!`,
+        actionUrl: '/app/learning',
+        emoji: '🏆',
+      })
+    }
+
+    showToast('Certificate approved — congratulations email sent!')
+    setApprovingId(null)
+    fetchPendingCerts()
+  }
+
+  const rejectCert = async (cert: any) => {
+    if (!confirm(`Reject and remove ${cert.recipient_name}'s certificate? This cannot be undone.`)) return
+    setApprovingId(cert.id)
+    await supabase.from('certificates').delete().eq('id', cert.id)
+
+    if (cert.user_id) {
+      await notifyUser({
+        userId: cert.user_id,
+        type: 'certificate_rejected',
+        title: 'Certificate Not Approved',
+        message: `Your certificate for ${cert.courses?.title || 'the course'} was not approved. ${ceoNotes[cert.id] ? 'See notes for details.' : 'Please contact support for more information.'}`,
+        actionUrl: '/app/learning',
+        emoji: '📋',
+      })
+    }
+
+    showToast('Certificate rejected — learner notified')
+    setApprovingId(null)
+    fetchPendingCerts()
+  }
 
   // ── Form helpers ─────────────────────────────────────────────────────────────
 
@@ -378,6 +459,25 @@ export default function AdminCEO() {
         )}
       </AnimatePresence>
 
+      {/* View Toggle */}
+      <div className="flex gap-1 dark:bg-white/5 bg-gray-100 rounded-2xl p-1">
+        {[
+          { id: 'staff', label: 'Staff Management', icon: Shield },
+          { id: 'learning', label: 'Learning Approvals', icon: GraduationCap },
+        ].map(v => {
+          const Icon = v.icon
+          return (
+            <button key={v.id} onClick={() => setCeoView(v.id as 'staff' | 'learning')}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all ${ceoView === v.id ? 'bg-love-gradient text-white shadow-md' : 'dark:text-gray-400 text-gray-500 hover:dark:text-white hover:text-gray-700'}`}>
+              <Icon className="w-4 h-4" /> {v.label}
+              {v.id === 'learning' && pendingCerts.length > 0 && (
+                <span className="w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-black flex items-center justify-center">{pendingCerts.length}</span>
+              )}
+            </button>
+          )
+        })}
+      </div>
+
       {/* CEO Header */}
       <div className="dark:bg-gradient-to-r dark:from-amber-500/10 dark:to-yellow-500/5 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-3xl border dark:border-amber-500/20 border-amber-200 p-6">
         <div className="flex items-center gap-4 mb-4">
@@ -440,8 +540,107 @@ export default function AdminCEO() {
         </div>
       ) : null}
 
+      {/* ── Learning Approvals (CEO) ─────────────────────────────────────────── */}
+      {ceoView === 'learning' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-yellow-600 flex items-center justify-center">
+                <GraduationCap className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h2 className="font-display font-black text-lg dark:text-white text-gray-900">Grade & Certificate Approvals</h2>
+                <p className="text-xs dark:text-gray-400 text-gray-500">Review learner scores and approve certificates before they are issued</p>
+              </div>
+            </div>
+            <button onClick={fetchPendingCerts} className="p-2 rounded-xl dark:bg-white/5 bg-gray-100 hover:text-brand-pink transition-colors">
+              <RefreshCw className={`w-4 h-4 dark:text-gray-400 text-gray-500 ${certsLoading ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
+
+          {certsLoading ? (
+            <div className="flex items-center justify-center py-16">
+              <Loader2 className="w-7 h-7 animate-spin text-brand-pink" />
+            </div>
+          ) : pendingCerts.length === 0 ? (
+            <div className="dark:bg-[#130E1E] bg-white rounded-2xl border dark:border-white/6 border-gray-200 p-12 text-center">
+              <div className="w-16 h-16 rounded-3xl dark:bg-amber-500/10 bg-amber-50 flex items-center justify-center mx-auto mb-4">
+                <Trophy className="w-8 h-8 text-amber-500" />
+              </div>
+              <p className="font-bold dark:text-white text-gray-900 mb-1">All caught up!</p>
+              <p className="text-sm dark:text-gray-400 text-gray-500">No certificates pending your approval.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {pendingCerts.map(cert => (
+                <div key={cert.id} className="dark:bg-[#130E1E] bg-white rounded-2xl border dark:border-white/6 border-gray-200 overflow-hidden">
+                  {/* Grade Card Header */}
+                  <div className="p-5 border-b dark:border-white/5 border-gray-100">
+                    <div className="flex items-start gap-4">
+                      {/* Score ring */}
+                      <div className="relative w-16 h-16 flex-shrink-0">
+                        <svg className="w-16 h-16 -rotate-90" viewBox="0 0 36 36">
+                          <circle cx="18" cy="18" r="15.9155" fill="none" stroke="#e5e7eb" strokeWidth="3" />
+                          <circle cx="18" cy="18" r="15.9155" fill="none" strokeWidth="3"
+                            stroke={cert.score >= 80 ? '#10b981' : cert.score >= 60 ? '#f59e0b' : '#ef4444'}
+                            strokeDasharray={`${cert.score} ${100 - cert.score}`} strokeLinecap="round" />
+                        </svg>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <span className={`font-black text-sm ${cert.score >= 80 ? 'text-emerald-500' : cert.score >= 60 ? 'text-amber-500' : 'text-red-500'}`}>{cert.score}%</span>
+                        </div>
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                          <p className="font-bold text-base dark:text-white text-gray-900">{cert.recipient_name}</p>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-500">Pending CEO Review</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-xs dark:text-gray-400 text-gray-500 mb-0.5">
+                          <Award className="w-3.5 h-3.5" />
+                          <span className="font-semibold">{cert.courses?.title || 'Unknown Course'}</span>
+                        </div>
+                        <div className="flex items-center gap-3 text-xs dark:text-gray-500 text-gray-400">
+                          <span className="flex items-center gap-1"><Mail className="w-3 h-3" /> {cert.email}</span>
+                          <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {new Date(cert.issued_at).toLocaleDateString()}</span>
+                        </div>
+                        <div className="mt-2">
+                          <span className="px-2 py-0.5 rounded-full bg-white/5 border dark:border-white/8 border-gray-200 text-[10px] font-mono dark:text-gray-400 text-gray-500">{cert.certificate_code}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* CEO Review Actions */}
+                  <div className="p-4 space-y-3">
+                    <div>
+                      <label className="text-xs dark:text-gray-500 text-gray-400 font-semibold mb-1.5 block flex items-center gap-1.5">
+                        <MessageSquare className="w-3 h-3" /> CEO Notes (optional — included in certificate email)
+                      </label>
+                      <textarea rows={2} placeholder="Add a personal note of congratulation or feedback..."
+                        className="w-full px-3 py-2.5 rounded-xl dark:bg-white/5 bg-gray-50 border dark:border-white/10 border-gray-200 text-sm dark:text-white text-gray-900 placeholder:dark:text-gray-600 placeholder:text-gray-400 focus:outline-none focus:border-amber-400 transition-colors resize-none"
+                        value={ceoNotes[cert.id] || ''} onChange={e => setCeoNotes(n => ({ ...n, [cert.id]: e.target.value }))} />
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={() => approveCert(cert)} disabled={approvingId === cert.id}
+                        className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-600 text-white font-black text-sm hover:opacity-90 transition-opacity disabled:opacity-50 shadow-lg shadow-amber-500/20">
+                        {approvingId === cert.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Star className="w-4 h-4" />}
+                        Approve & Send Certificate
+                      </button>
+                      <button onClick={() => rejectCert(cert)} disabled={approvingId === cert.id}
+                        className="px-4 py-3 rounded-xl dark:bg-red-500/10 bg-red-50 dark:text-red-400 text-red-500 font-bold text-sm dark:border-red-500/20 border-red-200 border hover:dark:bg-red-500/20 hover:bg-red-100 transition-colors disabled:opacity-50">
+                        Reject
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* ── Staff Management ─────────────────────────────────────────────────── */}
-      {dbConnected && (
+      {ceoView === 'staff' && dbConnected && (
         <div className="dark:bg-[#130E1E] bg-white rounded-2xl border dark:border-white/6 border-gray-200 overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b dark:border-white/5 border-gray-100">
             <div className="flex items-center gap-2">

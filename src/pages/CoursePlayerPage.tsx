@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   ArrowLeft, ArrowRight, CheckCircle, XCircle, Timer, Award,
   BookOpen, Video, ChevronRight, Loader2, AlertCircle, Mail,
-  Send, Trophy, RotateCcw, Play, GraduationCap, Lock
+  Send, Trophy, RotateCcw, Play, GraduationCap, Lock, Crown, Clock
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
@@ -22,7 +22,7 @@ interface Question {
   id: string; question: string; options: string[]; correct_index: number; explanation: string | null; order_index: number
 }
 
-type Stage = 'overview' | 'lesson' | 'quiz' | 'result' | 'cert'
+type Stage = 'overview' | 'lesson' | 'quiz' | 'result' | 'cert' | 'pending_ceo' | 'ceo_approved'
 
 function fmtTime(s: number) {
   const m = Math.floor(s / 60), sec = s % 60
@@ -61,6 +61,7 @@ export default function CoursePlayerPage() {
   const [certSent, setCertSent] = useState(false)
   const [certCode, setCertCode] = useState('')
   const [certError, setCertError] = useState('')
+  const [certId, setCertId] = useState<string | null>(null)
 
   // Load course data
   useEffect(() => {
@@ -146,48 +147,89 @@ export default function CoursePlayerPage() {
     }
   }, [answers, questions, course, user, courseId, timeLeft])
 
+  // Subscribe to certificate CEO-approval realtime updates
+  useEffect(() => {
+    if (!user?.id || !courseId) return
+    const ch = supabase
+      .channel(`cert-approval-${user.id}-${courseId}`)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'certificates',
+        filter: `user_id=eq.${user.id}`,
+      }, (payload: any) => {
+        if (payload.new?.course_id === courseId && payload.new?.ceo_approved === true) {
+          setCertCode(payload.new.certificate_code || '')
+          setStage('ceo_approved')
+        }
+      })
+      .on('postgres_changes', {
+        event: 'DELETE',
+        schema: 'public',
+        table: 'certificates',
+        filter: `user_id=eq.${user.id}`,
+      }, () => {
+        if (stage === 'pending_ceo') {
+          setCertError('Your certificate was not approved. Please contact support.')
+          setStage('cert')
+        }
+      })
+      .subscribe()
+    return () => { ch.unsubscribe() }
+  }, [user?.id, courseId, stage])
+
+  // Check for existing pending/approved cert on load (if returning)
+  useEffect(() => {
+    if (!user?.id || !courseId) return
+    ;(async () => {
+      const { data } = await supabase
+        .from('certificates')
+        .select('id, certificate_code, ceo_approved')
+        .eq('user_id', user.id)
+        .eq('course_id', courseId)
+        .order('issued_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      if (!data) return
+      setCertId(data.id)
+      setCertCode(data.certificate_code || '')
+      if (data.ceo_approved) {
+        setStage('ceo_approved')
+      } else {
+        setStage('pending_ceo')
+      }
+    })()
+  }, [user?.id, courseId])
+
   const sendCertificate = async () => {
     if (!certEmail.trim() || !certName.trim() || !course || !quizResult) return
     setCertSending(true); setCertError('')
     try {
-      // Generate certificate code + record in DB
       const code = `SC-${Math.random().toString(36).slice(2, 8).toUpperCase()}`
       setCertCode(code)
 
-      // Insert certificate
-      const { error: dbErr } = await supabase.from('certificates').insert({
-        user_id: user?.id || null, course_id: course.id,
-        recipient_name: certName, email: certEmail,
-        score: quizResult.score, certificate_code: code,
-        sent_at: new Date().toISOString(),
-      })
-      if (dbErr) throw new Error(dbErr.message)
-
-      // Call edge function
-      const { data: { session } } = await supabase.auth.getSession()
-      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-certificate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-        },
-        body: JSON.stringify({
-          to: certEmail,
-          recipientName: certName,
-          courseName: course.title,
+      // Save cert with ceo_approved: false — CEO must approve before email is sent
+      const { data: certData, error: dbErr } = await supabase
+        .from('certificates')
+        .insert({
+          user_id: user?.id || null,
+          course_id: course.id,
+          recipient_name: certName,
+          email: certEmail,
           score: quizResult.score,
-          certificateCode: code,
-          issuedDate: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
-        }),
-      })
-      if (!res.ok) {
-        const err = await res.json()
-        throw new Error(err.error || 'Failed to send certificate')
-      }
-      setCertSent(true)
+          certificate_code: code,
+          ceo_approved: false,
+          // sent_at is NOT set yet — will be set when CEO approves
+        })
+        .select('id')
+        .single()
+      if (dbErr) throw new Error(dbErr.message)
+      setCertId(certData?.id || null)
+
+      // Notify learner their request is pending
+      setStage('pending_ceo')
     } catch (e: any) {
-      setCertError(e.message || 'Failed to send certificate')
+      setCertError(e.message || 'Failed to submit certificate request')
     }
     setCertSending(false)
   }
@@ -451,6 +493,83 @@ export default function CoursePlayerPage() {
         </div>
       )}
 
+      {/* ── PENDING CEO APPROVAL ───────────────────────────────────────── */}
+      {stage === 'pending_ceo' && (
+        <div className="flex-1 overflow-y-auto p-4 pb-20 md:pb-4 flex items-center justify-center">
+          <div className="max-w-md w-full">
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring' }}
+              className="dark:bg-white/[0.03] bg-white border dark:border-white/8 border-gray-200 rounded-3xl p-8 text-center space-y-5">
+              <div className="relative w-20 h-20 mx-auto">
+                <div className="w-20 h-20 rounded-full bg-amber-500/20 flex items-center justify-center">
+                  <Crown className="w-10 h-10 text-amber-400" />
+                </div>
+                <span className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-amber-500 border-2 dark:border-[#0A0710] border-white flex items-center justify-center">
+                  <Clock className="w-3 h-3 text-white" />
+                </span>
+              </div>
+              <div>
+                <h2 className="font-display font-black text-2xl dark:text-white text-gray-900 mb-2">Pending CEO Approval 👑</h2>
+                <p className="text-sm dark:text-gray-400 text-gray-600 leading-relaxed">
+                  Your certificate for <strong className="dark:text-white text-gray-900">{course?.title}</strong> has been submitted and is awaiting CEO review.
+                </p>
+              </div>
+              <div className="flex items-start gap-3 p-4 rounded-2xl dark:bg-amber-500/8 bg-amber-50 border dark:border-amber-500/15 border-amber-200 text-left">
+                <Trophy className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                <p className="text-xs dark:text-amber-400/80 text-amber-700">
+                  <strong>Stay on this page</strong> to receive an instant notification when your certificate is approved — or check your email inbox.
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <button onClick={() => setStage('overview')} className="flex-1 py-3 rounded-xl dark:bg-white/5 bg-gray-100 dark:text-gray-400 text-gray-600 text-sm font-semibold">
+                  Back to Course
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      )}
+
+      {/* ── CEO APPROVED — CONGRATULATIONS ─────────────────────────────── */}
+      {stage === 'ceo_approved' && (
+        <div className="flex-1 overflow-y-auto p-4 pb-20 md:pb-4 flex items-center justify-center">
+          <div className="max-w-md w-full">
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring', damping: 12 }}
+              className="dark:bg-white/[0.03] bg-white border dark:border-white/8 border-gray-200 rounded-3xl p-8 text-center space-y-5">
+              <div className="relative">
+                <motion.div className="w-24 h-24 rounded-full bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center mx-auto shadow-2xl shadow-amber-500/30"
+                  animate={{ rotate: [0, -5, 5, -3, 3, 0] }} transition={{ duration: 0.6, delay: 0.3 }}>
+                  <GraduationCap className="w-12 h-12 text-white" />
+                </motion.div>
+                <motion.div className="absolute -top-2 -right-2 w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-yellow-600 flex items-center justify-center shadow-lg"
+                  initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.5, type: 'spring' }}>
+                  <Crown className="w-5 h-5 text-white" />
+                </motion.div>
+              </div>
+              <div>
+                <h2 className="font-display font-black text-3xl dark:text-white text-gray-900 mb-2">🎉 Congratulations!</h2>
+                <p className="text-sm dark:text-gray-400 text-gray-600 leading-relaxed">
+                  Your certificate for <strong className="dark:text-white text-gray-900">{course?.title}</strong> has been approved by the CEO and sent to your email!
+                </p>
+              </div>
+              <div className="flex items-center gap-2 px-4 py-3 rounded-2xl dark:bg-amber-500/8 bg-amber-50 border dark:border-amber-500/15 border-amber-200">
+                <Crown className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                <p className="text-xs dark:text-amber-400 text-amber-700 font-semibold">CEO-approved & verified ✓</p>
+              </div>
+              {certCode && (
+                <div className="px-4 py-3 rounded-xl dark:bg-white/5 bg-gray-50 border dark:border-white/8 border-gray-200">
+                  <p className="text-xs dark:text-gray-500 text-gray-500 mb-1">Certificate Code</p>
+                  <p className="font-mono font-bold text-lg text-brand-pink">{certCode}</p>
+                </div>
+              )}
+              <Link to="/app/learning"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-love-gradient text-white font-bold">
+                <BookOpen className="w-4 h-4" /> Explore More Courses
+              </Link>
+            </motion.div>
+          </div>
+        </div>
+      )}
+
       {/* ── CERTIFICATE EMAIL ──────────────────────────────────────────── */}
       {stage === 'cert' && quizResult && (
         <div className="flex-1 overflow-y-auto p-4 pb-20 md:pb-4 flex items-center justify-center">
@@ -498,7 +617,7 @@ export default function CoursePlayerPage() {
                   {certSending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
                   {certSending ? 'Sending…' : 'Send My Certificate'}
                 </button>
-                <p className="text-center text-[11px] dark:text-gray-600 text-gray-400">Your certificate will be emailed instantly with your name, score, and a unique verification code.</p>
+                <p className="text-center text-[11px] dark:text-gray-600 text-gray-400">Your certificate request will be reviewed and approved by the CEO before being emailed to you.</p>
               </motion.div>
             ) : (
               <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring' }}

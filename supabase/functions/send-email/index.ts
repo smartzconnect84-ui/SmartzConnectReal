@@ -7,7 +7,7 @@ const corsHeaders = {
 
 interface EmailPayload {
   to: string
-  template: 'welcome' | 'reset_password' | 'verify_email' | 'newsletter' | 'order_update' | 'ride_update'
+  template: 'welcome' | 'reset_password' | 'verify_email' | 'newsletter' | 'order_update' | 'ride_update' | 'application_approved' | 'application_rejected' | 'invoice'
   data?: Record<string, string>
 }
 
@@ -178,6 +178,61 @@ const templates: Record<string, (data: Record<string, string>) => { subject: str
         </div>
         <div style="padding:20px 40px;border-top:1px solid #f3f4f6;text-align:center;background:#f9fafb;">
           <p style="color:#9ca3af;font-size:12px;margin:0;">© ${new Date().getFullYear()} SmartzConnect. This is an automated invoice email.</p>
+        </div>
+      </div>
+    `,
+  }),
+
+  application_approved: (d) => ({
+    subject: `🎉 Application Approved — ${d.courseName || 'Your Course'}`,
+    html: `
+      <div style="font-family:sans-serif;max-width:600px;margin:0 auto;background:#0D0A14;color:#fff;border-radius:16px;overflow:hidden">
+        <div style="background:linear-gradient(135deg,#10b981,#059669);padding:40px;text-align:center">
+          <h1 style="margin:0;font-size:28px;font-weight:900">✅ Application Approved</h1>
+          <p style="margin:8px 0 0;opacity:0.85;font-size:14px">SmartzConnect Academy</p>
+        </div>
+        <div style="padding:40px">
+          <h2 style="color:#10b981;margin-top:0">Congratulations, ${d.name || 'Learner'}!</h2>
+          <p style="color:#9ca3af;line-height:1.7">Your application to enrol in <strong style="color:#fff">${d.courseName || 'the course'}</strong> has been <strong style="color:#10b981">approved</strong> by our team.</p>
+          ${d.duration ? `<div style="background:#1a2e1a;border:1px solid #10b981/30;border-radius:12px;padding:16px;margin:20px 0"><p style="margin:0;font-size:13px;color:#6ee7b7"><strong>Study Duration:</strong> ${d.duration} Days</p></div>` : ''}
+          ${d.adminNotes ? `<div style="background:#1a1f2e;border-left:4px solid #10b981;padding:12px 16px;border-radius:0 8px 8px 0;margin:16px 0"><p style="margin:0;color:#9ca3af;font-size:13px;font-style:italic">"${d.adminNotes}"</p></div>` : ''}
+          <div style="margin:28px 0;text-align:center">
+            <a href="${d.loginUrl || 'https://smartzconnect.com/login'}"
+              style="display:inline-block;background:linear-gradient(135deg,#10b981,#059669);color:#fff;text-decoration:none;padding:14px 36px;border-radius:12px;font-weight:700;font-size:15px">
+              Access Your Course →
+            </a>
+          </div>
+          <p style="color:#6b7280;font-size:13px">If you have any questions, contact <a href="mailto:academy@smartzconnect.com" style="color:#10b981">academy@smartzconnect.com</a></p>
+        </div>
+        <div style="padding:20px 40px;border-top:1px solid #1f2937;text-align:center">
+          <p style="color:#4b5563;font-size:12px;margin:0">© ${new Date().getFullYear()} SmartzConnect Academy. All rights reserved.</p>
+        </div>
+      </div>
+    `,
+  }),
+
+  application_rejected: (d) => ({
+    subject: `Application Update — ${d.courseName || 'Your Course'}`,
+    html: `
+      <div style="font-family:sans-serif;max-width:600px;margin:0 auto;background:#0D0A14;color:#fff;border-radius:16px;overflow:hidden">
+        <div style="background:linear-gradient(135deg,#374151,#1f2937);padding:40px;text-align:center">
+          <h1 style="margin:0;font-size:28px;font-weight:900">Application Update</h1>
+          <p style="margin:8px 0 0;opacity:0.85;font-size:14px">SmartzConnect Academy</p>
+        </div>
+        <div style="padding:40px">
+          <h2 style="color:#e5e7eb;margin-top:0">Hi ${d.name || 'Learner'},</h2>
+          <p style="color:#9ca3af;line-height:1.7">Thank you for your interest in <strong style="color:#fff">${d.courseName || 'the course'}</strong>. After review, we're unable to approve your application at this time.</p>
+          ${d.adminNotes ? `<div style="background:#1a1520;border-left:4px solid #ec4899;padding:12px 16px;border-radius:0 8px 8px 0;margin:20px 0"><p style="margin:0 0 4px;color:#f9a8d4;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em">Feedback</p><p style="margin:0;color:#9ca3af;font-size:13px">${d.adminNotes}</p></div>` : ''}
+          <p style="color:#9ca3af;line-height:1.7;margin-top:20px">We encourage you to explore other available courses on our platform. You're welcome to re-apply in the future.</p>
+          <div style="margin:28px 0;text-align:center">
+            <a href="${d.coursesUrl || 'https://smartzconnect.com/smartzlearning'}"
+              style="display:inline-block;background:linear-gradient(135deg,#ec4899,#a855f7);color:#fff;text-decoration:none;padding:14px 36px;border-radius:12px;font-weight:700;font-size:15px">
+              View Other Courses →
+            </a>
+          </div>
+        </div>
+        <div style="padding:20px 40px;border-top:1px solid #1f2937;text-align:center">
+          <p style="color:#4b5563;font-size:12px;margin:0">© ${new Date().getFullYear()} SmartzConnect Academy. All rights reserved.</p>
         </div>
       </div>
     `,
