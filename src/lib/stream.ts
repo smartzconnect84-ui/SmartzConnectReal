@@ -66,6 +66,35 @@ export function getOrCreateDirectChannel(userId1: string, userId2: string) {
   })
 }
 
+/**
+ * Auto-forwards a story reaction/reply into a real Direct Message thread with
+ * the story author — mirrors Instagram/Snapchat behavior where reacting to or
+ * replying to someone's story lands in their chat inbox, not just a feed
+ * notification. Fire-and-forget: never throws, never blocks the caller's UI.
+ */
+export async function sendStoryEventToChat(opts: {
+  currentUserId: string
+  authorId?: string
+  viewerName: string
+  text: string
+  storyMediaUrl?: string | null
+}) {
+  const { currentUserId, authorId, text, storyMediaUrl } = opts
+  if (!streamClient || !authorId || authorId === currentUserId) return
+  try {
+    const channel = getOrCreateDirectChannel(currentUserId, authorId)
+    await channel.watch()
+    await channel.sendMessage({
+      text,
+      attachments: storyMediaUrl
+        ? [{ type: 'image', image_url: storyMediaUrl, title: 'Story' }]
+        : undefined,
+    } as any)
+  } catch (err) {
+    console.warn('[sendStoryEventToChat] failed to deliver story DM:', err)
+  }
+}
+
 // Note: GroupChatPage creates group channels directly via streamClient.channel('messaging', ...)
 // using the room's stream_channel_id or a derived `group-<id>` key. This helper aligns with
 // that pattern so any future callers use the same channel type (Stream 'team' channels are a

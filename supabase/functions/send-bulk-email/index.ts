@@ -62,22 +62,68 @@ serve(async (req) => {
     if (!subject?.trim() || !body?.trim()) return json({ error: 'subject and body are required' }, 400)
 
     // ── Resolve audience → recipient list ─────────────────────────────────
-    let query = admin.from('profiles').select('id, email, full_name, username').not('email', 'is', null)
-
-    if (audience === 'premium') {
-      query = query.eq('is_premium', true)
-    } else if (audience === 'vip') {
-      query = query.eq('is_vip', true)
-    } else if (audience === 'free') {
-      query = query.eq('is_premium', false).eq('is_vip', false)
-    } else if (audience === 'inactive') {
-      const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
-      query = query.lt('last_seen', cutoff)
+    // `profiles.email` is frequently null/stale (it's only a mirror column —
+    // the source of truth for every account's email is auth.users). Sourcing
+    // recipients from profiles alone silently dropped most of the audience,
+    // which is why "bulk" sends only ever reached a handful of users. Fix:
+    // always source the address list from auth.users (paginated — GoTrue
+    // caps a single listUsers() page at 1000), then cross-reference profiles
+    // for the segment filter (premium/vip/inactive) and personalization.
+    let allAuthUsers: { id: string; email?: string }[] = []
+    for (let page = 1; page <= 50; page++) { // hard cap 50k users as a sanity ceiling
+      const { data: pageData, error: listErr } = await admin.auth.admin.listUsers({ page, perPage: 1000 })
+      if (listErr) return json({ error: listErr.message }, 500)
+      const users = pageData?.users ?? []
+      allAuthUsers.push(...users.map(u => ({ id: u.id, email: u.email })))
+      if (users.length < 1000) break
     }
-    // 'all' → no extra filter
+    allAuthUsers = allAuthUsers.filter(u => !!u.email)
 
-    const { data: recipients, error: recErr } = await query.limit(5000)
-    if (recErr) return json({ error: recErr.message }, 500)
+    let audienceIds: Set<string> | null = null // null = no extra filter (audience === 'all')
+    let newsletterRows: { email: string; name?: string }[] = []
+    if (audience === 'newsletter') {
+      // Newsletter subscribers aren't necessarily registered members — pull
+      // straight from the public signup list instead of auth.users.
+      const { data: subRows, error: subErr } = await admin
+        .from('newsletter_subscribers').select('email, name').eq('is_active', true)
+      if (subErr) return json({ error: subErr.message }, 500)
+      newsletterRows = subRows || []
+      allAuthUsers = newsletterRows.map(s => ({ id: s.email, email: s.email }))
+    } else if (audience !== 'all') {
+      let profQuery = admin.from('profiles').select('id')
+      if (audience === 'premium') profQuery = profQuery.eq('is_premium', true)
+      else if (audience === 'vip') profQuery = profQuery.eq('is_vip', true)
+      else if (audience === 'free') profQuery = profQuery.eq('is_premium', false).eq('is_vip', false)
+      else if (audience === 'inactive') {
+        const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+        profQuery = profQuery.lt('last_seen', cutoff)
+      }
+      const { data: profRows, error: profErr } = await profQuery.limit(50000)
+      if (profErr) return json({ error: profErr.message }, 500)
+      audienceIds = new Set((profRows || []).map((p: { id: string }) => p.id))
+    }
+
+    const filteredUsers = audienceIds ? allAuthUsers.filter(u => audienceIds!.has(u.id)) : allAuthUsers
+
+    // Hydrate names for personalization (best-effort — missing rows just
+    // fall back to "there" in renderHtml).
+    const nameById: Record<string, { full_name?: string; username?: string }> = {}
+    if (audience === 'newsletter') {
+      for (const s of newsletterRows) nameById[s.email] = { full_name: s.name }
+    } else {
+      const idsNeedingNames = filteredUsers.map(u => u.id).filter(Boolean)
+      for (let i = 0; i < idsNeedingNames.length; i += 1000) {
+        const chunk = idsNeedingNames.slice(i, i + 1000)
+        const { data: profRows } = await admin.from('profiles').select('id, full_name, username').in('id', chunk)
+        for (const p of profRows || []) nameById[(p as any).id] = p as any
+      }
+    }
+
+    const recipients = filteredUsers.map(u => ({
+      email: u.email as string,
+      full_name: nameById[u.id]?.full_name,
+      username: nameById[u.id]?.username,
+    }))
 
     const resendKey = Deno.env.get('RESEND_API_KEY')
     if (!resendKey) {

@@ -143,7 +143,7 @@ export default function AdminLayout() {
     <div className="flex flex-col h-full">
       {/* Logo */}
       <div className={`flex items-center gap-3 px-4 py-4 border-b dark:border-white/6 border-gray-200 flex-shrink-0 ${collapsed ? 'justify-center' : ''}`}>
-        <img src={logoImg} alt="SmartzConnect" className="w-9 h-9 object-contain flex-shrink-0 rounded-xl" />
+        <img src={logoImg} alt="SmartzConnect" className="w-[40px] h-[40px] object-contain flex-shrink-0 rounded-xl" />
         {!collapsed && (
           <div>
             <p className="font-display font-black text-sm dark:text-white text-gray-900 leading-none">SmartzConnect</p>
@@ -172,7 +172,7 @@ export default function AdminLayout() {
             >
               {({ isActive }) => (
                 <>
-                  <Icon className={`w-6 h-6 flex-shrink-0 ${isActive ? 'text-white' : ''}`} />
+                  <Icon className={`w-[26px] h-[26px] flex-shrink-0 ${isActive ? 'text-white' : ''}`} />
                   {!collapsed && (
                     <span className="text-sm font-semibold truncate">{item.label}</span>
                   )}
@@ -201,7 +201,7 @@ export default function AdminLayout() {
             } ${collapsed ? 'justify-center' : ''}`
           }
         >
-          <Crown className="w-6 h-6 flex-shrink-0" />
+          <Crown className="w-[26px] h-[26px] flex-shrink-0" />
           {!collapsed && <span className="text-sm font-bold">CEO Panel</span>}
         </NavLink>
       </div>
@@ -212,14 +212,14 @@ export default function AdminLayout() {
           onClick={toggleTheme}
           className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl dark:text-gray-400 text-gray-600 hover:dark:bg-white/5 hover:bg-pink-50 hover:text-brand-pink transition-all ${collapsed ? 'justify-center' : ''}`}
         >
-          {theme === 'dark' ? <Sun className="w-6 h-6 flex-shrink-0" /> : <Moon className="w-6 h-6 flex-shrink-0" />}
+          {theme === 'dark' ? <Sun className="w-[26px] h-[26px] flex-shrink-0" /> : <Moon className="w-[26px] h-[26px] flex-shrink-0" />}
           {!collapsed && <span className="text-sm font-semibold">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>}
         </button>
         <button
           onClick={() => navigate('/')}
           className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl dark:text-gray-400 text-gray-600 hover:dark:bg-white/5 hover:bg-pink-50 hover:text-brand-pink transition-all ${collapsed ? 'justify-center' : ''}`}
         >
-          <LogOut className="w-6 h-6 flex-shrink-0" />
+          <LogOut className="w-[26px] h-[26px] flex-shrink-0" />
           {!collapsed && <span className="text-sm font-semibold">Exit Admin</span>}
         </button>
       </div>
@@ -243,8 +243,8 @@ export default function AdminLayout() {
           title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           {collapsed
-            ? <ChevronRight className="w-[17px] h-[17px] dark:text-gray-400 text-gray-600" />
-            : <ChevronLeft className="w-[17px] h-[17px] dark:text-gray-400 text-gray-600" />
+            ? <ChevronRight className="w-[19px] h-[19px] dark:text-gray-400 text-gray-600" />
+            : <ChevronLeft className="w-[19px] h-[19px] dark:text-gray-400 text-gray-600" />
           }
         </button>
       </motion.aside>
@@ -283,10 +283,10 @@ export default function AdminLayout() {
         <header className="flex items-center justify-between gap-4 px-4 sm:px-6 lg:px-8 py-3.5 min-h-[64px] dark:bg-[#080510] bg-white border-b dark:border-white/6 border-gray-200 flex-shrink-0 z-10 shadow-sm dark:shadow-black/20">
           <div className="flex items-center gap-3 min-w-0 flex-1">
             <button onClick={() => setMobileOpen(true)} className="md:hidden w-9 h-9 rounded-lg dark:bg-white/5 bg-gray-100 flex items-center justify-center">
-              <Menu className="w-[19px] h-[19px] dark:text-gray-400 text-gray-600" />
+              <Menu className="w-[21px] h-[21px] dark:text-gray-400 text-gray-600" />
             </button>
             <div className="relative hidden sm:block">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 dark:text-gray-500 text-gray-400" />
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-[15px] h-[15px] dark:text-gray-500 text-gray-400" />
               <input
                 value={searchQuery}
                 onChange={e => { setSearchQuery(e.target.value); setSearchOpen(true) }}
@@ -324,7 +324,7 @@ export default function AdminLayout() {
               title="Open support chat"
               className="relative w-9 h-9 rounded-xl dark:bg-white/5 bg-gray-100 flex items-center justify-center hover:bg-pink-500/10 transition-colors"
             >
-              <MessageCircle className="w-[19px] h-[19px] dark:text-gray-400 text-gray-600" />
+              <MessageCircle className="w-[21px] h-[21px] dark:text-gray-400 text-gray-600" />
             </button>
             {/* Notification bell — wired to NotificationContext */}
             <div ref={bellRef} className="relative">
@@ -333,7 +333,7 @@ export default function AdminLayout() {
                 title="Notifications"
                 className="relative w-9 h-9 rounded-xl dark:bg-white/5 bg-gray-100 flex items-center justify-center hover:bg-pink-500/10 transition-colors"
               >
-                <Bell className="w-[19px] h-[19px] dark:text-gray-400 text-gray-600" />
+                <Bell className="w-[21px] h-[21px] dark:text-gray-400 text-gray-600" />
                 {notifUnread > 0 && (
                   <span className="absolute -top-0.5 -right-0.5 w-[18px] h-[18px] rounded-full bg-brand-pink text-white text-[8px] font-black flex items-center justify-center">
                     {notifUnread > 9 ? '9+' : notifUnread}
@@ -414,7 +414,7 @@ export default function AdminLayout() {
                 onClick={() => setAccountMenuOpen(o => !o)}
                 className="flex items-center gap-2.5 rounded-xl px-1 py-1 hover:dark:bg-white/5 hover:bg-gray-50 transition-colors"
               >
-                <div className="w-8 h-8 rounded-xl bg-love-gradient flex items-center justify-center text-sm flex-shrink-0">👑</div>
+                <div className="w-[35px] h-[35px] rounded-xl bg-love-gradient flex items-center justify-center text-sm flex-shrink-0">👑</div>
                 <div className="hidden md:block leading-tight text-left">
                   <p className="text-sm font-bold dark:text-white text-gray-900 leading-none">Super Admin</p>
                   <p className="text-[11px] dark:text-gray-500 text-gray-400 mt-0.5 truncate max-w-[160px]">{user?.email || 'admin@smartzconnect.com'}</p>
@@ -450,7 +450,7 @@ export default function AdminLayout() {
                             disabled={switchingAccount === acc.email}
                             className="w-full flex items-center gap-2.5 px-4 py-2.5 hover:dark:bg-white/5 hover:bg-gray-50 transition-colors text-left disabled:opacity-60"
                           >
-                            <div className="w-7 h-7 rounded-lg bg-love-gradient flex items-center justify-center text-xs flex-shrink-0 overflow-hidden">
+                            <div className="w-[31px] h-[31px] rounded-lg bg-love-gradient flex items-center justify-center text-xs flex-shrink-0 overflow-hidden">
                               {acc.avatarUrl ? <img src={acc.avatarUrl} className="w-full h-full object-cover" /> : '👤'}
                             </div>
                             <div className="min-w-0 flex-1">

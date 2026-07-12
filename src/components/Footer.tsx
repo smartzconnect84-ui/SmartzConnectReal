@@ -1,11 +1,78 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Heart, Shield, Zap, Globe, MessageCircle, ExternalLink } from 'lucide-react'
+import { Heart, Shield, Zap, Globe, MessageCircle, Send, Check } from 'lucide-react'
 import { useSiteConfig, SITE_IMAGE_KEYS } from '@/contexts/SiteConfigContext'
 import { openTawkChat } from '@/lib/tawk'
 import { useServices } from '@/hooks/useServices'
+import { supabase } from '@/lib/supabase'
 import BrandName from '@/components/BrandName'
 const defaultLogoImg = '/logo.png'
+
+/* ── Newsletter signup ────────────────────────────────────────────────
+ * Public, no-auth-required. Inserts straight into newsletter_subscribers
+ * (RLS allows anon inserts; only admins can read the list back — see
+ * supabase/schema_v26_newsletter.sql). Admin can bulk-email this list via
+ * the "Newsletter" audience in AdminEmail. */
+function NewsletterSignup() {
+  const [email, setEmail] = useState('')
+  const [status, setStatus] = useState<'idle' | 'submitting' | 'done' | 'error'>('idle')
+  const [error, setError] = useState('')
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const trimmed = email.trim()
+    if (!trimmed || !/^\S+@\S+\.\S+$/.test(trimmed)) {
+      setError('Enter a valid email address')
+      return
+    }
+    setStatus('submitting')
+    setError('')
+    const { error: insertErr } = await supabase
+      .from('newsletter_subscribers')
+      .upsert({ email: trimmed.toLowerCase(), source: 'footer', is_active: true }, { onConflict: 'email' })
+    if (insertErr) {
+      setStatus('error')
+      setError('Something went wrong. Please try again.')
+      return
+    }
+    setStatus('done')
+    setEmail('')
+  }
+
+  if (status === 'done') {
+    return (
+      <div className="flex items-center gap-2 text-sm font-semibold text-emerald-400">
+        <Check className="w-4 h-4 flex-shrink-0" />
+        You're subscribed! Watch your inbox.
+      </div>
+    )
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col gap-2">
+      <div className="flex items-center gap-2">
+        <input
+          type="email"
+          value={email}
+          onChange={e => { setEmail(e.target.value); setError('') }}
+          placeholder="you@email.com"
+          disabled={status === 'submitting'}
+          className="flex-1 min-w-0 px-3.5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-brand-pink transition-colors"
+        />
+        <button
+          type="submit"
+          disabled={status === 'submitting'}
+          className="flex-shrink-0 w-10 h-10 rounded-xl bg-love-gradient flex items-center justify-center text-white hover:opacity-90 transition-opacity disabled:opacity-60"
+          title="Subscribe"
+        >
+          <Send className="w-4 h-4" />
+        </button>
+      </div>
+      {error && <p className="text-[11px] text-red-400">{error}</p>}
+    </form>
+  )
+}
 
 /* ── Hardcoded fallback product links ────────────────────────────────── */
 const FALLBACK_PRODUCTS: { label: string; href: string }[] = [
@@ -97,8 +164,8 @@ export default function Footer() {
           {/* Brand column */}
           <FadeUp className="sm:col-span-2">
             <Link to="/" className="flex items-center gap-2.5 mb-5 group">
-              <img src={siteConfig.get(SITE_IMAGE_KEYS.logo, defaultLogoImg)} alt="SmartzConnect" className="h-8 w-auto object-contain group-hover:scale-105 transition-transform" />
-              <span className="font-display font-black text-base">
+              <img src={siteConfig.get(SITE_IMAGE_KEYS.logo, defaultLogoImg)} alt="SmartzConnect" className="h-[38px] w-auto object-contain group-hover:scale-105 transition-transform" />
+              <span className="font-display font-black text-lg">
                 <BrandName />
               </span>
             </Link>
@@ -141,6 +208,17 @@ export default function Footer() {
             </div>
           </FadeUp>
         </div>
+
+        {/* ── Newsletter signup ── */}
+        <FadeUp delay={0.22} className="mt-10 pt-8 border-t border-white/6 flex flex-col sm:flex-row sm:items-center gap-5 sm:gap-8">
+          <div className="sm:max-w-[260px]">
+            <p className="text-sm font-bold text-white mb-1">Stay in the loop</p>
+            <p className="text-[12px] text-white/35 leading-relaxed">Product news and updates, straight to your inbox. No spam.</p>
+          </div>
+          <div className="sm:flex-1 sm:max-w-xs">
+            <NewsletterSignup />
+          </div>
+        </FadeUp>
 
         {/* ── Bottom bar ── */}
         <div className="mt-12 pt-6 border-t border-white/6 flex flex-col sm:flex-row items-center justify-between gap-4">

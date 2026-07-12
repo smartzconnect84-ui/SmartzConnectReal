@@ -25,6 +25,7 @@ const AUDIENCES = [
   { id: 'premium',  label: 'Premium Members',  icon: Zap,    color: 'text-pink-400',   desc: 'Premium subscribers only' },
   { id: 'vip',      label: 'VIP Members',      icon: Crown,  color: 'text-amber-400',  desc: 'VIP tier subscribers' },
   { id: 'inactive', label: 'Inactive Users',   icon: Clock,  color: 'text-orange-400', desc: 'Haven\'t logged in 30+ days' },
+  { id: 'newsletter', label: 'Newsletter Subscribers', icon: Mail, color: 'text-emerald-400', desc: 'Public signup list — not necessarily members' },
 ]
 
 const TEMPLATES = [
@@ -104,6 +105,36 @@ export default function AdminEmail() {
   const [fromEmail, setFromEmail] = useState('support@smartzconnect.com')
   const [fromName, setFromName] = useState('SmartzConnect Team')
 
+  interface Subscriber { id: string; email: string; name: string | null; source: string | null; created_at: string }
+  const [subscribers, setSubscribers] = useState<Subscriber[]>([])
+  const [showSubscribers, setShowSubscribers] = useState(false)
+  const [removingSub, setRemovingSub] = useState<string | null>(null)
+
+  const fetchSubscribers = async () => {
+    const { data } = await supabase.from('newsletter_subscribers')
+      .select('id, email, name, source, created_at').eq('is_active', true)
+      .order('created_at', { ascending: false }).limit(500)
+    setSubscribers(data || [])
+  }
+
+  const removeSubscriber = async (id: string) => {
+    setRemovingSub(id)
+    await supabase.from('newsletter_subscribers').delete().eq('id', id)
+    setSubscribers(prev => prev.filter(s => s.id !== id))
+    setUserCount(p => ({ ...p, newsletter: Math.max((p.newsletter || 1) - 1, 0) }))
+    setRemovingSub(null)
+  }
+
+  const exportSubscribers = () => {
+    if (!subscribers.length) return
+    const rows = subscribers.map(s => [s.email, s.name || '', s.source || '', s.created_at].join(','))
+    const csv = ['Email,Name,Source,Subscribed At', ...rows].join('\n')
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }))
+    a.download = `newsletter-subscribers-${new Date().toISOString().split('T')[0]}.csv`
+    a.click()
+  }
+
   const [form, setForm] = useState({
     subject: '',
     body: '',
@@ -118,17 +149,19 @@ export default function AdminEmail() {
 
   const fetchData = async () => {
     setLoading(true)
-    const [campaignsRes, allRes, premRes, vipRes] = await Promise.all([
+    const [campaignsRes, allRes, premRes, vipRes, newsletterRes] = await Promise.all([
       supabase.from('email_campaigns').select('*').order('created_at', { ascending: false }).limit(50),
       supabase.from('profiles').select('id', { count: 'exact', head: true }),
       supabase.from('user_subscriptions').select('id', { count: 'exact', head: true }).eq('plan_id', 'premium').eq('status', 'active'),
       supabase.from('user_subscriptions').select('id', { count: 'exact', head: true }).eq('plan_id', 'vip').eq('status', 'active'),
+      supabase.from('newsletter_subscribers').select('id', { count: 'exact', head: true }).eq('is_active', true),
     ])
     setCampaigns(campaignsRes.data || [])
     setUserCount({
       all: allRes.count || 0,
       premium: premRes.count || 0,
       vip: vipRes.count || 0,
+      newsletter: newsletterRes.count || 0,
     })
     setLoading(false)
   }
@@ -143,6 +176,7 @@ export default function AdminEmail() {
     if (id === 'all') return userCount.all || 0
     if (id === 'premium') return userCount.premium || 0
     if (id === 'vip') return userCount.vip || 0
+    if (id === 'newsletter') return userCount.newsletter || 0
     return 0
   }
 
@@ -241,6 +275,10 @@ export default function AdminEmail() {
           <button onClick={fetchData}
             className="w-8 h-8 rounded-xl dark:bg-white/5 bg-gray-100 flex items-center justify-center hover:text-brand-pink transition-colors">
             <RefreshCw className="w-3.5 h-3.5 dark:text-gray-400 text-gray-600" />
+          </button>
+          <button onClick={() => { setShowSubscribers(true); fetchSubscribers() }}
+            className="flex items-center gap-2 px-3 py-2 rounded-xl dark:bg-white/5 bg-gray-100 dark:text-gray-400 text-gray-600 hover:text-brand-pink text-xs font-semibold transition-colors">
+            <Users className="w-3.5 h-3.5" /> Subscribers ({(userCount.newsletter || 0).toLocaleString()})
           </button>
           <button onClick={() => setShowCompose(true)}
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-love-gradient text-white text-sm font-bold shadow-lg shadow-pink-500/20 hover:opacity-90 transition-opacity">
@@ -354,6 +392,56 @@ export default function AdminEmail() {
           </div>
         )}
       </div>
+
+      {/* ── Newsletter Subscribers Modal ──────────────────────────────────────── */}
+      <AnimatePresence>
+        {showSubscribers && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+            onClick={() => setShowSubscribers(false)}>
+            <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 40 }}
+              onClick={e => e.stopPropagation()}
+              className="w-full sm:max-w-lg dark:bg-[#1A1228] bg-white sm:rounded-3xl rounded-t-3xl border dark:border-white/8 border-gray-200 shadow-2xl max-h-[85vh] overflow-y-auto">
+              <div className="flex items-center justify-between px-5 py-4 border-b dark:border-white/6 border-gray-100 sticky top-0 dark:bg-[#1A1228] bg-white z-10">
+                <div>
+                  <h3 className="font-bold text-sm dark:text-white text-gray-900">Newsletter Subscribers</h3>
+                  <p className="text-[11px] dark:text-gray-500 text-gray-400 mt-0.5">Public signup list from the site footer</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button onClick={exportSubscribers}
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg dark:bg-white/5 bg-gray-100 dark:text-gray-400 text-gray-600 hover:text-brand-pink text-[11px] font-semibold transition-colors">
+                    <Download className="w-3 h-3" /> Export
+                  </button>
+                  <button onClick={() => setShowSubscribers(false)} className="w-7 h-7 rounded-lg dark:bg-white/5 bg-gray-100 flex items-center justify-center">
+                    <X className="w-3.5 h-3.5 dark:text-gray-400 text-gray-600" />
+                  </button>
+                </div>
+              </div>
+              {subscribers.length === 0 ? (
+                <div className="py-12 text-center px-5">
+                  <Mail className="w-10 h-10 dark:text-gray-600 text-gray-300 mx-auto mb-3" />
+                  <p className="font-bold dark:text-white text-gray-900 mb-1">No subscribers yet</p>
+                  <p className="text-sm dark:text-gray-400 text-gray-500">Signups from the footer form will appear here</p>
+                </div>
+              ) : (
+                <div className="divide-y dark:divide-white/4 divide-gray-50">
+                  {subscribers.map(s => (
+                    <div key={s.id} className="flex items-center justify-between gap-3 px-5 py-3">
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold dark:text-white text-gray-900 truncate">{s.name || s.email}</p>
+                        <p className="text-[11px] dark:text-gray-500 text-gray-400 truncate">{s.email} · {s.source || 'website'}</p>
+                      </div>
+                      <button onClick={() => removeSubscriber(s.id)} disabled={removingSub === s.id}
+                        className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center hover:bg-red-500/10 text-gray-400 hover:text-red-400 transition-colors disabled:opacity-50">
+                        {removingSub === s.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* ── Compose Modal ──────────────────────────────────────────────────────── */}
       <AnimatePresence>

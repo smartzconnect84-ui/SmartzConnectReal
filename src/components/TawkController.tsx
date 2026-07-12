@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { MessageCircle, X } from 'lucide-react'
-import { recomputeTawkVisibility, openTawkChat } from '@/lib/tawk'
+import { recomputeTawkVisibility, openTawkChat, initTawkChatOpenTracking, subscribeTawkChatOpen } from '@/lib/tawk'
 
 const DISMISS_KEY = 'sc_tawk_dismissed'
 const GREETED_KEY = 'sc_tawk_greeted'
@@ -26,10 +26,16 @@ export default function TawkController() {
     try { return sessionStorage.getItem(DISMISS_KEY) === '1' } catch { return false }
   })
   const [showGreeting, setShowGreeting] = useState(false)
+  const [chatOpen, setChatOpen] = useState(false)
 
   useEffect(() => {
     recomputeTawkVisibility()
   }, [isPublic, dismissed])
+
+  useEffect(() => {
+    initTawkChatOpenTracking()
+    return subscribeTawkChatOpen(setChatOpen)
+  }, [])
 
   useEffect(() => {
     if (!isPublic || dismissed) return
@@ -99,13 +105,19 @@ export default function TawkController() {
           </div>
         </div>
       )}
-      <button
-        onClick={dismiss}
-        title="Hide live support"
-        className="fixed bottom-[70px] right-[22px] z-[2147483000] w-6 h-6 rounded-full flex items-center justify-center bg-gray-800/90 text-white/80 hover:text-white hover:bg-gray-700 shadow-md transition-colors"
-      >
-        <X className="w-3.5 h-3.5" />
-      </button>
+      {/* Hidden while Tawk's own chat window is open — it sits right next to
+          the launcher's resting spot and would otherwise overlap the chat
+          window's own controls, letting an accidental click here fully hide
+          live support mid-conversation. */}
+      {!chatOpen && (
+        <button
+          onClick={dismiss}
+          title="Hide live support"
+          className="fixed bottom-[70px] right-[22px] z-[2147483000] w-6 h-6 rounded-full flex items-center justify-center bg-gray-800/90 text-white/80 hover:text-white hover:bg-gray-700 shadow-md transition-colors"
+        >
+          <X className="w-3.5 h-3.5" />
+        </button>
+      )}
     </>
   )
 }

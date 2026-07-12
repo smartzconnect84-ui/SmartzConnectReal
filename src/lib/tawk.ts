@@ -15,6 +15,10 @@ declare global {
       showWidget?: () => void
       hideWidget?: () => void
       onLoad?: () => void
+      onChatMaximized?: () => void
+      onChatMinimized?: () => void
+      onChatHidden?: () => void
+      onChatEnded?: () => void
       customStyle?: unknown
       [key: string]: unknown
     }
@@ -58,6 +62,44 @@ export function showTawkWidget() {
 /** Hides the entire widget (launcher + chat window). */
 export function hideTawkWidget() {
   withTawkApi((api) => api.hideWidget?.())
+}
+
+const CHAT_OPEN_EVENT = 'tawk:chat-open-change'
+
+/**
+ * Tracks whether Tawk's own chat WINDOW (not just the launcher bubble) is
+ * currently open, and broadcasts changes via a DOM CustomEvent. <TawkController>
+ * listens to this so it can hide its small custom "×" dismiss chip while a
+ * real conversation is open — the chip sits right next to the launcher's
+ * resting spot, and without this it can overlap Tawk's own window controls,
+ * so a click meant for Tawk (e.g. minimizing) could accidentally trigger our
+ * "hide the whole widget" action and make live chat "disappear totally"
+ * mid-conversation.
+ */
+function dispatchChatOpenChange(open: boolean) {
+  try {
+    window.dispatchEvent(new CustomEvent(CHAT_OPEN_EVENT, { detail: { open } }))
+  } catch { /* ignore */ }
+}
+
+export function subscribeTawkChatOpen(cb: (open: boolean) => void) {
+  const handler = (e: Event) => cb(Boolean((e as CustomEvent).detail?.open))
+  window.addEventListener(CHAT_OPEN_EVENT, handler)
+  return () => window.removeEventListener(CHAT_OPEN_EVENT, handler)
+}
+
+/** Wires Tawk's own lifecycle callbacks to the chat-open tracker above. Call once. */
+export function initTawkChatOpenTracking() {
+  withTawkApi((api) => {
+    const prevMax = api.onChatMaximized
+    const prevMin = api.onChatMinimized
+    const prevHidden = api.onChatHidden
+    const prevEnded = api.onChatEnded
+    api.onChatMaximized = () => { prevMax?.(); dispatchChatOpenChange(true) }
+    api.onChatMinimized = () => { prevMin?.(); dispatchChatOpenChange(false) }
+    api.onChatHidden = () => { prevHidden?.(); dispatchChatOpenChange(false) }
+    api.onChatEnded = () => { prevEnded?.(); dispatchChatOpenChange(false) }
+  })
 }
 
 const DISMISS_KEY = 'sc_tawk_dismissed'

@@ -171,10 +171,10 @@ export default function RegisterPage() {
         {/* Logo */}
         <div className="flex items-center justify-center gap-2.5 mb-7">
           <div className="relative">
-            <img src={logoImg} alt="SmartzConnect" className="w-9 h-9 object-contain relative z-10" />
+            <img src={logoImg} alt="SmartzConnect" className="w-[43px] h-[43px] object-contain relative z-10" />
             <div className="absolute inset-0 rounded-xl bg-purple-500/20 blur-lg" />
           </div>
-          <span className="font-display font-black text-xl tracking-tight">
+          <span className="font-display font-black text-2xl tracking-tight">
             <BrandName />
           </span>
         </div>

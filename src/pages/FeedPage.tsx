@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { notifyUser } from '@/lib/notify'
+import { sendStoryEventToChat } from '@/lib/stream'
 import { uploadToSufy } from '@/lib/sufy'
 import { useAuth } from '@/hooks/useAuth'
 import ReportBlockModal from '@/components/ReportBlockModal'
@@ -250,12 +251,22 @@ function StoryViewerOverlay({
         )
       if (!error) {
         const viewerName = currentUserName || 'Someone'
+        // Auto-forward the reaction into a real Direct Message thread (like
+        // Instagram/Snapchat "reacted to your story") so the author sees it
+        // in their chat inbox, not just a feed notification they may miss.
+        await sendStoryEventToChat({
+          currentUserId,
+          authorId: story.authorId,
+          viewerName,
+          text: `${emoji} Reacted to your story`,
+          storyMediaUrl: story.mediaType !== 'text' ? story.mediaUrl : undefined,
+        })
         notifyUser({
           userId: story.authorId,
           type: 'story_reaction',
           title: 'Story reaction',
           message: `${viewerName} reacted ${emoji} to your story`,
-          actionUrl: '/app/feed',
+          actionUrl: `/app/chat/${currentUserId}`,
           emoji,
         })
       }
@@ -275,12 +286,21 @@ function StoryViewerOverlay({
         if (!isOwnStory) {
           const viewerName = currentUserName || 'Someone'
           const preview = text.length > 60 ? `${text.slice(0, 60)}…` : text
+          // Story replies are effectively DMs — deliver the actual reply text
+          // into the author's chat with the viewer, exactly like a message.
+          await sendStoryEventToChat({
+            currentUserId,
+            authorId: story.authorId,
+            viewerName,
+            text: `Replied to your story: "${text}"`,
+            storyMediaUrl: story.mediaType !== 'text' ? story.mediaUrl : undefined,
+          })
           notifyUser({
             userId: story.authorId,
             type: 'story_comment',
             title: 'New story comment',
             message: `${viewerName}: "${preview}"`,
-            actionUrl: '/app/feed',
+            actionUrl: `/app/chat/${currentUserId}`,
             emoji: '💬',
           })
         }
@@ -390,6 +410,7 @@ function StoriesBar({ user, onStoriesLoaded }: { user: { id?: string; email?: st
   const storyInputRef = useRef<HTMLInputElement>(null)
   const [dbStories, setDbStories] = useState<DbStory[]>([])
   const [uploading, setUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState<{ done: number; total: number } | null>(null)
   const [viewing, setViewing] = useState<ViewStory | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [showTextStory, setShowTextStory] = useState(false)
@@ -498,26 +519,44 @@ function StoriesBar({ user, onStoriesLoaded }: { user: { id?: string; email?: st
   useEffect(() => { loadStories() }, [loadStories])
 
   const handleStoryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file || !user?.id) return
+    // Multiple story publishing: users can now select several images/videos at
+    // once (input has the `multiple` attribute) — each file becomes its own
+    // 24h story, uploaded and inserted sequentially so progress/errors stay
+    // per-file instead of one giant Promise.all that fails opaquely.
+    const files = e.target.files ? Array.from(e.target.files) : []
+    if (!files.length || !user?.id) return
     setUploading(true)
     setUploadError(null)
-    try {
-      const publicUrl = await uploadToSufy(file, 'stories')
-      const isVideo = file.type.startsWith('video/')
-      await supabase.from('stories').insert({
-        author_id: user.id,   // NOT NULL in original schema
-        user_id: user.id,     // alias added in schema_patch_v1
-        media_url: publicUrl,
-        media_type: isVideo ? 'video' : 'image',
-        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-      })
-      await loadStories()
-    } catch (err: any) {
-      setUploadError(err?.message || 'Story upload failed. Please try again.')
+    setUploadProgress(files.length > 1 ? { done: 0, total: files.length } : null)
+    let failures = 0
+    for (const file of files) {
+      try {
+        const publicUrl = await uploadToSufy(file, 'stories')
+        const isVideo = file.type.startsWith('video/')
+        await supabase.from('stories').insert({
+          author_id: user.id,   // NOT NULL in original schema
+          user_id: user.id,     // alias added in schema_patch_v1
+          media_url: publicUrl,
+          media_type: isVideo ? 'video' : 'image',
+          expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        })
+      } catch {
+        failures += 1
+      }
+      setUploadProgress(p => p ? { ...p, done: p.done + 1 } : null)
+    }
+    if (failures > 0) {
+      setUploadError(
+        failures === files.length
+          ? 'Story upload failed. Please try again.'
+          : `${failures} of ${files.length} stories failed to upload.`
+      )
       setTimeout(() => setUploadError(null), 4000)
     }
+    await loadStories()
     setUploading(false)
+    setUploadProgress(null)
+    e.target.value = ''
   }
 
   const myStory = dbStories.find(s => s.author_id === user?.id)
@@ -537,6 +576,22 @@ function StoriesBar({ user, onStoriesLoaded }: { user: { id?: string; email?: st
           >
             <X className="w-4 h-4 flex-shrink-0" />
             {uploadError}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Multi-story upload progress */}
+      <AnimatePresence>
+        {uploadProgress && (
+          <motion.div
+            key="story-upload-progress"
+            initial={{ opacity: 0, y: -12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            className="mx-4 mb-2 px-4 py-2.5 rounded-xl bg-pink-500/10 border border-pink-500/20 flex items-center gap-2 text-sm font-semibold text-brand-pink"
+          >
+            <div className="w-3.5 h-3.5 border-2 border-brand-pink/40 border-t-brand-pink rounded-full animate-spin flex-shrink-0" />
+            Uploading story {uploadProgress.done + 1} of {uploadProgress.total}…
           </motion.div>
         )}
       </AnimatePresence>
@@ -643,7 +698,7 @@ function StoriesBar({ user, onStoriesLoaded }: { user: { id?: string; email?: st
                   <Plus className="w-3 h-3 text-white" />
                 </button>
               )}
-              <input ref={storyInputRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleStoryUpload} />
+              <input ref={storyInputRef} type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleStoryUpload} />
             </div>
             <span className="text-[10px] font-semibold dark:text-gray-400 text-gray-500 max-w-[56px] truncate text-center">
               {myStory ? 'Your Story' : 'Add Story'}

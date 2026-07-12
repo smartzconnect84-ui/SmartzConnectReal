@@ -84,6 +84,7 @@ const CallsPage            = lazy(() => import('@/pages/CallsPage'))
 const SettingsPage         = lazy(() => import('@/pages/SettingsPage'))
 const SavedPostsPage       = lazy(() => import('@/pages/SavedPostsPage'))
 const ReferralsPage        = lazy(() => import('@/pages/ReferralsPage'))
+const InvoiceGeneratorPage = lazy(() => import('@/pages/InvoiceGeneratorPage'))
 const WorldStageVotePage   = lazy(() => import('@/pages/WorldStageVotePage'))
 
 // Admin pages — only loaded when the user navigates to /admin/*
@@ -236,6 +237,7 @@ export default function App() {
                   <Route path="calls/audio"   element={<CallsPage defaultMode="audio" />} />
                   <Route path="saved"         element={<SavedPostsPage />} />
                   <Route path="referrals"     element={<ReferralsPage />} />
+                  <Route path="invoice-generator" element={<InvoiceGeneratorPage />} />
                   <Route path="worldstage"    element={<WorldStageVotePage />} />
                   <Route path="help"          element={<Navigate to="/help" replace />} />
                   <Route path="pages"         element={<CommunityPagesPage />} />

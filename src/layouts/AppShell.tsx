@@ -5,7 +5,7 @@ import {
   Home, User, Users, MessageCircle, Bell, Video, Phone,
   Heart, Users2, FileText, Calendar, ShoppingBag, Briefcase,
   BookOpen, Tv, Car, Zap, Crown, Settings, HelpCircle,
-  Sun, Moon, LogOut, Globe, Bookmark, Trophy, Gift
+  Sun, Moon, LogOut, Globe, Bookmark, Trophy, Gift, Receipt
 } from 'lucide-react'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useAuth } from '@/hooks/useAuth'
@@ -59,6 +59,7 @@ const drawerSections = [
   {
     section: 'Account',
     items: [
+      { path: '/app/invoice-generator', icon: Receipt, label: 'Invoice Generator', badge: null as string | null, color: '' },
       { path: '/app/referrals', icon: Gift,       label: 'Invite & Earn', badge: null as string | null, color: '' },
       { path: '/app/saved',    icon: Bookmark,   label: 'Saved Posts',   badge: null as string | null, color: '' },
       { path: '/app/settings', icon: Settings,   label: 'Settings',      badge: null as string | null, color: '', tourId: 'nav-settings' },

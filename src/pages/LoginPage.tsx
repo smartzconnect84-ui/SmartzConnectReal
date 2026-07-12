@@ -100,8 +100,8 @@ export default function LoginPage() {
 
       {/* Logo */}
       <div className="flex items-center gap-2.5 mb-8">
-        <img src={logoImg} alt="SmartzConnect" className="w-9 h-9 object-contain" />
-        <span className="font-display font-black text-xl tracking-tight">
+        <img src={logoImg} alt="SmartzConnect" className="w-[43px] h-[43px] object-contain" />
+        <span className="font-display font-black text-2xl tracking-tight">
           <BrandName />
         </span>
       </div>
