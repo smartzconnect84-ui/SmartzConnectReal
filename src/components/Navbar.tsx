@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Sun, Moon, Menu, X, ChevronDown,
   Tv, ShoppingBag, Car, Package, Megaphone,
-  Heart, Users, MessageCircle, Zap,
+  Heart, Users, MessageCircle, Zap, GraduationCap,
   Globe, Users2, FileText, Info,
 } from 'lucide-react'
 const defaultLogoImg = '/logo.png'
@@ -18,31 +18,35 @@ import BrandName from '@/components/BrandName'
 /* ── Nav data (hardcoded fallback) ────────────────────────────────────── */
 const FALLBACK_PRODUCTS = {
   business: [
-    { label: 'SmartzMarket',   href: '/smartzmarket',   icon: ShoppingBag, color: 'text-amber-400',    bg: 'bg-amber-500/10',    desc: 'Buy & sell anything'        },
-    { label: 'SmartzRide',     href: '/smartzride',     icon: Car,         color: 'text-emerald-400',  bg: 'bg-emerald-500/10',  desc: 'Ride-hailing across Africa' },
-    { label: 'SmartzDelivery', href: '/smartzdelivery', icon: Package,     color: 'text-sky-400',      bg: 'bg-sky-500/10',      desc: 'Fast local delivery'        },
-    { label: 'SmartzAds',      href: '/smartzads',      icon: Megaphone,   color: 'text-rose-400',     bg: 'bg-rose-500/10',     desc: 'Advertise to millions'      },
+    { label: 'SmartzMarket',   href: '/smartzmarket',   icon: ShoppingBag,  color: 'text-amber-400',    bg: 'bg-amber-500/10',    desc: 'Buy & sell anything'        },
+    { label: 'SmartzRide',     href: '/smartzride',     icon: Car,          color: 'text-emerald-400',  bg: 'bg-emerald-500/10',  desc: 'Ride-hailing across Africa' },
+    { label: 'SmartzDelivery', href: '/smartzdelivery', icon: Package,      color: 'text-sky-400',      bg: 'bg-sky-500/10',      desc: 'Fast local delivery'        },
+    { label: 'SmartzAds',      href: '/smartzads',      icon: Megaphone,    color: 'text-rose-400',     bg: 'bg-rose-500/10',     desc: 'Advertise to millions'      },
+    { label: 'SmartzLearning', href: '/smartzlearning', icon: GraduationCap,color: 'text-teal-400',     bg: 'bg-teal-500/10',     desc: 'Courses & skills'           },
+    { label: 'SmartzTV',       href: '/smartztv',       icon: Tv,           color: 'text-purple-400',   bg: 'bg-purple-500/10',   desc: 'Live streams & creators'    },
   ],
   social: [
     { label: 'SmartzSocial',   href: '/app/feed',       icon: Users,       color: 'text-violet-400',   bg: 'bg-violet-500/10',   desc: 'Your social feed'           },
     { label: 'SmartzDating',   href: '/app/discover',   icon: Heart,       color: 'text-pink-400',     bg: 'bg-pink-500/10',     desc: 'Match & connect'            },
-    { label: 'SmartzTV',       href: '/smartztv',       icon: Tv,          color: 'text-purple-400',   bg: 'bg-purple-500/10',   desc: 'Live streams & creators'    },
   ],
 }
 
 // Hardcoded icon/style mapping for known service slugs
 const SERVICE_ICON_MAP: Record<string, { icon: typeof ShoppingBag; color: string; bg: string }> = {
-  'smartzmarket':   { icon: ShoppingBag, color: 'text-amber-400',   bg: 'bg-amber-500/10'   },
-  'smartzride':     { icon: Car,         color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-  'smartzdelivery': { icon: Package,     color: 'text-sky-400',     bg: 'bg-sky-500/10'     },
-  'smartzads':      { icon: Megaphone,   color: 'text-rose-400',    bg: 'bg-rose-500/10'    },
-  'smartzsocial':   { icon: Users,       color: 'text-violet-400',  bg: 'bg-violet-500/10'  },
-  'smartzdating':   { icon: Heart,       color: 'text-pink-400',    bg: 'bg-pink-500/10'    },
-  'smartztv':       { icon: Tv,          color: 'text-purple-400',  bg: 'bg-purple-500/10'  },
-  'world-stage':    { icon: Globe,       color: 'text-blue-400',    bg: 'bg-blue-500/10'    },
+  'smartzmarket':   { icon: ShoppingBag,   color: 'text-amber-400',   bg: 'bg-amber-500/10'   },
+  'smartzride':     { icon: Car,           color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
+  'smartzdelivery': { icon: Package,       color: 'text-sky-400',     bg: 'bg-sky-500/10'     },
+  'smartzads':      { icon: Megaphone,     color: 'text-rose-400',    bg: 'bg-rose-500/10'    },
+  'smartzlearning': { icon: GraduationCap, color: 'text-teal-400',    bg: 'bg-teal-500/10'    },
+  'smartzsocial':   { icon: Users,         color: 'text-violet-400',  bg: 'bg-violet-500/10'  },
+  'smartzdating':   { icon: Heart,         color: 'text-pink-400',    bg: 'bg-pink-500/10'    },
+  'smartztv':       { icon: Tv,            color: 'text-purple-400',  bg: 'bg-purple-500/10'  },
+  'world-stage':    { icon: Globe,         color: 'text-blue-400',    bg: 'bg-blue-500/10'    },
 }
 
-const COMMERCE_SLUGS = ['smartzmarket','smartzride','smartzdelivery','smartzads']
+// Slugs that belong in the "Commerce & Growth" group. Everything else (except
+// world-stage, which has its own standalone nav link) falls into "Social & Love".
+const COMMERCE_SLUGS = ['smartzmarket','smartzride','smartzdelivery','smartzads','smartzlearning','smartztv']
 
 const company = [
   { label: 'About Us',      href: '/about',        icon: Info,       desc: 'Our story & mission'     },
@@ -93,7 +97,7 @@ function ProductsDrop({ onClose }: { onClose: () => void }) {
       <div className="grid grid-cols-2 gap-0 p-3">
         {/* Business */}
         <div>
-          <p className="px-3 pt-2 pb-2 text-[10px] font-black uppercase tracking-[0.14em] text-white/25">Commerce</p>
+          <p className="px-3 pt-2 pb-2 text-[10px] font-black uppercase tracking-[0.14em] text-white/25">Commerce &amp; Growth</p>
           {business.map(item => {
             const Icon = item.icon
             return (
@@ -114,7 +118,7 @@ function ProductsDrop({ onClose }: { onClose: () => void }) {
         {/* Divider */}
         <div className="relative">
           <div className="absolute left-0 top-4 bottom-4 w-px bg-white/6" />
-          <p className="px-3 pt-2 pb-2 text-[10px] font-black uppercase tracking-[0.14em] text-white/25">Social</p>
+          <p className="px-3 pt-2 pb-2 text-[10px] font-black uppercase tracking-[0.14em] text-white/25">Social &amp; Love</p>
           {social.map(item => {
             const Icon = item.icon
             return (
@@ -460,7 +464,7 @@ export default function Navbar() {
                         className="overflow-hidden"
                       >
                         <div className="mx-2 mb-1">
-                          <p className="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-white/20">Commerce</p>
+                          <p className="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-white/20">Commerce &amp; Growth</p>
                           <div className="grid grid-cols-2 gap-0.5">
                             {mobileProducts.business.map(item => {
                               const Icon = item.icon
@@ -475,7 +479,7 @@ export default function Navbar() {
                               )
                             })}
                           </div>
-                          <p className="px-3 py-1.5 mt-1 text-[10px] font-black uppercase tracking-widest text-white/20">Social</p>
+                          <p className="px-3 py-1.5 mt-1 text-[10px] font-black uppercase tracking-widest text-white/20">Social &amp; Love</p>
                           <div className="grid grid-cols-2 gap-0.5">
                             {mobileProducts.social.map(item => {
                               const Icon = item.icon

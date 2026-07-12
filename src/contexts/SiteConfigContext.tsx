@@ -24,6 +24,7 @@ export const SITE_IMAGE_KEYS = {
   ridePageBg: 'service_ride_bg_url',
   deliveryPageBg: 'service_delivery_bg_url',
   adsPageBg: 'service_ads_bg_url',
+  learningPageBg: 'service_learning_bg_url',
 } as const
 
 export type SiteImageKey = typeof SITE_IMAGE_KEYS[keyof typeof SITE_IMAGE_KEYS]

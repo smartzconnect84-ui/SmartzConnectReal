@@ -53,6 +53,7 @@ const SmartzDeliveryPage   = lazy(() => import('@/pages/public/SmartzDeliveryPag
 const SmartzAdsPage        = lazy(() => import('@/pages/public/SmartzAdsPage'))
 const SmartzSocialPage     = lazy(() => import('@/pages/public/SmartzSocialPage'))
 const SmartzDatingPage     = lazy(() => import('@/pages/public/SmartzDatingPage'))
+const SmartzLearningPage   = lazy(() => import('@/pages/public/SmartzLearningPage'))
 const TeamPage             = lazy(() => import('@/pages/public/TeamPage'))
 const BlogPage             = lazy(() => import('@/pages/public/BlogPage'))
 const BlogPostPage         = lazy(() => import('@/pages/public/BlogPostPage'))
@@ -202,6 +203,7 @@ export default function App() {
                 <Route path="/smartzads"      element={<PublicLayout><SmartzAdsPage /></PublicLayout>} />
                 <Route path="/smartzsocial"   element={<PublicLayout><SmartzSocialPage /></PublicLayout>} />
                 <Route path="/smartzdating"   element={<PublicLayout><SmartzDatingPage /></PublicLayout>} />
+                <Route path="/smartzlearning" element={<PublicLayout><SmartzLearningPage /></PublicLayout>} />
                 <Route path="/team"           element={<PublicLayout><TeamPage /></PublicLayout>} />
                 <Route path="/blog"           element={<PublicLayout><BlogPage /></PublicLayout>} />
                 <Route path="/blog/:slug"     element={<PublicLayout><BlogPostPage /></PublicLayout>} />

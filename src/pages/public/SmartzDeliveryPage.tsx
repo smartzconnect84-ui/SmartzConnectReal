@@ -80,36 +80,35 @@ export default function SmartzDeliveryPage() {
               </div>
             </motion.div>
 
-            {/* Tracking mockup */}
+            {/* Live tracking card with a real delivery photo */}
             <motion.div initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.7, delay: 0.2 }}>
-              <div className="dark:bg-[#130E1E] bg-white rounded-3xl p-6 border dark:border-white/8 border-gray-100 shadow-2xl max-w-sm mx-auto">
-                <div className="flex items-center justify-between mb-4">
-                  <p className="font-bold dark:text-white text-gray-900 text-sm">Live Tracking</p>
-                  <span className="flex items-center gap-1.5 text-xs text-emerald-500 font-semibold">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> On the way
+              <div className="dark:bg-[#130E1E] bg-white rounded-3xl overflow-hidden border dark:border-white/8 border-gray-100 shadow-2xl max-w-sm mx-auto">
+                <div className="relative">
+                  <img src="/smartz-delivery-tracking.jpg" alt="SmartzDelivery rider delivering a package" className="w-full h-48 object-cover" />
+                  <span className="absolute top-3 right-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/50 backdrop-blur-sm text-xs text-emerald-300 font-semibold">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" /> On the way
                   </span>
                 </div>
-                <div className="bg-gradient-to-br from-blue-900 to-indigo-900 rounded-2xl p-4 mb-4 text-center">
-                  <div className="text-5xl mb-2">🗺️</div>
-                  <p className="text-white/70 text-xs">Rider is 1.2km away</p>
-                </div>
-                <div className="space-y-3">
-                  {[
-                    { label: 'Package picked up', time: '10:30 AM', done: true },
-                    { label: 'In transit',         time: '11:15 AM', done: true },
-                    { label: 'Out for delivery',   time: '11:45 AM', done: true },
-                    { label: 'Delivered',          time: 'Est. 12:10 PM', done: false },
-                  ].map((s, i) => (
-                    <div key={i} className="flex items-center gap-3">
-                      <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${s.done ? 'bg-emerald-500' : 'dark:bg-white/10 bg-gray-200'}`}>
-                        {s.done && <CheckCircle className="w-3 h-3 text-white" />}
+                <div className="p-6">
+                  <p className="font-bold dark:text-white text-gray-900 text-sm mb-4">Live Tracking</p>
+                  <div className="space-y-3">
+                    {[
+                      { label: 'Package picked up', time: '10:30 AM', done: true },
+                      { label: 'In transit',         time: '11:15 AM', done: true },
+                      { label: 'Out for delivery',   time: '11:45 AM', done: true },
+                      { label: 'Delivered',          time: 'Est. 12:10 PM', done: false },
+                    ].map((s, i) => (
+                      <div key={i} className="flex items-center gap-3">
+                        <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${s.done ? 'bg-emerald-500' : 'dark:bg-white/10 bg-gray-200'}`}>
+                          {s.done && <CheckCircle className="w-3 h-3 text-white" />}
+                        </div>
+                        <div className="flex-1">
+                          <p className={`text-xs font-semibold ${s.done ? 'dark:text-white text-gray-900' : 'dark:text-gray-500 text-gray-400'}`}>{s.label}</p>
+                        </div>
+                        <p className="text-[10px] dark:text-gray-500 text-gray-400">{s.time}</p>
                       </div>
-                      <div className="flex-1">
-                        <p className={`text-xs font-semibold ${s.done ? 'dark:text-white text-gray-900' : 'dark:text-gray-500 text-gray-400'}`}>{s.label}</p>
-                      </div>
-                      <p className="text-[10px] dark:text-gray-500 text-gray-400">{s.time}</p>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               </div>
             </motion.div>
