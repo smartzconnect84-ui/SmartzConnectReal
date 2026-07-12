@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useSiteConfig, SITE_IMAGE_KEYS } from '@/contexts/SiteConfigContext'
+import { useAuth } from '@/hooks/useAuth'
 import SmartzTVPlayer from '@/components/SmartzTVPlayer'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -353,6 +354,8 @@ const POLL_INTERVAL   = 20   // seconds between auto-checks when offline
 const RECONNECT_FAST  = 5    // seconds between checks when disconnected
 
 function LiveTVHub() {
+  const { session } = useAuth()
+  const tvHref = session ? '/app/smartztv' : '/register'
   const [channels, setChannels]           = useState<TVChannel[]>([])
   const [loading, setLoading]             = useState(true)
   const [error, setError]                 = useState(false)
@@ -488,7 +491,7 @@ function LiveTVHub() {
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <section className="py-10 sm:py-14 dark:bg-[#06030f] bg-violet-950/5">
+    <section id="live" className="py-10 sm:py-14 dark:bg-[#06030f] bg-violet-950/5">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
 
         {/* Header */}
@@ -593,7 +596,7 @@ function LiveTVHub() {
               Want to <strong>go live</strong> or unlock exclusive channels?
             </p>
           </div>
-          <Link to="/register"
+          <Link to={tvHref}
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 text-white text-sm font-bold hover:opacity-90 transition-opacity">
             <Zap className="w-3.5 h-3.5" /> Join Free
           </Link>
@@ -614,6 +617,8 @@ export default function SmartzTVPage() {
   const heroIn = useInView(heroRef, { once: true })
   const siteConfig = useSiteConfig()
   const bgUrl = siteConfig.get(SITE_IMAGE_KEYS.tvPageBg)
+  const { session } = useAuth()
+  const goLiveHref = session ? '/app/smartztv' : '/register'
 
   return (
     <div className="dark:bg-[#080510] bg-gray-50 min-h-screen pt-[72px] sm:pt-20">
@@ -630,10 +635,10 @@ export default function SmartzTVPage() {
         <div className="dark:bg-[#0a0520]/90 bg-violet-50/70 border-t-2 border-violet-500/25 py-6 px-4">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={heroIn ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.5, delay: 0.2 }}
             className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link to="/register" className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 text-white font-semibold text-sm shadow-lg shadow-violet-500/30 hover:shadow-violet-500/50 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
+            <a href="#live" className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 text-white font-semibold text-sm shadow-lg shadow-violet-500/30 hover:shadow-violet-500/50 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
               <Play className="w-4 h-4" fill="white" /> Watch SmartzTV Live
-            </Link>
-            <Link to="/register" className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl dark:bg-violet-900/30 bg-white border dark:border-violet-500/20 border-violet-300/50 dark:text-violet-200 text-violet-800 font-semibold text-sm hover:dark:bg-violet-900/50 hover:bg-violet-100 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
+            </a>
+            <Link to={goLiveHref} className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl dark:bg-violet-900/30 bg-white border dark:border-violet-500/20 border-violet-300/50 dark:text-violet-200 text-violet-800 font-semibold text-sm hover:dark:bg-violet-900/50 hover:bg-violet-100 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
               <Signal className="w-4 h-4" /> Go Live
             </Link>
           </motion.div>
@@ -680,8 +685,8 @@ export default function SmartzTVPage() {
               <h2 className="font-display font-black text-3xl text-white mb-3">Ready to Go Live?</h2>
               <p className="text-white/80 mb-7 max-w-lg mx-auto">Join creators already earning on SmartzTV. It's free to start.</p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link to="/register" className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl btn-love font-bold text-sm shadow-xl hover:scale-105 transition-all"><Zap className="w-4 h-4" /> Become a Creator</Link>
-                <Link to="/register" className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-white/12 backdrop-blur-sm border border-white/25 text-white font-semibold hover:bg-white/22 transition-all text-sm"><Play className="w-4 h-4" fill="white" /> Watch Live Streams</Link>
+                <Link to={goLiveHref} className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl btn-love font-bold text-sm shadow-xl hover:scale-105 transition-all"><Zap className="w-4 h-4" /> Become a Creator</Link>
+                <a href="#live" className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-white/12 backdrop-blur-sm border border-white/25 text-white font-semibold hover:bg-white/22 transition-all text-sm"><Play className="w-4 h-4" fill="white" /> Watch Live Streams</a>
               </div>
             </div>
           </div>

@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { useSiteConfig, SITE_IMAGE_KEYS } from '@/contexts/SiteConfigContext'
 import { usePublicStats, fmtCount } from '@/hooks/usePublicStats'
+import { useAuth } from '@/hooks/useAuth'
 
 const features = [
   {
@@ -48,6 +49,9 @@ export default function SmartzSocialPage() {
   const heroIn  = useInView(heroRef, { once: true })
   const siteConfig = useSiteConfig()
   const bgUrl = siteConfig.get(SITE_IMAGE_KEYS.socialPageBg)
+  const { session } = useAuth()
+  const isSignedIn = !!session
+  const socialHref = isSignedIn ? '/app/feed' : '/register'
 
   // Live member count from the real users table
   const liveStats  = usePublicStats()
@@ -89,11 +93,11 @@ export default function SmartzSocialPage() {
             transition={{ duration: 0.5, delay: 0.2 }}
             className="flex flex-col sm:flex-row gap-3 justify-center"
           >
-            <Link to="/register"
+            <Link to={socialHref}
               className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-violet-600 text-white font-semibold text-sm shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
               <Zap className="w-4 h-4" /> Join Now
             </Link>
-            <Link to="/register"
+            <Link to={socialHref}
               className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl dark:bg-blue-900/30 bg-white border dark:border-blue-500/20 border-blue-300/50 dark:text-blue-200 text-blue-800 font-semibold text-sm hover:dark:bg-blue-900/50 hover:bg-blue-100 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
               <UserPlus className="w-4 h-4" /> Create Profile
             </Link>
@@ -167,7 +171,7 @@ export default function SmartzSocialPage() {
                 <p className="text-base dark:text-gray-400 text-gray-600 mb-6 leading-relaxed">
                   Your data is yours. SmartzSocial never sells your information. Control exactly what you share and with whom.
                 </p>
-                <Link to="/register"
+                <Link to={socialHref}
                   className="inline-flex items-center gap-2 px-7 py-4 rounded-2xl bg-gradient-to-r from-blue-500 to-violet-600 text-white font-bold text-base shadow-xl shadow-blue-500/30 hover:scale-[1.03] transition-all">
                   <UserPlus className="w-4 h-4" /> Create Your Profile
                 </Link>
@@ -204,7 +208,7 @@ export default function SmartzSocialPage() {
             Join a growing community connecting, sharing, and growing on Africa's premier social platform.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link to="/register"
+            <Link to={socialHref}
               className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-gradient-to-r from-blue-500 to-violet-600 text-white font-bold text-base shadow-xl shadow-blue-500/25 hover:scale-105 transition-all">
               <Zap className="w-4 h-4" /> Join Now — It's Free
             </Link>

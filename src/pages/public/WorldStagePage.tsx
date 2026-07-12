@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/hooks/useAuth'
 
 /* ── Spotlight categories ──────────────────────────────────────── */
 const spotCategories = [
@@ -127,6 +128,9 @@ export default function WorldStagePage() {
   const stepsIn  = useInView(stepsRef, { once: true, margin: '-60px' })
   const spotsIn  = useInView(spotsRef, { once: true, margin: '-60px' })
 
+  const { session } = useAuth()
+  const worldstageHref = session ? '/app/worldstage' : '/register'
+
   const [spotlights, setSpotlights] = useState<WSSpotlight[]>([])
 
   useEffect(() => {
@@ -183,7 +187,7 @@ export default function WorldStagePage() {
             {/* CTAs */}
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Link
-                to="/register"
+                to={worldstageHref}
                 className="px-8 py-4 rounded-2xl bg-gradient-to-r from-violet-600 to-pink-600 text-white font-bold text-base shadow-xl shadow-violet-500/30 hover:scale-105 transition-all inline-flex items-center justify-center gap-2"
               >
                 <Zap className="w-5 h-5" /> Join & Get Spotted
@@ -464,10 +468,10 @@ export default function WorldStagePage() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
-                to="/register"
+                to={worldstageHref}
                 className="px-10 py-4 rounded-2xl bg-white text-violet-700 font-black text-base hover:scale-105 transition-transform shadow-2xl inline-flex items-center justify-center gap-2"
               >
-                <Zap className="w-5 h-5" /> Create Free Account
+                <Zap className="w-5 h-5" /> {session ? 'Go to World Stage' : 'Create Free Account'}
               </Link>
               <a
                 href="https://wa.me/231776679963"

@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { useSiteConfig, SITE_IMAGE_KEYS } from '@/contexts/SiteConfigContext'
 import { usePublicStats, fmtCount } from '@/hooks/usePublicStats'
+import { useAuth } from '@/hooks/useAuth'
 
 const features = [
   {
@@ -66,6 +67,9 @@ export default function SmartzRidePage() {
   const heroIn  = useInView(heroRef, { once: true })
   const siteConfig = useSiteConfig()
   const bgUrl = siteConfig.get(SITE_IMAGE_KEYS.ridePageBg)
+  const { session } = useAuth()
+  const isSignedIn = !!session
+  const rideHref = isSignedIn ? '/app/ride' : '/register'
 
   // Live counts from real tables
   const liveStats     = usePublicStats()
@@ -122,11 +126,11 @@ export default function SmartzRidePage() {
 
               {/* Two main CTAs */}
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Link to="/register"
+                <Link to={rideHref}
                   className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold text-sm shadow-lg shadow-emerald-500/40 hover:shadow-emerald-500/60 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
                   <Car className="w-4 h-4" /> Book Ride
                 </Link>
-                <Link to="/register"
+                <Link to={rideHref}
                   className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-white/15 backdrop-blur-sm border border-white/30 text-white font-semibold text-sm hover:bg-white/25 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
                   <Users className="w-4 h-4" /> Drive With Us
                 </Link>
@@ -254,7 +258,7 @@ export default function SmartzRidePage() {
                   No boss, no fixed hours — just you and the road.
                 </p>
 
-                <Link to="/register"
+                <Link to={rideHref}
                   className="inline-flex items-center gap-2 px-7 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold text-base shadow-xl shadow-emerald-500/25 hover:scale-[1.03] transition-all">
                   <Zap className="w-4 h-4" /> Apply as Driver
                   <ArrowRight className="w-4 h-4" />
@@ -289,7 +293,7 @@ export default function SmartzRidePage() {
             Join the waitlist and be first to experience SmartzRide when it launches in your city.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link to="/register"
+            <Link to={rideHref}
               className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold text-base shadow-xl shadow-emerald-500/25 hover:scale-105 transition-all">
               <Navigation className="w-4 h-4" /> Join the Waitlist
             </Link>

@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { useSiteConfig, SITE_IMAGE_KEYS } from '@/contexts/SiteConfigContext'
 import { usePublicStats, fmtCount } from '@/hooks/usePublicStats'
+import { useAuth } from '@/hooks/useAuth'
 
 const features = [
   {
@@ -48,6 +49,9 @@ export default function SmartzDatingPage() {
   const heroIn  = useInView(heroRef, { once: true })
   const siteConfig = useSiteConfig()
   const bgUrl = siteConfig.get(SITE_IMAGE_KEYS.datingPageBg)
+  const { session } = useAuth()
+  const isSignedIn = !!session
+  const datingHref = isSignedIn ? '/app/discover' : '/register'
 
   // Live counts from real tables
   const liveStats   = usePublicStats()
@@ -90,11 +94,11 @@ export default function SmartzDatingPage() {
             transition={{ duration: 0.5, delay: 0.2 }}
             className="flex flex-col sm:flex-row gap-3 justify-center"
           >
-            <Link to="/register"
+            <Link to={datingHref}
               className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 text-white font-semibold text-sm shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
               <Heart className="w-4 h-4" /> Start Dating
             </Link>
-            <Link to="/register"
+            <Link to={datingHref}
               className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl dark:bg-rose-900/30 bg-white border dark:border-rose-500/20 border-rose-300/50 dark:text-rose-200 text-rose-800 font-semibold text-sm hover:dark:bg-rose-900/50 hover:bg-rose-100 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
               <UserPlus className="w-4 h-4" /> Create Profile
             </Link>
@@ -168,7 +172,7 @@ export default function SmartzDatingPage() {
                 <p className="text-base dark:text-gray-400 text-gray-600 mb-6 leading-relaxed">
                   Every profile is verified. Every conversation is protected. SmartzDating is built so you can focus on the connection, not the risks.
                 </p>
-                <Link to="/register"
+                <Link to={datingHref}
                   className="inline-flex items-center gap-2 px-7 py-4 rounded-2xl bg-gradient-to-r from-pink-500 to-rose-500 text-white font-bold text-base shadow-xl shadow-pink-500/30 hover:scale-[1.03] transition-all">
                   <Zap className="w-4 h-4" /> Start for Free
                 </Link>
@@ -210,7 +214,7 @@ export default function SmartzDatingPage() {
             Join a growing community finding meaningful connections on SmartzDating.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link to="/register"
+            <Link to={datingHref}
               className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-gradient-to-r from-pink-500 to-rose-500 text-white font-bold text-base shadow-xl shadow-pink-500/25 hover:scale-105 transition-all">
               <Heart className="w-4 h-4" /> Start Dating Free
             </Link>

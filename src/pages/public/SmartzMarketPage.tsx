@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { useSiteConfig, SITE_IMAGE_KEYS } from '@/contexts/SiteConfigContext'
 import { usePublicStats, fmtCount } from '@/hooks/usePublicStats'
+import { useAuth } from '@/hooks/useAuth'
 
 const categories = [
   { name: 'Fashion',       icon: Shirt,       color: 'from-pink-500 to-rose-600',     bg: 'bg-pink-500/10' },
@@ -70,6 +71,9 @@ export default function SmartzMarketPage() {
   const heroIn  = useInView(heroRef, { once: true })
   const siteConfig = useSiteConfig()
   const bgUrl = siteConfig.get(SITE_IMAGE_KEYS.marketPageBg)
+  const { session } = useAuth()
+  const isSignedIn = !!session
+  const marketHref = isSignedIn ? '/app/marketplace' : '/register'
 
   // Live counts from DB
   const liveStats = usePublicStats()
@@ -112,11 +116,11 @@ export default function SmartzMarketPage() {
             transition={{ duration: 0.5, delay: 0.2 }}
             className="flex flex-col sm:flex-row gap-3 justify-center"
           >
-            <Link to="/register"
+            <Link to={marketHref}
               className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold text-sm shadow-lg shadow-amber-500/30 hover:shadow-amber-500/50 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
               <ShoppingBag className="w-4 h-4" /> Shop Now
             </Link>
-            <Link to="/register"
+            <Link to={marketHref}
               className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl dark:bg-amber-900/30 bg-white border dark:border-amber-500/20 border-amber-300/50 dark:text-amber-200 text-amber-800 font-semibold text-sm hover:dark:bg-amber-900/50 hover:bg-amber-100 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
               <TrendingUp className="w-4 h-4" /> Sell Now
             </Link>
@@ -215,7 +219,7 @@ export default function SmartzMarketPage() {
                   List your products in minutes. Reach buyers across Africa.
                   Get paid instantly via Mobile Money.
                 </p>
-                <Link to="/register"
+                <Link to={marketHref}
                   className="inline-flex items-center gap-2 px-7 py-4 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold text-base shadow-xl shadow-amber-500/30 hover:scale-[1.03] transition-all">
                   <Zap className="w-4 h-4" /> Open Your Shop Free
                   <ArrowRight className="w-4 h-4" />
@@ -252,7 +256,7 @@ export default function SmartzMarketPage() {
             SmartzMarket connects buyers and sellers across the continent. Sign up free and start selling in minutes.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link to="/register"
+            <Link to={marketHref}
               className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold text-base shadow-xl shadow-amber-500/25 hover:scale-105 transition-all">
               <Heart className="w-4 h-4" /> Start Shopping Free
             </Link>

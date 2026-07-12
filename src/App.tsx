@@ -15,6 +15,7 @@ import { useEffect }             from 'react'
 
 import Navbar            from '@/components/Navbar'
 import Footer            from '@/components/Footer'
+import ScrollToTop       from '@/components/ScrollToTop'
 import LiveKitCall       from '@/components/LiveKitCall'
 import CookieBanner      from '@/components/CookieBanner'
 import AppShell          from '@/layouts/AppShell'
@@ -164,6 +165,7 @@ export default function App() {
           <BrowserRouter>
           <NotificationProvider>
           <TourProvider>
+            <ScrollToTop />
             <AppInit />
             <NetworkStatusToast />
             <TawkController />
