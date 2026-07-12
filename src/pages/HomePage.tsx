@@ -203,7 +203,7 @@ export default function HomePage() {
                 One secure identity. Dating, social, entertainment, mobility, commerce, learning, and advertising — unified into a single African super app.
               </p>
               <div className="flex flex-wrap gap-2.5">
-                {['Built in Liberia', 'One Free Account', '195+ Countries'].map(t => (
+                {['Built in Liberia', '195+ Countries'].map(t => (
                   <span key={t} className="px-3.5 py-1.5 rounded-full text-xs font-bold text-white/70"
                     style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>{t}</span>
                 ))}
