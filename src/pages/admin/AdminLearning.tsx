@@ -45,7 +45,7 @@ const TABS = [
 ]
 
 const LEVELS = ['Beginner', 'Intermediate', 'Advanced']
-const inp = 'w-full px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-brand-pink transition-colors'
+const inp = 'w-full px-3 py-2.5 rounded-xl dark:bg-white/5 bg-gray-50 border dark:border-white/10 border-gray-200 text-sm dark:text-white text-gray-900 dark:placeholder:dark:text-gray-500 text-gray-400 placeholder:text-gray-400 focus:outline-none focus:border-brand-pink transition-colors'
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function AdminLearning() {
@@ -131,7 +131,7 @@ export default function AdminLearning() {
   const selectedCourse = courses.find(c => c.id === selectedCourseId)
 
   return (
-    <div className="p-4 sm:p-6 space-y-6 text-white">
+    <div className="p-4 sm:p-6 space-y-6 dark:text-white text-gray-900">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -140,11 +140,11 @@ export default function AdminLearning() {
           </div>
           <div>
             <h1 className="font-display font-black text-2xl">Learning Management</h1>
-            <p className="text-sm text-white/40">Manage courses, lessons, quizzes & certificates</p>
+            <p className="text-sm dark:text-gray-400 text-gray-500">Manage courses, lessons, quizzes & certificates</p>
           </div>
         </div>
-        <button onClick={fetchCourses} className="p-2 rounded-xl bg-white/5 hover:bg-white/10 transition-colors">
-          <RefreshCw className="w-4 h-4 text-white/50" />
+        <button onClick={fetchCourses} className="p-2 rounded-xl bg-white/5 hover:dark:bg-white/10 hover:bg-gray-100 transition-colors">
+          <RefreshCw className="w-4 h-4 dark:text-gray-400 text-gray-400" />
         </button>
       </div>
 
@@ -160,12 +160,12 @@ export default function AdminLearning() {
       </AnimatePresence>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-white/5 rounded-2xl p-1 overflow-x-auto">
+      <div className="flex gap-1 dark:bg-white/5 bg-gray-100 rounded-2xl p-1 overflow-x-auto">
         {TABS.map(t => {
           const Icon = t.icon
           return (
             <button key={t.id} onClick={() => setTab(t.id)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all whitespace-nowrap ${tab === t.id ? 'bg-love-gradient text-white shadow-md' : 'text-white/50 hover:text-white hover:bg-white/5'}`}>
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all whitespace-nowrap ${tab === t.id ? 'bg-love-gradient text-white shadow-md' : 'dark:text-gray-400 text-gray-400 hover:dark:text-white hover:text-gray-900 hover:dark:bg-white/5 hover:bg-gray-50'}`}>
               <Icon className="w-4 h-4" /> {t.label}
             </button>
           )
@@ -271,7 +271,7 @@ function CoursesPanel({ courses, selectedCourseId, onSelect, onRefresh, showToas
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-white/50">{courses.length} course{courses.length !== 1 ? 's' : ''}</p>
+        <p className="text-sm dark:text-gray-400 text-gray-400">{courses.length} course{courses.length !== 1 ? 's' : ''}</p>
         <button onClick={openCreate} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-love-gradient text-white text-sm font-bold shadow-lg">
           <Plus className="w-4 h-4" /> New Course
         </button>
@@ -280,10 +280,10 @@ function CoursesPanel({ courses, selectedCourseId, onSelect, onRefresh, showToas
       <AnimatePresence>
         {showForm && (
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden rounded-2xl bg-white/5 border border-white/10 p-5 space-y-4">
+            className="overflow-hidden rounded-2xl dark:bg-white/5 bg-gray-50 border dark:border-white/10 border-gray-200 p-5 space-y-4">
             <div className="flex items-center justify-between">
-              <p className="font-bold text-white">{editing ? 'Edit Course' : 'New Course'}</p>
-              <button onClick={() => setShowForm(false)}><X className="w-4 h-4 text-white/40" /></button>
+              <p className="font-bold dark:text-white text-gray-900">{editing ? 'Edit Course' : 'New Course'}</p>
+              <button onClick={() => setShowForm(false)}><X className="w-4 h-4 dark:text-gray-400 text-gray-500" /></button>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <input className={`${inp} sm:col-span-2`} placeholder="Course title *" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
@@ -295,11 +295,11 @@ function CoursesPanel({ courses, selectedCourseId, onSelect, onRefresh, showToas
               <input className={inp} placeholder="Cover image URL" value={form.cover_url} onChange={e => setForm(f => ({ ...f, cover_url: e.target.value }))} />
               <input type="number" className={inp} placeholder="Total duration (mins)" value={form.duration_mins} onChange={e => setForm(f => ({ ...f, duration_mins: +e.target.value }))} />
               <div>
-                <label className="text-xs text-white/40 mb-1 block">Pass score (%)</label>
+                <label className="text-xs dark:text-gray-400 text-gray-500 mb-1 block">Pass score (%)</label>
                 <input type="number" min={0} max={100} className={inp} value={form.pass_score} onChange={e => setForm(f => ({ ...f, pass_score: +e.target.value }))} />
               </div>
               <div>
-                <label className="text-xs text-white/40 mb-1 block">Quiz timer (seconds)</label>
+                <label className="text-xs dark:text-gray-400 text-gray-500 mb-1 block">Quiz timer (seconds)</label>
                 <input type="number" min={60} className={inp} value={form.quiz_timer_secs} onChange={e => setForm(f => ({ ...f, quiz_timer_secs: +e.target.value }))} />
               </div>
             </div>
@@ -314,30 +314,30 @@ function CoursesPanel({ courses, selectedCourseId, onSelect, onRefresh, showToas
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {courses.map(c => (
-          <motion.div key={c.id} layout className="rounded-2xl bg-white/[0.04] border border-white/8 overflow-hidden hover:border-brand-pink/30 transition-all">
+          <motion.div key={c.id} layout className="rounded-2xl dark:bg-white/[0.04] bg-white border dark:border-white/8 border-gray-200 overflow-hidden hover:border-brand-pink/30 transition-all">
             <div className="relative h-28 bg-gradient-to-br from-pink-500/10 to-purple-600/10 flex items-center justify-center overflow-hidden">
               {c.cover_url ? <img src={c.cover_url} alt={c.title} className="w-full h-full object-cover" /> : <BookOpen className="w-10 h-10 text-white/10" />}
-              <span className={`absolute top-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-bold ${c.is_published ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/20' : 'bg-white/10 text-white/40 border border-white/10'}`}>
+              <span className={`absolute top-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-bold ${c.is_published ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/20' : 'bg-white/10 dark:text-gray-400 text-gray-500 border border-white/10'}`}>
                 {c.is_published ? 'Live' : 'Draft'}
               </span>
               <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-black/40 text-white text-[10px] font-bold">{c.level}</span>
             </div>
             <div className="p-4">
-              <h3 className="font-bold text-white mb-1 line-clamp-1">{c.title}</h3>
-              <p className="text-xs text-white/40 mb-3 line-clamp-2">{c.description || 'No description'}</p>
-              <div className="flex items-center gap-3 text-[11px] text-white/30 mb-4">
+              <h3 className="font-bold dark:text-white text-gray-900 mb-1 line-clamp-1">{c.title}</h3>
+              <p className="text-xs dark:text-gray-400 text-gray-500 mb-3 line-clamp-2">{c.description || 'No description'}</p>
+              <div className="flex items-center gap-3 text-[11px] dark:text-gray-500 text-gray-400 mb-4">
                 <span className="flex items-center gap-1"><List className="w-3 h-3" /> {c.lesson_count} lessons</span>
                 <span className="flex items-center gap-1"><HelpCircle className="w-3 h-3" /> {c.question_count} Qs</span>
                 <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {c.attempt_count}</span>
               </div>
               <div className="flex items-center gap-2">
-                <button onClick={() => onSelect(c.id)} className="flex-1 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold text-white/60 hover:text-white transition-colors text-center">
+                <button onClick={() => onSelect(c.id)} className="flex-1 py-1.5 rounded-xl bg-white/5 hover:dark:bg-white/10 hover:bg-gray-100 text-xs font-semibold dark:text-gray-300 text-gray-600 hover:text-white transition-colors text-center">
                   Manage
                 </button>
-                <button onClick={() => openEdit(c)} className="p-1.5 rounded-xl bg-white/5 hover:bg-white/10 transition-colors">
-                  <Edit3 className="w-3.5 h-3.5 text-white/50" />
+                <button onClick={() => openEdit(c)} className="p-1.5 rounded-xl bg-white/5 hover:dark:bg-white/10 hover:bg-gray-100 transition-colors">
+                  <Edit3 className="w-3.5 h-3.5 dark:text-gray-400 text-gray-400" />
                 </button>
-                <button onClick={() => togglePublish(c)} className="p-1.5 rounded-xl bg-white/5 hover:bg-white/10 transition-colors" title={c.is_published ? 'Unpublish' : 'Publish'}>
+                <button onClick={() => togglePublish(c)} className="p-1.5 rounded-xl bg-white/5 hover:dark:bg-white/10 hover:bg-gray-100 transition-colors" title={c.is_published ? 'Unpublish' : 'Publish'}>
                   {c.is_published ? <EyeOff className="w-3.5 h-3.5 text-amber-400" /> : <Eye className="w-3.5 h-3.5 text-emerald-400" />}
                 </button>
                 <button onClick={() => deleteCourse(c.id)} className="p-1.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 transition-colors">
@@ -350,7 +350,7 @@ function CoursesPanel({ courses, selectedCourseId, onSelect, onRefresh, showToas
       </div>
 
       {courses.length === 0 && !false && (
-        <div className="text-center py-16 text-white/30">
+        <div className="text-center py-16 dark:text-gray-500 text-gray-400">
           <GraduationCap className="w-12 h-12 mx-auto mb-3 opacity-20" />
           <p className="font-semibold">No courses yet — create your first one</p>
         </div>
@@ -409,10 +409,10 @@ function LessonsPanel({ courses, selectedCourseId, setSelectedCourseId, lessons,
       <AnimatePresence>
         {showForm && selectedCourseId && (
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden rounded-2xl bg-white/5 border border-white/10 p-5 space-y-3">
+            className="overflow-hidden rounded-2xl dark:bg-white/5 bg-gray-50 border dark:border-white/10 border-gray-200 p-5 space-y-3">
             <div className="flex items-center justify-between">
-              <p className="font-bold text-white">{editId ? 'Edit Lesson' : 'New Lesson'}</p>
-              <button onClick={() => setShowForm(false)}><X className="w-4 h-4 text-white/40" /></button>
+              <p className="font-bold dark:text-white text-gray-900">{editId ? 'Edit Lesson' : 'New Lesson'}</p>
+              <button onClick={() => setShowForm(false)}><X className="w-4 h-4 dark:text-gray-400 text-gray-500" /></button>
             </div>
             <input className={inp} placeholder="Lesson title *" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
             <textarea className={`${inp}`} rows={6} placeholder="Lesson content / text (supports Markdown-like text)" value={form.content} onChange={e => setForm(f => ({ ...f, content: e.target.value }))} />
@@ -428,24 +428,24 @@ function LessonsPanel({ courses, selectedCourseId, setSelectedCourseId, lessons,
       </AnimatePresence>
 
       {!selectedCourseId ? (
-        <div className="text-center py-12 text-white/30"><List className="w-10 h-10 mx-auto mb-2 opacity-20" /><p>Select a course first</p></div>
+        <div className="text-center py-12 dark:text-gray-500 text-gray-400"><List className="w-10 h-10 mx-auto mb-2 opacity-20" /><p>Select a course first</p></div>
       ) : lessons.length === 0 ? (
-        <div className="text-center py-12 text-white/30"><List className="w-10 h-10 mx-auto mb-2 opacity-20" /><p>No lessons yet — add the first one</p></div>
+        <div className="text-center py-12 dark:text-gray-500 text-gray-400"><List className="w-10 h-10 mx-auto mb-2 opacity-20" /><p>No lessons yet — add the first one</p></div>
       ) : (
         <div className="space-y-2">
           {lessons.map((l, i) => (
-            <div key={l.id} className="flex items-center gap-3 p-4 rounded-xl bg-white/[0.03] border border-white/8 hover:border-brand-pink/20 transition-all">
+            <div key={l.id} className="flex items-center gap-3 p-4 rounded-xl dark:bg-white/[0.03] bg-gray-50 border dark:border-white/8 border-gray-100 hover:border-brand-pink/20 transition-all">
               <div className="w-7 h-7 rounded-lg bg-love-gradient flex items-center justify-center text-xs font-bold text-white flex-shrink-0">{i + 1}</div>
               <div className="flex-1 min-w-0">
-                <p className="font-semibold text-white text-sm truncate">{l.title}</p>
-                <div className="flex items-center gap-2 text-[11px] text-white/30 mt-0.5">
+                <p className="font-semibold dark:text-white text-gray-900 text-sm truncate">{l.title}</p>
+                <div className="flex items-center gap-2 text-[11px] dark:text-gray-500 text-gray-400 mt-0.5">
                   {l.video_url && <span className="flex items-center gap-1"><Video className="w-3 h-3" /> Video</span>}
                   {l.content && <span className="flex items-center gap-1"><FileText className="w-3 h-3" /> Text</span>}
                   <span>{l.duration_mins}m</span>
                 </div>
               </div>
-              <button onClick={() => openEdit(l)} className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
-                <Edit3 className="w-3.5 h-3.5 text-white/40" />
+              <button onClick={() => openEdit(l)} className="p-1.5 rounded-lg bg-white/5 hover:dark:bg-white/10 hover:bg-gray-100 transition-colors">
+                <Edit3 className="w-3.5 h-3.5 dark:text-gray-400 text-gray-500" />
               </button>
               <button onClick={() => deleteLesson(l.id)} className="p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 transition-colors">
                 <Trash2 className="w-3.5 h-3.5 text-red-400" />
@@ -518,24 +518,24 @@ function QuizBuilderPanel({ courses, selectedCourseId, setSelectedCourseId, ques
       <AnimatePresence>
         {showForm && selectedCourseId && (
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden rounded-2xl bg-white/5 border border-white/10 p-5 space-y-4">
+            className="overflow-hidden rounded-2xl dark:bg-white/5 bg-gray-50 border dark:border-white/10 border-gray-200 p-5 space-y-4">
             <div className="flex items-center justify-between">
-              <p className="font-bold text-white">{editId ? 'Edit Question' : 'New Question'}</p>
-              <button onClick={() => setShowForm(false)}><X className="w-4 h-4 text-white/40" /></button>
+              <p className="font-bold dark:text-white text-gray-900">{editId ? 'Edit Question' : 'New Question'}</p>
+              <button onClick={() => setShowForm(false)}><X className="w-4 h-4 dark:text-gray-400 text-gray-500" /></button>
             </div>
             <textarea className={inp} rows={3} placeholder="Question text *" value={form.question} onChange={e => setForm(f => ({ ...f, question: e.target.value }))} />
             <div className="space-y-2">
-              <p className="text-xs text-white/40 font-semibold uppercase tracking-wide">Answer Options</p>
+              <p className="text-xs dark:text-gray-400 text-gray-500 font-semibold uppercase tracking-wide">Answer Options</p>
               {form.options.map((o, i) => (
                 <div key={i} className="flex items-center gap-3">
                   <button onClick={() => setForm(f => ({ ...f, correct_index: i }))}
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 border-2 transition-all ${form.correct_index === i ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-white/10 text-white/30 hover:border-white/30'}`}>
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 border-2 transition-all ${form.correct_index === i ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-white/10 dark:text-gray-500 text-gray-400 hover:border-white/30'}`}>
                     {LETTERS[i]}
                   </button>
                   <input className={`${inp} flex-1`} placeholder={`Option ${LETTERS[i]}`} value={o} onChange={e => updateOption(i, e.target.value)} />
                 </div>
               ))}
-              <p className="text-[11px] text-white/30">Click a letter to mark the correct answer</p>
+              <p className="text-[11px] dark:text-gray-500 text-gray-400">Click a letter to mark the correct answer</p>
             </div>
             <input className={inp} placeholder="Explanation (shown after answering, optional)" value={form.explanation} onChange={e => setForm(f => ({ ...f, explanation: e.target.value }))} />
             <button onClick={save} disabled={saving || !form.question.trim()}
@@ -548,28 +548,28 @@ function QuizBuilderPanel({ courses, selectedCourseId, setSelectedCourseId, ques
       </AnimatePresence>
 
       {!selectedCourseId ? (
-        <div className="text-center py-12 text-white/30"><HelpCircle className="w-10 h-10 mx-auto mb-2 opacity-20" /><p>Select a course first</p></div>
+        <div className="text-center py-12 dark:text-gray-500 text-gray-400"><HelpCircle className="w-10 h-10 mx-auto mb-2 opacity-20" /><p>Select a course first</p></div>
       ) : questions.length === 0 ? (
-        <div className="text-center py-12 text-white/30"><HelpCircle className="w-10 h-10 mx-auto mb-2 opacity-20" /><p>No questions yet — add your first one</p></div>
+        <div className="text-center py-12 dark:text-gray-500 text-gray-400"><HelpCircle className="w-10 h-10 mx-auto mb-2 opacity-20" /><p>No questions yet — add your first one</p></div>
       ) : (
         <div className="space-y-3">
           {questions.map((q, i) => (
-            <div key={q.id} className="p-4 rounded-xl bg-white/[0.03] border border-white/8 space-y-3">
+            <div key={q.id} className="p-4 rounded-xl dark:bg-white/[0.03] bg-gray-50 border dark:border-white/8 border-gray-100 space-y-3">
               <div className="flex items-start gap-3">
                 <span className="w-6 h-6 rounded-lg bg-love-gradient flex items-center justify-center text-[11px] font-bold text-white flex-shrink-0 mt-0.5">{i + 1}</span>
                 <div className="flex-1">
-                  <p className="text-white font-semibold text-sm mb-2">{q.question}</p>
+                  <p className="dark:text-white text-gray-900 font-semibold text-sm mb-2">{q.question}</p>
                   <div className="grid grid-cols-2 gap-1.5">
                     {q.options.map((o, oi) => (
-                      <div key={oi} className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs ${oi === q.correct_index ? 'bg-emerald-500/15 border border-emerald-500/25 text-emerald-400' : 'bg-white/5 text-white/40'}`}>
+                      <div key={oi} className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs ${oi === q.correct_index ? 'bg-emerald-500/15 border border-emerald-500/25 text-emerald-400' : 'bg-white/5 dark:text-gray-400 text-gray-500'}`}>
                         <span className="font-bold">{LETTERS[oi]}.</span> {o}
                       </div>
                     ))}
                   </div>
-                  {q.explanation && <p className="text-[11px] text-white/30 mt-2 italic">💡 {q.explanation}</p>}
+                  {q.explanation && <p className="text-[11px] dark:text-gray-500 text-gray-400 mt-2 italic">💡 {q.explanation}</p>}
                 </div>
                 <div className="flex gap-1.5 flex-shrink-0">
-                  <button onClick={() => openEdit(q)} className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10"><Edit3 className="w-3.5 h-3.5 text-white/40" /></button>
+                  <button onClick={() => openEdit(q)} className="p-1.5 rounded-lg bg-white/5 hover:dark:bg-white/10 hover:bg-gray-100"><Edit3 className="w-3.5 h-3.5 dark:text-gray-400 text-gray-500" /></button>
                   <button onClick={() => deleteQ(q.id)} className="p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20"><Trash2 className="w-3.5 h-3.5 text-red-400" /></button>
                 </div>
               </div>
@@ -601,9 +601,9 @@ function TimerScoringPanel({ courses, onUpdate, showToast }: {
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-white/40">Configure quiz timer and pass score per course. Timer starts when student begins the quiz.</p>
+      <p className="text-sm dark:text-gray-400 text-gray-500">Configure quiz timer and pass score per course. Timer starts when student begins the quiz.</p>
       {courses.length === 0 ? (
-        <div className="text-center py-12 text-white/30"><Settings2 className="w-10 h-10 mx-auto mb-2 opacity-20" /><p>Create a course first</p></div>
+        <div className="text-center py-12 dark:text-gray-500 text-gray-400"><Settings2 className="w-10 h-10 mx-auto mb-2 opacity-20" /><p>Create a course first</p></div>
       ) : (
         <div className="space-y-3">
           {courses.map(c => {
@@ -611,40 +611,40 @@ function TimerScoringPanel({ courses, onUpdate, showToast }: {
             const mins = Math.floor(vals.quiz_timer_secs / 60)
             const secs = vals.quiz_timer_secs % 60
             return (
-              <div key={c.id} className="p-5 rounded-2xl bg-white/[0.04] border border-white/8 space-y-4">
+              <div key={c.id} className="p-5 rounded-2xl dark:bg-white/[0.04] bg-white border dark:border-white/8 border-gray-200 space-y-4">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg bg-love-gradient flex items-center justify-center flex-shrink-0">
                     <Timer className="w-4 h-4 text-white" />
                   </div>
                   <div>
-                    <p className="font-bold text-white">{c.title}</p>
-                    <p className="text-xs text-white/30">{c.category} · {c.level}</p>
+                    <p className="font-bold dark:text-white text-gray-900">{c.title}</p>
+                    <p className="text-xs dark:text-gray-500 text-gray-400">{c.category} · {c.level}</p>
                   </div>
-                  <span className={`ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold ${c.is_published ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/10 text-white/30'}`}>
+                  <span className={`ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold ${c.is_published ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/10 dark:text-gray-500 text-gray-400'}`}>
                     {c.is_published ? 'Live' : 'Draft'}
                   </span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
-                    <label className="text-xs text-white/40 mb-1.5 block font-semibold">Timer — Minutes</label>
+                    <label className="text-xs dark:text-gray-400 text-gray-500 mb-1.5 block font-semibold">Timer — Minutes</label>
                     <input type="number" min={0} max={300} className={inp} value={mins}
                       onChange={e => setLocalVals(v => ({ ...v, [c.id]: { ...getVal(c), quiz_timer_secs: (+e.target.value * 60) + secs } }))} />
                   </div>
                   <div>
-                    <label className="text-xs text-white/40 mb-1.5 block font-semibold">Timer — Seconds</label>
+                    <label className="text-xs dark:text-gray-400 text-gray-500 mb-1.5 block font-semibold">Timer — Seconds</label>
                     <input type="number" min={0} max={59} className={inp} value={secs}
                       onChange={e => setLocalVals(v => ({ ...v, [c.id]: { ...getVal(c), quiz_timer_secs: (mins * 60) + +e.target.value } }))} />
                   </div>
                   <div>
-                    <label className="text-xs text-white/40 mb-1.5 block font-semibold">Pass Score (%)</label>
+                    <label className="text-xs dark:text-gray-400 text-gray-500 mb-1.5 block font-semibold">Pass Score (%)</label>
                     <input type="number" min={0} max={100} className={inp} value={vals.pass_score}
                       onChange={e => setLocalVals(v => ({ ...v, [c.id]: { ...getVal(c), pass_score: +e.target.value } }))} />
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
-                  <p className="text-xs text-white/30">
-                    ⏱ <strong className="text-white/50">{Math.floor(vals.quiz_timer_secs / 60)}m {vals.quiz_timer_secs % 60}s</strong> total quiz time &nbsp;·&nbsp;
-                    Pass at <strong className="text-white/50">{vals.pass_score}%</strong>
+                  <p className="text-xs dark:text-gray-500 text-gray-400">
+                    ⏱ <strong className="dark:text-gray-400 text-gray-400">{Math.floor(vals.quiz_timer_secs / 60)}m {vals.quiz_timer_secs % 60}s</strong> total quiz time &nbsp;·&nbsp;
+                    Pass at <strong className="dark:text-gray-400 text-gray-400">{vals.pass_score}%</strong>
                   </p>
                   <button onClick={() => saveSettings(c)} disabled={saving === c.id}
                     className="flex items-center gap-2 px-4 py-2 rounded-xl bg-love-gradient text-white text-sm font-bold disabled:opacity-50">
@@ -734,23 +734,23 @@ function ApplicationsPanel({ applications, onRefresh, showToast }: {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <p className="text-sm text-white/50">{applications.length} application{applications.length !== 1 ? 's' : ''}</p>
+          <p className="text-sm dark:text-gray-400 text-gray-400">{applications.length} application{applications.length !== 1 ? 's' : ''}</p>
           {pending > 0 && (
             <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-400 text-xs font-bold">
               <Bell className="w-3 h-3" /> {pending} pending
             </span>
           )}
         </div>
-        <button onClick={onRefresh} className="p-2 rounded-xl bg-white/5 hover:bg-white/10 transition-colors">
-          <RefreshCw className="w-4 h-4 text-white/40" />
+        <button onClick={onRefresh} className="p-2 rounded-xl bg-white/5 hover:dark:bg-white/10 hover:bg-gray-100 transition-colors">
+          <RefreshCw className="w-4 h-4 dark:text-gray-400 text-gray-500" />
         </button>
       </div>
 
       {/* Filter tabs */}
-      <div className="flex gap-1 bg-white/5 rounded-xl p-1">
+      <div className="flex gap-1 dark:bg-white/5 bg-gray-100 rounded-xl p-1">
         {(['all', 'pending', 'admin_approved', 'admin_rejected'] as const).map(f => (
           <button key={f} onClick={() => setFilter(f)}
-            className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all ${filter === f ? 'bg-love-gradient text-white' : 'text-white/40 hover:text-white'}`}>
+            className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all ${filter === f ? 'bg-love-gradient text-white' : 'dark:text-gray-400 text-gray-500 hover:text-white'}`}>
             {f === 'all' ? 'All' : STATUS_LABEL[f]}
           </button>
         ))}
@@ -758,77 +758,77 @@ function ApplicationsPanel({ applications, onRefresh, showToast }: {
 
       {filtered.length === 0 ? (
         <div className="text-center py-12">
-          <ClipboardList className="w-10 h-10 mx-auto mb-2 text-white/20" />
-          <p className="text-white/30 text-sm">No applications {filter !== 'all' ? `with status: ${STATUS_LABEL[filter]}` : 'yet'}</p>
+          <ClipboardList className="w-10 h-10 mx-auto mb-2 dark:text-gray-600 text-gray-300" />
+          <p className="dark:text-gray-500 text-gray-400 text-sm">No applications {filter !== 'all' ? `with status: ${STATUS_LABEL[filter]}` : 'yet'}</p>
         </div>
       ) : (
         <div className="space-y-3">
           {filtered.map(app => (
-            <div key={app.id} className="rounded-2xl bg-white/[0.03] border border-white/8 overflow-hidden">
+            <div key={app.id} className="rounded-2xl dark:bg-white/[0.03] bg-gray-50 border dark:border-white/8 border-gray-100 overflow-hidden">
               <button
                 onClick={() => setExpanded(expanded === app.id ? null : app.id)}
-                className="w-full flex items-center gap-3 p-4 text-left hover:bg-white/5 transition-colors">
+                className="w-full flex items-center gap-3 p-4 text-left hover:dark:bg-white/5 hover:bg-gray-50 transition-colors">
                 <div className="w-9 h-9 rounded-xl bg-love-gradient flex items-center justify-center flex-shrink-0 text-sm font-black text-white">
                   {app.full_name.charAt(0).toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <p className="font-bold text-white text-sm truncate">{app.full_name}</p>
-                    <span className={`flex-shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold ${STATUS_STYLE[app.status] || 'bg-white/10 text-white/40'}`}>
+                    <p className="font-bold dark:text-white text-gray-900 text-sm truncate">{app.full_name}</p>
+                    <span className={`flex-shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold ${STATUS_STYLE[app.status] || 'bg-white/10 dark:text-gray-400 text-gray-500'}`}>
                       {STATUS_LABEL[app.status] || app.status}
                     </span>
                   </div>
-                  <p className="text-xs text-white/40 truncate">{app.courses?.title || 'Unknown course'} · {app.duration_days} days</p>
+                  <p className="text-xs dark:text-gray-400 text-gray-500 truncate">{app.courses?.title || 'Unknown course'} · {app.duration_days} days</p>
                 </div>
                 <div className="flex-shrink-0 text-right">
-                  <p className="text-xs text-white/30">{new Date(app.created_at).toLocaleDateString()}</p>
+                  <p className="text-xs dark:text-gray-500 text-gray-400">{new Date(app.created_at).toLocaleDateString()}</p>
                   {app.cost > 0 && (
                     <p className="text-xs font-bold text-emerald-400">{app.cost} {app.currency}</p>
                   )}
                 </div>
-                <ChevronDown className={`w-4 h-4 text-white/30 flex-shrink-0 transition-transform ${expanded === app.id ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`w-4 h-4 dark:text-gray-500 text-gray-400 flex-shrink-0 transition-transform ${expanded === app.id ? 'rotate-180' : ''}`} />
               </button>
 
               <AnimatePresence>
                 {expanded === app.id && (
                   <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
                     className="overflow-hidden">
-                    <div className="px-4 pb-4 space-y-4 border-t border-white/8 pt-4">
+                    <div className="px-4 pb-4 space-y-4 border-t dark:border-white/8 border-gray-200 pt-4">
                       {/* Details */}
                       <div className="grid grid-cols-2 gap-3">
-                        <div className="flex items-center gap-2 text-xs text-white/50">
+                        <div className="flex items-center gap-2 text-xs dark:text-gray-400 text-gray-400">
                           <Mail className="w-3.5 h-3.5 flex-shrink-0" /> <span className="truncate">{app.email}</span>
                         </div>
                         {app.phone && (
-                          <div className="flex items-center gap-2 text-xs text-white/50">
+                          <div className="flex items-center gap-2 text-xs dark:text-gray-400 text-gray-400">
                             <Phone className="w-3.5 h-3.5 flex-shrink-0" /> {app.phone}
                           </div>
                         )}
-                        <div className="flex items-center gap-2 text-xs text-white/50">
+                        <div className="flex items-center gap-2 text-xs dark:text-gray-400 text-gray-400">
                           <Clock className="w-3.5 h-3.5 flex-shrink-0" /> {app.duration_days} Day Study Plan
                         </div>
                         {app.cost > 0 && (
-                          <div className="flex items-center gap-2 text-xs text-white/50">
+                          <div className="flex items-center gap-2 text-xs dark:text-gray-400 text-gray-400">
                             <DollarSign className="w-3.5 h-3.5 flex-shrink-0" /> {app.cost} {app.currency} fee
                           </div>
                         )}
                       </div>
 
                       {app.motivation && (
-                        <div className="bg-white/5 rounded-xl p-3">
-                          <p className="text-[11px] text-white/30 font-semibold mb-1">MOTIVATION</p>
-                          <p className="text-sm text-white/60 leading-relaxed">{app.motivation}</p>
+                        <div className="dark:bg-white/5 bg-gray-50 rounded-xl p-3 border dark:border-transparent border-gray-100">
+                          <p className="text-[11px] dark:text-gray-500 text-gray-400 font-semibold mb-1">MOTIVATION</p>
+                          <p className="text-sm dark:text-gray-300 text-gray-600 leading-relaxed">{app.motivation}</p>
                         </div>
                       )}
 
                       {app.status === 'pending' && (
                         <div className="space-y-3">
                           <div>
-                            <label className="text-xs text-white/30 font-semibold mb-1.5 block flex items-center gap-1.5">
+                            <label className="text-xs dark:text-gray-500 text-gray-400 font-semibold mb-1.5 block flex items-center gap-1.5">
                               <MessageSquare className="w-3 h-3" /> Notes to applicant (optional)
                             </label>
                             <textarea rows={2} placeholder="Add a note that will be included in the notification email..."
-                              className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-brand-pink transition-colors resize-none"
+                              className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-sm text-white placeholder:dark:text-gray-500 text-gray-400 focus:outline-none focus:border-brand-pink transition-colors resize-none"
                               value={notes[app.id] || ''} onChange={e => setNotes(n => ({ ...n, [app.id]: e.target.value }))} />
                           </div>
                           <div className="flex gap-2">
@@ -847,9 +847,9 @@ function ApplicationsPanel({ applications, onRefresh, showToast }: {
                       )}
 
                       {app.status !== 'pending' && app.admin_notes && (
-                        <div className="bg-white/[0.03] rounded-xl p-3 border border-white/8">
-                          <p className="text-[11px] text-white/30 font-semibold mb-1">ADMIN NOTE</p>
-                          <p className="text-sm text-white/50 italic">"{app.admin_notes}"</p>
+                        <div className="dark:bg-white/[0.03] bg-gray-50 rounded-xl p-3 border dark:border-white/8 border-gray-100">
+                          <p className="text-[11px] dark:text-gray-500 text-gray-400 font-semibold mb-1">ADMIN NOTE</p>
+                          <p className="text-sm dark:text-gray-400 text-gray-400 italic">"{app.admin_notes}"</p>
                         </div>
                       )}
                     </div>
@@ -874,29 +874,29 @@ function CertificatesPanel({ certs, onRefresh }: { certs: any[]; onRefresh: () =
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-white/40">{certs.length} certificate{certs.length !== 1 ? 's' : ''} issued</p>
-        <button onClick={onRefresh} className="p-2 rounded-xl bg-white/5 hover:bg-white/10 transition-colors">
-          <RefreshCw className="w-4 h-4 text-white/40" />
+        <p className="text-sm dark:text-gray-400 text-gray-500">{certs.length} certificate{certs.length !== 1 ? 's' : ''} issued</p>
+        <button onClick={onRefresh} className="p-2 rounded-xl bg-white/5 hover:dark:bg-white/10 hover:bg-gray-100 transition-colors">
+          <RefreshCw className="w-4 h-4 dark:text-gray-400 text-gray-500" />
         </button>
       </div>
       <input className={inp} placeholder="Search by name, email, or code…" value={search} onChange={e => setSearch(e.target.value)} />
       {filtered.length === 0 ? (
-        <div className="text-center py-12 text-white/30"><Award className="w-10 h-10 mx-auto mb-2 opacity-20" /><p>No certificates yet</p></div>
+        <div className="text-center py-12 dark:text-gray-500 text-gray-400"><Award className="w-10 h-10 mx-auto mb-2 opacity-20" /><p>No certificates yet</p></div>
       ) : (
         <div className="space-y-2">
           {filtered.map(c => (
-            <div key={c.id} className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-xl bg-white/[0.03] border border-white/8">
+            <div key={c.id} className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-xl dark:bg-white/[0.03] bg-gray-50 border dark:border-white/8 border-gray-100">
               <div className="w-9 h-9 rounded-xl bg-love-gradient flex items-center justify-center flex-shrink-0">
                 <Award className="w-5 h-5 text-white" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-bold text-white text-sm">{c.recipient_name}</p>
-                <p className="text-xs text-white/40">{c.email} · {c.courses?.title || 'Unknown course'}</p>
+                <p className="font-bold dark:text-white text-gray-900 text-sm">{c.recipient_name}</p>
+                <p className="text-xs dark:text-gray-400 text-gray-500">{c.email} · {c.courses?.title || 'Unknown course'}</p>
               </div>
               <div className="flex items-center gap-3 flex-shrink-0">
                 <span className="text-sm font-bold text-emerald-400">{c.score}%</span>
-                <span className="px-2 py-0.5 rounded-full bg-white/8 text-[10px] font-mono text-white/40">{c.certificate_code}</span>
-                <span className="text-[11px] text-white/20">{new Date(c.issued_at).toLocaleDateString()}</span>
+                <span className="px-2 py-0.5 rounded-full bg-white/8 text-[10px] font-mono dark:text-gray-400 text-gray-500">{c.certificate_code}</span>
+                <span className="text-[11px] dark:text-gray-600 text-gray-300">{new Date(c.issued_at).toLocaleDateString()}</span>
               </div>
             </div>
           ))}
