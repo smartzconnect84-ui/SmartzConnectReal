@@ -395,9 +395,6 @@ export default function HomePage() {
                 </span>
               </Heading>
 
-              <p className="text-white/50 text-sm sm:text-base leading-relaxed mb-8">
-                With one free account, you unlock all eight products:
-              </p>
             </motion.div>
 
             {/* Checklist */}
