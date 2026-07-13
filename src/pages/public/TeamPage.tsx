@@ -177,18 +177,18 @@ export default function TeamPage() {
 
       {/* ── Hero ── */}
       <section className="relative overflow-hidden">
-        <div className="relative h-72 sm:h-96 md:h-[480px] lg:h-[540px] bg-[#0d0518]">
-          {/* Team photo — always shown, admin bg overrides if set */}
+        {/* Container uses natural image ratio so every team member is fully visible */}
+        <div className="relative w-full bg-[#1a100d]" style={{ aspectRatio: '16/9', maxHeight: '90vh' }}>
           <img
             src={bgUrl || '/team-hero.png'}
             alt="The SmartzConnect Team"
-            className="absolute inset-0 w-full h-full object-cover object-center"
+            className="w-full h-full object-contain object-center"
           />
-          {/* Dark gradient — heavier at top, fades out before legs */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-transparent" />
-          {/* Label pinned near legs — bottom 18% */}
-          <div className="absolute bottom-[18%] inset-x-0 flex justify-center px-4">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-black/55 backdrop-blur-md border border-white/20 shadow-lg">
+          {/* Subtle dark gradient at top only — doesn't obscure bodies */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-transparent pointer-events-none" />
+          {/* Label pinned just above the bottom edge */}
+          <div className="absolute bottom-[5%] inset-x-0 flex justify-center px-4">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-black/60 backdrop-blur-md border border-white/20 shadow-lg">
               <Users className="w-4 h-4 text-pink-300 flex-shrink-0" />
               <span className="text-sm sm:text-base font-bold text-white tracking-wide">
                 The people behind SmartzConnect

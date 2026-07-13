@@ -165,23 +165,26 @@ export default function HomePage() {
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] rounded-full bg-[#DC2626]/6 blur-3xl" />
         </div>
 
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative pt-[9px] pb-[9px]">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative">
           <div className="grid lg:grid-cols-2 gap-14 lg:gap-20 items-center">
 
             {/* Text */}
             <motion.div {...up()}>
               <Badge icon={Globe} label="About SmartzConnect" className="mb-5" />
               <Heading className="text-left">
-                One Platform.<br />
+                Connecting, Collaborating<br />
                 <span style={{ background: 'linear-gradient(135deg, #EC4899 0%, #9B5DE5 50%, #DC2626 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-                  Eight Super-Products.
+                  and Growing Together
                 </span>
               </Heading>
-              <p className="text-white/60 text-base sm:text-lg leading-relaxed mb-5">
-                One secure identity. Dating, social, entertainment, mobility, commerce, learning, and advertising — unified into a single African super app.
+              <p className="text-white/65 text-base sm:text-lg leading-relaxed mb-4">
+                SmartzConnect is a Liberian Enterprise and Social media that empowers individuals, businesses, organizations, and communities through innovative technology.
+              </p>
+              <p className="text-white/55 text-sm sm:text-base leading-relaxed mb-6">
+                SmartzConnect brings multiple essential services together under a single trusted ecosystem — with one account, a user can access dating, education, transportation, commerce, marketing, social networking, and professional partnership.
               </p>
               <div className="flex flex-wrap gap-2.5">
-                {['Built in Liberia', '195+ Countries'].map(t => (
+                {['Liberian Enterprise', 'Built for the World', '195+ Countries'].map(t => (
                   <span key={t} className="px-3.5 py-1.5 rounded-full text-xs font-bold text-white/70"
                     style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>{t}</span>
                 ))}
@@ -235,7 +238,8 @@ export default function HomePage() {
           </motion.div>
 
           <motion.div variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-60px' }}
-            className="grid md:grid-cols-2 gap-5 sm:gap-6">
+            className="grid md:grid-cols-2 gap-5 sm:gap-6 mb-8">
+
             {/* Vision card */}
             <motion.div variants={cardItem} whileHover={{ y: -4 }} transition={{ type: 'spring', stiffness: 260 }}
               className="relative rounded-3xl p-7 sm:p-10 overflow-hidden"
@@ -247,10 +251,13 @@ export default function HomePage() {
               </div>
               <h3 className="font-display font-black text-white text-xl sm:text-2xl mb-3 relative">Our Vision</h3>
               <p className="text-white/65 text-base sm:text-lg leading-relaxed relative">
-                The world's most trusted super app — built in Liberia, embraced by Africa, chosen by the world.
+                To become Africa's leading all-in-one social Enterprise and digital ecosystem, connecting millions of people and businesses while showcasing Liberian innovation to the world.
               </p>
-              <div className="mt-6 pt-5 border-t border-white/10 relative">
-                <span className="text-xs text-yellow-400 font-bold tracking-widest uppercase">— CEO, Shedrick K. Nungehn</span>
+              <div className="mt-6 flex flex-wrap gap-2 relative">
+                {['Africa-Led', 'Liberian Innovation', 'Global Reach'].map(t => (
+                  <span key={t} className="px-3 py-1 rounded-full text-[11px] font-bold text-white/70"
+                    style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)' }}>{t}</span>
+                ))}
               </div>
             </motion.div>
 
@@ -265,15 +272,32 @@ export default function HomePage() {
               </div>
               <h3 className="font-display font-black text-white text-xl sm:text-2xl mb-3 relative">Our Mission</h3>
               <p className="text-white/65 text-base sm:text-lg leading-relaxed relative">
-                Connect people beyond borders — safe, inclusive spaces where friendships, businesses, and opportunities all thrive.
+                To connect and create opportunities through a single platform that makes everyday life easier by providing secure, accessible, and affordable digital solutions that empower people, businesses, and communities across Liberia and beyond.
               </p>
               <div className="mt-6 flex flex-wrap gap-2 relative">
-                {['Safe', 'Inclusive', 'Innovative'].map(t => (
+                {['Secure', 'Accessible', 'Affordable'].map(t => (
                   <span key={t} className="px-3 py-1 rounded-full text-[11px] font-bold text-white/70"
                     style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)' }}>{t}</span>
                 ))}
               </div>
             </motion.div>
+          </motion.div>
+
+          {/* Founder quote */}
+          <motion.div {...up(0.25)}
+            className="relative rounded-3xl p-8 sm:p-10 overflow-hidden text-center"
+            style={{ background: 'linear-gradient(135deg, rgba(236,72,153,0.1) 0%, rgba(155,93,229,0.12) 50%, rgba(220,38,38,0.08) 100%)', border: '1px solid rgba(236,72,153,0.2)', backdropFilter: 'blur(16px)' }}>
+            <div className="absolute -top-8 left-1/2 -translate-x-1/2 w-56 h-24 rounded-full blur-3xl" style={{ background: 'rgba(236,72,153,0.15)' }} />
+            <div className="text-4xl mb-4 relative opacity-60 font-serif leading-none text-pink-400">"</div>
+            <p className="text-white/80 text-base sm:text-xl leading-relaxed relative italic max-w-3xl mx-auto mb-6">
+              Yes! SmartzConnect is an African child's dream. But, was built for the world. Your contribution in whatever ways to keep it alive, is acceptable.
+            </p>
+            <div className="flex items-center justify-center gap-3 relative">
+              <div className="h-px w-12 bg-gradient-to-r from-transparent to-pink-400/60" />
+              <span className="text-sm font-bold tracking-widest text-yellow-400 uppercase">— Shedrick K. Nungehn</span>
+              <div className="h-px w-12 bg-gradient-to-l from-transparent to-pink-400/60" />
+            </div>
+            <p className="text-white/35 text-xs mt-1 tracking-wider">Founder & CEO, SmartzConnect</p>
           </motion.div>
         </div>
       </Sec>
