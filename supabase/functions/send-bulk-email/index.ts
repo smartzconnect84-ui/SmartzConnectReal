@@ -23,19 +23,27 @@ const json = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   })
 
+const LOGO_URL = 'https://smartzconnect.com/logo.png'
+const BRAND_NAME = 'SmartzConnect'
+
 function renderHtml(opts: { subject: string; body: string; footer?: string; name?: string }) {
   const bodyHtml = opts.body
     .replace(/{{name}}/g, opts.name || 'there')
     .split('\n').map(line => line.trim() ? `<p style="margin:0 0 14px">${line}</p>` : '<br/>').join('')
   return `
     <div style="font-family:sans-serif;max-width:600px;margin:0 auto;background:#0D0A14;color:#fff;border-radius:16px;overflow:hidden">
-      <div style="background:linear-gradient(135deg,#ec4899,#a855f7);padding:36px;text-align:center">
-        <h1 style="margin:0;font-size:26px;font-weight:900">SmartzConnect</h1>
+      <div style="background:linear-gradient(135deg,#ec4899,#a855f7);padding:32px 36px;text-align:center">
+        <img src="${LOGO_URL}" alt="${BRAND_NAME}" style="height:52px;width:auto;object-fit:contain;margin-bottom:10px;display:block;margin-left:auto;margin-right:auto;" />
+        <div style="font-size:22px;font-weight:900;color:#fff;letter-spacing:0.01em;">${BRAND_NAME}</div>
       </div>
       <div style="padding:36px">
         <div style="color:#d1d5db;line-height:1.7;font-size:15px">${bodyHtml}</div>
       </div>
-      ${opts.footer ? `<div style="padding:18px 36px;border-top:1px solid #1f1f2e;text-align:center"><p style="color:#6b7280;font-size:11px;margin:0">${opts.footer}</p></div>` : ''}
+      <div style="padding:18px 36px;border-top:1px solid #1f1f2e;text-align:center">
+        <img src="${LOGO_URL}" alt="${BRAND_NAME}" style="height:24px;width:auto;object-fit:contain;opacity:0.45;margin-bottom:6px;" />
+        ${opts.footer ? `<p style="color:#6b7280;font-size:11px;margin:0">${opts.footer}</p>` : ''}
+        <p style="color:#4b5563;font-size:11px;margin:4px 0 0">© ${new Date().getFullYear()} ${BRAND_NAME}. All rights reserved.</p>
+      </div>
     </div>
   `
 }

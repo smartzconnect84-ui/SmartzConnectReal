@@ -165,7 +165,11 @@ export default function InvoiceGeneratorPage() {
     return `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>${invoiceNumber}</title>
       <style>
         body { font-family: Arial, Helvetica, sans-serif; color: #1a1a1a; max-width: 720px; margin: 40px auto; padding: 0 20px; }
-        h1 { font-size: 28px; margin: 0 0 4px; background: linear-gradient(135deg,#ec4899,#a855f7); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .header { background: linear-gradient(135deg,#ec4899,#a855f7); border-radius: 12px; padding: 28px 36px; margin-bottom: 28px; display: flex; align-items: center; gap: 20px; }
+        .header img { height: 56px; width: auto; object-fit: contain; }
+        .header-text { color: #fff; }
+        .header-text h1 { margin: 0 0 2px; font-size: 28px; font-weight: 900; color: #fff; }
+        .header-text .sub { font-size: 13px; opacity: 0.85; margin: 0; }
         .muted { color: #888; font-size: 13px; }
         .row { display: flex; justify-content: space-between; margin: 28px 0; gap: 24px; flex-wrap: wrap; }
         .block { flex: 1; min-width: 220px; }
@@ -179,11 +183,19 @@ export default function InvoiceGeneratorPage() {
         .totals div { display: flex; justify-content: space-between; padding: 6px 0; font-size: 14px; }
         .totals .grand { font-size: 18px; font-weight: bold; border-top: 2px solid #1a1a1a; margin-top: 6px; padding-top: 10px; }
         .notes { margin-top: 32px; font-size: 13px; color: #555; border-top: 1px solid #eee; padding-top: 16px; }
+        .footer { margin-top: 36px; border-top: 1px solid #eee; padding-top: 16px; text-align: center; }
+        .footer img { height: 28px; width: auto; object-fit: contain; opacity: 0.4; margin-bottom: 6px; }
+        .footer p { color: #bbb; font-size: 11px; margin: 0; }
         @media print { body { margin: 0; padding: 24px; } }
       </style></head>
       <body>
-        <h1>INVOICE</h1>
-        <p class="muted">${invoiceNumber} &middot; Issued ${issueDate || '—'}${dueDate ? ` &middot; Due ${dueDate}` : ''}</p>
+        <div class="header">
+          <img src="https://smartzconnect.com/logo.png" alt="SmartzConnect" />
+          <div class="header-text">
+            <h1>INVOICE</h1>
+            <p class="sub">${invoiceNumber} &middot; Issued ${issueDate || '—'}${dueDate ? ` &middot; Due ${dueDate}` : ''}</p>
+          </div>
+        </div>
         <div class="row">
           <div class="block"><h3>From</h3><p><strong>${fromName || '—'}</strong></p><p>${(fromAddress || '').replace(/\n/g, '<br/>')}</p><p>${fromEmail || ''}</p></div>
           <div class="block"><h3>Bill To</h3><p><strong>${toName || '—'}</strong></p><p>${(toAddress || '').replace(/\n/g, '<br/>')}</p><p>${toEmail || ''}</p></div>
@@ -199,6 +211,10 @@ export default function InvoiceGeneratorPage() {
           <div class="grand"><span>Total</span><span>${fmt(total)}</span></div>
         </div>
         ${notes ? `<div class="notes">${notes.replace(/\n/g, '<br/>')}</div>` : ''}
+        <div class="footer">
+          <img src="https://smartzconnect.com/logo.png" alt="SmartzConnect" /><br/>
+          <p>© ${new Date().getFullYear()} SmartzConnect. All rights reserved.</p>
+        </div>
       </body></html>`
   }
 

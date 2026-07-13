@@ -5,6 +5,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+const LOGO_URL = 'https://smartzconnect.com/logo.png'
+const BRAND_NAME = 'SmartzConnect'
+
 interface CertPayload {
   to: string
   recipientName: string
@@ -21,8 +24,9 @@ function buildCertHtml(p: CertPayload): string {
 <body style="margin:0;padding:0;background:#f3f4f6;font-family:Georgia,serif;">
   <div style="max-width:700px;margin:32px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 32px rgba(0,0,0,0.1);">
     <!-- Header gradient -->
-    <div style="background:linear-gradient(135deg,#ec4899,#a855f7);padding:40px 48px;text-align:center;position:relative;">
-      <div style="font-size:13px;color:rgba(255,255,255,0.8);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:8px;">SmartzConnect Academy</div>
+    <div style="background:linear-gradient(135deg,#ec4899,#a855f7);padding:36px 48px;text-align:center;position:relative;">
+      <img src="${LOGO_URL}" alt="${BRAND_NAME}" style="height:64px;width:auto;object-fit:contain;margin-bottom:14px;display:block;margin-left:auto;margin-right:auto;" />
+      <div style="font-size:13px;color:rgba(255,255,255,0.8);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:8px;">${BRAND_NAME} Academy</div>
       <h1 style="margin:0;font-size:36px;font-weight:900;color:#fff;letter-spacing:0.02em;">Certificate of Completion</h1>
       <div style="width:80px;height:3px;background:rgba(255,255,255,0.5);margin:16px auto 0;border-radius:2px;"></div>
     </div>
@@ -57,7 +61,7 @@ function buildCertHtml(p: CertPayload): string {
       <!-- Signature line -->
       <div style="border-top:1px solid #e5e7eb;padding-top:24px;display:flex;justify-content:space-around;flex-wrap:wrap;gap:20px;">
         <div style="text-align:center;">
-          <div style="font-size:20px;font-style:italic;color:#4b5563;margin-bottom:4px;font-family:cursive;">SmartzConnect</div>
+          <div style="font-size:20px;font-style:italic;color:#4b5563;margin-bottom:4px;font-family:cursive;">${BRAND_NAME}</div>
           <div style="width:120px;height:1px;background:#d1d5db;margin:0 auto 4px;"></div>
           <div style="font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:0.06em;">Platform Director</div>
         </div>
@@ -70,12 +74,13 @@ function buildCertHtml(p: CertPayload): string {
     </div>
 
     <!-- Footer -->
-    <div style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:16px 48px;text-align:center;">
+    <div style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:20px 48px;text-align:center;">
+      <img src="${LOGO_URL}" alt="${BRAND_NAME}" style="height:36px;width:auto;object-fit:contain;opacity:0.55;margin-bottom:10px;display:block;margin-left:auto;margin-right:auto;" />
       <p style="margin:0;font-size:11px;color:#9ca3af;">
         Certificate Code: <strong style="color:#6b7280;font-family:monospace;">${escHtml(p.certificateCode)}</strong>
         &nbsp;·&nbsp; Verify at <a href="https://smartzconnect.com/verify/${escHtml(p.certificateCode)}" style="color:#a855f7;text-decoration:none;">smartzconnect.com</a>
       </p>
-      <p style="margin:6px 0 0;font-size:11px;color:#d1d5db;">© ${new Date().getFullYear()} SmartzConnect Academy. All rights reserved.</p>
+      <p style="margin:6px 0 0;font-size:11px;color:#d1d5db;">© ${new Date().getFullYear()} ${BRAND_NAME} Academy. All rights reserved.</p>
     </div>
   </div>
 </body>
@@ -112,9 +117,9 @@ serve(async (req) => {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        from: 'SmartzConnect Academy <academy@smartzconnect.com>',
+        from: `${BRAND_NAME} Academy <academy@smartzconnect.com>`,
         to: [to],
-        subject: `🎓 Your Certificate for "${courseName}" — SmartzConnect Academy`,
+        subject: `🎓 Your Certificate for "${courseName}" — ${BRAND_NAME} Academy`,
         html,
       }),
     })
