@@ -292,67 +292,17 @@ export default function HomePage() {
             <p className="text-white/80 text-base sm:text-xl leading-relaxed relative italic max-w-3xl mx-auto mb-6">
               Yes! SmartzConnect is an African child's dream. But, was built for the world. Your contribution in whatever ways to keep it alive, is acceptable.
             </p>
-            <div className="flex items-center justify-center gap-3 relative">
-              <div className="h-px w-12 bg-gradient-to-r from-transparent to-pink-400/60" />
-              <span className="text-sm font-bold tracking-widest text-yellow-400 uppercase">— Shedrick K. Nungehn</span>
-              <div className="h-px w-12 bg-gradient-to-l from-transparent to-pink-400/60" />
-            </div>
-            <p className="text-white/35 text-xs mt-1 tracking-wider">Founder & CEO, SmartzConnect</p>
-          </motion.div>
-        </div>
-      </Sec>
-
-      {/* ══ 3. ECOSYSTEM (8 products) ════════════════════════════════════════ */}
-      <Sec dark id="services">
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full bg-[#EC4899]/5 blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full bg-[#DC2626]/5 blur-3xl" />
-        </div>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-          <motion.div {...up()} className="text-center mb-12 sm:mb-16">
-            <Badge icon={Sparkles} label="The Ecosystem" />
-            <Heading>
-              One Identity.{' '}
-              <span style={{ background: 'linear-gradient(135deg, #EC4899 0%, #9B5DE5 50%, #DC2626 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-                Eight Worlds.
-              </span>
-            </Heading>
-            <p className="text-white/50 max-w-2xl mx-auto text-base sm:text-lg">
-              Every product, one app, one account.
+            <p className="text-sm font-bold tracking-widest text-yellow-400 uppercase relative">
+              — Shedrick K. Nungehn, Founder &amp; CEO, SmartzConnect
             </p>
           </motion.div>
-
-          <motion.div variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-60px' }}
-            className="grid sm:grid-cols-2 gap-6 sm:gap-8">
-            {SERVICES.map((s) => (
-              <motion.div key={s.name} variants={cardItem}
-                whileHover={{ y: -6, scale: 1.015 }}
-                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-              >
-                {/* Service name label */}
-                <div className="flex items-center gap-2.5 mb-3 px-0.5">
-                  <div className={`h-5 w-[3px] rounded-full bg-gradient-to-b ${s.color} flex-shrink-0`} />
-                  <span className="font-display font-black text-white text-sm sm:text-base tracking-tight">{s.name}</span>
-                </div>
-                <Link
-                  to={s.route}
-                  className="group block rounded-2xl relative overflow-hidden aspect-[16/10]"
-                  style={{ border: '1px solid rgba(255,255,255,0.08)' }}>
-                  <img
-                    src={s.hero}
-                    alt={s.name}
-                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-                  {/* Hover glow overlay */}
-                  <div className={`absolute inset-0 bg-gradient-to-br ${s.color} opacity-0 group-hover:opacity-[0.12] transition-opacity duration-500`} />
-                  {/* Top accent line */}
-                  <div className={`absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r ${s.color} opacity-0 group-hover:opacity-80 transition-opacity duration-300`} />
-                </Link>
-              </motion.div>
-            ))}
-          </motion.div>
         </div>
       </Sec>
+
+      {/* ══ 3. SOCIAL MEDIA BADGE ════════════════════════════════════════════ */}
+      <div className="flex justify-center py-8">
+        <Badge icon={Sparkles} label="Social Media" />
+      </div>
 
       {/* ══ 4. CORE VALUES ═══════════════════════════════════════════════════ */}
       <Sec id="values">
