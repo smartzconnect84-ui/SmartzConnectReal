@@ -68,6 +68,33 @@ export default function InvoiceGeneratorPage() {
   const suggestionsRef = useRef<HTMLDivElement>(null)
   const toEmailRef = useRef<HTMLInputElement>(null)
 
+  // Confirmed-user email dropdown — every verified account, ready to pick
+  // without typing. Kept in sync automatically whenever a user confirms
+  // their email (see supabase/schema_v30_email_subscription_sync.sql).
+  const [confirmedUsers, setConfirmedUsers] = useState<UserEmailSuggestion[]>([])
+  const [loadingConfirmed, setLoadingConfirmed] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      setLoadingConfirmed(true)
+      // Confirmation status lives on public.users (synced from
+      // auth.users.email_confirmed_at), not on profiles.
+      const { data } = await supabase
+        .from('users')
+        .select('auth_id, full_name, email')
+        .eq('email_verified', true)
+        .not('email', 'is', null)
+        .order('full_name', { ascending: true })
+        .limit(500)
+      if (!cancelled) {
+        setConfirmedUsers(((data || []) as any[]).map(u => ({ id: u.auth_id, full_name: u.full_name, email: u.email })))
+        setLoadingConfirmed(false)
+      }
+    })()
+    return () => { cancelled = true }
+  }, [])
+
   // Send by email state
   const [sending, setSending] = useState(false)
   const [sendResult, setSendResult] = useState<{ ok: boolean; msg: string } | null>(null)
@@ -285,7 +312,29 @@ export default function InvoiceGeneratorPage() {
               <div className="flex items-center gap-2 text-brand-pink"><User className="w-4 h-4" /><span className="text-xs font-bold uppercase tracking-wide">Bill To (client)</span></div>
               <input className={inp} placeholder="Client name" value={toName} onChange={e => setToName(e.target.value)} />
               <textarea className={inp} rows={2} placeholder="Address" value={toAddress} onChange={e => setToAddress(e.target.value)} />
-              {/* Email with autocomplete */}
+
+              {/* Confirmed-user email dropdown — pick any verified account directly */}
+              <div>
+                <select
+                  className={inp}
+                  value=""
+                  disabled={loadingConfirmed}
+                  onChange={e => {
+                    const u = confirmedUsers.find(c => c.id === e.target.value)
+                    if (u) selectSuggestion(u)
+                  }}
+                >
+                  <option value="">
+                    {loadingConfirmed ? 'Loading confirmed users…' : `Choose a confirmed user's email (${confirmedUsers.length})`}
+                  </option>
+                  {confirmedUsers.map(u => (
+                    <option key={u.id} value={u.id}>{u.full_name || 'No name'} — {u.email}</option>
+                  ))}
+                </select>
+                <p className="text-[11px] text-white/20 mt-1">Only email-confirmed accounts appear here — synced automatically.</p>
+              </div>
+
+              {/* Email with autocomplete (or type a one-off / external email) */}
               <div className="relative">
                 <div className="relative">
                   <input

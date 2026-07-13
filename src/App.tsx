@@ -61,6 +61,7 @@ const BlogPostPage         = lazy(() => import('@/pages/public/BlogPostPage'))
 const WorldStagePage       = lazy(() => import('@/pages/public/WorldStagePage'))
 const CmsPage              = lazy(() => import('@/pages/public/CmsPage'))
 const HelpSupportPage      = lazy(() => import('@/pages/public/HelpSupportPage'))
+const EmailSubscriptionPage = lazy(() => import('@/pages/public/EmailSubscriptionPage'))
 
 // App pages (protected)
 const ProfilePage          = lazy(() => import('@/pages/ProfilePage'))
@@ -113,6 +114,7 @@ const AdminTour            = lazy(() => import('@/pages/admin/AdminTour'))
 const AdminWorldStage      = lazy(() => import('@/pages/admin/AdminWorldStage'))
 const AdminEmail           = lazy(() => import('@/pages/admin/AdminEmail'))
 const AdminLearning        = lazy(() => import('@/pages/admin/AdminLearning'))
+const AdminWorldChat       = lazy(() => import('@/pages/admin/AdminWorldChat'))
 const CoursePlayerPage          = lazy(() => import('@/pages/CoursePlayerPage'))
 const LearningApplicationPage   = lazy(() => import('@/pages/LearningApplicationPage'))
 
@@ -215,6 +217,7 @@ export default function App() {
                 <Route path="/world-stage"    element={<PublicLayout><WorldStagePage /></PublicLayout>} />
                 <Route path="/pages/:slug"    element={<PublicLayout><CmsPage /></PublicLayout>} />
                 <Route path="/help"           element={<PublicLayout><HelpSupportPage /></PublicLayout>} />
+                <Route path="/subscribe"      element={<PublicLayout><EmailSubscriptionPage /></PublicLayout>} />
                 <Route path="/learning/apply/:courseId" element={<LearningApplicationPage />} />
 
                 {/* App — protected */}
@@ -284,6 +287,7 @@ export default function App() {
                   <Route path="worldstage"    element={<AdminWorldStage />} />
                   <Route path="email"         element={<AdminEmail />} />
                   <Route path="learning"      element={<AdminLearning />} />
+                  <Route path="worldchat"     element={<AdminWorldChat />} />
                 </Route>
 
                 <Route path="*" element={<Navigate to="/" replace />} />

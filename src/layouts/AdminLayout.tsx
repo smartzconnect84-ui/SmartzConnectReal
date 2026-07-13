@@ -6,7 +6,7 @@ import {
   ShoppingBag, Tv, Car, FileText, Shield, Settings, ChevronLeft,
   ChevronRight, Bell, Search, Moon, Sun, LogOut, Crown,
   Users2, ScrollText, Menu, X, Map, MessageCircle, BookOpen, Layout as LayoutIcon, Zap, Trophy,
-  Check, Mail, Grid3X3, GraduationCap, Plus, Globe,
+  Check, Mail, Grid3X3, GraduationCap, Plus, Globe, Radio, Send, PenSquare, Receipt,
 } from 'lucide-react'
 import { useTheme } from '@/contexts/ThemeContext'
 import { openTawkChat } from '@/lib/tawk'
@@ -26,6 +26,26 @@ interface GlobalSearchResult {
   sublabel: string
   path: string
 }
+
+// Mobile bottom nav (admin) — mirrors the app's pattern: no bell/notifications
+// icon here (that lives in the top bar), Chat replaces it, + (quick actions)
+// sits in the middle (3rd of 5).
+const mobileBottomNavAdmin = [
+  { path: '/admin',          icon: LayoutDashboard, label: 'Home',   type: 'link'   as const },
+  { path: '/admin/users',    icon: Users,           label: 'Users',  type: 'link'   as const },
+  { path: null,              icon: Plus,            label: 'Create', type: 'create' as const },
+  { path: '/admin/worldchat',icon: MessageCircle,   label: 'Chat',   type: 'link'   as const },
+  { path: '/admin/settings', icon: Settings,        label: 'More',   type: 'link'   as const },
+]
+
+// Quick actions surfaced by the admin bottom bar's central "+" button
+const quickActions = [
+  { icon: Radio,      label: 'New Broadcast',   path: '/admin/broadcasts', color: 'text-fuchsia-400' },
+  { icon: Send,       label: 'Email Campaign',  path: '/admin/email',      color: 'text-emerald-400' },
+  { icon: PenSquare,  label: 'Blog Post',       path: '/admin/blog',       color: 'text-sky-400' },
+  { icon: MessageCircle, label: 'World Chat',   path: '/admin/worldchat',  color: 'text-cyan-400' },
+  { icon: Receipt,    label: 'Invoice',         path: '/app/invoice-generator', color: 'text-amber-400' },
+]
 
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard',      path: '/admin',                 end: true },
@@ -65,6 +85,7 @@ export default function AdminLayout() {
   const [searchResults, setSearchResults] = useState<GlobalSearchResult[]>([])
   const [searching, setSearching] = useState(false)
   const [bellOpen, setBellOpen] = useState(false)
+  const [quickCreateOpen, setQuickCreateOpen] = useState(false)
   const bellRef = useRef<HTMLDivElement>(null)
   const { user } = useAuth()
   const [accountMenuOpen, setAccountMenuOpen] = useState(false)
@@ -473,10 +494,78 @@ export default function AdminLayout() {
         <AnnouncementBanner />
 
         {/* Page content */}
-        <main ref={mainRef} className="flex-1 overflow-y-auto">
+        <main ref={mainRef} className="flex-1 overflow-y-auto pb-16 md:pb-0">
           <Outlet />
         </main>
       </div>
+
+      {/* Mobile bottom nav — Bell/Alerts replaced with Chat; + (Quick Actions) in the middle */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 dark:bg-[#0D0A14]/98 bg-white/98 backdrop-blur-xl border-t dark:border-white/8 border-gray-100 flex items-center px-1">
+        {mobileBottomNavAdmin.map(item => {
+          const Icon = item.icon
+          if (item.type === 'create') {
+            return (
+              <button
+                key="create"
+                onClick={() => setQuickCreateOpen(true)}
+                className="flex-1 flex flex-col items-center justify-center py-2 relative"
+                title="Quick actions"
+              >
+                <span className="w-12 h-12 -mt-6 rounded-2xl bg-love-gradient flex items-center justify-center shadow-lg shadow-pink-500/30 border-4 dark:border-[#0D0A14] border-white">
+                  <Icon className="w-6 h-6 text-white" />
+                </span>
+              </button>
+            )
+          }
+          const active = item.path ? location.pathname === item.path || (item.path !== '/admin' && location.pathname.startsWith(item.path)) : false
+          return (
+            <NavLink
+              key={item.path}
+              to={item.path as string}
+              end={item.path === '/admin'}
+              className="flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5"
+            >
+              <Icon className={`w-[22px] h-[22px] ${active ? 'text-brand-pink' : 'dark:text-gray-500 text-gray-400'}`} />
+              <span className={`text-[10px] font-semibold ${active ? 'text-brand-pink' : 'dark:text-gray-500 text-gray-400'}`}>{item.label}</span>
+            </NavLink>
+          )
+        })}
+      </nav>
+
+      {/* Quick actions sheet — opened by the bottom bar's central "+" */}
+      <AnimatePresence>
+        {quickCreateOpen && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="md:hidden fixed inset-0 z-[100] flex items-end"
+          >
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setQuickCreateOpen(false)} />
+            <motion.div
+              initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 60, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 320, damping: 28 }}
+              className="relative w-full dark:bg-[#130E1E] bg-white rounded-t-3xl border-t dark:border-white/8 border-gray-200 p-5 pb-8"
+            >
+              <div className="w-10 h-1 rounded-full dark:bg-white/15 bg-gray-200 mx-auto mb-4" />
+              <p className="text-sm font-bold dark:text-white text-gray-900 mb-3">Quick Actions</p>
+              <div className="grid grid-cols-3 gap-3">
+                {quickActions.map(qa => {
+                  const QIcon = qa.icon
+                  return (
+                    <button
+                      key={qa.label}
+                      onClick={() => { setQuickCreateOpen(false); navigate(qa.path) }}
+                      className="flex flex-col items-center justify-center gap-2 p-3.5 rounded-2xl dark:bg-white/5 bg-gray-50 hover:dark:bg-white/10 hover:bg-gray-100 transition-colors"
+                    >
+                      <QIcon className={`w-5 h-5 ${qa.color}`} />
+                      <span className="text-[11px] font-semibold dark:text-gray-300 text-gray-700 text-center leading-tight">{qa.label}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

@@ -70,6 +70,9 @@ function NewsletterSignup() {
         </button>
       </div>
       {error && <p className="text-[11px] text-red-400">{error}</p>}
+      <Link to="/subscribe" className="text-[11px] dark:text-white/40 text-gray-400 hover:text-brand-pink transition-colors self-start">
+        Manage email preferences →
+      </Link>
     </form>
   )
 }

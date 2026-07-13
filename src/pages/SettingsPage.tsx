@@ -153,6 +153,25 @@ export default function SettingsPage() {
         updated_at: new Date().toISOString(),
       })
       .eq('id', user.id)
+
+    // Keep the "Marketing Emails" toggle in sync with the real subscriber
+    // list — toggling it on subscribes this account's email, toggling it
+    // off unsubscribes it. Non-fatal if it fails (best-effort side sync).
+    if (user.email) {
+      try {
+        if (notifPrefs.email_marketing) {
+          await supabase.rpc('newsletter_subscribe', {
+            p_email: user.email,
+            p_name: null,
+            p_categories: ['general', 'product-updates'],
+            p_source: 'settings',
+          })
+        } else {
+          await supabase.rpc('newsletter_unsubscribe', { p_email: user.email })
+        }
+      } catch { /* best-effort — don't block the main preferences save */ }
+    }
+
     setSaving(false)
     if (error) {
       setLoadError('Save failed: ' + error.message)
