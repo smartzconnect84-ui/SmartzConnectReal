@@ -629,7 +629,7 @@ export default function SmartzTVPage() {
           {bgUrl && <img src={bgUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />}
           <motion.img src="/smartz-tv-hero.png" alt="SmartzTV Live"
             className="w-full object-cover object-center relative"
-            style={{ maxHeight: '620px', opacity: bgUrl ? 0.75 : undefined }}
+            style={{ opacity: bgUrl ? 0.75 : undefined }}
             initial={{ opacity: 0, scale: 1.03 }} animate={heroIn ? { opacity: bgUrl ? 0.75 : 1, scale: 1 } : {}} transition={{ duration: 0.7 }} />
         </div>
         <div className="dark:bg-[#0a0520]/90 bg-violet-50/70 border-t-2 border-violet-500/25 py-6 px-4">

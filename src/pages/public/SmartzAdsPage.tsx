@@ -64,7 +64,7 @@ export default function SmartzAdsPage() {
             src="/smartz-ads-hero.png"
             alt="SmartzAds — Advertise Smarter. Grow Faster."
             className="w-full object-cover object-center relative"
-            style={{ maxHeight: '620px', opacity: bgUrl ? 0.75 : undefined }}
+            style={{ opacity: bgUrl ? 0.75 : undefined }}
             initial={{ opacity: 0, scale: 1.03 }}
             animate={{ opacity: bgUrl ? 0.75 : 1, scale: 1 }}
             transition={{ duration: 0.7 }}

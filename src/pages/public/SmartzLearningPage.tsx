@@ -110,47 +110,40 @@ export default function SmartzLearningPage() {
     <div className="dark:bg-[#080510] bg-gray-50 min-h-screen pt-[72px] sm:pt-20">
 
       {/* ── Hero ── */}
-      <section className="relative overflow-hidden" ref={heroRef}>
-        <div className="relative h-[460px] sm:h-[540px] lg:h-[620px] bg-gradient-to-br from-[#031c1a] via-[#04302c] to-[#052620]">
+      <section ref={heroRef}>
+        {/* Hero image */}
+        <div className="w-full overflow-hidden relative">
           {bgUrl && (
             <img src={bgUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
           )}
-          <img
+          <motion.img
             src="/smartz-learning-hero.png"
             alt="SmartzLearning — Learn. Grow. Succeed."
-            className="absolute inset-0 w-full h-full object-cover"
-            style={{ opacity: bgUrl ? 0.55 : 0.9 }}
+            className="w-full h-auto object-contain relative"
+            style={{ opacity: bgUrl ? 0.85 : undefined }}
+            initial={{ opacity: 0, scale: 1.03 }}
+            animate={heroIn ? { opacity: bgUrl ? 0.85 : 1, scale: 1 } : {}}
+            transition={{ duration: 0.7 }}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#031c1a] via-[#031c1a]/40 to-transparent pointer-events-none" />
+        </div>
 
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
-            <motion.div initial={{ opacity: 0, y: 40 }} animate={heroIn ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.7 }}>
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-teal-500/25 backdrop-blur-sm border border-teal-400/40 mb-6">
-                <GraduationCap className="w-4 h-4 text-teal-300" />
-                <span className="text-sm font-bold text-teal-200">SmartzLearning</span>
-              </div>
-
-              <h1 className="font-display font-black text-[2.75rem] sm:text-6xl lg:text-7xl text-white leading-[1.05] mb-6 drop-shadow-2xl">
-                Learn Smarter.<br />
-                Grow <span className="text-teal-300">Faster.</span>
-              </h1>
-              <p className="text-base sm:text-lg text-white/75 max-w-xl mx-auto mb-8">
-                A free, growing library of courses, articles, videos and podcasts —
-                built by and for the SmartzConnect community.
-              </p>
-
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Link to={learnHref}
-                  className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 text-white font-semibold text-sm shadow-lg shadow-teal-500/40 hover:shadow-teal-500/60 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
-                  <PlayCircle className="w-4 h-4" /> Start Learning
-                </Link>
-                <Link to={learnHref}
-                  className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-white/15 backdrop-blur-sm border border-white/30 text-white font-semibold text-sm hover:bg-white/25 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
-                  <Zap className="w-4 h-4" /> Submit a Resource
-                </Link>
-              </div>
-            </motion.div>
-          </div>
+        {/* CTA buttons */}
+        <div className="dark:bg-[#031c1a]/90 bg-teal-50/70 border-t-2 border-teal-500/25 py-6 px-4">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={heroIn ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="flex flex-col sm:flex-row gap-3 justify-center"
+          >
+            <Link to={learnHref}
+              className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 text-white font-semibold text-sm shadow-lg shadow-teal-500/40 hover:shadow-teal-500/60 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
+              <PlayCircle className="w-4 h-4" /> Start Learning
+            </Link>
+            <Link to={learnHref}
+              className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl dark:bg-teal-900/30 bg-white border dark:border-teal-500/20 border-teal-300/50 dark:text-teal-200 text-teal-800 font-semibold text-sm hover:dark:bg-teal-900/50 hover:bg-teal-100 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
+              <Zap className="w-4 h-4" /> Submit a Resource
+            </Link>
+          </motion.div>
         </div>
       </section>
 

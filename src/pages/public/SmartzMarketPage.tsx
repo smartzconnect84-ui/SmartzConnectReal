@@ -101,7 +101,7 @@ export default function SmartzMarketPage() {
             src="/smartz-market-hero.png"
             alt="SmartzMarket — Shop Smart. Live Better."
             className="w-full object-cover object-center relative"
-            style={{ maxHeight: '620px', opacity: bgUrl ? 0.75 : undefined }}
+            style={{ opacity: bgUrl ? 0.75 : undefined }}
             initial={{ opacity: 0, scale: 1.03 }}
             animate={heroIn ? { opacity: bgUrl ? 0.75 : 1, scale: 1 } : {}}
             transition={{ duration: 0.7 }}

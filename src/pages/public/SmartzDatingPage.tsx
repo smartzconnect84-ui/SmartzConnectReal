@@ -71,14 +71,14 @@ export default function SmartzDatingPage() {
       {/* ── Hero ── */}
       <section ref={heroRef}>
         {/* Hero image */}
-        <div className="w-full overflow-hidden relative dark:bg-[#180008] bg-rose-50 flex items-center justify-center">
+        <div className="w-full overflow-hidden relative">
           {bgUrl && (
             <img src={bgUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
           )}
           <motion.img
             src="/hero-images/dating-hero.png"
             alt="SmartzDating — Find Love. Build Forever."
-            className="w-full h-auto max-h-[620px] object-contain relative"
+            className="w-full h-auto object-contain relative"
             style={{ opacity: bgUrl ? 0.85 : undefined }}
             initial={{ opacity: 0, scale: 1.03 }}
             animate={heroIn ? { opacity: bgUrl ? 0.85 : 1, scale: 1 } : {}}

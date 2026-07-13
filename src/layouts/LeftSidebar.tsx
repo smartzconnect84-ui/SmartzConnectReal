@@ -9,9 +9,6 @@ import {
 import { useTheme } from '@/contexts/ThemeContext'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
-import BrandName from '@/components/BrandName'
-
-const logoImg = '/logo.png'
 
 interface NavItemDef {
   path: string
@@ -116,16 +113,6 @@ export default function LeftSidebar({ unreadMessages, unreadNotifs }: LeftSideba
 
   return (
     <aside className="hidden md:flex flex-col dark:bg-[#0D0A14] bg-white border-r dark:border-white/6 border-gray-100 flex-shrink-0 w-16 lg:w-64 transition-all duration-200 overflow-hidden">
-
-      {/* Logo — sidebar top */}
-      <div className="px-3 py-3.5 border-b dark:border-white/6 border-gray-100 flex items-center justify-center lg:justify-start">
-        <Link to="/app/feed" className="flex items-center gap-2.5 group">
-          <img src={logoImg} alt="SmartzConnect" className="w-8 h-8 object-contain group-hover:scale-110 transition-transform flex-shrink-0" />
-          <span className="font-display font-bold text-[1.05rem] hidden lg:block">
-            <BrandName />
-          </span>
-        </Link>
-      </div>
 
       {/* Scrollable nav */}
       <nav className="flex-1 px-2 lg:px-3 py-4 overflow-y-auto space-y-0.5">

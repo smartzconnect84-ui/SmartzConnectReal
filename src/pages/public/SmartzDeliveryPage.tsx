@@ -54,14 +54,14 @@ export default function SmartzDeliveryPage() {
       {/* Hero */}
       <section ref={heroRef}>
         {/* Hero image */}
-        <div className="w-full overflow-hidden relative dark:bg-[#06031a] bg-indigo-50 flex items-center justify-center">
+        <div className="w-full overflow-hidden relative">
           {bgUrl && (
             <img src={bgUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
           )}
           <motion.img
             src="/hero-images/delivery-hero.png"
-            alt="SmartzRide — Delivering More Than Packages"
-            className="w-full h-auto max-h-[620px] object-contain relative"
+            alt="SmartzDelivery — Delivering More Than Packages"
+            className="w-full h-auto object-contain relative"
             style={{ opacity: bgUrl ? 0.85 : undefined }}
             initial={{ opacity: 0, scale: 1.03 }}
             animate={heroIn ? { opacity: bgUrl ? 0.85 : 1, scale: 1 } : {}}

@@ -299,12 +299,17 @@ export default function HomePage() {
           </motion.div>
 
           <motion.div variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-60px' }}
-            className="grid sm:grid-cols-2 gap-4 sm:gap-5">
+            className="grid sm:grid-cols-2 gap-6 sm:gap-8">
             {SERVICES.map((s) => (
               <motion.div key={s.name} variants={cardItem}
                 whileHover={{ y: -6, scale: 1.015 }}
                 transition={{ type: 'spring', stiffness: 300, damping: 20 }}
               >
+                {/* Service name label */}
+                <div className="flex items-center gap-2.5 mb-3 px-0.5">
+                  <div className={`h-5 w-[3px] rounded-full bg-gradient-to-b ${s.color} flex-shrink-0`} />
+                  <span className="font-display font-black text-white text-sm sm:text-base tracking-tight">{s.name}</span>
+                </div>
                 <Link
                   to={s.route}
                   className="group block rounded-2xl relative overflow-hidden aspect-[16/10]"

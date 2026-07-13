@@ -142,17 +142,6 @@ export default function AdminLayout() {
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
-      {/* Logo */}
-      <div className={`flex items-center gap-3 px-4 py-4 border-b dark:border-white/6 border-gray-200 flex-shrink-0 ${collapsed ? 'justify-center' : ''}`}>
-        <img src={logoImg} alt="SmartzConnect" className="w-[40px] h-[40px] object-contain flex-shrink-0 rounded-xl" />
-        {!collapsed && (
-          <div>
-            <p className="font-display font-black text-sm dark:text-white text-gray-900 leading-none">SmartzConnect</p>
-            <p className="text-[11px] dark:text-gray-500 text-gray-400 mt-0.5">Admin Panel</p>
-          </div>
-        )}
-      </div>
-
       {/* Nav */}
       <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
         {navItems.map(item => {

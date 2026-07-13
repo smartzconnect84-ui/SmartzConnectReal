@@ -285,15 +285,15 @@ export default function Navbar() {
   return (
     <>
       {/* ── Navbar ─────────────────────────────────────────────────── */}
-      <nav className="fixed top-0 left-0 right-0 z-50 flex justify-center px-4 pt-3 sm:pt-4">
+      <nav className="fixed top-0 left-0 right-0 z-50 flex justify-center px-4 pt-3 sm:pt-4 md:px-0 md:pt-0">
         <motion.div
           initial={{ y: -28, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ type: 'spring', stiffness: 240, damping: 24, duration: 0.6 }}
-          className="w-full max-w-6xl"
+          className="w-full max-w-6xl md:max-w-none"
         >
           <div
-            className={`flex items-center justify-between h-[52px] sm:h-[56px] px-3 sm:px-4 rounded-2xl transition-all duration-300 ${
+            className={`flex items-center justify-between h-[52px] sm:h-[56px] px-3 sm:px-4 md:px-6 rounded-2xl md:rounded-none transition-all duration-300 ${
               scrolled ? 'shadow-2xl shadow-black/50' : 'shadow-md shadow-black/20'
             }`}
             style={{
@@ -323,6 +323,9 @@ export default function Navbar() {
 
             {/* ── Desktop center nav ── */}
             <div className="hidden lg:flex items-center gap-0 absolute left-1/2 -translate-x-1/2">
+              {/* Home */}
+              <NavLink to="/" active={isActive('/')}>Home</NavLink>
+
               {/* Products */}
               <div ref={prodRef} className="relative">
                 <Trigger label="Products" open={productsOpen} active={prodActive}
@@ -536,8 +539,9 @@ export default function Navbar() {
                 </div>
 
                 {/* Standalone links */}
-                <div className="grid grid-cols-3 gap-0.5">
+                <div className="grid grid-cols-2 gap-0.5">
                   {[
+                    { label: 'Home',        href: '/'            },
                     { label: 'World Stage', href: '/world-stage' },
                     { label: 'Pricing',     href: '/pricing'     },
                     { label: 'Blog',        href: '/blog'        },
