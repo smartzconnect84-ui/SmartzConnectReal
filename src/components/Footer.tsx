@@ -30,10 +30,16 @@ function NewsletterSignup() {
     setError('')
     const { error: insertErr } = await supabase
       .from('newsletter_subscribers')
-      .upsert({ email: trimmed.toLowerCase(), source: 'footer', is_active: true }, { onConflict: 'email' })
+      .insert({ email: trimmed.toLowerCase(), source: 'footer', is_active: true })
     if (insertErr) {
+      // 23505 = unique_violation — email already subscribed, treat as success
+      if (insertErr.code === '23505') {
+        setStatus('done')
+        setEmail('')
+        return
+      }
       setStatus('error')
-      setError('Something went wrong. Please try again.')
+      setError(insertErr.message || 'Something went wrong. Please try again.')
       return
     }
     setStatus('done')
