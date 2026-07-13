@@ -177,27 +177,23 @@ export default function TeamPage() {
 
       {/* ── Hero ── */}
       <section className="relative overflow-hidden">
-        <div className="relative h-56 sm:h-72 md:h-80 bg-gradient-to-br from-[#1a0a2e] via-[#0d0518] to-[#1d0a30]">
-          {bgUrl && (
-            <img src={bgUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
-          )}
-          <div className="absolute inset-0 pointer-events-none" style={bgUrl ? { opacity: 0.7 } : undefined}>
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-pink-500/20 blur-3xl" />
-            <div className="absolute top-1/4 left-1/4 w-48 h-48 rounded-full bg-purple-500/15 blur-2xl" />
-            <div className="absolute bottom-1/4 right-1/4 w-64 h-64 rounded-full bg-violet-500/15 blur-3xl" />
-          </div>
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-white/12 backdrop-blur-sm border border-white/20 mb-3 sm:mb-4">
-              <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-pink-300" />
-              <span className="text-xs sm:text-sm font-semibold text-white">The people behind SmartzConnect</span>
+        <div className="relative h-72 sm:h-96 md:h-[480px] lg:h-[540px] bg-[#0d0518]">
+          {/* Team photo — always shown, admin bg overrides if set */}
+          <img
+            src={bgUrl || '/team-hero.png'}
+            alt="The SmartzConnect Team"
+            className="absolute inset-0 w-full h-full object-cover object-center"
+          />
+          {/* Dark gradient — heavier at top, fades out before legs */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-transparent" />
+          {/* Label pinned near legs — bottom 18% */}
+          <div className="absolute bottom-[18%] inset-x-0 flex justify-center px-4">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-black/55 backdrop-blur-md border border-white/20 shadow-lg">
+              <Users className="w-4 h-4 text-pink-300 flex-shrink-0" />
+              <span className="text-sm sm:text-base font-bold text-white tracking-wide">
+                The people behind SmartzConnect
+              </span>
             </div>
-            <h1 className="font-display font-black text-2xl sm:text-4xl md:text-5xl text-white mb-2 sm:mb-3">
-              Built by Africans,<br />
-              <span className="text-pink-300">For Africa</span>
-            </h1>
-            <p className="text-sm sm:text-base text-white/75 max-w-xl px-4">
-              A passionate team united by a mission to connect our continent through innovative technology.
-            </p>
           </div>
         </div>
       </section>
