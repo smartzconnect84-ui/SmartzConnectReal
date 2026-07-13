@@ -229,6 +229,57 @@
   html.radius-pill .rounded-3xl,
   html.radius-pill .rounded-4xl  { border-radius: 9999px !important; }
 
+  /* ────────────────────────────────────────────────────────────────
+     ADMIN SHELL — Scoped typography (Task A)
+     Forces bold/clean Sora headings + Inter body regardless of the
+     end-user ThemeContext font-family selection (default/serif/mono).
+     Selector is .admin-shell which wraps the entire AdminLayout root.
+     ──────────────────────────────────────────────────────────────── */
+
+  /* Override any ThemeContext font-family mutations */
+  .admin-shell {
+    font-family: 'Inter', system-ui, sans-serif !important;
+  }
+
+  /* h1-h3 + page/card titles: Sora, heavy, tight tracking */
+  .admin-shell h1,
+  .admin-shell h2,
+  .admin-shell h3,
+  .admin-shell .admin-title {
+    font-family: 'Sora', sans-serif !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.02em !important;
+  }
+
+  /* font-display utility used across admin pages (mirrors .admin-title) */
+  .admin-shell .font-display {
+    font-family: 'Sora', sans-serif !important;
+    letter-spacing: -0.02em !important;
+  }
+
+  /* Card / section titles (font-bold text-sm pattern) — semi-bold + tight */
+  .admin-shell .admin-card-title {
+    font-family: 'Sora', sans-serif !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.015em !important;
+  }
+
+  /* Body / secondary text: Inter, normal weight, relaxed tracking, muted */
+  .admin-shell p:not(.admin-title):not(.admin-card-title),
+  .admin-shell span:not(.admin-title),
+  .admin-shell td,
+  .admin-shell th,
+  .admin-shell label {
+    font-family: 'Inter', system-ui, sans-serif !important;
+  }
+
+  /* Nav labels (sidebar + mobile bottom nav): medium weight, tight tracking */
+  .admin-shell nav span {
+    font-family: 'Inter', system-ui, sans-serif !important;
+    font-weight: 600 !important;
+    letter-spacing: -0.01em !important;
+  }
+
   /* ── Public site font-size floor ── */
   .public-site .text-xs  { font-size: 0.9375rem !important; line-height: 1.5rem !important; }
   .public-site .text-sm  { font-size: 0.9375rem !important; line-height: 1.5rem !important; }

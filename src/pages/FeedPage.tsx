@@ -208,6 +208,7 @@ function StoryViewerOverlay({
   currentUserName?: string
   onClose: () => void
 }) {
+  const navigate = useNavigate()
   const [storyComment, setStoryComment] = useState('')
   const [sendingComment, setSendingComment] = useState(false)
   const [showStoryEmoji, setShowStoryEmoji] = useState(false)
@@ -342,12 +343,32 @@ function StoryViewerOverlay({
           <img src={story.mediaUrl} alt="Story" className="w-full object-contain max-h-[80vh]" />
         )}
 
-        {/* Author bar */}
+        {/* Author bar — clicking avatar or name navigates to their profile */}
         <div className="bg-black/60 p-3 flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-love-gradient flex items-center justify-center text-white text-sm font-bold overflow-hidden flex-shrink-0">
+          <button
+            type="button"
+            onClick={() => {
+              if (!story.isOwn && story.authorId) {
+                onClose()
+                navigate(`/app/user/${story.authorId}`)
+              }
+            }}
+            className="w-8 h-8 rounded-full bg-love-gradient flex items-center justify-center text-white text-sm font-bold overflow-hidden flex-shrink-0 hover:opacity-80 transition-opacity"
+            title={story.isOwn ? undefined : `View ${story.name}'s profile`}
+          >
             {story.avatar ? <img src={story.avatar} alt="" className="w-full h-full object-cover" /> : story.name[0]}
-          </div>
-          <p className="text-white text-sm font-semibold flex-1">{story.name}</p>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (!story.isOwn && story.authorId) {
+                onClose()
+                navigate(`/app/user/${story.authorId}`)
+              }
+            }}
+            className="text-white text-sm font-semibold flex-1 text-left hover:underline disabled:cursor-default"
+            disabled={!!story.isOwn}
+          >{story.name}</button>
         </div>
 
         {/* Reaction bar (only for others' stories) */}
@@ -406,6 +427,7 @@ function StoryViewerOverlay({
 }
 
 function StoriesBar({ user, onStoriesLoaded }: { user: { id?: string; email?: string } | null; onStoriesLoaded?: (authorIds: Set<string>, stories: DbStory[]) => void }) {
+  const navigate = useNavigate()
   const scrollRef = useRef<HTMLDivElement>(null)
   const storyInputRef = useRef<HTMLInputElement>(null)
   const [dbStories, setDbStories] = useState<DbStory[]>([])
@@ -720,11 +742,16 @@ function StoriesBar({ user, onStoriesLoaded }: { user: { id?: string; email?: st
           {othersStories.map((story, idx) => {
             const profile = (story as any).profiles as { full_name: string | null; avatar_url: string | null; username: string | null } | null
             const name = profile?.full_name || profile?.username || 'User'
+            const authorId = story.author_id
             return (
-              <button key={story.id}
-                onClick={() => setViewing({ id: story.id, authorId: story.author_id, name, avatar: profile?.avatar_url ?? null, mediaUrl: story.media_url, mediaType: story.media_type, textContent: story.text_content, bgColor: story.bg_color })}
-                className="flex flex-col items-center gap-1.5 flex-shrink-0 group">
-                <div className="relative">
+              <div key={story.id} className="flex flex-col items-center gap-1.5 flex-shrink-0 group">
+                {/* Story ring — opens story viewer */}
+                <button
+                  type="button"
+                  onClick={() => setViewing({ id: story.id, authorId, name, avatar: profile?.avatar_url ?? null, mediaUrl: story.media_url, mediaType: story.media_type, textContent: story.text_content, bgColor: story.bg_color })}
+                  className="relative"
+                  title={`View ${name}'s story`}
+                >
                   <div className="absolute -inset-0.5 rounded-full bg-love-gradient" />
                   <div className={`relative w-14 h-14 rounded-full bg-gradient-to-br ${storyGradients[idx % storyGradients.length]} flex items-center justify-center text-xl overflow-hidden border-2 dark:border-[#0D0A14] border-white`}>
                     {profile?.avatar_url
@@ -732,11 +759,17 @@ function StoriesBar({ user, onStoriesLoaded }: { user: { id?: string; email?: st
                       : <span className="text-white font-bold">{name[0]?.toUpperCase()}</span>
                     }
                   </div>
-                </div>
-                <span className="text-[10px] font-semibold dark:text-gray-400 text-gray-500 max-w-[56px] truncate text-center group-hover:text-brand-pink transition-colors">
+                </button>
+                {/* Name — clicking navigates to profile */}
+                <button
+                  type="button"
+                  onClick={() => navigate(`/app/user/${authorId}`)}
+                  className="text-[10px] font-semibold dark:text-gray-400 text-gray-500 max-w-[56px] truncate text-center group-hover:text-brand-pink hover:text-brand-pink transition-colors"
+                  title={`View ${name}'s profile`}
+                >
                   {name.split(' ')[0]}
-                </span>
-              </button>
+                </button>
+              </div>
             )
           })}
 
@@ -1307,9 +1340,9 @@ function PostCard({ post, onLike, onSave, currentUserId, storyData, onViewStory 
                     type="button"
                     onClick={() => {
                       if (isOwnComment) {
-                        // navigate to own profile handled by navigating component
+                        navigate('/app/profile')
                       } else {
-                        // navigate to commenter profile
+                        navigate(`/app/user/${c.user_id}`)
                       }
                     }}
                     className="w-7 h-7 rounded-full dark:bg-white/8 bg-gray-100 flex-shrink-0 overflow-hidden flex items-center justify-center text-xs cursor-pointer hover:opacity-80 transition-opacity"

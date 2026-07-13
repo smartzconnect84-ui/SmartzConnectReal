@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, Plus, Users, Lock, Globe, Send, Smile, Mic, MicOff, Play, Pause, Crown, Shield, X, Loader2, RefreshCw, Square, Paperclip, Image as ImageIcon, FileText, Palette, Phone, Video } from 'lucide-react'
+import { Search, Plus, Users, Lock, Globe, Send, Smile, Mic, MicOff, Play, Pause, Crown, Shield, X, Loader2, RefreshCw, Square, Paperclip, Image as ImageIcon, FileText, Palette, Phone, Video, Eye, EyeOff } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { uploadToSufy } from '@/lib/sufy'
 import { useAuth } from '@/hooks/useAuth'
@@ -13,6 +13,7 @@ import EmojiPicker from '@/components/EmojiPicker'
 import TranslateButton from '@/components/TranslateButton'
 import type { Channel } from 'stream-chat'
 import { useOfflineDraft } from '@/lib/offlineDraft'
+import { useNavigate } from 'react-router-dom'
 
 interface Room {
   id: string; name: string; emoji: string; topic: string; members: number
@@ -22,9 +23,14 @@ interface Room {
 }
 
 interface ChatMessage {
-  id: string; author: string; emoji: string; text: string; time: string; mine: boolean; role: string
+  id: string; author: string; authorId?: string; emoji: string; text: string; time: string; mine: boolean; role: string
   type?: 'text' | 'audio' | 'image' | 'file'
   audioUrl?: string; imageUrl?: string; fileUrl?: string; fileName?: string
+  viewOnce?: boolean; viewedBy?: string[]
+}
+
+function isVideoUrl(url: string): boolean {
+  return /\.(mp4|mov|webm)(\?|$)/i.test(url)
 }
 
 const categories = ['All', 'Dating', 'Country', 'Music', 'Culture', 'Business', 'Creators', 'VIP', 'Food']
@@ -43,6 +49,7 @@ export default function GroupChatPage() {
   const { connected } = useStream()
   const { chatTheme, setChatTheme } = useTheme()
   const { initiateCall } = useLiveKitCall()
+  const navigate = useNavigate()
   const [rooms, setRooms] = useState<Room[]>([])
   const [loadingRooms, setLoadingRooms] = useState(true)
   const [search, setSearch] = useState('')
@@ -72,6 +79,8 @@ export default function GroupChatPage() {
   const [uploadingFile, setUploadingFile] = useState(false)
   const [playingId, setPlayingId] = useState<string | null>(null)
   const [voiceError, setVoiceError] = useState<string | null>(null)
+  const [pendingViewOnce, setPendingViewOnce] = useState(false)
+  const [viewOnceOverlay, setViewOnceOverlay] = useState<{ msgId: string; url: string; isVideo: boolean } | null>(null)
 
   const channelRef = useRef<Channel | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -216,6 +225,7 @@ export default function GroupChatPage() {
         return {
           id: m.id,
           author: m.user?.name || m.user?.id?.slice(0, 8) || 'User',
+          authorId: m.user?.id,
           emoji: defaultEmojis[Math.floor(Math.random() * defaultEmojis.length)],
           text: m.text || '',
           time: new Date(m.created_at).toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' }),
@@ -226,6 +236,8 @@ export default function GroupChatPage() {
           imageUrl:  isImage ? (attach?.image_url || attach?.asset_url) : undefined,
           fileUrl:   isFile  ? attach?.asset_url : undefined,
           fileName:  (isImage || isFile) ? (attach?.title || attach?.fallback) : undefined,
+          viewOnce: m.view_once === true,
+          viewedBy: Array.isArray(m.viewed_by) ? m.viewed_by : [],
         }
       }
 
@@ -312,6 +324,22 @@ export default function GroupChatPage() {
     }
   }
 
+  // Mark a view-once message as viewed by the current user
+  const markViewOnceViewed = async (msgId: string) => {
+    if (!user?.id || !streamClient) return
+    try {
+      const currentMsg = messages.find(m => m.id === msgId)
+      if (currentMsg?.viewedBy?.includes(user.id)) return
+      const newViewedBy = [...(currentMsg?.viewedBy ?? []), user.id]
+      setMessages(prev => prev.map(m =>
+        m.id === msgId ? { ...m, viewedBy: newViewedBy } : m
+      ))
+      await streamClient.partialUpdateMessage(msgId, { set: { viewed_by: newViewedBy } })
+    } catch (err) {
+      console.error('markViewOnceViewed error:', err)
+    }
+  }
+
   const handleFileAttach = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file || !channelRef.current || !user?.id) return
@@ -320,21 +348,26 @@ export default function GroupChatPage() {
     const clientId = `gfile-${user.id.slice(0, 8)}-${Date.now()}`
     try {
       const isImage = file.type.startsWith('image/')
+      const isVideo = file.type.startsWith('video/')
       const folder = isImage ? 'photos' : 'documents'
       const url = await uploadToSufy(file, folder as any)
+      const viewOnceFlag = pendingViewOnce && (isImage || isVideo)
       const optimistic: ChatMessage = {
         id: clientId, author: 'You', emoji: '😊',
-        text: isImage ? '' : `📎 ${file.name}`,
+        text: isImage || isVideo ? '' : `📎 ${file.name}`,
         time: new Date().toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' }),
         mine: true, role: 'member',
         type: isImage ? 'image' : 'file',
         imageUrl: isImage ? url : undefined,
-        fileUrl: isImage ? undefined : url,
+        fileUrl: (isVideo || (!isImage && !isVideo)) ? url : undefined,
         fileName: file.name,
+        viewOnce: viewOnceFlag,
+        viewedBy: [],
       }
       setMessages(prev => [...prev, optimistic])
-      const resp = await channelRef.current!.sendMessage({
-        text: isImage ? '' : `📎 ${file.name}`,
+      setPendingViewOnce(false)
+      const msgPayload: any = {
+        text: isImage || isVideo ? '' : `📎 ${file.name}`,
         attachments: [{
           type: isImage ? 'image' : 'file',
           asset_url: url,
@@ -342,7 +375,12 @@ export default function GroupChatPage() {
           title: file.name,
           mime_type: file.type,
         }],
-      } as any)
+      }
+      if (viewOnceFlag) {
+        msgPayload.view_once = true
+        msgPayload.viewed_by = []
+      }
+      const resp = await channelRef.current!.sendMessage(msgPayload)
       const serverId = resp.message?.id
       setMessages(prev => prev.map(m => m.id === clientId ? { ...m, id: serverId ?? m.id } : m))
     } catch (err: any) {
@@ -658,12 +696,21 @@ export default function GroupChatPage() {
                 messages.map((msg) => (
                   <div key={msg.id} className={`flex ${msg.mine ? 'justify-end' : 'justify-start'} gap-2`}>
                     {!msg.mine && (
-                      <div className="w-8 h-8 rounded-full dark:bg-pink-100 bg-gray-100 flex items-center justify-center text-sm flex-shrink-0 mt-1">{msg.emoji}</div>
+                      <button
+                        type="button"
+                        onClick={() => msg.authorId && msg.authorId !== user?.id && navigate(`/app/user/${msg.authorId}`)}
+                        className="w-8 h-8 rounded-full dark:bg-pink-100 bg-gray-100 flex items-center justify-center text-sm flex-shrink-0 mt-1 hover:opacity-80 transition-opacity cursor-pointer"
+                        title={msg.author}
+                      >{msg.emoji}</button>
                     )}
                     <div className={`max-w-[75%]`}>
                       {!msg.mine && (
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="text-xs font-bold dark:text-gray-700 text-gray-700">{msg.author}</span>
+                          <button
+                            type="button"
+                            onClick={() => msg.authorId && msg.authorId !== user?.id && navigate(`/app/user/${msg.authorId}`)}
+                            className="text-xs font-bold dark:text-gray-700 text-gray-700 hover:text-brand-pink dark:hover:text-brand-pink transition-colors"
+                          >{msg.author}</button>
                           {msg.role === 'admin' && <Shield className="w-3 h-3 text-purple-400" />}
                         </div>
                       )}
@@ -689,14 +736,86 @@ export default function GroupChatPage() {
                             </div>
                           </div>
                         ) : msg.type === 'image' && msg.imageUrl ? (
-                          <a href={msg.imageUrl} target="_blank" rel="noopener noreferrer">
-                            <img src={msg.imageUrl} alt={msg.fileName || 'Image'} className="max-w-[200px] max-h-44 rounded-xl object-cover" />
-                          </a>
+                          (() => {
+                            if (msg.viewOnce) {
+                              const alreadyViewed = msg.viewedBy?.includes(user?.id ?? '')
+                              if (msg.mine) {
+                                return (
+                                  <div className="relative">
+                                    <img src={msg.imageUrl} alt={msg.fileName || 'Image'} className="max-w-[200px] max-h-44 rounded-xl object-cover" />
+                                    <span className="absolute top-1 right-1 bg-black/50 text-white text-[9px] px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                                      <Eye className="w-2.5 h-2.5" /> View once
+                                    </span>
+                                  </div>
+                                )
+                              }
+                              if (alreadyViewed) {
+                                return (
+                                  <div className="flex items-center gap-2 px-2 py-1 opacity-60">
+                                    <EyeOff className="w-4 h-4" />
+                                    <span className="text-xs italic">Photo · Viewed</span>
+                                  </div>
+                                )
+                              }
+                              return (
+                                <button
+                                  onClick={() => setViewOnceOverlay({ msgId: msg.id, url: msg.imageUrl!, isVideo: false })}
+                                  className="flex flex-col items-center gap-1.5 px-6 py-4 rounded-xl bg-black/20"
+                                >
+                                  <Eye className="w-6 h-6" />
+                                  <span className="text-xs font-semibold">Photo · Tap to view once</span>
+                                </button>
+                              )
+                            }
+                            return (
+                              <a href={msg.imageUrl} target="_blank" rel="noopener noreferrer">
+                                <img src={msg.imageUrl} alt={msg.fileName || 'Image'} className="max-w-[200px] max-h-44 rounded-xl object-cover" />
+                              </a>
+                            )
+                          })()
                         ) : msg.type === 'file' && msg.fileUrl ? (
-                          <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
-                            <FileText className="w-4 h-4 flex-shrink-0 opacity-80" />
-                            <span className="underline underline-offset-2 truncate max-w-[160px]">{msg.fileName || 'File'}</span>
-                          </a>
+                          (() => {
+                            const fileUrl = msg.fileUrl!
+                            if (isVideoUrl(fileUrl)) {
+                              if (msg.viewOnce) {
+                                const alreadyViewed = msg.viewedBy?.includes(user?.id ?? '')
+                                if (msg.mine) {
+                                  return (
+                                    <div className="relative">
+                                      <video src={fileUrl} controls className="max-w-[200px] max-h-44 rounded-xl" />
+                                      <span className="absolute top-1 right-1 bg-black/50 text-white text-[9px] px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                                        <Eye className="w-2.5 h-2.5" /> View once
+                                      </span>
+                                    </div>
+                                  )
+                                }
+                                if (alreadyViewed) {
+                                  return (
+                                    <div className="flex items-center gap-2 px-2 py-1 opacity-60">
+                                      <EyeOff className="w-4 h-4" />
+                                      <span className="text-xs italic">Video · Viewed</span>
+                                    </div>
+                                  )
+                                }
+                                return (
+                                  <button
+                                    onClick={() => setViewOnceOverlay({ msgId: msg.id, url: fileUrl, isVideo: true })}
+                                    className="flex flex-col items-center gap-1.5 px-6 py-4 rounded-xl bg-black/20"
+                                  >
+                                    <Eye className="w-6 h-6" />
+                                    <span className="text-xs font-semibold">Video · Tap to view once</span>
+                                  </button>
+                                )
+                              }
+                              return <video src={fileUrl} controls className="max-w-[200px] max-h-44 rounded-xl" />
+                            }
+                            return (
+                              <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
+                                <FileText className="w-4 h-4 flex-shrink-0 opacity-80" />
+                                <span className="underline underline-offset-2 truncate max-w-[160px]">{msg.fileName || 'File'}</span>
+                              </a>
+                            )
+                          })()
                         ) : (
                           <>
                             {msg.text}
@@ -757,7 +876,20 @@ export default function GroupChatPage() {
 
             {/* Input */}
             <div className="px-3 py-3 dark:bg-white bg-white border-t dark:border-pink-200 border-gray-100 flex-shrink-0">
-              <input ref={fileInputRef} type="file" accept="image/*,.pdf,.doc,.docx,.txt,.zip,.mp4,.mov" className="hidden" onChange={handleFileAttach} />
+              <input ref={fileInputRef} type="file" accept="image/*,video/*,.pdf,.doc,.docx,.txt,.zip,.mp4,.mov,.webm" className="hidden" onChange={handleFileAttach} />
+              {/* View-once toggle strip */}
+              <AnimatePresence>
+                {pendingViewOnce && (
+                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+                    className="flex items-center gap-2 mb-2 px-1">
+                    <Eye className="w-3.5 h-3.5 text-pink-500" />
+                    <span className="text-xs font-semibold text-pink-500">View once enabled — next media will disappear after viewing</span>
+                    <button onClick={() => setPendingViewOnce(false)} className="ml-auto text-gray-400 hover:text-red-500">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
               <div className="relative">
                 <AnimatePresence>
                   {showEmojiPicker && (
@@ -774,6 +906,14 @@ export default function GroupChatPage() {
                   <input value={input} onChange={handleInputChange} onKeyDown={e => e.key === 'Enter' && !isRecording && sendMsg()}
                     placeholder={isRecording ? 'Recording…' : 'Message the group…'} disabled={isRecording}
                     className="flex-1 bg-transparent text-sm dark:text-gray-900 text-gray-900 placeholder:dark:text-gray-400 placeholder:text-gray-400 focus:outline-none disabled:opacity-50" />
+                  {/* View-once toggle button */}
+                  <button
+                    onClick={() => setPendingViewOnce(v => !v)}
+                    title="View once"
+                    className={`transition-colors ${pendingViewOnce ? 'text-pink-500' : 'dark:text-gray-400 text-gray-400 hover:text-brand-pink'}`}
+                  >
+                    {pendingViewOnce ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                   <button onClick={() => fileInputRef.current?.click()} disabled={uploadingFile || isRecording}
                     className="dark:text-gray-400 text-gray-400 hover:text-brand-pink transition-colors disabled:opacity-50">
                     {uploadingFile ? <Loader2 className="w-4 h-4 animate-spin text-brand-pink" /> : <Paperclip className="w-4 h-4" />}
@@ -847,6 +987,50 @@ export default function GroupChatPage() {
                 </button>
               </div>
             </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* View-once full-screen overlay */}
+      <AnimatePresence>
+        {viewOnceOverlay && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black"
+            onClick={() => {
+              markViewOnceViewed(viewOnceOverlay.msgId)
+              setViewOnceOverlay(null)
+            }}
+          >
+            <div className="absolute top-4 right-4">
+              <button
+                onClick={e => { e.stopPropagation(); markViewOnceViewed(viewOnceOverlay.msgId); setViewOnceOverlay(null) }}
+                className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center"
+              >
+                <X className="w-5 h-5 text-white" />
+              </button>
+            </div>
+            <p className="text-white/60 text-xs mb-4 flex items-center gap-1.5">
+              <Eye className="w-3.5 h-3.5" /> View once — tap anywhere to close (cannot view again)
+            </p>
+            {viewOnceOverlay.isVideo ? (
+              <video
+                src={viewOnceOverlay.url}
+                controls
+                autoPlay
+                className="max-w-full max-h-[80vh] rounded-xl"
+                onClick={e => e.stopPropagation()}
+              />
+            ) : (
+              <img
+                src={viewOnceOverlay.url}
+                alt="View once"
+                className="max-w-full max-h-[80vh] rounded-xl object-contain"
+                onClick={e => e.stopPropagation()}
+              />
+            )}
           </motion.div>
         )}
       </AnimatePresence>

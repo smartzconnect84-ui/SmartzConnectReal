@@ -239,7 +239,7 @@ export default function AdminLayout() {
   )
 
   return (
-    <div className="flex h-screen dark:bg-[#0D0A14] bg-gray-50 overflow-hidden">
+    <div className="admin-shell flex h-screen dark:bg-[#0D0A14] bg-gray-50 overflow-hidden">
 
       {/* Desktop Sidebar */}
       <motion.aside
