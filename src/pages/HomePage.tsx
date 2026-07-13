@@ -394,9 +394,7 @@ export default function HomePage() {
                   An App
                 </span>
               </Heading>
-              <p className="text-white/80 text-base sm:text-lg leading-relaxed mb-5">
-                SmartzConnect is where friendships begin, relationships grow, businesses connect, creators earn, and communities flourish — all in one place.
-              </p>
+
               <p className="text-white/50 text-sm sm:text-base leading-relaxed mb-8">
                 With one free account, you unlock all eight products:
               </p>
