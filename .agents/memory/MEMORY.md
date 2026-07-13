@@ -57,7 +57,7 @@
 - [Referral → subscription rewards](referral-subscription-rewards.md) — 10/20 confirmed referrals auto-grant free Premium/VIP for 14 days; subscription_source field prevents clobbering paid/admin plans.
 - [admin_users RLS recursion — RESOLVED](admin-users-rls-recursion.md) — root cause was a self-referential policy on admin_users itself; fixed by dropping it in favor of existing SECURITY DEFINER helpers.
 - [Navbar product grouping](navbar-product-grouping.md) — Commerce/Social nav columns driven by COMMERCE_SLUGS list, independent of services.category (DB category ≠ nav bucket).
-
+- [SpinChat media & livestream fan-out](spinchat-media-livestream.md) — SpinChat image/video+view-once added; SmartzTV go-live fans-out to followers via follows table batch notify.
 - [Vercel token empty despite existing](vercel-token-empty-refresh.md) — VERCEL_TOKEN resolved as empty (len 0) in shell though marked configured; fixed by requestSecrets() re-entry, not code changes.
 - [Learning courses & quiz system](learning-quiz-system.md) — full course/lesson/quiz/cert pipeline; admin at /admin/learning, user at /app/course/:courseId.
 - [Email confirmation source of truth](email-confirmation-source-of-truth.md) — public.users.email_verified is the real signal (profiles.email_verified unused); auto-sync trigger feeds newsletter_subscribers.

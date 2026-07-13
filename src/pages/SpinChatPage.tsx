@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useContext, useCallback } from 'react'
 import { motion, AnimatePresence, useAnimation } from 'framer-motion'
-import { Zap, RefreshCw, Heart, X, MessageCircle, Shield, Globe, Sparkles, Send, Phone, Video, Database, CheckCircle2, Radio, ExternalLink } from 'lucide-react'
+import { Zap, RefreshCw, Heart, X, MessageCircle, Shield, Globe, Sparkles, Send, Phone, Video, Database, CheckCircle2, Radio, ExternalLink, Image as ImageIcon, Eye, EyeOff } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useLiveKitCall } from '@/contexts/LiveKitCallContext'
 import { supabase } from '@/lib/supabase'
@@ -9,6 +9,7 @@ import { StreamContext } from '@/contexts/StreamContext'
 import { getOrCreateDirectChannel } from '@/lib/stream'
 import { notifyUser } from '@/lib/notify'
 import { useTheme } from '@/contexts/ThemeContext'
+import { uploadToSufy } from '@/lib/sufy'
 
 const defaultEmojis = ['👩🏾', '👨🏿', '👩🏽', '👨🏾', '👩🏿', '👨🏽']
 
@@ -103,8 +104,12 @@ export default function SpinChatPage() {
   const [currentProfile, setCurrentProfile] = useState<SpinProfile | null>(null)
   const [rotation, setRotation] = useState(0)
   const [spinCount, setSpinCount] = useState(0)
-  const [messages, setMessages] = useState<{ text: string; mine: boolean; time: string }[]>([])
+  const [messages, setMessages] = useState<{ text: string; mine: boolean; time: string; type?: 'text' | 'image' | 'video'; url?: string; viewOnce?: boolean; viewedBy?: string[] }[]>([])
   const [input, setInput] = useState('')
+  const [pendingViewOnce, setPendingViewOnce] = useState(false)
+  const [viewOnceOverlay, setViewOnceOverlay] = useState<{ url: string; isVideo: boolean } | null>(null)
+  const [uploadingFile, setUploadingFile] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [anonymous, setAnonymous] = useState(false)
   const [poolProfiles, setPoolProfiles] = useState<SpinProfile[]>([])
   const [dbConnected, setDbConnected] = useState(false)
@@ -359,6 +364,43 @@ export default function SpinChatPage() {
     setSpinCount(c => c + 1)
     setMessages([])
     setPhase('matched')
+  }
+
+  const handleFileAttach = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !channelRef.current || chatMode !== 'live') return
+    e.target.value = ''
+    const isImage = file.type.startsWith('image/')
+    const isVideo = file.type.startsWith('video/')
+    if (!isImage && !isVideo) return
+    setUploadingFile(true)
+    const now = new Date().toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' })
+    try {
+      const url = await uploadToSufy(file, isImage ? 'photos' : 'documents')
+      const viewOnceFlag = pendingViewOnce
+      const msg = {
+        text: '',
+        mine: true,
+        time: now,
+        type: isImage ? ('image' as const) : ('video' as const),
+        url,
+        viewOnce: viewOnceFlag,
+        viewedBy: [] as string[],
+      }
+      setMessages(prev => [...prev, msg])
+      if (viewOnceFlag) setPendingViewOnce(false)
+      const payload: Record<string, unknown> = {
+        text: '',
+        attachments: isImage
+          ? [{ type: 'image', image_url: url, asset_url: url }]
+          : [{ type: 'file', asset_url: url, mime_type: file.type }],
+      }
+      if (viewOnceFlag) payload.view_once = true
+      await channelRef.current.sendMessage(payload as any)
+    } catch (err) {
+      console.error('SpinChat upload error:', err)
+    }
+    setUploadingFile(false)
   }
 
   const sendMsg = async () => {
@@ -650,14 +692,75 @@ export default function SpinChatPage() {
                 <div className="flex-1 overflow-y-auto p-3 space-y-2">
                   {messages.map((m, i) => (
                     <div key={i} className={`flex ${m.mine ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-[80%] px-3 py-2 rounded-2xl text-xs ${m.mine ? 'chat-bubble-mine rounded-tr-sm' : 'chat-bubble-theirs rounded-tl-sm'}`}>
-                        {m.text}
-                        <div className="text-[9px] opacity-60 mt-0.5 text-right">{m.time}</div>
-                      </div>
+                      {m.type === 'image' ? (
+                        <div className="max-w-[70%]">
+                          {m.viewOnce ? (
+                            <button
+                              onClick={() => setViewOnceOverlay({ url: m.url!, isVideo: false })}
+                              className="flex flex-col items-center justify-center gap-1.5 w-28 h-28 rounded-2xl bg-fuchsia-500/10 border border-fuchsia-500/30 text-fuchsia-400"
+                            >
+                              <Eye className="w-6 h-6" />
+                              <span className="text-[10px] font-semibold">Tap to view</span>
+                              <span className="text-[9px] opacity-60">View once</span>
+                            </button>
+                          ) : (
+                            <img src={m.url} alt="shared" className="max-w-full rounded-2xl object-cover cursor-pointer" onClick={() => window.open(m.url, '_blank')} />
+                          )}
+                          <div className="text-[9px] opacity-60 mt-0.5 text-right">{m.time}</div>
+                        </div>
+                      ) : m.type === 'video' ? (
+                        <div className="max-w-[70%]">
+                          {m.viewOnce ? (
+                            <button
+                              onClick={() => setViewOnceOverlay({ url: m.url!, isVideo: true })}
+                              className="flex flex-col items-center justify-center gap-1.5 w-28 h-28 rounded-2xl bg-fuchsia-500/10 border border-fuchsia-500/30 text-fuchsia-400"
+                            >
+                              <Eye className="w-6 h-6" />
+                              <span className="text-[10px] font-semibold">Tap to view</span>
+                              <span className="text-[9px] opacity-60">View once</span>
+                            </button>
+                          ) : (
+                            <video src={m.url} controls className="max-w-full rounded-2xl" />
+                          )}
+                          <div className="text-[9px] opacity-60 mt-0.5 text-right">{m.time}</div>
+                        </div>
+                      ) : (
+                        <div className={`max-w-[80%] px-3 py-2 rounded-2xl text-xs ${m.mine ? 'chat-bubble-mine rounded-tr-sm' : 'chat-bubble-theirs rounded-tl-sm'}`}>
+                          {m.text}
+                          <div className="text-[9px] opacity-60 mt-0.5 text-right">{m.time}</div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
+                {/* View-once toggle hint */}
+                {pendingViewOnce && (
+                  <div className="mx-3 mb-1 flex items-center gap-1.5 px-2 py-1 rounded-lg bg-fuchsia-500/10 border border-fuchsia-500/20">
+                    <Eye className="w-3 h-3 text-fuchsia-400" />
+                    <span className="text-[10px] text-fuchsia-400 font-semibold">View once — next image/video disappears after viewing</span>
+                  </div>
+                )}
                 <div className="px-3 py-2.5 border-t dark:border-white/5 border-gray-100 flex items-center gap-2">
+                  {/* Hidden file input */}
+                  <input ref={fileInputRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleFileAttach} />
+                  {/* View-once toggle */}
+                  <button
+                    onClick={() => setPendingViewOnce(v => !v)}
+                    title={pendingViewOnce ? 'Cancel view-once' : 'Send view-once media'}
+                    disabled={chatMode !== 'live'}
+                    className={`flex-shrink-0 transition-colors disabled:opacity-40 ${pendingViewOnce ? 'text-fuchsia-400' : 'dark:text-gray-500 text-gray-400 hover:text-fuchsia-400'}`}
+                  >
+                    {pendingViewOnce ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  </button>
+                  {/* Image/Video attach */}
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={chatMode !== 'live' || uploadingFile}
+                    title="Send photo or video"
+                    className="flex-shrink-0 dark:text-gray-500 text-gray-400 hover:text-fuchsia-400 transition-colors disabled:opacity-40"
+                  >
+                    {uploadingFile ? <RefreshCw className="w-3.5 h-3.5 animate-spin text-fuchsia-400" /> : <ImageIcon className="w-3.5 h-3.5" />}
+                  </button>
                   <input
                     value={input}
                     onChange={e => setInput(e.target.value)}
@@ -704,6 +807,47 @@ export default function SpinChatPage() {
 
         </AnimatePresence>
       </div>
+
+      {/* View-once full-screen overlay */}
+      <AnimatePresence>
+        {viewOnceOverlay && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-black"
+            onClick={() => setViewOnceOverlay(null)}
+          >
+            <div className="absolute top-4 right-4">
+              <button
+                onClick={e => { e.stopPropagation(); setViewOnceOverlay(null) }}
+                className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center"
+              >
+                <X className="w-5 h-5 text-white" />
+              </button>
+            </div>
+            <p className="text-white/60 text-xs mb-4 flex items-center gap-1.5">
+              <Eye className="w-3.5 h-3.5" /> View once — tap anywhere to close (cannot view again)
+            </p>
+            {viewOnceOverlay.isVideo ? (
+              <video
+                src={viewOnceOverlay.url}
+                controls
+                autoPlay
+                className="max-w-full max-h-[80vh] rounded-xl"
+                onClick={e => e.stopPropagation()}
+              />
+            ) : (
+              <img
+                src={viewOnceOverlay.url}
+                alt="View once"
+                className="max-w-full max-h-[80vh] rounded-xl object-contain"
+                onClick={e => e.stopPropagation()}
+              />
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

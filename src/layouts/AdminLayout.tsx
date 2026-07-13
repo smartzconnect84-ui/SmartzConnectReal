@@ -164,6 +164,18 @@ export default function AdminLayout() {
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
+      {/* Brand Header */}
+      <div className={`flex items-center gap-3 px-4 py-4 border-b dark:border-white/6 border-gray-100 flex-shrink-0 ${collapsed ? 'justify-center' : ''}`}>
+        <div className="w-9 h-9 rounded-xl overflow-hidden flex-shrink-0 shadow-md shadow-pink-500/20">
+          <img src={logoImg} alt="SC" className="w-full h-full object-cover" onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
+        </div>
+        {!collapsed && (
+          <div className="min-w-0">
+            <p className="font-display font-black text-sm dark:text-white text-gray-900 leading-none tracking-tight">SmartzConnect</p>
+            <p className="text-[10px] font-semibold dark:text-gray-500 text-gray-400 mt-0.5 leading-none uppercase tracking-widest">Admin Panel</p>
+          </div>
+        )}
+      </div>
       {/* Nav */}
       <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
         {navItems.map(item => {
@@ -294,9 +306,16 @@ export default function AdminLayout() {
         {/* Top bar */}
         <header className="flex items-center justify-between gap-4 px-4 sm:px-6 lg:px-8 py-3.5 min-h-[64px] dark:bg-[#080510] bg-white border-b dark:border-white/6 border-gray-200 flex-shrink-0 z-10 shadow-sm dark:shadow-black/20">
           <div className="flex items-center gap-3 min-w-0 flex-1">
-            <button onClick={() => setMobileOpen(true)} className="md:hidden w-9 h-9 rounded-lg dark:bg-white/5 bg-gray-100 flex items-center justify-center">
+            <button onClick={() => setMobileOpen(true)} className="md:hidden w-9 h-9 rounded-lg dark:bg-white/5 bg-gray-100 flex items-center justify-center flex-shrink-0">
               <Menu className="w-[21px] h-[21px] dark:text-gray-400 text-gray-600" />
             </button>
+            {/* Mobile brand name — only shown when sidebar is hidden */}
+            <div className="md:hidden flex items-center gap-2 min-w-0">
+              <div className="w-7 h-7 rounded-lg overflow-hidden flex-shrink-0">
+                <img src={logoImg} alt="SC" className="w-full h-full object-cover" onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
+              </div>
+              <span className="font-display font-black text-sm dark:text-white text-gray-900 truncate">Admin</span>
+            </div>
             <div className="relative hidden sm:block">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-[15px] h-[15px] dark:text-gray-500 text-gray-400" />
               <input

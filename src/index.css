@@ -280,6 +280,55 @@
     letter-spacing: -0.01em !important;
   }
 
+  /* ── Admin light-mode visibility hardening ──────────────────────
+     Ensures inputs, selects, textareas, and table cells are always
+     readable in both dark and light modes. These rules are additive;
+     Tailwind's dark: classes take precedence at runtime.
+  ────────────────────────────────────────────────────────────────── */
+
+  /* Table: header cells always high-contrast */
+  .admin-shell table th {
+    color: inherit !important;
+  }
+
+  /* Input / select / textarea legibility in light mode */
+  .admin-shell input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+  .admin-shell select,
+  .admin-shell textarea {
+    color: inherit;
+  }
+
+  /* Sidebar brand header letter-spacing for the "ADMIN PANEL" subtitle */
+  .admin-shell aside .tracking-widest {
+    letter-spacing: 0.12em !important;
+  }
+
+  /* Stat number typography — always Sora, always black-weight */
+  .admin-shell .text-2xl.font-black,
+  .admin-shell .text-3xl.font-black,
+  .admin-shell .text-4xl.font-black,
+  .admin-shell .font-display.font-black {
+    font-family: 'Sora', sans-serif !important;
+    letter-spacing: -0.025em !important;
+  }
+
+  /* Section / page action buttons — uniform font weight */
+  .admin-shell button {
+    font-family: 'Inter', system-ui, sans-serif !important;
+  }
+
+  /* Badge / pill labels */
+  .admin-shell .rounded-full span,
+  .admin-shell .rounded-full {
+    font-family: 'Inter', system-ui, sans-serif !important;
+  }
+
+  /* Code / mono snippets inside admin */
+  .admin-shell code,
+  .admin-shell pre {
+    font-family: 'SFMono-Regular', Consolas, monospace !important;
+  }
+
   /* ── Public site font-size floor ── */
   .public-site .text-xs  { font-size: 0.9375rem !important; line-height: 1.5rem !important; }
   .public-site .text-sm  { font-size: 0.9375rem !important; line-height: 1.5rem !important; }

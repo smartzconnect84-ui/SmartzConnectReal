@@ -1001,9 +1001,6 @@ export default function SmartzTVPage() {
       fetchStreams()
       setBroadcastData({ streamId: String(row.id), title })
       // Self-confirmation push (system type bypasses self-push guard)
-      // NOTE: Broad fan-out to all followers is out of scope — would require a
-      // DB insert-select fan-out into notifications + a OneSignal "Send to Segment"
-      // call in the edge function. Recommend as a follow-up server-side job.
       notifyUser({
         userId: user.id,
         type: 'system',
@@ -1012,6 +1009,34 @@ export default function SmartzTVPage() {
         actionUrl: '/app/smartztv',
         emoji: '📺',
       }).catch(() => {})
+
+      // Fan-out: notify all followers that this user just went live
+      ;(async () => {
+        try {
+          const { data: followers } = await supabase
+            .from('follows')
+            .select('follower_id')
+            .eq('following_id', user.id)
+            .limit(200)
+          if (!followers?.length) return
+          const myProfile = await supabase.from('profiles').select('full_name').eq('id', user.id).single()
+          const creatorName = myProfile.data?.full_name || 'Someone'
+          // Fire in parallel batches to avoid Promise.all hanging on errors
+          const notifyAll = followers.map(f =>
+            notifyUser({
+              userId: f.follower_id,
+              type: 'live_stream',
+              title: `📺 ${creatorName} is LIVE!`,
+              message: `${creatorName} just started streaming "${title}". Watch now!`,
+              actionUrl: '/app/smartztv',
+              emoji: '🔴',
+            }).catch(() => {})
+          )
+          await Promise.allSettled(notifyAll)
+        } catch {
+          // Silently swallow — follower fan-out must never block go-live
+        }
+      })().catch(() => {})
     }
     setGoingLive(false)
   }
