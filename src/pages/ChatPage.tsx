@@ -520,7 +520,7 @@ export default function ChatPage() {
         m.id === msgId ? { ...m, viewedBy: newViewedBy } : m
       ))
       // Persist to Stream via partialUpdateMessage
-      await streamClient.partialUpdateMessage(msgId, { set: { viewed_by: newViewedBy } })
+      await streamClient.partialUpdateMessage(msgId, { set: { viewed_by: newViewedBy } as any })
     } catch (err) {
       console.error('markViewOnceViewed error:', err)
     }

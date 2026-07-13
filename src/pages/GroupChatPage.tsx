@@ -334,7 +334,7 @@ export default function GroupChatPage() {
       setMessages(prev => prev.map(m =>
         m.id === msgId ? { ...m, viewedBy: newViewedBy } : m
       ))
-      await streamClient.partialUpdateMessage(msgId, { set: { viewed_by: newViewedBy } })
+      await streamClient.partialUpdateMessage(msgId, { set: { viewed_by: newViewedBy } as any })
     } catch (err) {
       console.error('markViewOnceViewed error:', err)
     }

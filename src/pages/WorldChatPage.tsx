@@ -105,7 +105,7 @@ export default function WorldChatPage() {
 
     const init = async () => {
       try {
-        const ch = client.channel(WORLD_CHANNEL_TYPE, WORLD_CHANNEL_ID, {
+        const ch = client.channel(WORLD_CHANNEL_TYPE, WORLD_CHANNELS[activeChIdx].id, {
           name: 'World Chat',
           // 'livestream' channels don't require explicit membership: any
           // authenticated user can watch and post.
@@ -194,7 +194,7 @@ export default function WorldChatPage() {
     }
   // streamClient is a module-level singleton; exclude it from deps to avoid spurious re-runs
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id, streamConnected])
+  }, [user?.id, streamConnected, activeChIdx])
 
   // Auto-scroll
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
