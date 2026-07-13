@@ -5,7 +5,7 @@ import {
   Home, User, Users, MessageCircle, Bell, Video, Phone,
   Heart, Users2, FileText, Calendar, ShoppingBag, Briefcase,
   BookOpen, Tv, Car, Zap, Crown, Settings, HelpCircle,
-  Sun, Moon, LogOut, Globe, Bookmark, Trophy, Gift, Receipt
+  Sun, Moon, LogOut, Globe, Bookmark, Trophy, Gift, Receipt, Plus,
 } from 'lucide-react'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useAuth } from '@/hooks/useAuth'
@@ -68,13 +68,13 @@ const drawerSections = [
   },
 ]
 
-// Mobile bottom nav (5 key items)
+// Mobile bottom nav — Bell/Alerts replaced with Chat; + (Create) in the middle
 const mobileBottomNav = [
-  { path: '/app/feed',          icon: Home,          label: 'Home' },
-  { path: '/app/discover',      icon: Heart,         label: 'Dating' },
-  { path: '/app/matches',        icon: MessageCircle, label: 'Chat' },
-  { path: '/app/notifications', icon: Bell,          label: 'Alerts' },
-  { path: '/app/profile',       icon: User,          label: 'Me' },
+  { path: '/app/feed',     icon: Home,          label: 'Home',   type: 'link'   as const },
+  { path: '/app/discover', icon: Heart,         label: 'Dating', type: 'link'   as const },
+  { path: null,            icon: Plus,          label: 'Create', type: 'create' as const },
+  { path: '/app/matches',  icon: MessageCircle, label: 'Chat',   type: 'link'   as const },
+  { path: '/app/profile',  icon: User,          label: 'Me',     type: 'link'   as const },
 ]
 
 export default function AppShell() {
@@ -226,10 +226,28 @@ export default function AppShell() {
       {/* ── Mobile Bottom Nav ── */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 dark:bg-[#0D0A14]/98 bg-white/98 backdrop-blur-xl border-t dark:border-white/8 border-gray-100 flex items-center px-1">
         {mobileBottomNav.map(item => {
-          const active = isActive(item.path)
           const Icon = item.icon
+
+          // Centre "Create +" button — triggers the floating CreateModal via custom event
+          if (item.type === 'create') {
+            return (
+              <button
+                key="create"
+                onClick={() => window.dispatchEvent(new CustomEvent('szc:open-create'))}
+                className="flex-1 flex flex-col items-center justify-center py-2 gap-0.5"
+                aria-label="Create"
+              >
+                <div className="w-8 h-8 rounded-xl bg-love-gradient shadow-md shadow-pink-500/30 flex items-center justify-center">
+                  <Icon className="w-4 h-4 text-white" />
+                </div>
+                <span className="text-[9px] font-bold dark:text-gray-500 text-gray-400">Create</span>
+              </button>
+            )
+          }
+
+          const active = isActive(item.path!)
           return (
-            <Link key={item.path} to={item.path}
+            <Link key={item.path} to={item.path!}
               className="flex-1 flex flex-col items-center justify-center py-2.5 gap-0.5 relative group">
               {active && (
                 <motion.div
@@ -245,11 +263,6 @@ export default function AppShell() {
                     {unreadMessages > 9 ? '9+' : unreadMessages}
                   </span>
                 )}
-                {item.label === 'Alerts' && unreadNotifs > 0 && !active && (
-                  <span className="absolute -top-1 -right-1 w-[18px] h-[18px] rounded-full bg-brand-pink text-white text-[8px] font-black flex items-center justify-center">
-                    {unreadNotifs > 9 ? '9+' : unreadNotifs}
-                  </span>
-                )}
               </div>
               <span className={`relative z-10 text-[9px] font-bold transition-colors ${active ? 'text-brand-pink' : 'dark:text-gray-500 text-gray-400'}`}>
                 {item.label}
@@ -259,8 +272,8 @@ export default function AppShell() {
         })}
       </nav>
 
-      {/* ── Floating Create Button ── */}
-      <CreateModal />
+      {/* ── Floating Create Modal (FAB hidden on mobile — bottom nav handles it) ── */}
+      <CreateModal hideFab />
 
       {/* ── Global Incoming Call overlay ── */}
       <IncomingCall />

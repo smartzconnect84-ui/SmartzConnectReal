@@ -18,7 +18,12 @@ import { uploadToSufy } from '@/lib/sufy'
 // Using 'livestream' channel type: any authenticated Stream user can watch and
 // send messages without being explicitly added as a member. This is the correct
 // type for a global community chat room.
-const WORLD_CHANNEL_ID   = 'smartz-worldchat-v2'
+// 3 public World Chat categories — IDs must match AdminWorldChat.tsx
+const WORLD_CHANNELS = [
+  { id: 'smartz-worldchat-v2',       label: 'General',  emoji: '🌍' },
+  { id: 'smartz-worldchat-social',   label: 'Social',   emoji: '💕' },
+  { id: 'smartz-worldchat-business', label: 'Business', emoji: '💼' },
+]
 const WORLD_CHANNEL_TYPE = 'livestream'
 const QUICK_REACTIONS = [
   { emoji: '❤️', name: 'love' },
@@ -64,6 +69,7 @@ export default function WorldChatPage() {
   const [connectFailed, setConnectFailed] = useState(false)
   const [notMember, setNotMember] = useState(false)
   const [showThemePicker, setShowThemePicker] = useState(false)
+  const [activeChIdx, setActiveChIdx] = useState(0)
 
   const endRef = useRef<HTMLDivElement>(null)
   const fileRef = useRef<HTMLInputElement>(null)

@@ -605,7 +605,7 @@ const createOptions = [
   { icon: ShoppingBag, label: 'Listing',  description: 'Sell on Marketplace',      color: 'text-amber-400',  bg: 'bg-amber-500/10',   action: 'listing' },
 ]
 
-export default function CreateModal() {
+export default function CreateModal({ hideFab = false }: { hideFab?: boolean }) {
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const [activeModal, setActiveModal] = useState<ActiveModal>(null)
@@ -617,6 +617,13 @@ export default function CreateModal() {
   useEffect(() => {
     const saved = parseFloat(localStorage.getItem('fab_y') ?? '0')
     if (!isNaN(saved)) dragY.set(saved)
+  }, [])
+
+  // Bottom-nav + button fires this event to open the menu without the FAB
+  useEffect(() => {
+    const handler = () => setOpen(true)
+    window.addEventListener('szc:open-create', handler)
+    return () => window.removeEventListener('szc:open-create', handler)
   }, [])
 
   const saveDragY = () => {
@@ -721,10 +728,10 @@ export default function CreateModal() {
           )}
         </AnimatePresence>
 
-        {/* FAB — 44px touch target, 32px visual */}
-        <button
+        {/* FAB — hidden on mobile when bottom nav owns the + button */}
+        {!hideFab && <button
           onClick={() => { if (!didDragRef.current) setOpen(o => !o) }}
-          className="w-11 h-11 flex items-center justify-center cursor-grab active:cursor-grabbing"
+          className="w-11 h-11 flex items-center justify-center cursor-grab active:cursor-grabbing md:flex hidden"
           aria-label="Open create menu"
           aria-haspopup="dialog"
           aria-expanded={open}
@@ -738,7 +745,7 @@ export default function CreateModal() {
           >
             <Plus className="w-4 h-4 text-white" />
           </motion.div>
-        </button>
+        </button>}
       </motion.div>
 
       {/* Sub-Modals */}

@@ -6,7 +6,7 @@ import {
   ShoppingBag, Tv, Car, FileText, Shield, Settings, ChevronLeft,
   ChevronRight, Bell, Search, Moon, Sun, LogOut, Crown,
   Users2, ScrollText, Menu, X, Map, MessageCircle, BookOpen, Layout as LayoutIcon, Zap, Trophy,
-  Check, Mail, Grid3X3, GraduationCap,
+  Check, Mail, Grid3X3, GraduationCap, Plus, Globe,
 } from 'lucide-react'
 import { useTheme } from '@/contexts/ThemeContext'
 import { openTawkChat } from '@/lib/tawk'
@@ -49,6 +49,7 @@ const navItems = [
   { icon: Settings,        label: 'Settings',        path: '/admin/settings' },
   { icon: ScrollText,      label: 'Audit Logs',      path: '/admin/audit' },
   { icon: Map,             label: 'Page Tour',       path: '/admin/tour' },
+  { icon: Globe,           label: 'World Chat',      path: '/admin/worldchat' },
   { icon: Trophy,          label: 'World Stage',     path: '/admin/worldstage' },
 ]
 
