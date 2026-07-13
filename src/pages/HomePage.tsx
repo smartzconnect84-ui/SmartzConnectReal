@@ -191,32 +191,6 @@ export default function HomePage() {
               </div>
             </motion.div>
 
-            {/* 8-product grid */}
-            <motion.div {...up(0.18)} className="grid grid-cols-2 gap-3 sm:gap-4">
-              {[
-                { val: 'SmartzDating',   sub: 'Smart Matching',   grd: 'from-[#EC4899] to-[#DC2626]' },
-                { val: 'SmartzSocial',   sub: 'Posts & Stories',  grd: 'from-[#DC2626] to-rose-700'  },
-                { val: 'SmartzTV',       sub: 'Live & Creator',   grd: 'from-[#9B5DE5] to-[#DC2626]' },
-                { val: 'SmartzRide',     sub: 'Ride Booking',     grd: 'from-rose-700 to-[#DC2626]'  },
-                { val: 'SmartzMarket',   sub: 'Buy & Sell',       grd: 'from-[#EC4899] to-rose-700'  },
-                { val: 'SmartzDelivery', sub: 'Fast Delivery',    grd: 'from-[#DC2626] to-[#EC4899]' },
-                { val: 'SmartzLearning', sub: 'Courses & Skills', grd: 'from-[#9B5DE5] to-[#EC4899]' },
-                { val: 'SmartzAds',      sub: 'Ad Campaigns',     grd: 'from-[#EC4899] to-[#DC2626]' },
-              ].map((s, i) => (
-                <motion.div key={s.sub}
-                  initial={{ opacity: 0, scale: 0.94 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.05, type: 'spring', stiffness: 200 }}
-                  whileHover={{ scale: 1.04, y: -2 }}
-                  className="p-4 sm:p-5 rounded-2xl text-center relative overflow-hidden cursor-default"
-                  style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.09)' }}>
-                  <div className={`absolute inset-0 opacity-[0.08] bg-gradient-to-br ${s.grd}`} />
-                  <p className={`font-display font-black text-sm sm:text-base bg-gradient-to-r ${s.grd} bg-clip-text text-transparent mb-1 relative`}>{s.val}</p>
-                  <p className="text-sm text-white/50 relative">{s.sub}</p>
-                </motion.div>
-              ))}
-            </motion.div>
           </div>
         </div>
       </Sec>
@@ -345,7 +319,10 @@ export default function HomePage() {
               Yes! SmartzConnect is an African child's dream. But, was built for the world. Your contribution in whatever ways to keep it alive, is acceptable.
             </p>
             <p className="text-sm font-bold tracking-widest text-yellow-400 uppercase relative">
-              — Shedrick K. Nungehn, Founder &amp; CEO, SmartzConnect
+              — Shedrick K. Nungehn
+            </p>
+            <p className="text-white/45 text-xs mt-1 tracking-wider relative">
+              Founder &amp; CEO, SmartzConnect
             </p>
           </motion.div>
         </div>
