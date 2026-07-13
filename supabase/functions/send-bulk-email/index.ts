@@ -144,7 +144,7 @@ serve(async (req) => {
       return json({ error: 'Email sending is not configured yet. Connect Resend (RESEND_API_KEY) to activate real delivery.' }, 500)
     }
 
-    const fromLine = `${from_name || 'SmartzConnect Team'} <${from_email || 'noreply@smartzconnect.com'}>`
+    const fromLine = `${from_name || BRAND_NAME} <${from_email || 'support@smartzconnect.com'}>`
     let sentCount = 0
     const errors: string[] = []
 
