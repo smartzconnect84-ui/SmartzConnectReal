@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Check, Crown, Heart, Zap, X, Shield, Star, Gift, AlertCircle, Loader2, Download } from 'lucide-react'
 import CurrencyConverter from '@/components/CurrencyConverter'
@@ -310,10 +310,48 @@ function PaymentModal({ plan, onClose }: { plan: typeof plans[0]; onClose: () =>
   )
 }
 
+interface ActiveSub {
+  plan_slug: string
+  status: string
+  expires_at: string | null
+}
+
 export default function SubscriptionsPage() {
+  const { user } = useAuth()
   const [billing, setBilling] = useState<'monthly' | 'yearly'>('monthly')
   const [selectedPlan, setSelectedPlan] = useState<typeof plans[0] | null>(null)
-  const currentPlan = plans.find(p => p.current)!
+  const [activeSub, setActiveSub] = useState<ActiveSub | null>(null)
+  const [subLoading, setSubLoading] = useState(true)
+
+  useEffect(() => {
+    if (!user) { setSubLoading(false); return }
+    let cancelled = false
+    supabase
+      .from('subscriptions')
+      .select('plan_slug, status, expires_at')
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!cancelled) {
+          setActiveSub(data ?? null)
+          setSubLoading(false)
+        }
+      })
+    return () => { cancelled = true }
+  }, [user])
+
+  // Derive current plan from live subscription, falling back to free
+  const currentPlanId = activeSub?.plan_slug ?? 'free'
+  const currentPlan = plans.find(p => p.id === currentPlanId) ?? plans[0]
+
+  const renewsText = (() => {
+    if (!activeSub?.expires_at) return null
+    const d = new Date(activeSub.expires_at)
+    return `Active · Renews ${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+  })()
 
   return (
     <div className="h-full flex flex-col dark:bg-[#0D0A14] bg-gray-50">
@@ -333,8 +371,13 @@ export default function SubscriptionsPage() {
           </div>
           <div className="flex-1">
             <p className="text-xs dark:text-gray-400 text-gray-500">Current Plan</p>
-            <p className="font-display font-black text-lg dark:text-white text-gray-900">{currentPlan.name}</p>
-            <p className="text-xs text-brand-pink font-semibold">Active · Renews Jul 17, 2026</p>
+            {subLoading
+              ? <div className="h-5 w-24 dark:bg-white/10 bg-gray-200 rounded animate-pulse my-0.5" />
+              : <p className="font-display font-black text-lg dark:text-white text-gray-900">{currentPlan.name}</p>
+            }
+            <p className="text-xs text-brand-pink font-semibold">
+              {subLoading ? '' : renewsText ?? (currentPlanId === 'free' ? 'Free forever' : 'Active')}
+            </p>
           </div>
           <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
@@ -361,7 +404,7 @@ export default function SubscriptionsPage() {
             const price = billing === 'yearly' && plan.price > 0
               ? (plan.price * 0.8).toFixed(2)
               : plan.price.toFixed(2)
-            const isCurrent = plan.current
+            const isCurrent = plan.id === currentPlanId
 
             return (
               <motion.div key={plan.id}

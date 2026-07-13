@@ -9,19 +9,21 @@ import {
 import { useTheme } from '@/contexts/ThemeContext'
 import { useAnnouncement } from '@/contexts/AnnouncementContext'
 import type { AnnouncementType, Announcement } from '@/contexts/AnnouncementContext'
+import { supabase } from '@/lib/supabase'
 
 // ── Feature Toggles ────────────────────────────────────────────────────────────
 
 const SETTINGS_KEY = 'smartz_admin_settings'
+const PLATFORM_TOGGLES_KEY = 'feature_toggles'
 
-function loadSettings() {
+function loadSettingsLocal() {
   try {
     const raw = localStorage.getItem(SETTINGS_KEY)
     return raw ? JSON.parse(raw) : null
   } catch { return null }
 }
 
-function saveSettings(data: object) {
+function saveSettingsLocal(data: object) {
   try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(data)) } catch { /* ignore */ }
 }
 
@@ -123,6 +125,7 @@ export default function AdminSettings() {
   const [toggles, setToggles]               = useState(defaultToggles)
   const [activeCategory, setActiveCategory] = useState('All')
   const [saved, setSaved]                   = useState(false)
+  const [saving, setSaving]                 = useState(false)
   const [activeTab, setActiveTab]           = useState<'features' | 'appearance' | 'announcements'>('features')
 
   // Announcement form
@@ -132,18 +135,49 @@ export default function AdminSettings() {
   const [annSaving, setAnnSaving]             = useState(false)
   const [annToast, setAnnToast]               = useState<string | null>(null)
 
+  // Load toggles — prefer Supabase (platform_settings), fall back to localStorage
   useEffect(() => {
-    const stored = loadSettings()
-    if (!stored) return
-    if (stored.toggles) setToggles(stored.toggles)
+    async function loadToggles() {
+      try {
+        const { data, error } = await supabase
+          .from('platform_settings')
+          .select('value')
+          .eq('key', PLATFORM_TOGGLES_KEY)
+          .single()
+        if (!error && data?.value && Array.isArray(data.value)) {
+          // Merge saved values with any new defaults (additive)
+          const saved: Toggle[] = data.value as Toggle[]
+          const savedMap = new Map(saved.map((t: Toggle) => [t.id, t.enabled]))
+          setToggles(defaultToggles.map(t => ({
+            ...t,
+            enabled: savedMap.has(t.id) ? (savedMap.get(t.id) ?? t.enabled) : t.enabled,
+          })))
+          return
+        }
+      } catch { /* fall through */ }
+      // Fallback: localStorage
+      const stored = loadSettingsLocal()
+      if (stored?.toggles) setToggles(stored.toggles)
+    }
+    loadToggles()
   }, [])
 
   useEffect(() => { refetch() }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggle = (id: string) => setToggles(prev => prev.map(t => t.id === id ? { ...t, enabled: !t.enabled } : t))
 
-  const handleSave = () => {
-    saveSettings({ toggles })
+  const handleSave = async () => {
+    setSaving(true)
+    // Persist to Supabase platform_settings for all-admin visibility
+    const payload = toggles.map(t => ({ id: t.id, enabled: t.enabled }))
+    try {
+      await supabase
+        .from('platform_settings')
+        .upsert({ key: PLATFORM_TOGGLES_KEY, value: payload as unknown as Record<string, unknown> }, { onConflict: 'key' })
+    } catch { /* ignore — localStorage still saves */ }
+    // Also save locally as offline fallback
+    saveSettingsLocal({ toggles })
+    setSaving(false)
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
   }
@@ -218,9 +252,9 @@ export default function AdminSettings() {
           <p className="text-sm dark:text-gray-400 text-gray-500 mt-0.5">Configure features, appearance, announcements, and platform behavior</p>
         </div>
         {activeTab === 'features' && (
-          <button onClick={handleSave}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold shadow-lg transition-all ${saved ? 'bg-emerald-500 text-white shadow-emerald-500/20' : 'bg-love-gradient text-white shadow-pink-500/20 hover:opacity-90'}`}>
-            {saved ? <><RefreshCw className="w-3.5 h-3.5" /> Saved!</> : <><Save className="w-3.5 h-3.5" /> Save Changes</>}
+          <button onClick={handleSave} disabled={saving}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold shadow-lg transition-all disabled:opacity-60 ${saved ? 'bg-emerald-500 text-white shadow-emerald-500/20' : 'bg-love-gradient text-white shadow-pink-500/20 hover:opacity-90'}`}>
+            {saving ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> Saving…</> : saved ? <><RefreshCw className="w-3.5 h-3.5" /> Saved!</> : <><Save className="w-3.5 h-3.5" /> Save Changes</>}
           </button>
         )}
       </div>
