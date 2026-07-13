@@ -183,9 +183,9 @@ export default function HomePage() {
               <p className="text-white/55 text-sm sm:text-base leading-relaxed mb-6">
                 SmartzConnect brings multiple essential services together under a single trusted ecosystem — with one account, a user can access dating, education, transportation, commerce, marketing, social networking, and professional partnership.
               </p>
-              <div className="flex flex-wrap gap-2.5">
-                {['Liberian Enterprise', 'Built for the World', '195+ Countries'].map(t => (
-                  <span key={t} className="px-3.5 py-1.5 rounded-full text-xs font-bold text-white/70"
+              <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2.5">
+                {['Liberian Enterprise', 'Built for the World', '195+ Countries', 'Social Media'].map(t => (
+                  <span key={t} className="px-3.5 py-1.5 rounded-full text-xs font-bold text-white/70 text-center"
                     style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>{t}</span>
                 ))}
               </div>
@@ -327,11 +327,6 @@ export default function HomePage() {
           </motion.div>
         </div>
       </Sec>
-
-      {/* ══ 3. SOCIAL MEDIA BADGE ════════════════════════════════════════════ */}
-      <div className="flex justify-center py-8">
-        <Badge icon={Sparkles} label="Social Media" />
-      </div>
 
       {/* ══ 4. CORE VALUES ═══════════════════════════════════════════════════ */}
       <Sec id="values">
