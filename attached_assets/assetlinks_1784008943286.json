@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.smartzconnect.twa",
+        "sha256_cert_fingerprints": ["9A:FE:B7:89:55:3D:0F:E0:30:49:BC:D1:8C:2D:29:B2:30:89:C4:83:A3:A6:1C:D7:C7:87:43:A8:4A:AD:52:B5"]
+      }
+    }]
