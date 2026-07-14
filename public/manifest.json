@@ -3,12 +3,17 @@
     "name": "SmartzConnect",
     "short_name": "SmartzConnect",
     "description": "Africa's premier social networking, dating, community, entertainment, marketplace, and ride-hailing platform.",
+
     "start_url": "/",
     "scope": "/",
+
     "display": "standalone",
+
     "background_color": "#0D0A14",
     "theme_color": "#EC4899",
+
     "orientation": "portrait-primary",
+
     "icons": [
         {
             "src": "/icon-192.png",
@@ -29,11 +34,15 @@
             "purpose": "maskable"
         }
     ],
+
     "categories": [
         "social",
         "entertainment",
         "lifestyle"
     ],
+
     "lang": "en",
-    "dir": "ltr"
+    "dir": "ltr",
+
+    "prefer_related_applications": false
 }
