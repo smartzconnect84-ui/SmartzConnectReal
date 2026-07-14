@@ -119,7 +119,13 @@ self.addEventListener('fetch', event => {
     // Cache-first: content-hashed filenames never change.
     event.respondWith(
       caches.match(request).then(cached => cached ?? fetch(request).then(res => {
-        if (res.ok) caches.open(CACHE_NAME).then(c => c.put(request, res.clone()))
+        // Clone BEFORE returning res — once res is handed to the browser its
+        // body stream starts draining; calling clone() after that point throws
+        // "Response body is already used".
+        if (res.ok) {
+          const toCache = res.clone()
+          caches.open(CACHE_NAME).then(c => c.put(request, toCache))
+        }
         return res
       }))
     )
