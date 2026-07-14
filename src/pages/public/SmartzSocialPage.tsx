@@ -12,7 +12,7 @@ import { useAuth } from '@/hooks/useAuth'
 const features = [
   {
     icon: Globe,        title: 'Connect Globally',
-    desc: 'Meet people from 47+ African countries. Build friendships and communities that span the continent.',
+    desc: 'Meet people from across Africa. Build friendships and communities that span the continent.',
     color: 'from-blue-500 to-indigo-600',
   },
   {
@@ -58,10 +58,10 @@ export default function SmartzSocialPage() {
   const memberCount = fmtCount(liveStats.totalUsers, '—')
 
   const stats = [
-    { value: memberCount, label: 'Registered Members', icon: Users },
-    { value: '47+',       label: 'Countries',           icon: Globe },
-    { value: '4.9★',      label: 'User Satisfaction',   icon: Star },
-    { value: '100%',      label: 'Free to Join',        icon: TrendingUp },
+    { value: memberCount,    label: 'Registered Members', icon: Users },
+    { value: 'Pan-African',  label: 'Community',          icon: Globe },
+    { value: '100%',         label: 'Free to Join',       icon: TrendingUp },
+    { value: 'Real People',  label: 'Only',               icon: Star },
   ]
 
   return (
@@ -183,7 +183,7 @@ export default function SmartzSocialPage() {
                   { icon: Users,          text: 'Real connections with real people' },
                   { icon: BarChart3,      text: 'Analytics that help you grow organically' },
                   { icon: MessageCircle,  text: 'Community tools built for collaboration' },
-                  { icon: Globe,          text: 'Reach across 47+ African countries' },
+                  { icon: Globe,          text: 'Reach across Africa and beyond' },
                 ].map((p, i) => (
                   <div key={i} className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center flex-shrink-0">

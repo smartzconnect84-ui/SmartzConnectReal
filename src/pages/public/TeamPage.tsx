@@ -322,10 +322,10 @@ export default function TeamPage() {
           className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-14 sm:mb-20"
         >
           {[
-            { value: '15K+', label: 'Users',       emoji: '👥' },
-            { value: '195+', label: 'Countries',   emoji: '🌍' },
-            { value: '1K+',  label: 'Businesses',  emoji: '🏢' },
-            { value: '8K+',  label: 'Connections', emoji: '💕' },
+            { value: 'Growing',  label: 'Community',   emoji: '👥' },
+            { value: 'Africa',   label: '& Beyond',    emoji: '🌍' },
+            { value: 'Real',     label: 'Businesses',  emoji: '🏢' },
+            { value: 'Daily',    label: 'Connections', emoji: '💕' },
           ].map((s, i) => (
             <motion.div key={i}
               initial={{ opacity: 0, scale: 0.9 }} animate={inView ? { opacity: 1, scale: 1 } : {}} transition={{ delay: 0.2 + i * 0.07 }}

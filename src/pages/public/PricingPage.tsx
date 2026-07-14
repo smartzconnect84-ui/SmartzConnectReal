@@ -669,7 +669,7 @@ export default function PricingPage() {
           <div className="relative overflow-hidden rounded-3xl bg-love-gradient p-10 text-center shadow-2xl shadow-pink-500/25">
 
             <p className="font-display font-black text-3xl sm:text-4xl text-white mb-3">Ready to Connect? 💕</p>
-            <p className="text-white/80 text-base mb-7 max-w-lg mx-auto">Join 100,000+ people across Africa building real connections, businesses, and communities on SmartzConnect.</p>
+            <p className="text-white/80 text-base mb-7 max-w-lg mx-auto">Join our growing community across Africa — build real connections, businesses, and communities on SmartzConnect.</p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link to="/register" className="px-8 py-3.5 rounded-2xl bg-white text-brand-pink font-black text-base shadow-xl hover:shadow-2xl hover:scale-105 transition-all">
                 🆓 Join Free Forever

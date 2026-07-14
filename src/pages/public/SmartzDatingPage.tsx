@@ -32,7 +32,7 @@ const features = [
   },
   {
     icon: Globe,      title: 'Pan-African Reach',
-    desc: 'Whether you\'re staying local or open to distance, meet people across 47+ countries.',
+    desc: 'Whether you\'re staying local or open to distance, meet people across Africa and beyond.',
     color: 'from-emerald-500 to-teal-600',
   },
   {
@@ -59,10 +59,10 @@ export default function SmartzDatingPage() {
   const matchCount  = fmtCount(liveStats.totalMatches, '—')
 
   const stats = [
-    { value: memberCount, label: 'Registered Members', icon: Users },
-    { value: '47+',       label: 'Countries',           icon: Globe },
-    { value: matchCount,  label: 'Matches Made',        icon: Heart },
-    { value: '4.8★',      label: 'Match Quality',       icon: Star },
+    { value: memberCount,    label: 'Registered Members', icon: Users },
+    { value: matchCount,     label: 'Matches Made',        icon: Heart },
+    { value: 'Pan-African',  label: 'Community',           icon: Globe },
+    { value: '100% Free',    label: 'To Join',             icon: Star },
   ]
 
   return (
@@ -184,7 +184,7 @@ export default function SmartzDatingPage() {
                   { icon: Lock,        text: 'Private mode — browse without being seen' },
                   { icon: Heart,       text: 'Smart match suggestions, not random swipes' },
                   { icon: MapPin,      text: 'Precise distance control and city filters' },
-                  { icon: Globe,       text: 'Connect locally or across 47+ countries' },
+                  { icon: Globe,       text: 'Connect locally or across Africa and beyond' },
                 ].map((p, i) => (
                   <div key={i} className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center flex-shrink-0">

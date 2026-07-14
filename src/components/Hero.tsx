@@ -36,11 +36,11 @@ function toDefaultSlide(row: HeroSlideRow): Slide {
 const slides: Slide[] = [
   { badge: 'SMARTZSOCIAL',   badgeColor: 'from-[#EC4899] to-[#DC2626]',   headlineWhite: 'One feed.',    headlinePurple: 'Every', headlineOrange: 'friend.',   sub: 'Share laughs, livestream the moment, and stay close to the people that make your day.',                               image: '/hero-scroll.jpg',      objectPosition: 'center 30%' },
   { badge: 'SMARTZDATING',   badgeColor: 'from-[#DC2626] to-[#EC4899]',   headlineWhite: 'One match.',   headlinePurple: 'Every', headlineOrange: 'feeling.',  sub: 'AI-powered compatibility that connects you with someone truly special across Africa and beyond.',                    image: '/hero-date.jpg',        objectPosition: 'center 20%' },
-  { badge: 'SMARTZTV',       badgeColor: 'from-[#EC4899] to-rose-700',    headlineWhite: 'Go live.',     headlinePurple: 'Get',   headlineOrange: 'paid.',     sub: 'Broadcast to millions, earn virtual gifts, and build your creator empire on SmartzTV.',                              image: '/hero-networking.jpg',  objectPosition: 'center 25%' },
+  { badge: 'SMARTZTV',       badgeColor: 'from-[#EC4899] to-rose-700',    headlineWhite: 'Go live.',     headlinePurple: 'Get',   headlineOrange: 'paid.',     sub: 'Broadcast live, earn virtual gifts, and build your creator empire on SmartzTV.',                                    image: '/hero-networking.jpg',  objectPosition: 'center 25%' },
   { badge: 'SMARTZRIDE',     badgeColor: 'from-rose-700 to-[#DC2626]',    headlineWhite: 'Book a ride.', headlinePurple: 'In',    headlineOrange: 'seconds.',  sub: 'Safe, affordable ride-hailing with verified drivers and real-time tracking across Africa.',                          image: '/hero-friends.jpg',     objectPosition: 'center 25%' },
-  { badge: 'SMARTZMARKET',   badgeColor: 'from-[#DC2626] to-[#EC4899]',   headlineWhite: 'Buy & sell.',  headlinePurple: 'Every', headlineOrange: 'thing.',    sub: "Africa's social marketplace — list products and reach millions of buyers.",                   image: '/hero-couple.jpg',      objectPosition: 'center 20%' },
+  { badge: 'SMARTZMARKET',   badgeColor: 'from-[#DC2626] to-[#EC4899]',   headlineWhite: 'Buy & sell.',  headlinePurple: 'Every', headlineOrange: 'thing.',    sub: "Africa's social marketplace — list products and reach buyers across the continent.",          image: '/hero-couple.jpg',      objectPosition: 'center 20%' },
   { badge: 'SMARTZDELIVERY', badgeColor: 'from-[#EC4899] to-[#DC2626]',   headlineWhite: 'Deliver fast.',headlinePurple: 'Earn',  headlineOrange: 'more.',     sub: 'Fast, reliable local delivery connecting vendors with customers across every neighbourhood.',                        image: '/hero-scroll.jpg',      objectPosition: 'center 35%' },
-  { badge: 'SMARTZADS',      badgeColor: 'from-[#DC2626] to-[#EC4899]',   headlineWhite: 'Reach millions.',headlinePurple: 'In', headlineOrange: 'stantly.',  sub: "Run powerful ad campaigns targeted to Africa's most engaged digital community.",                                    image: '/hero-networking.jpg',  objectPosition: 'center 30%' },
+  { badge: 'SMARTZADS',      badgeColor: 'from-[#DC2626] to-[#EC4899]',   headlineWhite: 'Reach far.',   headlinePurple: 'In', headlineOrange: 'stantly.',  sub: "Run powerful ad campaigns targeted to Africa's most engaged digital community.",                                    image: '/hero-networking.jpg',  objectPosition: 'center 30%' },
   { badge: 'ONE PLATFORM',   badgeColor: 'from-[#D4AF37] to-[#EC4899]',   headlineWhite: 'Endless',      headlinePurple: 'Connections.', headlineOrange: 'Built for the World.', sub: 'One identity. Eight super-products. Built in Liberia — for Africa and the world.', image: '/hero-date.jpg', objectPosition: 'center 25%' },
 ]
 
@@ -207,7 +207,7 @@ export default function Hero() {
             transition={{ duration: 0.5, delay: 0.5 }}
             className="flex flex-wrap items-center gap-4 sm:gap-6 text-white/55 text-xs sm:text-sm mt-1 sm:mt-2"
           >
-            {['Free to join', '195+ countries', 'One identity'].map((t, i) => (
+            {['Free to join', 'Pan-African reach', 'One identity'].map((t, i) => (
               <motion.span
                 key={t}
                 initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}

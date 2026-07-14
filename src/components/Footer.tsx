@@ -179,7 +179,7 @@ export default function Footer() {
               </span>
             </Link>
             <p className="text-[13px] text-white/35 leading-relaxed mb-5 max-w-[200px]">
-              Africa's premier super-app — connecting millions across 195+ countries.
+              Africa's premier super-app — connecting communities across the continent and beyond.
             </p>
             {/* WhatsApp — the only real wired social */}
             <a
