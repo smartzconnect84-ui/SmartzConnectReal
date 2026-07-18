@@ -450,8 +450,8 @@ export default function MarketplacePage() {
                   </div>
                   <div className="flex items-center gap-1">
                     {product.verified && <Shield className="w-3 h-3 text-blue-400 flex-shrink-0" />}
-                    <p className="text-[10px] dark:text-gray-500 text-gray-400 truncate">{product.seller || 'Seller'}</p>
-                    {product.inStock === false && <span className="ml-auto text-[9px] text-gray-500">Out of stock</span>}
+                    <p className="text-[11px] dark:text-gray-500 text-gray-400 truncate">{product.seller || 'Seller'}</p>
+                    {product.inStock === false && <span className="ml-auto text-[10px] text-gray-500">Out of stock</span>}
                   </div>
                 </div>
               </motion.div>

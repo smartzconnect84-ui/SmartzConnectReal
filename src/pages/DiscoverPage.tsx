@@ -175,24 +175,24 @@ function SwipeCard({ profile, onSwipe, isTop, stackIndex, onMessage, onFollow, o
         {isTop && (
           <div className="px-5 pb-1 flex items-center justify-center gap-2 border-t dark:border-white/5 border-gray-100 pt-2">
             <motion.button whileTap={{ scale: 0.85 }} onClick={e => { e.stopPropagation(); onMessage?.() }}
-              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl dark:bg-white/5 bg-gray-50 border dark:border-white/8 border-gray-100 hover:bg-blue-500/10 hover:border-blue-400/30 hover:text-blue-400 dark:text-gray-400 text-gray-500 transition-all text-[10px] font-semibold"
+              className="flex-1 flex items-center justify-center gap-1 xs:gap-1.5 py-2 rounded-xl dark:bg-white/5 bg-gray-50 border dark:border-white/8 border-gray-100 hover:bg-blue-500/10 hover:border-blue-400/30 hover:text-blue-400 dark:text-gray-400 text-gray-500 transition-all text-[11px] xs:text-xs font-semibold"
               title="Message">
-              <MessageCircle className="w-3.5 h-3.5" /> Message
+              <MessageCircle className="w-3 h-3 xs:w-3.5 xs:h-3.5 flex-shrink-0" /> <span className="hidden xs:inline">Message</span><span className="xs:hidden">Msg</span>
             </motion.button>
             <motion.button whileTap={{ scale: 0.85 }} onClick={e => { e.stopPropagation(); onFollow?.() }}
-              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl dark:bg-white/5 bg-gray-50 border dark:border-white/8 border-gray-100 hover:bg-emerald-500/10 hover:border-emerald-400/30 hover:text-emerald-400 dark:text-gray-400 text-gray-500 transition-all text-[10px] font-semibold"
+              className="flex-1 flex items-center justify-center gap-1 xs:gap-1.5 py-2 rounded-xl dark:bg-white/5 bg-gray-50 border dark:border-white/8 border-gray-100 hover:bg-emerald-500/10 hover:border-emerald-400/30 hover:text-emerald-400 dark:text-gray-400 text-gray-500 transition-all text-[11px] xs:text-xs font-semibold"
               title="Follow">
-              <UserPlus className="w-3.5 h-3.5" /> Follow
+              <UserPlus className="w-3 h-3 xs:w-3.5 xs:h-3.5 flex-shrink-0" /> Follow
             </motion.button>
             <motion.button whileTap={{ scale: 0.85 }} onClick={e => { e.stopPropagation(); onVideoCall?.() }}
-              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl dark:bg-white/5 bg-gray-50 border dark:border-white/8 border-gray-100 hover:bg-violet-500/10 hover:border-violet-400/30 hover:text-violet-400 dark:text-gray-400 text-gray-500 transition-all text-[10px] font-semibold"
+              className="flex-1 flex items-center justify-center gap-1 xs:gap-1.5 py-2 rounded-xl dark:bg-white/5 bg-gray-50 border dark:border-white/8 border-gray-100 hover:bg-violet-500/10 hover:border-violet-400/30 hover:text-violet-400 dark:text-gray-400 text-gray-500 transition-all text-[11px] xs:text-xs font-semibold"
               title="Video Call">
-              <Video className="w-3.5 h-3.5" /> Video
+              <Video className="w-3 h-3 xs:w-3.5 xs:h-3.5 flex-shrink-0" /> Video
             </motion.button>
             <motion.button whileTap={{ scale: 0.85 }} onClick={e => { e.stopPropagation(); onAudioCall?.() }}
-              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl dark:bg-white/5 bg-gray-50 border dark:border-white/8 border-gray-100 hover:bg-amber-500/10 hover:border-amber-400/30 hover:text-amber-400 dark:text-gray-400 text-gray-500 transition-all text-[10px] font-semibold"
+              className="flex-1 flex items-center justify-center gap-1 xs:gap-1.5 py-2 rounded-xl dark:bg-white/5 bg-gray-50 border dark:border-white/8 border-gray-100 hover:bg-amber-500/10 hover:border-amber-400/30 hover:text-amber-400 dark:text-gray-400 text-gray-500 transition-all text-[11px] xs:text-xs font-semibold"
               title="Audio Call">
-              <Phone className="w-3.5 h-3.5" /> Call
+              <Phone className="w-3 h-3 xs:w-3.5 xs:h-3.5 flex-shrink-0" /> Call
             </motion.button>
           </div>
         )}

@@ -86,7 +86,7 @@ function ProductsDrop({ onClose }: { onClose: () => void }) {
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 8, scale: 0.97 }}
       transition={{ type: 'spring', damping: 26, stiffness: 340 }}
-      className="absolute top-full left-1/2 -translate-x-1/2 mt-2.5 w-[560px] rounded-2xl overflow-hidden"
+      className="absolute top-full left-1/2 -translate-x-1/2 mt-2.5 w-[min(560px,calc(100vw-2rem))] rounded-2xl overflow-hidden"
       style={{
         background: 'rgba(12, 9, 26, 0.98)',
         backdropFilter: 'blur(28px)',
@@ -438,7 +438,7 @@ export default function Navbar() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -14, scale: 0.98 }}
               transition={{ type: 'spring', damping: 26, stiffness: 310 }}
-              className="fixed top-[68px] left-4 right-4 z-50 lg:hidden rounded-2xl overflow-hidden"
+              className="fixed top-[64px] sm:top-[72px] left-4 right-4 z-50 lg:hidden rounded-2xl overflow-hidden"
               style={{
                 background: 'rgba(9,7,20,0.98)',
                 backdropFilter: 'blur(28px)',
@@ -468,7 +468,7 @@ export default function Navbar() {
                       >
                         <div className="mx-2 mb-1">
                           <p className="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-white/20">Commerce &amp; Growth</p>
-                          <div className="grid grid-cols-2 gap-0.5">
+                          <div className="grid grid-cols-1 xs:grid-cols-2 gap-0.5">
                             {mobileProducts.business.map(item => {
                               const Icon = item.icon
                               return (
@@ -477,13 +477,13 @@ export default function Navbar() {
                                   <div className={`w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 ${item.bg}`}>
                                     <Icon className={`w-3 h-3 ${item.color}`} />
                                   </div>
-                                  <span className="text-[12px] font-medium text-white/55 group-hover:text-white transition-colors">{item.label}</span>
+                                  <span className="text-[12px] font-medium text-white/55 group-hover:text-white transition-colors truncate">{item.label}</span>
                                 </Link>
                               )
                             })}
                           </div>
                           <p className="px-3 py-1.5 mt-1 text-[10px] font-black uppercase tracking-widest text-white/20">Social &amp; Love</p>
-                          <div className="grid grid-cols-2 gap-0.5">
+                          <div className="grid grid-cols-1 xs:grid-cols-2 gap-0.5">
                             {mobileProducts.social.map(item => {
                               const Icon = item.icon
                               return (
@@ -492,7 +492,7 @@ export default function Navbar() {
                                   <div className={`w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 ${item.bg}`}>
                                     <Icon className={`w-3 h-3 ${item.color}`} />
                                   </div>
-                                  <span className="text-[12px] font-medium text-white/55 group-hover:text-white transition-colors">{item.label}</span>
+                                  <span className="text-[12px] font-medium text-white/55 group-hover:text-white transition-colors truncate">{item.label}</span>
                                 </Link>
                               )
                             })}
@@ -521,14 +521,14 @@ export default function Navbar() {
                         transition={{ duration: 0.18 }}
                         className="overflow-hidden"
                       >
-                        <div className="grid grid-cols-2 gap-0.5 mx-2 mb-1">
+                        <div className="grid grid-cols-1 xs:grid-cols-2 gap-0.5 mx-2 mb-1">
                           {company.map(item => {
                             const Icon = item.icon
                             return (
                               <Link key={item.href} to={item.href}
                                 className="flex items-center gap-2 px-3 py-2.5 rounded-xl hover:bg-white/4 transition-all group">
                                 <Icon className="w-3.5 h-3.5 text-white/30 group-hover:text-white/60 flex-shrink-0" />
-                                <span className="text-[12px] font-medium text-white/55 group-hover:text-white transition-colors">{item.label}</span>
+                                <span className="text-[12px] font-medium text-white/55 group-hover:text-white transition-colors truncate">{item.label}</span>
                               </Link>
                             )
                           })}

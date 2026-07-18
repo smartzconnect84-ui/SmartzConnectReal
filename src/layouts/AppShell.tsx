@@ -166,9 +166,9 @@ export default function AppShell() {
               />
               <motion.aside
                 key="drawer"
-                initial={{ x: -288 }} animate={{ x: 0 }} exit={{ x: -288 }}
+                initial={{ x: '-100%' }} animate={{ x: 0 }} exit={{ x: '-100%' }}
                 transition={{ type: 'spring', stiffness: 320, damping: 32 }}
-                className="fixed left-0 top-14 bottom-0 w-72 dark:bg-[#0D0A14] bg-white z-50 md:hidden flex flex-col border-r dark:border-white/6 border-gray-100 shadow-2xl"
+                className="fixed left-0 top-14 bottom-0 w-72 max-w-[85vw] dark:bg-[#0D0A14] bg-white z-50 md:hidden flex flex-col border-r dark:border-white/6 border-gray-100 shadow-2xl"
               >
                 <nav className="flex-1 px-3 py-2 overflow-y-auto">
                   {drawerSections.map(({ section, items }) => (

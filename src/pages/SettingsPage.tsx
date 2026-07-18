@@ -373,11 +373,11 @@ export default function SettingsPage() {
 
           <div>
             <p className="text-sm font-semibold dark:text-white text-gray-900 mb-2">Text Size</p>
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 xs:grid-cols-4 gap-2">
               {FONT_SIZES.map(s => (
                 <button key={s} onClick={() => setAppearance(a => ({ ...a, font_size: s }))}
                   className={`py-2 rounded-xl text-xs font-bold transition-all ${appearance.font_size === s ? 'bg-love-gradient text-white shadow-md' : 'dark:bg-white/5 bg-gray-100 dark:text-gray-400 text-gray-600 hover:text-brand-pink'}`}>
-                  Aa<br /><span className="text-[9px]">{s}</span>
+                  Aa<br /><span className="text-[10px]">{s}</span>
                 </button>
               ))}
             </div>

@@ -412,7 +412,7 @@ export default function ProfilePage() {
               </div>
 
               {/* Stats */}
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {[
                   { emoji: '📝', label: 'Posts',     value: profileStats ? String(profileStats.posts)     : '—' },
                   { emoji: '👥', label: 'Followers',  value: profileStats ? String(profileStats.followers)  : '—' },
@@ -422,7 +422,7 @@ export default function ProfilePage() {
                   <div key={s.label} className="dark:bg-[#130E1E] bg-white rounded-2xl p-3 text-center border dark:border-white/6 border-gray-100">
                     <p className="text-lg mb-0.5">{s.emoji}</p>
                     <p className="font-display font-black text-base dark:text-white text-gray-900">{s.value}</p>
-                    <p className="text-[9px] dark:text-gray-500 text-gray-400">{s.label}</p>
+                    <p className="text-[11px] dark:text-gray-500 text-gray-400">{s.label}</p>
                   </div>
                 ))}
               </div>
