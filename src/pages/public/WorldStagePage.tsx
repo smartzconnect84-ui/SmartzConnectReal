@@ -51,10 +51,10 @@ const spotCategories = [
 
 /* ── Stats row ─────────────────────────────────────────────────── */
 const stats = [
-  { icon: Globe,    value: '3',        label: 'SPOTLIGHT CATEGORIES' },
-  { icon: Calendar, value: 'Weekly',   label: 'FRESH EVERY SUNDAY' },
-  { icon: Trophy,   value: 'Yearly',   label: 'SPOTLIGHT AWARDS' },
-  { icon: Star,     value: 'All Africa', label: 'OPEN TO EVERY MEMBER' },
+  { icon: Globe,    value: '3',        label: 'CATEGORIES' },
+  { icon: Calendar, value: 'Weekly',   label: 'SUNDAY' },
+  { icon: Trophy,   value: 'Yearly',   label: 'AWARDS' },
+  { icon: Star,     value: 'Worldwide', label: 'Everyone' },
 ]
 
 /* ── Recognition tiers ─────────────────────────────────────────── */
@@ -166,7 +166,7 @@ export default function WorldStagePage() {
             </div>
 
             {/* Headline */}
-            <h1 className="font-display font-black text-[18px] dark:text-white text-gray-900 mb-6 leading-[1.05]">
+            <h1 className="font-display font-black dark:text-white text-gray-900 mb-6 text-[26px]">
               The World Stage{' '}
               <span className="block">
                 <span className="bg-gradient-to-r from-violet-400 via-pink-400 to-orange-400 bg-clip-text text-transparent">
@@ -244,7 +244,7 @@ export default function WorldStagePage() {
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-pink-500/15 to-violet-500/10 border border-pink-500/25 mb-5">
               <span className="text-xs font-black tracking-widest text-brand-pink uppercase">Who We Celebrate</span>
             </div>
-            <h2 className="font-display font-black text-3xl sm:text-5xl dark:text-white text-gray-900 mb-4 leading-tight">
+            <h2 className="font-display font-black sm:text-5xl dark:text-white text-gray-900 mb-4 text-[26px]">
               Three categories.{' '}
               <span className="bg-gradient-to-r from-pink-400 to-violet-400 bg-clip-text text-transparent">One Spotlight.</span>
             </h2>

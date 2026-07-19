@@ -176,7 +176,7 @@ export default function Footer() {
               </span>
             </Link>
             <p className="text-[13px] text-white/55 leading-relaxed mb-5 max-w-[200px]">
-              Africa's premier super-app — connecting communities across the continent and beyond.
+              Africa's premier one stop social media connecting communities across the continent and beyond.
             </p>
             {/* WhatsApp */}
             <a
@@ -219,7 +219,7 @@ export default function Footer() {
         <FadeUp delay={0.22} className="mt-10 pt-8 border-t border-white/8 flex flex-col sm:flex-row sm:items-center gap-5 sm:gap-8">
           <div className="sm:max-w-[260px]">
             <p className="text-sm font-bold text-white mb-1">Stay in the loop</p>
-            <p className="text-[12px] text-white/45 leading-relaxed">Product news and updates, straight to your inbox. No spam.</p>
+            <p className="text-[12px] text-white/45 leading-relaxed">Get all news and updates, straight to your inbox. No spam.</p>
           </div>
           <div className="sm:flex-1 sm:max-w-xs">
             <NewsletterSignup />
