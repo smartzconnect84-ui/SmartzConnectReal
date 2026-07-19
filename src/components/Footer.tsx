@@ -151,23 +151,13 @@ export default function Footer() {
     : FALLBACK_PRODUCTS
 
   return (
-    <footer className="relative text-white overflow-hidden">
-
-      {/* ── Transparent glass layer — sits over whatever section precedes the footer ── */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background: 'linear-gradient(to bottom, rgba(3,0,10,0.55) 0%, rgba(0,0,0,0.82) 55%, rgba(0,0,0,0.96) 100%)',
-          backdropFilter: 'blur(18px)',
-          WebkitBackdropFilter: 'blur(18px)',
-        }}
-      />
+    <footer className="relative bg-black text-white overflow-hidden">
 
       {/* Top gradient border */}
-      <div className="relative h-px bg-gradient-to-r from-transparent via-pink-500/40 to-transparent" />
+      <div className="h-px bg-gradient-to-r from-transparent via-pink-500/40 to-transparent" />
 
       {/* ── Ambient pink glow — decorative only ── */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-48 rounded-full bg-pink-500/6 blur-3xl pointer-events-none" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-48 rounded-full bg-pink-500/8 blur-3xl pointer-events-none" />
 
       {/* ── Main links ─────────────────────────────────────────────────── */}
       <div className="relative max-w-5xl mx-auto px-6 py-12 sm:py-14">

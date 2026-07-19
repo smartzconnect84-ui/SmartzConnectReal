@@ -6,13 +6,6 @@ import { LinkedinIcon, TwitterIcon } from '@/components/icons/SocialIcons'
 import { useSiteConfig, SITE_IMAGE_KEYS } from '@/contexts/SiteConfigContext'
 import { supabase } from '@/lib/supabase'
 
-const values = [
-  { emoji: '🌍', title: 'Africa First',       desc: 'Every decision starts with: "Is this right for Africa?" We build for our continent, by our continent.' },
-  { emoji: '💕', title: 'Genuine Connection', desc: 'Technology should bring people closer, not replace human connection. Authenticity is our north star.' },
-  { emoji: '🛡️', title: 'Safety Always',      desc: 'We invest more in safety than any other African social platform. Every user deserves to feel safe.' },
-  { emoji: '🚀', title: 'Move Fast',           desc: 'We ship fast, learn faster. Moving with startup urgency and scale-up discipline.' },
-]
-
 const CEO = {
   full_name: 'Shedrick K. Nungehn',
   role: 'Founder & CEO',
@@ -200,22 +193,11 @@ export default function TeamPage() {
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 lg:py-20">
 
-        {/* ── Values ── */}
-        <motion.div ref={ref} initial={{ opacity: 0, y: 20 }} animate={inView ? { opacity: 1, y: 0 } : {}} className="mb-14 sm:mb-20">
-          <h2 className="font-display font-black text-xl sm:text-2xl md:text-3xl dark:text-white text-gray-900 text-center mb-6 sm:mb-8">
-            Our <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Values</span>
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            {values.map((v, i) => (
-              <motion.div key={i}
-                initial={{ opacity: 0, y: 20 }} animate={inView ? { opacity: 1, y: 0 } : {}} transition={{ delay: i * 0.08 }}
-                className="dark:bg-[#130E1E] bg-white rounded-2xl p-5 sm:p-6 border dark:border-white/6 border-gray-100 text-center hover:shadow-lg hover:border-purple-500/20 transition-all">
-                <div className="text-3xl sm:text-4xl mb-3">{v.emoji}</div>
-                <h3 className="font-bold dark:text-white text-gray-900 mb-2 text-sm sm:text-base">{v.title}</h3>
-                <p className="text-xs sm:text-sm dark:text-gray-400 text-gray-600 leading-relaxed">{v.desc}</p>
-              </motion.div>
-            ))}
-          </div>
+        {/* ── Brief intro ── */}
+        <motion.div ref={ref} initial={{ opacity: 0, y: 20 }} animate={inView ? { opacity: 1, y: 0 } : {}} className="mb-14 sm:mb-20 text-center max-w-2xl mx-auto">
+          <p className="text-sm sm:text-base dark:text-gray-400 text-gray-600 leading-relaxed">
+            From Liberia to the world — meet the passionate people building Africa's premier super-app, one feature at a time.
+          </p>
         </motion.div>
 
         {/* ── Leadership Team ── */}
@@ -314,27 +296,6 @@ export default function TeamPage() {
               </div>
             </div>
           )}
-        </motion.div>
-
-        {/* ── Mission Stats ── */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }} animate={inView ? { opacity: 1, y: 0 } : {}} transition={{ delay: 0.2 }}
-          className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-14 sm:mb-20"
-        >
-          {[
-            { value: 'Growing',  label: 'Community',   emoji: '👥' },
-            { value: 'Africa',   label: '& Beyond',    emoji: '🌍' },
-            { value: 'Real',     label: 'Businesses',  emoji: '🏢' },
-            { value: 'Daily',    label: 'Connections', emoji: '💕' },
-          ].map((s, i) => (
-            <motion.div key={i}
-              initial={{ opacity: 0, scale: 0.9 }} animate={inView ? { opacity: 1, scale: 1 } : {}} transition={{ delay: 0.2 + i * 0.07 }}
-              className="dark:bg-[#130E1E] bg-white rounded-2xl p-4 sm:p-5 border dark:border-white/6 border-gray-100 text-center hover:border-purple-500/20 transition-all">
-              <div className="text-2xl mb-1">{s.emoji}</div>
-              <p className="font-black text-xl sm:text-2xl dark:text-white text-gray-900">{s.value}</p>
-              <p className="text-xs dark:text-gray-500 text-gray-500 font-medium mt-0.5">{s.label}</p>
-            </motion.div>
-          ))}
         </motion.div>
 
         {/* ── Join CTA ── */}

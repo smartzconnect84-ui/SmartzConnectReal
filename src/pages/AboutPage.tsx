@@ -34,10 +34,10 @@ const values = [
 ]
 
 const timeline = [
-  { year: '2023', title: 'The idea',       desc: "Founder Shedrick K. Nungehn set out from Liberia to build one app that could replace ten — social, dating, ride-hailing, marketplace, delivery, streaming and ads — for every African." },
-  { year: '2024', title: 'First build',    desc: 'SmartzConnect launched its first products — SmartzSocial and SmartzDating — welcoming an early community across Liberia and West Africa.' },
-  { year: '2025', title: 'The super-app',  desc: 'SmartzRide, SmartzMarket, SmartzDelivery, SmartzTV and SmartzAds joined the platform, unifying seven products under one login.' },
-  { year: '2026', title: 'Going global',   desc: 'SmartzConnect now reaches members in 195+ countries, with World Stage, live streaming, voice & video calling, and a growing creator economy.' },
+  { year: '2023', title: 'The Idea',       desc: "Founder Shedrick K. Nungehn set out from Liberia to build one app that could replace ten — social, dating, ride-hailing, marketplace, delivery, streaming and ads — for every African." },
+  { year: '2024', title: 'First Build',    desc: 'SmartzConnect launched its first products — SmartzSocial and SmartzDating — welcoming an early community across Liberia and West Africa.' },
+  { year: '2025', title: 'The Super-App',  desc: 'SmartzRide, SmartzMarket, SmartzDelivery, SmartzTV and SmartzAds joined the platform, unifying seven products under one login.' },
+  { year: '2026', title: 'Going Global',   desc: 'SmartzConnect now reaches members in 195+ countries, with World Stage, live streaming, voice & video calling, and a growing creator economy.' },
 ]
 
 const products = [
@@ -52,10 +52,10 @@ const products = [
 ]
 
 const stats = [
-  { value: '15K+', label: 'Users',     emoji: '👥' },
-  { value: '195+', label: 'Countries', emoji: '🌍' },
-  { value: '8',    label: 'Products',  emoji: '🧩' },
-  { value: '2023', label: 'Founded',   emoji: '🇱🇷' },
+  { value: '15K+', label: 'Active Users',  emoji: '👥', accent: 'from-pink-500 to-rose-500' },
+  { value: '195+', label: 'Countries',     emoji: '🌍', accent: 'from-violet-500 to-purple-500' },
+  { value: '8',    label: 'Products',      emoji: '🧩', accent: 'from-amber-500 to-orange-500' },
+  { value: '2023', label: 'Founded',       emoji: '🇱🇷', accent: 'from-emerald-500 to-teal-500' },
 ]
 
 /* ── small shared pill badge ─────────────────────────────────────── */
@@ -64,7 +64,7 @@ function Pill({ icon: Icon, label, gold }: { icon: React.ElementType; label: str
     <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border ${
       gold
         ? 'bg-[#D4AF37]/10 border-[#D4AF37]/30 text-[#D4AF37]'
-        : 'bg-[#EC4899]/10 border-[#EC4899]/25 text-[#EC4899]'
+        : 'dark:bg-[#EC4899]/10 dark:border-[#EC4899]/25 dark:text-[#EC4899] bg-pink-50 border-pink-200 text-pink-600'
     }`}>
       <Icon className="w-4 h-4" />
       <span className="text-sm tracking-wide font-bold">{label}</span>
@@ -72,107 +72,185 @@ function Pill({ icon: Icon, label, gold }: { icon: React.ElementType; label: str
   )
 }
 
+/* ── Section wrapper for consistent spacing ───────────────────────── */
+function Section({ children, className = '', dark = false }: {
+  children: React.ReactNode
+  className?: string
+  dark?: boolean
+}) {
+  return (
+    <section className={`relative overflow-hidden py-16 sm:py-20 lg:py-24 ${
+      dark
+        ? 'dark:bg-[#030008] bg-white'
+        : 'dark:bg-[#04000a] bg-gray-50'
+    } ${className}`}>
+      {children}
+    </section>
+  )
+}
+
 /* ════════════════════════════════════════════════════════════════════ */
 export default function AboutPage() {
-  const ref = useRef(null)
-  const inView = useInView(ref, { once: true, margin: '-60px' })
+  const ref         = useRef(null)
+  const timelineRef = useRef(null)
+  const inView      = useInView(ref,         { once: true, margin: '-60px' })
+  const tlInView    = useInView(timelineRef, { once: true, margin: '-60px' })
+
   const siteConfig = useSiteConfig()
   const bgUrl = siteConfig.get(SITE_IMAGE_KEYS.teamPageBg)
 
   return (
     <div className="dark:bg-[#04000a] bg-gray-50 min-h-screen pt-16 sm:pt-20">
 
-      {/* ── Hero banner ── */}
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {/* HERO                                                          */}
+      {/* ══════════════════════════════════════════════════════════════ */}
       <section className="relative overflow-hidden">
-        <div className="relative h-64 sm:h-80 md:h-96 bg-gradient-to-br from-[#1a0a2e] via-[#0d0518] to-[#1d0a30]">
-          {bgUrl && <img src={bgUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />}
-          <div className="absolute inset-0 pointer-events-none" style={bgUrl ? { opacity: 0.7 } : undefined}>
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[560px] h-[560px] rounded-full bg-pink-500/20 blur-3xl" />
-            <div className="absolute top-1/4 left-1/4 w-48 h-48 rounded-full bg-purple-500/15 blur-2xl" />
-            <div className="absolute bottom-1/4 right-1/4 w-64 h-64 rounded-full bg-violet-500/15 blur-3xl" />
+        <div className="relative h-64 sm:h-80 md:h-[420px] bg-gradient-to-br from-[#1a0a2e] via-[#0d0518] to-[#1d0a30]">
+          {bgUrl && (
+            <img src={bgUrl} alt="" className="absolute inset-0 w-full h-full object-cover opacity-30" />
+          )}
+          {/* Ambient glows */}
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] rounded-full bg-pink-500/20 blur-3xl" />
+            <div className="absolute top-1/4 left-1/4 w-40 h-40 rounded-full bg-purple-500/15 blur-2xl" />
+            <div className="absolute bottom-1/4 right-1/4 w-56 h-56 rounded-full bg-violet-500/15 blur-3xl" />
           </div>
+
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-white/12 backdrop-blur-sm border border-white/20 mb-3 sm:mb-4">
-              <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-pink-300" />
-              <span className="text-xs sm:text-sm font-semibold text-white">Our story</span>
-            </div>
-            <h1 className="font-display font-black text-2xl sm:text-4xl md:text-5xl text-white mb-2 sm:mb-3 max-w-3xl">
-              One identity.<br className="sm:hidden" /> Eight products.<br />
-              <span className="text-pink-300">A whole continent, connected.</span>
-            </h1>
-            <p className="text-sm sm:text-base text-white/75 max-w-xl px-4">
-              SmartzConnect is Africa's all-in-one super-app — built in Liberia, made for the world.
-            </p>
+            <motion.div {...up()} className="flex flex-col items-center">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-white/12 backdrop-blur-sm border border-white/20 mb-4">
+                <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-pink-300" />
+                <span className="text-xs sm:text-sm font-semibold text-white tracking-wide">Our Story</span>
+              </div>
+              <h1 className="font-display font-black text-3xl sm:text-4xl md:text-5xl text-white mb-3 max-w-3xl leading-tight">
+                One Identity.{' '}
+                <span className="text-pink-300">Eight Products.</span><br />
+                A Whole Continent, Connected.
+              </h1>
+              <p className="text-sm sm:text-base text-white/70 max-w-xl">
+                SmartzConnect is Africa's all-in-one super-app — built in Liberia, made for the world.
+              </p>
+            </motion.div>
           </div>
         </div>
       </section>
 
-      {/* ══════════════════════════════════════════════════════════════════ */}
-      {/* ── ABOUT ── (replaces old simple Mission paragraph)              */}
-      {/* ══════════════════════════════════════════════════════════════════ */}
-      <section className="relative overflow-hidden dark:bg-[#030008] bg-white py-16 sm:py-20 lg:py-24">
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {/* STATS STRIP — key numbers at a glance                        */}
+      {/* ══════════════════════════════════════════════════════════════ */}
+      <div className="dark:bg-[#070010] bg-white border-y dark:border-white/6 border-gray-100">
+        <motion.div
+          variants={stagger} initial="hidden" whileInView="visible"
+          viewport={{ once: true }}
+          className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-2 sm:grid-cols-4 divide-x dark:divide-white/6 divide-gray-100"
+        >
+          {stats.map(s => (
+            <motion.div key={s.label} variants={cardItem} className="py-7 px-4 sm:px-6 text-center">
+              <div className="text-2xl mb-1">{s.emoji}</div>
+              <p className={`font-black text-2xl sm:text-3xl bg-gradient-to-r ${s.accent} bg-clip-text text-transparent`}>
+                {s.value}
+              </p>
+              <p className="text-xs sm:text-sm dark:text-gray-500 text-gray-500 font-medium mt-0.5">{s.label}</p>
+            </motion.div>
+          ))}
+        </motion.div>
+      </div>
+
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {/* ABOUT SMARTZCONNECT                                           */}
+      {/* ══════════════════════════════════════════════════════════════ */}
+      <Section dark>
         {/* ambient glow */}
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] rounded-full bg-[#DC2626]/6 blur-3xl" />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[350px] rounded-full bg-[#EC4899]/5 blur-3xl" />
         </div>
 
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-          <motion.div {...up()}>
-            {/* Pill badge */}
-            <div className="mb-5">
-              <Pill icon={Globe} label="About SmartzConnect" />
-            </div>
+          <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
 
-            {/* Heading */}
-            <h2 className="font-display font-black text-[clamp(1.6rem,5vw,3.2rem)] leading-tight dark:text-white text-gray-900 mb-5">
-              Connecting, Collaborating<br />
-              <span style={{
-                background: 'linear-gradient(135deg, #EC4899 0%, #9B5DE5 50%, #DC2626 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-              }}>
-                and Growing Together
-              </span>
-            </h2>
-
-            <p className="dark:text-white/65 text-gray-700 text-base sm:text-lg leading-relaxed mb-4 max-w-3xl">
-              SmartzConnect is a Liberian Enterprise and Social media that empowers individuals, businesses, organizations,
-              and communities through innovative technology.
-            </p>
-            <p className="dark:text-white/55 text-gray-600 text-sm sm:text-base leading-relaxed mb-7 max-w-3xl">
-              SmartzConnect brings multiple essential services together under a single trusted ecosystem — with one account,
-              a user can access dating, education, transportation, commerce, marketing, social networking, and professional partnership.
-            </p>
-
-            {/* Tag pills */}
-            <div className="flex flex-wrap gap-2.5">
-              {['Liberian Enterprise', 'Built for the World', '195+ Countries', 'Social Media'].map(t => (
-                <span
-                  key={t}
-                  className="inline-flex items-center px-4 py-1.5 sm:px-5 sm:py-2 rounded-full text-[11px] sm:text-xs font-bold tracking-wide dark:text-white/80 text-gray-700 whitespace-nowrap"
-                  style={{ background: 'rgba(236,72,153,0.08)', border: '1px solid rgba(236,72,153,0.22)' }}
-                >
-                  {t}
+            {/* Left — text */}
+            <motion.div {...up()}>
+              <div className="mb-5">
+                <Pill icon={Globe} label="About SmartzConnect" />
+              </div>
+              <h2 className="font-display font-black text-[clamp(1.6rem,4.5vw,3rem)] leading-tight dark:text-white text-gray-900 mb-5">
+                Connecting, Collaborating<br />
+                <span style={{
+                  background: 'linear-gradient(135deg, #EC4899 0%, #9B5DE5 50%, #DC2626 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                }}>
+                  and Growing Together
                 </span>
-              ))}
-            </div>
-          </motion.div>
-        </div>
-      </section>
+              </h2>
+              <p className="dark:text-white/65 text-gray-700 text-base sm:text-lg leading-relaxed mb-4">
+                SmartzConnect is a Liberian Enterprise and Social platform that empowers individuals,
+                businesses, organizations, and communities through innovative technology.
+              </p>
+              <p className="dark:text-white/50 text-gray-600 text-sm sm:text-base leading-relaxed mb-7">
+                With one account, a user accesses dating, education, transportation, commerce,
+                marketing, social networking, streaming, and professional partnership — all under a single
+                trusted ecosystem.
+              </p>
+              <div className="flex flex-wrap gap-2.5">
+                {['Liberian Enterprise', 'Built for the World', '195+ Countries', 'Social Media'].map(t => (
+                  <span
+                    key={t}
+                    className="inline-flex items-center px-4 py-1.5 rounded-full text-[11px] sm:text-xs font-bold tracking-wide dark:text-white/80 text-gray-700 whitespace-nowrap"
+                    style={{ background: 'rgba(236,72,153,0.08)', border: '1px solid rgba(236,72,153,0.22)' }}
+                  >
+                    {t}
+                  </span>
+                ))}
+              </div>
+            </motion.div>
 
-      {/* ══════════════════════════════════════════════════════════════════ */}
-      {/* ── VISION & MISSION ──                                           */}
-      {/* ══════════════════════════════════════════════════════════════════ */}
-      <section className="relative overflow-hidden dark:bg-[#04000a] bg-gray-50 py-16 sm:py-20 lg:py-24">
-        {/* ambient glow */}
+            {/* Right — founder quote card */}
+            <motion.div {...up(0.15)}>
+              <div
+                className="relative rounded-3xl p-8 sm:p-10 overflow-hidden"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(236,72,153,0.10) 0%, rgba(155,93,229,0.12) 50%, rgba(220,38,38,0.08) 100%)',
+                  border: '1px solid rgba(236,72,153,0.20)',
+                  backdropFilter: 'blur(16px)',
+                }}
+              >
+                <div className="absolute -top-8 -right-8 w-40 h-40 rounded-full blur-3xl bg-pink-500/15 pointer-events-none" />
+                <div className="text-5xl mb-5 leading-none text-pink-400/50 font-serif relative">"</div>
+                <p className="dark:text-white/80 text-gray-800 text-base sm:text-lg leading-relaxed italic mb-6 relative">
+                  Yes! SmartzConnect is an African child's dream. But it was built for the world.
+                  Your contribution in whatever ways to keep it alive, is acceptable.
+                </p>
+                <div className="flex items-center gap-3 relative pt-5 border-t border-white/10">
+                  <img
+                    src="/ceo-shedrick.jpg"
+                    alt="Shedrick K. Nungehn"
+                    className="w-11 h-11 rounded-full object-cover object-top ring-2 ring-pink-500/40"
+                  />
+                  <div>
+                    <p className="text-sm font-bold dark:text-white text-gray-900">Shedrick K. Nungehn</p>
+                    <p className="text-xs dark:text-white/45 text-gray-500">Founder &amp; CEO, SmartzConnect</p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </Section>
+
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {/* VISION & MISSION                                              */}
+      {/* ══════════════════════════════════════════════════════════════ */}
+      <Section>
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[350px] rounded-full bg-[#EC4899]/5 blur-3xl" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[300px] rounded-full bg-[#EC4899]/4 blur-3xl" />
         </div>
 
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative">
 
-          {/* Section heading */}
+          {/* Heading */}
           <motion.div {...up()} className="text-center mb-10 sm:mb-14">
             <div className="flex justify-center mb-5">
               <Pill icon={Target} label="Mission & Vision" />
@@ -188,43 +266,43 @@ export default function AboutPage() {
                 We Exist
               </span>
             </h2>
+            <p className="dark:text-gray-400 text-gray-600 mt-3 text-sm sm:text-base max-w-xl mx-auto">
+              Two guiding principles shape everything we build at SmartzConnect.
+            </p>
           </motion.div>
 
           {/* Vision + Mission cards */}
           <motion.div
             variants={stagger} initial="hidden" whileInView="visible"
             viewport={{ once: true, margin: '-60px' }}
-            className="grid md:grid-cols-2 gap-5 sm:gap-6 mb-8"
+            className="grid md:grid-cols-2 gap-5 sm:gap-6"
           >
             {/* Vision */}
             <motion.div
               variants={cardItem}
               whileHover={{ y: -4 }}
               transition={{ type: 'spring', stiffness: 260 }}
-              className="relative rounded-3xl p-7 sm:p-10 overflow-hidden"
-              style={{
-                background: 'rgba(255,255,255,0.05)',
-                backdropFilter: 'blur(16px)',
-                border: '1px solid rgba(255,255,255,0.10)',
-              }}
+              className="relative rounded-3xl p-7 sm:p-10 overflow-hidden dark:bg-[#130E1E] bg-white border dark:border-white/8 border-gray-100 shadow-sm"
             >
-              <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full blur-2xl" style={{ background: 'rgba(236,72,153,0.18)' }} />
+              <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full blur-2xl bg-pink-500/10 pointer-events-none" />
               <div
-                className="w-12 h-12 rounded-2xl flex items-center justify-center mb-5 relative"
+                className="w-12 h-12 rounded-2xl flex items-center justify-center mb-5 relative flex-shrink-0"
                 style={{ background: 'linear-gradient(135deg, #EC4899 0%, #DC2626 100%)' }}
               >
                 <Eye className="w-6 h-6 text-white" />
               </div>
-              <h3 className="font-display font-black dark:text-white text-gray-900 text-xl sm:text-2xl mb-3 relative">Our Vision</h3>
-              <p className="dark:text-white/65 text-gray-700 text-base sm:text-lg leading-relaxed relative">
-                To become Africa's leading all-in-one social Enterprise and digital ecosystem, connecting millions
-                of people and businesses while showcasing Liberian innovation to the world.
+              <h3 className="font-display font-black dark:text-white text-gray-900 text-xl sm:text-2xl mb-3 relative">
+                Our Vision
+              </h3>
+              <p className="dark:text-gray-300 text-gray-700 text-base leading-relaxed relative">
+                To become Africa's leading all-in-one social enterprise and digital ecosystem, connecting
+                millions of people and businesses while showcasing Liberian innovation to the world.
               </p>
               <div className="mt-6 flex flex-wrap gap-2 relative">
                 {['Africa-Led', 'Liberian Innovation', 'Global Reach'].map(t => (
                   <span
                     key={t}
-                    className="px-3 py-1 rounded-full text-[11px] font-bold dark:text-white/70 text-gray-600"
+                    className="px-3 py-1 rounded-full text-[11px] font-bold dark:text-pink-300 text-pink-700"
                     style={{ background: 'rgba(236,72,153,0.08)', border: '1px solid rgba(236,72,153,0.18)' }}
                   >
                     {t}
@@ -238,31 +316,28 @@ export default function AboutPage() {
               variants={cardItem}
               whileHover={{ y: -4 }}
               transition={{ type: 'spring', stiffness: 260 }}
-              className="relative rounded-3xl p-7 sm:p-10 overflow-hidden"
-              style={{
-                background: 'rgba(255,255,255,0.05)',
-                backdropFilter: 'blur(16px)',
-                border: '1px solid rgba(255,255,255,0.10)',
-              }}
+              className="relative rounded-3xl p-7 sm:p-10 overflow-hidden dark:bg-[#130E1E] bg-white border dark:border-white/8 border-gray-100 shadow-sm"
             >
-              <div className="absolute -bottom-10 -left-10 w-40 h-40 rounded-full blur-2xl" style={{ background: 'rgba(155,93,229,0.18)' }} />
+              <div className="absolute -bottom-10 -left-10 w-40 h-40 rounded-full blur-2xl bg-purple-500/10 pointer-events-none" />
               <div
-                className="w-12 h-12 rounded-2xl flex items-center justify-center mb-5 relative"
+                className="w-12 h-12 rounded-2xl flex items-center justify-center mb-5 relative flex-shrink-0"
                 style={{ background: 'linear-gradient(135deg, #9B5DE5 0%, #EC4899 100%)' }}
               >
                 <Handshake className="w-6 h-6 text-white" />
               </div>
-              <h3 className="font-display font-black dark:text-white text-gray-900 text-xl sm:text-2xl mb-3 relative">Our Mission</h3>
-              <p className="dark:text-white/65 text-gray-700 text-base sm:text-lg leading-relaxed relative">
-                To connect and create opportunities through a single platform that makes everyday life easier by
-                providing secure, accessible, and affordable digital solutions that empower people, businesses,
-                and communities across Liberia and beyond.
+              <h3 className="font-display font-black dark:text-white text-gray-900 text-xl sm:text-2xl mb-3 relative">
+                Our Mission
+              </h3>
+              <p className="dark:text-gray-300 text-gray-700 text-base leading-relaxed relative">
+                To connect and create opportunities through a single platform that makes everyday life
+                easier — providing secure, accessible, and affordable digital solutions that empower
+                people, businesses, and communities across Liberia and beyond.
               </p>
               <div className="mt-6 flex flex-wrap gap-2 relative">
                 {['Secure', 'Accessible', 'Affordable'].map(t => (
                   <span
                     key={t}
-                    className="px-3 py-1 rounded-full text-[11px] font-bold dark:text-white/70 text-gray-600"
+                    className="px-3 py-1 rounded-full text-[11px] font-bold dark:text-purple-300 text-purple-700"
                     style={{ background: 'rgba(155,93,229,0.08)', border: '1px solid rgba(155,93,229,0.18)' }}
                   >
                     {t}
@@ -271,163 +346,172 @@ export default function AboutPage() {
               </div>
             </motion.div>
           </motion.div>
+        </div>
+      </Section>
 
-          {/* Founder quote */}
-          <motion.div
-            {...up(0.25)}
-            className="relative rounded-3xl p-8 sm:p-10 overflow-hidden text-center"
-            style={{
-              background: 'linear-gradient(135deg, rgba(236,72,153,0.10) 0%, rgba(155,93,229,0.12) 50%, rgba(220,38,38,0.08) 100%)',
-              border: '1px solid rgba(236,72,153,0.20)',
-              backdropFilter: 'blur(16px)',
-            }}
-          >
-            <div className="absolute -top-8 left-1/2 -translate-x-1/2 w-56 h-24 rounded-full blur-3xl" style={{ background: 'rgba(236,72,153,0.15)' }} />
-            <div className="text-4xl mb-4 relative opacity-60 font-serif leading-none text-pink-400">"</div>
-            <p className="dark:text-white/80 text-gray-800 text-base sm:text-xl leading-relaxed relative italic max-w-3xl mx-auto mb-6">
-              Yes! SmartzConnect is an African child's dream. But, was built for the world. Your contribution
-              in whatever ways to keep it alive, is acceptable.
-            </p>
-            <p className="text-sm font-bold tracking-widest text-yellow-400 uppercase relative">
-              — Shedrick K. Nungehn
-            </p>
-            <p className="dark:text-white/45 text-gray-500 text-xs mt-1 tracking-wider relative">
-              Founder &amp; CEO, SmartzConnect
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {/* VALUES                                                        */}
+      {/* ══════════════════════════════════════════════════════════════ */}
+      <Section dark>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div {...up()} className="text-center mb-10 sm:mb-12">
+            <h2 className="font-display font-black text-xl sm:text-2xl md:text-3xl dark:text-white text-gray-900">
+              Our{' '}
+              <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                Core Values
+              </span>
+            </h2>
+            <p className="dark:text-gray-400 text-gray-600 mt-2 text-sm max-w-md mx-auto">
+              The principles that guide every product decision we make.
             </p>
           </motion.div>
-        </div>
-      </section>
 
-      {/* ══════════════════════════════════════════════════════════════════ */}
-      {/* ── Remaining sections (Values, Timeline, Products, Stats, CTA) ── */}
-      {/* ══════════════════════════════════════════════════════════════════ */}
-      <div ref={ref} className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 lg:py-20">
-
-        {/* ── Values ── */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }} animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ delay: 0.05 }}
-          className="mb-14 sm:mb-20"
-        >
-          <h2 className="font-display font-black text-xl sm:text-2xl md:text-3xl dark:text-white text-gray-900 text-center mb-6 sm:mb-8">
-            Our <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Values</span>
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            {values.map((v, i) => {
+          <motion.div
+            ref={ref}
+            variants={stagger} initial="hidden" whileInView="visible"
+            viewport={{ once: true, margin: '-40px' }}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
+          >
+            {values.map(v => {
               const Icon = v.icon
               return (
-                <motion.div key={v.title}
-                  initial={{ opacity: 0, y: 20 }} animate={inView ? { opacity: 1, y: 0 } : {}} transition={{ delay: i * 0.08 }}
-                  className="dark:bg-[#130E1E] bg-white rounded-2xl p-5 sm:p-6 border dark:border-white/6 border-gray-100 text-center hover:shadow-lg hover:border-purple-500/20 transition-all">
-                  <div className="w-11 h-11 mx-auto mb-3 rounded-2xl bg-gradient-to-br from-purple-500/15 to-pink-500/15 flex items-center justify-center">
-                    <Icon className="w-5 h-5 text-pink-400" />
+                <motion.div
+                  key={v.title}
+                  variants={cardItem}
+                  className="dark:bg-[#130E1E] bg-white rounded-2xl p-6 border dark:border-white/6 border-gray-100 text-center hover:shadow-lg hover:border-purple-500/20 transition-all group"
+                >
+                  <div className="w-12 h-12 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-purple-500/15 to-pink-500/15 flex items-center justify-center group-hover:from-purple-500/25 group-hover:to-pink-500/25 transition-all">
+                    <Icon className="w-6 h-6 text-pink-400" />
                   </div>
                   <h3 className="font-bold dark:text-white text-gray-900 mb-2 text-sm sm:text-base">{v.title}</h3>
                   <p className="text-xs sm:text-sm dark:text-gray-400 text-gray-600 leading-relaxed">{v.desc}</p>
                 </motion.div>
               )
             })}
-          </div>
-        </motion.div>
+          </motion.div>
+        </div>
+      </Section>
 
-        {/* ── Timeline ── */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }} animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ delay: 0.1 }}
-          className="mb-14 sm:mb-20"
-        >
-          <h2 className="font-display font-black text-xl sm:text-2xl md:text-3xl dark:text-white text-gray-900 text-center mb-8 sm:mb-10">
-            Our <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Journey</span>
-          </h2>
-          <div className="relative pl-8 sm:pl-10">
-            <div className="absolute left-[11px] sm:left-[15px] top-1 bottom-1 w-px bg-gradient-to-b from-purple-500/40 via-pink-500/30 to-transparent" />
-            <div className="space-y-8 sm:space-y-10">
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {/* JOURNEY / TIMELINE                                            */}
+      {/* ══════════════════════════════════════════════════════════════ */}
+      <Section>
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div {...up()} className="text-center mb-10 sm:mb-14">
+            <h2 className="font-display font-black text-xl sm:text-2xl md:text-3xl dark:text-white text-gray-900">
+              Our{' '}
+              <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                Journey
+              </span>
+            </h2>
+            <p className="dark:text-gray-400 text-gray-600 mt-2 text-sm max-w-md mx-auto">
+              From a single idea in Liberia to a platform serving 195+ countries.
+            </p>
+          </motion.div>
+
+          <div ref={timelineRef} className="relative pl-8 sm:pl-12">
+            {/* Vertical line */}
+            <div className="absolute left-[11px] sm:left-[15px] top-2 bottom-2 w-px bg-gradient-to-b from-purple-500/50 via-pink-500/30 to-transparent" />
+            <div className="space-y-10 sm:space-y-12">
               {timeline.map((t, i) => (
-                <motion.div key={t.year}
-                  initial={{ opacity: 0, x: -16 }} animate={inView ? { opacity: 1, x: 0 } : {}} transition={{ delay: 0.1 + i * 0.1 }}
-                  className="relative">
-                  <div className="absolute -left-8 sm:-left-10 top-0.5 w-[22px] h-[22px] sm:w-[30px] sm:h-[30px] rounded-full bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center shadow-lg shadow-purple-600/30">
+                <motion.div
+                  key={t.year}
+                  initial={{ opacity: 0, x: -16 }}
+                  animate={tlInView ? { opacity: 1, x: 0 } : {}}
+                  transition={{ delay: 0.1 + i * 0.12 }}
+                  className="relative"
+                >
+                  {/* Dot */}
+                  <div className="absolute -left-8 sm:-left-12 top-0.5 w-[22px] h-[22px] sm:w-[30px] sm:h-[30px] rounded-full bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center shadow-lg shadow-purple-600/30">
                     <div className="w-2 h-2 rounded-full bg-white" />
                   </div>
-                  <p className="text-xs font-black tracking-widest text-pink-400 mb-1">{t.year}</p>
-                  <h3 className="font-bold dark:text-white text-gray-900 text-sm sm:text-base mb-1">{t.title}</h3>
+                  <span className="text-[11px] font-black tracking-widest text-pink-400 uppercase">{t.year}</span>
+                  <h3 className="font-bold dark:text-white text-gray-900 text-sm sm:text-base mt-0.5 mb-1">{t.title}</h3>
                   <p className="text-xs sm:text-sm dark:text-gray-400 text-gray-600 leading-relaxed max-w-2xl">{t.desc}</p>
                 </motion.div>
               ))}
             </div>
           </div>
-        </motion.div>
+        </div>
+      </Section>
 
-        {/* ── Products grid ── */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }} animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ delay: 0.15 }}
-          className="mb-14 sm:mb-20"
-        >
-          <div className="text-center mb-8 sm:mb-10">
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {/* PRODUCTS GRID                                                 */}
+      {/* ══════════════════════════════════════════════════════════════ */}
+      <Section dark>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div {...up()} className="text-center mb-8 sm:mb-10">
             <h2 className="font-display font-black text-xl sm:text-2xl md:text-3xl dark:text-white text-gray-900">
-              One login, <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">eight products</span>
+              One Login,{' '}
+              <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                Eight Products
+              </span>
             </h2>
-            <p className="dark:text-gray-400 text-gray-600 mt-2 text-xs sm:text-sm">Everything you need, everywhere you go.</p>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-            {products.map((p, i) => {
+            <p className="dark:text-gray-400 text-gray-600 mt-2 text-sm max-w-md mx-auto">
+              Everything you need, everywhere you go — under a single identity.
+            </p>
+          </motion.div>
+
+          <motion.div
+            variants={stagger} initial="hidden" whileInView="visible"
+            viewport={{ once: true, margin: '-40px' }}
+            className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4"
+          >
+            {products.map(p => {
               const Icon = p.icon
               return (
-                <motion.div key={p.label}
-                  initial={{ opacity: 0, scale: 0.9 }} animate={inView ? { opacity: 1, scale: 1 } : {}} transition={{ delay: 0.15 + i * 0.05 }}
-                  className="dark:bg-[#130E1E] bg-white rounded-2xl p-4 sm:p-5 border dark:border-white/6 border-gray-100 text-center hover:border-purple-500/20 transition-all">
-                  <div className={`w-10 h-10 mx-auto mb-2.5 rounded-xl flex items-center justify-center ${p.bg}`}>
+                <motion.div
+                  key={p.label}
+                  variants={cardItem}
+                  className="dark:bg-[#130E1E] bg-white rounded-2xl p-5 sm:p-6 border dark:border-white/6 border-gray-100 text-center hover:border-purple-500/20 hover:shadow-md transition-all"
+                >
+                  <div className={`w-11 h-11 mx-auto mb-3 rounded-xl flex items-center justify-center ${p.bg}`}>
                     <Icon className={`w-5 h-5 ${p.color}`} />
                   </div>
                   <p className="text-xs sm:text-sm font-bold dark:text-white text-gray-900">{p.label}</p>
                 </motion.div>
               )
             })}
-          </div>
-        </motion.div>
+          </motion.div>
+        </div>
+      </Section>
 
-        {/* ── Stats ── */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }} animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ delay: 0.2 }}
-          className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-14 sm:mb-20"
-        >
-          {stats.map((s, i) => (
-            <motion.div key={s.label}
-              initial={{ opacity: 0, scale: 0.9 }} animate={inView ? { opacity: 1, scale: 1 } : {}} transition={{ delay: 0.2 + i * 0.07 }}
-              className="dark:bg-[#130E1E] bg-white rounded-2xl p-4 sm:p-5 border dark:border-white/6 border-gray-100 text-center hover:border-purple-500/20 transition-all">
-              <div className="text-2xl mb-1">{s.emoji}</div>
-              <p className="font-black text-xl sm:text-2xl dark:text-white text-gray-900">{s.value}</p>
-              <p className="text-xs dark:text-gray-500 text-gray-500 font-medium mt-0.5">{s.label}</p>
-            </motion.div>
-          ))}
-        </motion.div>
-
-        {/* ── Team teaser + CTA ── */}
-        <div className="rounded-2xl sm:rounded-3xl overflow-hidden relative shadow-2xl bg-gradient-to-br from-[#1f0d38] via-[#2d1060] to-[#1a0a2e]">
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-48 rounded-full bg-purple-500/20 blur-3xl" />
-            <div className="absolute top-0 right-0 w-48 h-48 rounded-full bg-violet-500/15 blur-2xl" />
-          </div>
-          <div className="relative p-6 sm:p-10 md:p-12 text-center">
-            <h2 className="font-display font-black text-xl sm:text-2xl md:text-3xl text-white mb-2 sm:mb-3">Built by a team that gets it</h2>
-            <p className="text-white/70 mb-5 sm:mb-6 max-w-lg mx-auto text-xs sm:text-sm md:text-base">
-              Meet the people behind SmartzConnect, or jump straight in and become part of the story.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Link to="/team"
-                className="px-5 py-2.5 sm:px-6 sm:py-3 rounded-xl bg-white/10 backdrop-blur-sm text-white font-semibold hover:bg-white/20 transition-colors inline-flex items-center justify-center gap-2 border border-white/20 text-sm">
-                <Users2 className="w-4 h-4" /> Meet the Team
-              </Link>
-              <Link to="/register"
-                className="px-5 py-2.5 sm:px-6 sm:py-3 rounded-xl bg-gradient-to-r from-purple-600 to-purple-500 text-white font-bold inline-flex items-center justify-center gap-2 text-sm shadow-lg shadow-purple-600/30">
-                <Zap className="w-4 h-4" /> Get Started
-              </Link>
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {/* CTA                                                           */}
+      {/* ══════════════════════════════════════════════════════════════ */}
+      <Section>
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="rounded-2xl sm:rounded-3xl overflow-hidden relative shadow-2xl bg-gradient-to-br from-[#1f0d38] via-[#2d1060] to-[#1a0a2e]">
+            <div className="absolute inset-0 pointer-events-none">
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-48 rounded-full bg-purple-500/20 blur-3xl" />
+              <div className="absolute top-0 right-0 w-48 h-48 rounded-full bg-violet-500/15 blur-2xl" />
+            </div>
+            <div className="relative p-8 sm:p-12 text-center">
+              <h2 className="font-display font-black text-xl sm:text-2xl md:text-3xl text-white mb-3">
+                Built by a Team That Gets It
+              </h2>
+              <p className="text-white/70 mb-6 sm:mb-8 max-w-lg mx-auto text-sm sm:text-base">
+                Meet the people behind SmartzConnect — or jump straight in and become part of the story.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Link
+                  to="/team"
+                  className="px-6 py-3 rounded-xl bg-white/10 backdrop-blur-sm text-white font-semibold hover:bg-white/20 transition-colors inline-flex items-center justify-center gap-2 border border-white/20 text-sm"
+                >
+                  <Users2 className="w-4 h-4" /> Meet the Team
+                </Link>
+                <Link
+                  to="/register"
+                  className="px-6 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-purple-500 text-white font-bold inline-flex items-center justify-center gap-2 text-sm shadow-lg shadow-purple-600/30 hover:opacity-90 transition-opacity"
+                >
+                  <Zap className="w-4 h-4" /> Get Started Free
+                </Link>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </Section>
+
     </div>
   )
 }
