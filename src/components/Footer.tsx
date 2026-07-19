@@ -229,8 +229,7 @@ export default function Footer() {
         {/* ── Bottom bar ── */}
         <div className="mt-12 pt-6 border-t border-white/8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-[12px] text-white/35 text-center sm:text-left">
-            © {new Date().getFullYear()} SmartzConnect Inc. All rights reserved.
-            {' '}Made with <Heart className="w-3 h-3 text-pink-500/80 inline mx-0.5" /> in Liberia 🇱🇷
+            © 2026 SmartzConnect Inc. All rights reserved. West-Africa, Liberia.
           </p>
           <div className="flex items-center gap-5">
             <div className="flex items-center gap-1.5 text-[11px] text-white/35">
