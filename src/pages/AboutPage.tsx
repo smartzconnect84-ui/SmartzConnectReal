@@ -55,7 +55,7 @@ const stats = [
   { value: '15K+', label: 'Active Users',  emoji: '👥', accent: 'from-pink-500 to-rose-500' },
   { value: '195+', label: 'Countries',     emoji: '🌍', accent: 'from-violet-500 to-purple-500' },
   { value: '8',    label: 'Products',      emoji: '🧩', accent: 'from-amber-500 to-orange-500' },
-  { value: '2023', label: 'Founded',       emoji: '🇱🇷', accent: 'from-emerald-500 to-teal-500' },
+  { value: '2025', label: 'Founded',       emoji: '🇱🇷', accent: 'from-emerald-500 to-teal-500' },
 ]
 
 /* ── small shared pill badge ─────────────────────────────────────── */
@@ -487,7 +487,7 @@ export default function AboutPage() {
                 Built by a Team That Gets It
               </h2>
               <p className="text-white/70 mb-6 sm:mb-8 max-w-lg mx-auto text-sm sm:text-base">
-                Meet the people behind SmartzConnect — or jump straight in and become part of the story.
+                Meet the people behind SmartzConnect or create a free account to start exploring our features.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Link
@@ -498,7 +498,7 @@ export default function AboutPage() {
                 </Link>
                 <Link
                   to="/register"
-                  className="px-6 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-purple-500 text-white font-bold inline-flex items-center justify-center gap-2 text-sm shadow-lg shadow-purple-600/30 hover:opacity-90 transition-opacity"
+                  className="px-6 py-3 rounded-xl from-purple-600 to-purple-500 text-white font-bold inline-flex items-center justify-center gap-2 text-sm shadow-lg shadow-purple-600/30 hover:opacity-90 transition-opacity bg-[color:var(--color-brand-to)]"
                 >
                   <Zap className="w-4 h-4" /> Get Started Free
                 </Link>
