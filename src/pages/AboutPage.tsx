@@ -123,7 +123,7 @@ export default function AboutPage() {
                 <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-pink-300" />
                 <span className="text-xs sm:text-sm font-semibold text-white tracking-wide">Our Story</span>
               </div>
-              <h1 className="font-display font-black text-3xl sm:text-4xl md:text-5xl text-white mb-3 max-w-3xl leading-tight">
+              <h1 className="font-display font-black sm:text-4xl md:text-5xl text-white mb-3 max-w-3xl text-[23px]">
                 One Identity.{' '}
                 <span className="text-pink-300">Eight Products.</span><br />
                 A Whole Continent, Connected.
