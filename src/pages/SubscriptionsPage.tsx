@@ -5,17 +5,16 @@ import CurrencyConverter from '@/components/CurrencyConverter'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 
+/* ── Invoice helper ──────────────────────────────────────────────────── */
 function escHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')
 }
 
 function downloadInvoice(plan: { name: string; price: number; period: string }, txId: string, method: string, userName: string) {
   const now = new Date()
-  // Strip non-alphanumeric chars from txId for the filename to prevent path traversal
-  const safeTxId    = txId.replace(/[^a-zA-Z0-9]/g, '').slice(-6).toUpperCase() || 'XXXXXX'
+  const safeTxId      = txId.replace(/[^a-zA-Z0-9]/g, '').slice(-6).toUpperCase() || 'XXXXXX'
   const invoiceNumber = `INV-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${safeTxId}`
-  const dateStr = now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
-  // Escape all user-controlled values before HTML interpolation
+  const dateStr       = now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
   const eTxId   = escHtml(txId)
   const eMethod = escHtml(method)
   const eUser   = escHtml(userName)
@@ -26,7 +25,7 @@ function downloadInvoice(plan: { name: string; price: number; period: string }, 
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Invoice ${invoiceNumber} — SmartzConnect</title>
+  <title>Invoice ${escHtml(invoiceNumber)} — SmartzConnect</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Segoe UI', Arial, sans-serif; background: #fff; color: #111; padding: 40px; max-width: 640px; margin: auto; }
@@ -74,9 +73,9 @@ function downloadInvoice(plan: { name: string; price: number; period: string }, 
   </div>
   <hr />
   <div class="section">
-    <div class="row"><span>Subtotal</span><span>${escHtml(plan.price.toFixed(2))}</span></div>
+    <div class="row"><span>Subtotal</span><span>$${escHtml(plan.price.toFixed(2))}</span></div>
     <div class="row"><span>Tax (0%)</span><span>$0.00</span></div>
-    <div class="total-row"><span>Total Paid</span><span>${escHtml(plan.price.toFixed(2))}</span></div>
+    <div class="total-row"><span>Total Paid</span><span>$${escHtml(plan.price.toFixed(2))}</span></div>
   </div>
   <hr />
   <div class="section" style="text-align:center;padding:16px 0">
@@ -99,88 +98,100 @@ function downloadInvoice(plan: { name: string; price: number; period: string }, 
   URL.revokeObjectURL(url)
 }
 
+/* ── Canonical plan definitions (IDs must match DB: free | premium | vip) ── */
 const plans = [
   {
-    id: 'free', name: 'Free', price: 0, period: 'forever', icon: Heart, color: 'from-gray-500 to-slate-600',
-    border: 'dark:border-white/8 border-gray-200', badge: null, current: false,
+    id: 'free', name: 'Free', price: 0, period: 'forever', icon: Heart,
+    color: 'from-gray-500 to-slate-600',
+    border: 'dark:border-white/8 border-gray-200',
+    badge: null,
     features: [
-      { text: '10 swipes/day',          ok: true  },
-      { text: 'Basic profile',          ok: true  },
-      { text: 'Social feed & posts',    ok: true  },
-      { text: 'Group chat rooms',       ok: true  },
-      { text: 'Marketplace browsing',   ok: true  },
-      { text: 'Unlimited swipes',       ok: false },
-      { text: 'See who liked you',      ok: false },
-      { text: 'SmartzTV streaming',     ok: false },
-      { text: 'Priority in Discover',   ok: false },
-      { text: 'Verified badge',         ok: false },
+      { text: 'Access all 8 super-products',           ok: true  },
+      { text: 'SmartzDating — 10 swipes/day',          ok: true  },
+      { text: 'SmartzSocial — post, follow & feed',    ok: true  },
+      { text: 'SmartzRide — book rides',               ok: true  },
+      { text: 'SmartzMarket — browse & buy',           ok: true  },
+      { text: 'World Chat & group rooms (join only)',  ok: true  },
+      { text: 'Unlimited swipes',                      ok: false },
+      { text: 'Voice & video calls',                   ok: false },
+      { text: 'Go Live broadcasts',                    ok: false },
+      { text: 'Verified badge ✓',                      ok: false },
     ],
   },
   {
-    id: 'premium', name: 'Premium', price: 5, period: '/month', icon: Zap, color: 'from-pink-500 to-rose-600',
-    border: 'border-pink-500/40', badge: '🔥 Most Popular', current: true,
+    id: 'premium', name: 'Premium', price: 5, period: '/month', icon: Zap,
+    color: 'from-pink-500 to-rose-600',
+    border: 'border-pink-500/40',
+    badge: '🔥 Most Popular',
     features: [
-      { text: 'Unlimited swipes',       ok: true  },
-      { text: 'See who liked you',      ok: true  },
-      { text: 'Priority in Discover',   ok: true  },
-      { text: 'SmartzTV streaming',     ok: true  },
-      { text: 'Marketplace selling',    ok: true  },
-      { text: 'Private group chats',    ok: true  },
-      { text: 'Read receipts',          ok: true  },
-      { text: 'Verified badge',         ok: false },
-      { text: 'CEO analytics',          ok: false },
-      { text: 'Dedicated support',      ok: false },
+      { text: 'Unlimited swipes & matches',                ok: true  },
+      { text: 'See who liked your profile',                ok: true  },
+      { text: 'Priority discovery — 3× visibility',       ok: true  },
+      { text: 'Voice & video calls (LiveKit)',             ok: true  },
+      { text: 'Go Live on SmartzTV',                      ok: true  },
+      { text: 'Post stories — photo, video & text',       ok: true  },
+      { text: 'Voice notes, read receipts & typing',      ok: true  },
+      { text: 'Create private group chats',               ok: true  },
+      { text: 'Marketplace seller account',               ok: true  },
+      { text: 'Ad-free experience',                       ok: true  },
+      { text: 'Advanced match filters',                   ok: true  },
+      { text: 'Verified badge ✓',                         ok: false },
+      { text: 'Creator revenue share',                    ok: false },
     ],
   },
   {
-    id: 'vip', name: 'VIP', price: 10, period: '/month', icon: Crown, color: 'from-amber-500 to-yellow-600',
-    border: 'border-amber-500/40', badge: '👑 Best Value', current: false,
+    id: 'vip', name: 'VIP', price: 10, period: '/month', icon: Crown,
+    color: 'from-amber-500 to-yellow-600',
+    border: 'border-amber-500/40',
+    badge: '👑 Best Value',
     features: [
-      { text: 'Everything in Premium',  ok: true  },
-      { text: 'Verified badge ✓',       ok: true  },
-      { text: 'Top of Discover feed',   ok: true  },
-      { text: 'Dedicated support',      ok: true  },
-      { text: 'Advanced analytics',     ok: true  },
-      { text: 'Exclusive VIP events',   ok: true  },
-      { text: 'Custom profile themes',  ok: true  },
-      { text: 'Unlimited Super Likes',  ok: true  },
-      { text: 'Revenue share (creators)',ok: true },
-      { text: 'Early feature access',   ok: true  },
+      { text: 'Everything in Premium',                    ok: true },
+      { text: 'Verified badge ✓ on profile',              ok: true },
+      { text: 'Top of Discover always — 5× boost',       ok: true },
+      { text: 'Super Likes (10/day)',                     ok: true },
+      { text: 'Creator revenue share',                   ok: true },
+      { text: 'Advanced analytics dashboard',            ok: true },
+      { text: 'Exclusive VIP dating pool',               ok: true },
+      { text: 'WorldStage performer access',             ok: true },
+      { text: 'Dedicated VIP support 24/7',              ok: true },
+      { text: 'Priority ride & delivery booking',        ok: true },
+      { text: 'Custom profile frame & badge',            ok: true },
+      { text: 'In-app wallet credits monthly',           ok: true },
+      { text: '20% SmartzAds discount',                  ok: true },
     ],
   },
 ]
 
 const momoMethods = [
-  { id: 'mtn',    name: 'MTN MoMo',     emoji: '📱', number: '+231 888 061 379',  color: 'border-yellow-500/30 dark:bg-yellow-500/10 bg-yellow-50' },
-  { id: 'orange', name: 'Orange Money', emoji: '🟠', number: '+231 776 679 963',  color: 'border-orange-500/30 dark:bg-orange-500/10 bg-orange-50' },
-  { id: 'card',   name: 'Card (soon)',  emoji: '💳', number: 'Coming soon',       color: 'border-blue-500/30 dark:bg-blue-500/10 bg-blue-50 opacity-50' },
+  { id: 'mtn',    name: 'MTN MoMo',     emoji: '📱', number: '+231 888 061 379', color: 'border-yellow-500/30 dark:bg-yellow-500/10 bg-yellow-50' },
+  { id: 'orange', name: 'Orange Money', emoji: '🟠', number: '+231 776 679 963', color: 'border-orange-500/30 dark:bg-orange-500/10 bg-orange-50' },
+  { id: 'card',   name: 'Card (soon)',  emoji: '💳', number: 'Coming soon',      color: 'border-blue-500/30 dark:bg-blue-500/10 bg-blue-50 opacity-50' },
 ]
 
+/* ── Payment Modal ───────────────────────────────────────────────────── */
 function PaymentModal({ plan, onClose }: { plan: typeof plans[0]; onClose: () => void }) {
   const { user } = useAuth()
-  const [method, setMethod] = useState('mtn')
-  const [txId, setTxId] = useState('')
-  const [step, setStep] = useState<'select' | 'confirm' | 'success'>('select')
+  const [method, setMethod]     = useState('mtn')
+  const [txId, setTxId]         = useState('')
+  const [step, setStep]         = useState<'select' | 'confirm' | 'success'>('select')
   const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError]       = useState<string | null>(null)
   const selected = momoMethods.find(m => m.id === method)!
 
   const handleSubmitPayment = async () => {
     if (!user) { setError('You must be logged in to submit a payment.'); return }
     setSubmitting(true)
     setError(null)
-
     const { error: insertError } = await supabase
       .from('mobile_money_payments')
       .insert({
-        user_id: user.id,
-        provider: method,
-        amount_usd: plan.price,
+        user_id:        user.id,
+        provider:       method,
+        amount_usd:     plan.price,
         transaction_id: txId.trim(),
-        plan_id: plan.id,
-        status: 'pending',
+        plan_id:        plan.id,
+        status:         'pending',
       })
-
     if (insertError) {
       if (insertError.code === '23505') {
         setError('This Transaction ID has already been submitted. Please check your ID and try again.')
@@ -190,7 +201,6 @@ function PaymentModal({ plan, onClose }: { plan: typeof plans[0]; onClose: () =>
       setSubmitting(false)
       return
     }
-
     setSubmitting(false)
     setStep('success')
   }
@@ -199,7 +209,8 @@ function PaymentModal({ plan, onClose }: { plan: typeof plans[0]; onClose: () =>
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm"
       onClick={onClose}>
-      <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+      <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
+        transition={{ type: 'spring', damping: 30, stiffness: 300 }}
         onClick={e => e.stopPropagation()}
         className="dark:bg-[#130E1E] bg-white rounded-t-3xl sm:rounded-3xl w-full sm:max-w-md shadow-2xl overflow-hidden">
 
@@ -228,7 +239,10 @@ function PaymentModal({ plan, onClose }: { plan: typeof plans[0]; onClose: () =>
                       <p className="text-sm font-bold dark:text-white text-gray-900">{m.name}</p>
                       <p className="text-xs dark:text-gray-400 text-gray-500">{m.id === 'card' ? 'Coming soon — use Mobile Money' : m.number}</p>
                     </div>
-                    {m.id === 'card' ? <span className="text-[10px] font-bold text-gray-400 bg-gray-200/50 dark:bg-white/10 px-2 py-0.5 rounded-full">Soon</span> : method === m.id && <Check className="w-4 h-4 text-brand-pink flex-shrink-0" />}
+                    {m.id === 'card'
+                      ? <span className="text-[10px] font-bold text-gray-400 bg-gray-200/50 dark:bg-white/10 px-2 py-0.5 rounded-full">Soon</span>
+                      : method === m.id && <Check className="w-4 h-4 text-brand-pink flex-shrink-0" />
+                    }
                   </button>
                 ))}
               </div>
@@ -239,11 +253,12 @@ function PaymentModal({ plan, onClose }: { plan: typeof plans[0]; onClose: () =>
                   <li>1. Send <span className="font-bold text-brand-pink">${plan.price}</span> to <span className="font-bold dark:text-white text-gray-900">{selected.number}</span></li>
                   <li>2. Account name: <span className="font-bold dark:text-white text-gray-900">Shedrick K. Nungehn</span></li>
                   <li>3. Enter your Transaction ID below</li>
-                  <li>4. Your plan activates within 15 minutes</li>
+                  <li>4. Your plan activates within 15 minutes after verification</li>
                 </ol>
               </div>
 
-              <input value={txId} onChange={e => setTxId(e.target.value)} placeholder="Enter Transaction ID (e.g. TXN123456)"
+              <input value={txId} onChange={e => setTxId(e.target.value)}
+                placeholder="Enter Transaction ID (e.g. TXN123456)"
                 className="w-full px-4 py-3 rounded-xl dark:bg-white/5 bg-gray-50 border dark:border-white/10 border-gray-200 dark:text-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-brand-pink transition-colors text-sm mb-4" />
 
               <button onClick={() => txId.trim() && setStep('confirm')} disabled={!txId.trim()}
@@ -264,16 +279,14 @@ function PaymentModal({ plan, onClose }: { plan: typeof plans[0]; onClose: () =>
                 Method: <span className="font-semibold dark:text-white text-gray-900">{selected.name}</span>
               </p>
               <p className="text-xs dark:text-gray-500 text-gray-400 mb-6">
-                Our team will verify your payment within 15 minutes and activate your {plan.name} plan.
+                Our team verifies within 15 minutes and activates your {plan.name} plan.
               </p>
-
               {error && (
                 <div className="flex items-start gap-2 p-3 mb-4 dark:bg-red-500/10 bg-red-50 rounded-xl border dark:border-red-500/20 border-red-200 text-left">
                   <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
                   <p className="text-xs text-red-400">{error}</p>
                 </div>
               )}
-
               <button onClick={handleSubmitPayment} disabled={submitting}
                 className="w-full py-3.5 rounded-2xl bg-love-gradient text-white font-bold text-sm shadow-md shadow-pink-500/20 disabled:opacity-60 flex items-center justify-center gap-2">
                 {submitting
@@ -310,6 +323,7 @@ function PaymentModal({ plan, onClose }: { plan: typeof plans[0]; onClose: () =>
   )
 }
 
+/* ── Main Page ───────────────────────────────────────────────────────── */
 interface ActiveSub {
   plan_slug: string
   status: string
@@ -318,9 +332,9 @@ interface ActiveSub {
 
 export default function SubscriptionsPage() {
   const { user } = useAuth()
-  const [billing, setBilling] = useState<'monthly' | 'yearly'>('monthly')
+  const [billing, setBilling]       = useState<'monthly' | 'yearly'>('monthly')
   const [selectedPlan, setSelectedPlan] = useState<typeof plans[0] | null>(null)
-  const [activeSub, setActiveSub] = useState<ActiveSub | null>(null)
+  const [activeSub, setActiveSub]   = useState<ActiveSub | null>(null)
   const [subLoading, setSubLoading] = useState(true)
 
   useEffect(() => {
@@ -335,17 +349,13 @@ export default function SubscriptionsPage() {
       .limit(1)
       .maybeSingle()
       .then(({ data }) => {
-        if (!cancelled) {
-          setActiveSub(data ?? null)
-          setSubLoading(false)
-        }
+        if (!cancelled) { setActiveSub(data ?? null); setSubLoading(false) }
       })
     return () => { cancelled = true }
   }, [user])
 
-  // Derive current plan from live subscription, falling back to free
   const currentPlanId = activeSub?.plan_slug ?? 'free'
-  const currentPlan = plans.find(p => p.id === currentPlanId) ?? plans[0]
+  const currentPlan   = plans.find(p => p.id === currentPlanId) ?? plans[0]
 
   const renewsText = (() => {
     if (!activeSub?.expires_at) return null
@@ -367,7 +377,7 @@ export default function SubscriptionsPage() {
         {/* Current plan banner */}
         <div className="dark:bg-gradient-to-r dark:from-pink-900/30 dark:to-purple-900/30 bg-gradient-to-r from-pink-50 to-purple-50 rounded-2xl p-4 border dark:border-pink-500/20 border-pink-200 flex items-center gap-4">
           <div className="w-12 h-12 rounded-2xl bg-love-gradient flex items-center justify-center flex-shrink-0 shadow-lg shadow-pink-500/20">
-            <Zap className="w-6 h-6 text-white" />
+            {currentPlanId === 'vip' ? <Crown className="w-6 h-6 text-white" /> : currentPlanId === 'premium' ? <Zap className="w-6 h-6 text-white" /> : <Heart className="w-6 h-6 text-white" />}
           </div>
           <div className="flex-1">
             <p className="text-xs dark:text-gray-400 text-gray-500">Current Plan</p>
@@ -376,7 +386,7 @@ export default function SubscriptionsPage() {
               : <p className="font-display font-black text-lg dark:text-white text-gray-900">{currentPlan.name}</p>
             }
             <p className="text-xs text-brand-pink font-semibold">
-              {subLoading ? '' : renewsText ?? (currentPlanId === 'free' ? 'Free forever' : 'Active')}
+              {subLoading ? '' : renewsText ?? (currentPlanId === 'free' ? 'Free forever · No expiry' : 'Active')}
             </p>
           </div>
           <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
@@ -391,17 +401,18 @@ export default function SubscriptionsPage() {
             {(['monthly', 'yearly'] as const).map(b => (
               <button key={b} onClick={() => setBilling(b)}
                 className={`px-4 py-1.5 rounded-lg text-sm font-semibold capitalize transition-all ${billing === b ? 'bg-love-gradient text-white shadow-sm' : 'dark:text-gray-400 text-gray-600 hover:text-brand-pink'}`}>
-                {b} {b === 'yearly' && <span className="text-[10px] text-emerald-400 font-bold ml-1">-20%</span>}
+                {b}
+                {b === 'yearly' && <span className="text-[10px] text-emerald-400 font-bold ml-1">–20%</span>}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Plans */}
+        {/* Plan cards */}
         <div className="space-y-3">
           {plans.map((plan, i) => {
-            const Icon = plan.icon
-            const price = billing === 'yearly' && plan.price > 0
+            const Icon    = plan.icon
+            const price   = billing === 'yearly' && plan.price > 0
               ? (plan.price * 0.8).toFixed(2)
               : plan.price.toFixed(2)
             const isCurrent = plan.id === currentPlanId
@@ -438,11 +449,14 @@ export default function SubscriptionsPage() {
                   </div>
                 </div>
 
-                {/* Features preview (top 6) */}
+                {/* Top 6 features */}
                 <div className="grid grid-cols-2 gap-1.5 mb-4">
                   {plan.features.slice(0, 6).map(f => (
                     <div key={f.text} className={`flex items-center gap-1.5 text-[10px] ${f.ok ? 'dark:text-gray-300 text-gray-700' : 'dark:text-gray-600 text-gray-400'}`}>
-                      {f.ok ? <Check className="w-3 h-3 text-emerald-500 flex-shrink-0" /> : <X className="w-3 h-3 dark:text-gray-700 text-gray-300 flex-shrink-0" />}
+                      {f.ok
+                        ? <Check className="w-3 h-3 text-emerald-500 flex-shrink-0" />
+                        : <X className="w-3 h-3 dark:text-gray-700 text-gray-300 flex-shrink-0" />
+                      }
                       <span className={f.ok ? '' : 'line-through'}>{f.text}</span>
                     </div>
                   ))}
@@ -467,15 +481,15 @@ export default function SubscriptionsPage() {
           })}
         </div>
 
-        {/* Perks */}
+        {/* Why Upgrade perks */}
         <div className="dark:bg-[#130E1E] bg-white rounded-2xl p-5 border dark:border-white/6 border-gray-100">
           <p className="text-sm font-bold dark:text-white text-gray-900 mb-3">Why Upgrade?</p>
           <div className="space-y-2.5">
             {[
-              { icon: Heart, text: '3x more matches with Priority Discover', color: 'text-brand-pink' },
-              { icon: Star, text: 'See who liked you before they match', color: 'text-amber-500' },
-              { icon: Shield, text: 'Verified badge builds trust instantly', color: 'text-blue-500' },
-              { icon: Gift, text: 'Earn from SmartzTV virtual gifts (VIP)', color: 'text-purple-500' },
+              { icon: Heart,  text: '3× more matches with Priority Discover',       color: 'text-brand-pink'  },
+              { icon: Star,   text: 'See who liked you before they match',           color: 'text-amber-500'   },
+              { icon: Shield, text: 'Verified badge builds trust (VIP only)',        color: 'text-blue-500'    },
+              { icon: Gift,   text: 'Earn from SmartzTV virtual gifts (VIP only)',   color: 'text-purple-500'  },
             ].map((item, i) => (
               <div key={i} className="flex items-center gap-3">
                 <item.icon className={`w-4 h-4 ${item.color} flex-shrink-0`} />
@@ -488,7 +502,7 @@ export default function SubscriptionsPage() {
         {/* Currency Converter */}
         <CurrencyConverter />
 
-        {/* Payment methods */}
+        {/* Accepted payments */}
         <div className="dark:bg-[#130E1E] bg-white rounded-2xl p-5 border dark:border-white/6 border-gray-100">
           <p className="text-sm font-bold dark:text-white text-gray-900 mb-3">Accepted Payments</p>
           <div className="flex flex-wrap gap-2">
@@ -499,7 +513,7 @@ export default function SubscriptionsPage() {
               </div>
             ))}
           </div>
-          <p className="text-[10px] dark:text-gray-500 text-gray-400 mt-3">🔒 Secure · Cancel anytime · No hidden fees</p>
+          <p className="text-[10px] dark:text-gray-500 text-gray-400 mt-3">🔒 Secure · Cancel anytime · No hidden fees · 15-min activation</p>
         </div>
       </div>
 
