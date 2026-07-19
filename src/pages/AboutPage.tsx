@@ -34,10 +34,10 @@ const values = [
 ]
 
 const timeline = [
-  { year: '2022-24', title: 'The Idea', desc: "Founder Shedrick K. Nungehn had the vision in Liberia while working with VOX RADIO. Shared the vision with a colleague-Mr. Success R. Kandakai to build and settle relationship via the radio, he embraced and they begin together but got aborted by Radio administration while the program started growing massively. Then both tired Livestreaming many times, didn't work out and both abandoned everything, until later in 2025 Shedrick thought and begin to embark on a journey to build one app that could replace ten social, dating, ride-hailing, marketplace, delivery, streaming and ads for every African and today, the world is testifying." },
+  { year: '2022-2024', title: 'The Idea', desc: "Founder Shedrick K. Nungehn had the vision in Liberia while working with VOX RADIO. Shared the vision with a colleague-Mr. Success R. Kandakai to build and settle relationship via the radio, he embraced and they begin together but got aborted by Radio administration while the program started growing massively. Then both tired Livestreaming many times, didn't work out and both abandoned everything, until later in 2025 Shedrick thought and begin to embark on a journey to build one app that could replace ten social, dating, ride-hailing, marketplace, delivery, streaming and ads for every African and today, the world is testifying." },
   { year: '2025 In December', title: 'First Build', desc: "Shedrick first started to build SmartzConnect beginning SmartzSocial and SmartzDating which were then called ''LoveZone\" and were never officially launched to the community across Liberia and West Africa." },
-  { year: '2025', title: 'The Super-App',  desc: 'SmartzRide, SmartzMarket, SmartzDelivery, SmartzTV and SmartzAds joined the platform, unifying seven products under one login.' },
-  { year: '2026', title: 'Going Global',   desc: 'SmartzConnect now reaches members in 195+ countries, with World Stage, live streaming, voice & video calling, and a growing creator economy.' },
+  { year: '2026-June 28, Liberia', title: 'The Super-App', desc: 'First ever launch that brought the community, Influencers, Students and Stakeholders together witnessing and exploring SmartzConnect features including SmartzRide, SmartzMarket, SmartzDating, SmartzSocial, SmartzDelivery, SmartzTV, SmartzLearning and SmartzAds unifying eight products under one login.' },
+  { year: '2026-', title: 'Going Global', desc: 'SmartzConnect now reaches members in 195+ countries, with World Stage, live streaming, voice & video calling, and a growing creator economy.' },
 ]
 
 const products = [
@@ -421,7 +421,7 @@ export default function AboutPage() {
                   <div className="absolute -left-8 sm:-left-12 top-0.5 w-[22px] h-[22px] sm:w-[30px] sm:h-[30px] rounded-full bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center shadow-lg shadow-purple-600/30">
                     <div className="w-2 h-2 rounded-full bg-white" />
                   </div>
-                  <span className="text-[11px] font-black tracking-widest text-pink-400 uppercase">{t.year}</span>
+                  <span className="font-black tracking-widest text-pink-400 uppercase text-[14px]">{t.year}</span>
                   <h3 className="font-bold dark:text-white text-gray-900 text-sm sm:text-base mt-0.5 mb-1">{t.title}</h3>
                   <p className="text-xs sm:text-sm dark:text-gray-400 text-gray-600 leading-relaxed max-w-2xl">{t.desc}</p>
                 </motion.div>
