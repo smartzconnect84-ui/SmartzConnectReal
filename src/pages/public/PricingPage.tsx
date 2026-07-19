@@ -394,7 +394,7 @@ export default function PricingPage() {
             </div>
             <h1 className="font-display font-black text-4xl sm:text-5xl lg:text-6xl dark:text-white text-gray-900 mb-4 leading-tight">
               One identity.{' '}
-              <span className="bg-gradient-to-r from-violet-400 via-pink-400 to-rose-400 bg-clip-text text-transparent">Eight products.</span>{' '}
+              <span className="bg-gradient-to-r from-violet-400 via-pink-400 to-rose-400 bg-clip-text text-transparent">Free Forever</span>{' '}
               <span className="bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">$5 or $10.</span>
             </h1>
             <p className="text-base sm:text-lg dark:text-gray-400 text-gray-600 max-w-2xl mx-auto mb-8 leading-relaxed">
