@@ -125,7 +125,7 @@ export default function AboutPage() {
               </div>
 
               <p className="text-sm sm:text-base text-white/70 max-w-xl">
-                SmartzConnect is Africa's all-in-one super-app — built in Liberia, made for the world.
+                SmartzConnect is Africa's all-in-one social media and commerce app, built in Liberia, made for the world.
               </p>
             </motion.div>
           </div>
@@ -170,7 +170,7 @@ export default function AboutPage() {
               <div className="mb-5 text-left">
                 <Pill icon={Globe} label="About SmartzConnect" />
               </div>
-              <h2 className="font-display font-black text-[clamp(1.6rem,4.5vw,3rem)] leading-tight dark:text-white text-gray-900 mb-5">
+              <h2 className="font-display font-black dark:text-white text-gray-900 mb-5 text-center text-[23px]">
                 Connecting, Collaborating<br />
                 <span style={{
                   background: 'linear-gradient(135deg, #EC4899 0%, #9B5DE5 50%, #DC2626 100%)',
@@ -239,7 +239,7 @@ export default function AboutPage() {
       {/* ══════════════════════════════════════════════════════════════ */}
       {/* VISION & MISSION                                              */}
       {/* ══════════════════════════════════════════════════════════════ */}
-      <Section>
+      <Section className="!pt-0 !pb-0">
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[300px] rounded-full bg-[#EC4899]/4 blur-3xl" />
         </div>
@@ -259,7 +259,7 @@ export default function AboutPage() {
                 WebkitTextFillColor: 'transparent',
                 backgroundClip: 'text',
               }}>
-                We Exist
+                do we exist?
               </span>
             </h2>
             <p className="dark:text-gray-400 text-gray-600 mt-3 text-sm sm:text-base max-w-xl mx-auto">
@@ -326,7 +326,7 @@ export default function AboutPage() {
               </h3>
               <p className="dark:text-gray-300 text-gray-700 text-base leading-relaxed relative">
                 To connect and create opportunities through a single platform that makes everyday life
-                easier — providing secure, accessible, and affordable digital solutions that empower
+                easier through a secure, accessible, and affordable digital solutions that empower
                 people, businesses, and communities across Liberia and beyond.
               </p>
               <div className="mt-6 flex flex-wrap gap-2 relative">
