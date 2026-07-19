@@ -171,7 +171,7 @@ export default function AboutPage() {
 
             {/* Left — text */}
             <motion.div {...up()}>
-              <div className="mb-5">
+              <div className="mb-5 text-left">
                 <Pill icon={Globe} label="About SmartzConnect" />
               </div>
               <h2 className="font-display font-black text-[clamp(1.6rem,4.5vw,3rem)] leading-tight dark:text-white text-gray-900 mb-5">
@@ -182,7 +182,7 @@ export default function AboutPage() {
                   WebkitTextFillColor: 'transparent',
                   backgroundClip: 'text',
                 }}>
-                  and Growing Together
+                  and Growing Together.
                 </span>
               </h2>
               <p className="dark:text-white/65 text-gray-700 text-base sm:text-lg leading-relaxed mb-4">
@@ -230,7 +230,7 @@ export default function AboutPage() {
                     className="w-11 h-11 rounded-full object-cover object-top ring-2 ring-pink-500/40"
                   />
                   <div>
-                    <p className="text-sm font-bold dark:text-white text-gray-900">Shedrick K. Nungehn</p>
+                    <p className="text-sm font-bold dark:text-white text-gray-900">- Shedrick K. Nungehn -</p>
                     <p className="text-xs dark:text-white/45 text-gray-500">Founder &amp; CEO, SmartzConnect</p>
                   </div>
                 </div>
@@ -295,8 +295,8 @@ export default function AboutPage() {
                 Our Vision
               </h3>
               <p className="dark:text-gray-300 text-gray-700 text-base leading-relaxed relative">
-                To become Africa's leading all-in-one social enterprise and digital ecosystem, connecting
-                millions of people and businesses while showcasing Liberian innovation to the world.
+                To become world's leading all-in-one social Enterprise and digital media, connecting
+                millions of people and businesses while showcasing Liberian arts and culture's Globally.
               </p>
               <div className="mt-6 flex flex-wrap gap-2 relative">
                 {['Africa-Led', 'Liberian Innovation', 'Global Reach'].map(t => (
