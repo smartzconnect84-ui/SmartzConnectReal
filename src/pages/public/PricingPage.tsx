@@ -455,7 +455,7 @@ export default function PricingPage() {
                     </div>
                     <div>
                       <p className="font-display font-black text-lg dark:text-white text-gray-900">{plan.name}</p>
-                      <p className="text-[11px] dark:text-gray-500 text-gray-400 leading-tight">{plan.tagline}</p>
+
                     </div>
                   </div>
 
