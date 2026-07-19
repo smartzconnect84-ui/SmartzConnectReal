@@ -123,11 +123,7 @@ export default function AboutPage() {
                 <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-pink-300" />
                 <span className="text-xs sm:text-sm font-semibold text-white tracking-wide">Our Story</span>
               </div>
-              <h1 className="font-display font-black sm:text-4xl md:text-5xl text-white mb-3 max-w-3xl text-[23px]">
-                One Identity.{' '}
-                <span className="text-pink-300">Eight Products.</span><br />
-                A Whole Continent, Connected.
-              </h1>
+
               <p className="text-sm sm:text-base text-white/70 max-w-xl">
                 SmartzConnect is Africa's all-in-one super-app — built in Liberia, made for the world.
               </p>
