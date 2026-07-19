@@ -34,8 +34,8 @@ const values = [
 ]
 
 const timeline = [
-  { year: '2023', title: 'The Idea',       desc: "Founder Shedrick K. Nungehn set out from Liberia to build one app that could replace ten — social, dating, ride-hailing, marketplace, delivery, streaming and ads — for every African." },
-  { year: '2024', title: 'First Build',    desc: 'SmartzConnect launched its first products — SmartzSocial and SmartzDating — welcoming an early community across Liberia and West Africa.' },
+  { year: '2022-24', title: 'The Idea', desc: "Founder Shedrick K. Nungehn had the vision in Liberia while working with VOX RADIO. Shared the vision with a colleague-Mr. Success R. Kandakai to build and settle relationship via the radio, he embraced and they begin together but got aborted by Radio administration while the program started growing massively. Then both tired Livestreaming many times, didn't work out and both abandoned everything, until later in 2025 Shedrick thought and begin to embark on a journey to build one app that could replace ten social, dating, ride-hailing, marketplace, delivery, streaming and ads for every African and today, the world is testifying." },
+  { year: '2025 In December', title: 'First Build', desc: "Shedrick first started to build SmartzConnect beginning SmartzSocial and SmartzDating which were then called ''LoveZone\" and were never officially launched to the community across Liberia and West Africa." },
   { year: '2025', title: 'The Super-App',  desc: 'SmartzRide, SmartzMarket, SmartzDelivery, SmartzTV and SmartzAds joined the platform, unifying seven products under one login.' },
   { year: '2026', title: 'Going Global',   desc: 'SmartzConnect now reaches members in 195+ countries, with World Stage, live streaming, voice & video calling, and a growing creator economy.' },
 ]
