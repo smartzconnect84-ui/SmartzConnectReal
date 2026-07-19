@@ -454,7 +454,6 @@ export default function PricingPage() {
                       <Icon className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                      <p className="font-display font-black text-lg dark:text-white text-gray-900">{plan.name}</p>
 
                     </div>
                   </div>
