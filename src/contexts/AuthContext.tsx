@@ -20,7 +20,7 @@ interface AuthContextType {
   isAdmin: boolean
   adminProfile: AdminProfile | null
   signIn: (email: string, password: string) => Promise<void>
-  signUp: (email: string, password: string, name?: string, extra?: { dateOfBirth?: string; avatarFile?: File | null }) => Promise<{ needsVerification: boolean }>
+  signUp: (email: string, password: string, name?: string, extra?: { dateOfBirth?: string; avatarFile?: File | null; country?: string }) => Promise<{ needsVerification: boolean }>
   signOut: () => Promise<void>
   resetPassword: (email: string) => Promise<void>
   updatePassword: (newPassword: string) => Promise<void>
@@ -234,12 +234,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       reader.readAsDataURL(file)
     })
 
-  const stashPendingProfile = async (email: string, extra?: { dateOfBirth?: string; avatarFile?: File | null }) => {
+  const stashPendingProfile = async (email: string, extra?: { dateOfBirth?: string; avatarFile?: File | null; country?: string }) => {
     try {
       const avatarDataUrl = extra?.avatarFile ? await fileToDataUrl(extra.avatarFile) : null
       localStorage.setItem(
         PENDING_KEY_PREFIX + email.toLowerCase(),
-        JSON.stringify({ dateOfBirth: extra?.dateOfBirth || null, avatarDataUrl }),
+        JSON.stringify({ dateOfBirth: extra?.dateOfBirth || null, country: extra?.country || null, avatarDataUrl }),
       )
     } catch {
       // Non-fatal — worst case the user sets DOB/photo later from Settings.
@@ -248,11 +248,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const applyPendingProfile = async (
     userId: string,
-    extra?: { dateOfBirth?: string; avatarFile?: File | null },
+    extra?: { dateOfBirth?: string; avatarFile?: File | null; country?: string },
     email?: string,
   ) => {
     try {
       let dateOfBirth = extra?.dateOfBirth || null
+      let country = extra?.country || null
       let avatarFile: File | Blob | null = extra?.avatarFile ?? null
       let stashKey: string | null = null
 
@@ -260,8 +261,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         stashKey = PENDING_KEY_PREFIX + email.toLowerCase()
         const raw = localStorage.getItem(stashKey)
         if (raw) {
-          const pending = JSON.parse(raw) as { dateOfBirth?: string | null; avatarDataUrl?: string | null }
+          const pending = JSON.parse(raw) as { dateOfBirth?: string | null; country?: string | null; avatarDataUrl?: string | null }
           dateOfBirth = dateOfBirth || pending.dateOfBirth || null
+          country = country || pending.country || null
           if (pending.avatarDataUrl) {
             const res = await fetch(pending.avatarDataUrl)
             avatarFile = await res.blob()
@@ -271,6 +273,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const updates: Record<string, any> = {}
       if (dateOfBirth) updates.date_of_birth = dateOfBirth
+      if (country) updates.country = country
 
       if (avatarFile) {
         const { uploadToSufy } = await import('@/lib/sufy')
@@ -299,7 +302,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     email: string,
     password: string,
     name?: string,
-    extra?: { dateOfBirth?: string; avatarFile?: File | null },
+    extra?: { dateOfBirth?: string; avatarFile?: File | null; country?: string },
   ) => {
     // Only pass emailRedirectTo when on the production domain.
     // In dev/preview the Replit origin is not in Supabase's allowed redirect list
@@ -309,7 +312,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email,
       password,
       options: {
-        data: { full_name: name || '', date_of_birth: extra?.dateOfBirth || null },
+        data: {
+          full_name: name || '',
+          date_of_birth: extra?.dateOfBirth || null,
+          country: extra?.country || null,
+        },
         ...(isProd ? { emailRedirectTo: `${window.location.origin}/auth/callback` } : {}),
       },
     })

@@ -111,7 +111,7 @@ export default function RegisterPage() {
     setError('')
     setLoading(true)
     try {
-      const result = await signUp(email, password, name, { dateOfBirth: dob, avatarFile })
+      const result = await signUp(email, password, name, { dateOfBirth: dob, avatarFile, country: country || undefined })
       if (result.needsVerification) {
         navigate('/verify-email', { state: { email }, replace: true })
       } else {
