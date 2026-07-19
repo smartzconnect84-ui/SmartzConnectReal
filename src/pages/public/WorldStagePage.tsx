@@ -166,7 +166,7 @@ export default function WorldStagePage() {
             </div>
 
             {/* Headline */}
-            <h1 className="font-display font-black text-5xl sm:text-6xl lg:text-7xl dark:text-white text-gray-900 mb-6 leading-[1.05]">
+            <h1 className="font-display font-black text-[15px] dark:text-white text-gray-900 mb-6 leading-[1.05]">
               The World Stage{' '}
               <span className="block">
                 <span className="bg-gradient-to-r from-violet-400 via-pink-400 to-orange-400 bg-clip-text text-transparent">
