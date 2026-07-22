@@ -234,7 +234,7 @@ function Comment({
 export default function LiveComments({
   channelId, broadcastId, isAdmin = false, accentColor = '#8b5cf6', className = '',
 }: LiveCommentsProps) {
-  const { session, profile } = useAuth()
+  const { session, adminProfile: profile } = useAuth()
   const [comments, setComments] = useState<CommentWithMeta[]>([])
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
@@ -269,7 +269,7 @@ export default function LiveComments({
 
     // Enrich with reaction counts and my reactions
     const enriched: CommentWithMeta[] = await Promise.all(
-      (data as TVCommentRow[]).map(async c => {
+      (data as unknown as TVCommentRow[]).map(async c => {
         const { data: rxData } = await supabase
           .from('tv_comment_reactions')
           .select('emoji, user_id')
@@ -338,7 +338,7 @@ export default function LiveComments({
 
     setComments(prev => prev.map(c =>
       c.id === parentComment.id
-        ? { ...c, replies: (data || []) as TVCommentRow[], showReplies: !c.showReplies }
+        ? { ...c, replies: (data || []) as unknown as TVCommentRow[], showReplies: !c.showReplies }
         : c
     ))
   }

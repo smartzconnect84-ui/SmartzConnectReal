@@ -74,7 +74,7 @@ export default function CommentModerationPanel({ channelId, broadcastId }: Moder
 
     if (broadcastId) q.eq('broadcast_id', broadcastId)
     const { data } = await q
-    setComments((data || []) as CommentMeta[])
+    setComments((data || []) as unknown as CommentMeta[])
     setLoading(false)
   }, [channelId, broadcastId])
 
@@ -84,7 +84,7 @@ export default function CommentModerationPanel({ channelId, broadcastId }: Moder
       .select(`id, user_id, reason, created_at, profiles (full_name, avatar_url)`)
       .eq('channel_id', channelId)
       .order('created_at', { ascending: false })
-    setMuted((data || []) as MutedUser[])
+    setMuted((data || []) as unknown as MutedUser[])
   }, [channelId])
 
   useEffect(() => { void loadComments(); void loadMuted() }, [loadComments, loadMuted])

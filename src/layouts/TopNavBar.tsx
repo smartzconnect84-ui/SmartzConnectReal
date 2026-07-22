@@ -192,16 +192,16 @@ export default function TopNavBar({ unreadMessages, unreadNotifs, onMenuToggle, 
           <Phone className="w-[19px] h-[19px]" />
         </Link>
 
-        {/* Support chat — sm+ */}
+        {/* Support chat — sm+ (teal = live support, distinct from messages) */}
         <button
           onClick={() => openTawkChat()}
-          title="Support Chat"
-          className="relative hidden sm:flex w-10 h-10 rounded-xl dark:bg-white/5 bg-gray-100 items-center justify-center hover:bg-pink-500/10 dark:text-gray-400 text-gray-600 transition-colors">
-          <MessageCircle className="w-[19px] h-[19px]" />
+          title="Live Support Chat"
+          className="relative hidden sm:flex w-10 h-10 rounded-xl dark:bg-white/5 bg-gray-100 items-center justify-center hover:bg-teal-500/10 transition-colors">
+          <MessageCircle className="w-[19px] h-[19px] text-teal-500" />
         </button>
 
-        {/* Messages */}
-        <Link to="/app/matches" className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-xl dark:bg-white/5 bg-gray-100 flex items-center justify-center hover:bg-pink-500/10 dark:text-gray-400 text-gray-600 transition-colors">
+        {/* Messages (pink = app inbox) */}
+        <Link to="/app/matches" title="Messages" className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-xl dark:bg-white/5 bg-gray-100 flex items-center justify-center hover:bg-pink-500/10 dark:text-gray-400 text-gray-600 transition-colors">
           <MessageCircle className="w-[18px] h-[18px] sm:w-5 sm:h-5" />
           {unreadMessages > 0 && (
             <span className="absolute -top-0.5 -right-0.5 w-4 h-4 sm:w-[18px] sm:h-[18px] rounded-full bg-brand-pink text-white text-[8px] sm:text-[9px] font-black flex items-center justify-center">

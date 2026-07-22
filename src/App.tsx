@@ -70,6 +70,7 @@ const HelpSupportPage      = lazy(() => import('@/pages/public/HelpSupportPage')
 const AppHelpPage          = lazy(() => import('@/pages/AppHelpPage'))
 const EmailSubscriptionPage = lazy(() => import('@/pages/public/EmailSubscriptionPage'))
 const DownloadPage         = lazy(() => import('@/pages/public/DownloadPage'))
+const PublicFormPage       = lazy(() => import('@/pages/public/PublicFormPage'))
 
 // App pages (protected)
 const ProfilePage          = lazy(() => import('@/pages/ProfilePage'))
@@ -123,6 +124,7 @@ const AdminWorldStage      = lazy(() => import('@/pages/admin/AdminWorldStage'))
 const AdminEmail           = lazy(() => import('@/pages/admin/AdminEmail'))
 const AdminLearning        = lazy(() => import('@/pages/admin/AdminLearning'))
 const AdminWorldChat       = lazy(() => import('@/pages/admin/AdminWorldChat'))
+const AdminForms           = lazy(() => import('@/pages/admin/AdminForms'))
 const CoursePlayerPage          = lazy(() => import('@/pages/CoursePlayerPage'))
 const LearningApplicationPage   = lazy(() => import('@/pages/LearningApplicationPage'))
 
@@ -227,6 +229,7 @@ export default function App() {
                 <Route path="/help"           element={<PublicLayout><HelpSupportPage /></PublicLayout>} />
                 <Route path="/subscribe"      element={<PublicLayout><EmailSubscriptionPage /></PublicLayout>} />
                 <Route path="/download"       element={<PublicLayout><DownloadPage /></PublicLayout>} />
+                <Route path="/forms/:slug"    element={<PublicFormPage />} />
                 <Route path="/learning/apply/:courseId" element={<LearningApplicationPage />} />
 
                 {/* App — protected */}
@@ -299,6 +302,7 @@ export default function App() {
                   <Route path="email"         element={<AdminEmail />} />
                   <Route path="learning"      element={<AdminLearning />} />
                   <Route path="worldchat"     element={<AdminWorldChat />} />
+                  <Route path="forms"         element={<AdminForms />} />
                 </Route>
 
                 <Route path="*" element={<Navigate to="/" replace />} />
