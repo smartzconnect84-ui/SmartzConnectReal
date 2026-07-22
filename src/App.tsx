@@ -68,6 +68,7 @@ const WorldStagePage       = lazy(() => import('@/pages/public/WorldStagePage'))
 const CmsPage              = lazy(() => import('@/pages/public/CmsPage'))
 const HelpSupportPage      = lazy(() => import('@/pages/public/HelpSupportPage'))
 const EmailSubscriptionPage = lazy(() => import('@/pages/public/EmailSubscriptionPage'))
+const DownloadPage         = lazy(() => import('@/pages/public/DownloadPage'))
 
 // App pages (protected)
 const ProfilePage          = lazy(() => import('@/pages/ProfilePage'))
@@ -224,6 +225,7 @@ export default function App() {
                 <Route path="/pages/:slug"    element={<PublicLayout><CmsPage /></PublicLayout>} />
                 <Route path="/help"           element={<PublicLayout><HelpSupportPage /></PublicLayout>} />
                 <Route path="/subscribe"      element={<PublicLayout><EmailSubscriptionPage /></PublicLayout>} />
+                <Route path="/download"       element={<PublicLayout><DownloadPage /></PublicLayout>} />
                 <Route path="/learning/apply/:courseId" element={<LearningApplicationPage />} />
 
                 {/* App — protected */}
