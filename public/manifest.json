@@ -15,6 +15,16 @@
   "categories": ["social", "entertainment", "lifestyle", "dating", "shopping"],
   "prefer_related_applications": false,
 
+  "iarc_rating_id": "e84b072d-71b3-4d3e-86ae-31a8ce4e53b7",
+
+  "scope_extensions": [
+    { "origin": "https://smartzconnect.com" },
+    { "origin": "https://www.smartzconnect.com" },
+    { "origin": "https://app.smartzconnect.com" },
+    { "origin": "https://api.smartzconnect.com" },
+    { "origin": "https://cdn.smartzconnect.com" }
+  ],
+
   "icons": [
     {
       "src": "/apple-touch-icon.png",
@@ -69,6 +79,20 @@
       "type": "image/png",
       "form_factor": "narrow",
       "label": "SmartzTV — Watch live streams and broadcast to the world"
+    },
+    {
+      "src": "/screenshots/desktop-1-feed.png",
+      "sizes": "1280x800",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Social Feed — Full desktop experience with sidebar navigation"
+    },
+    {
+      "src": "/screenshots/desktop-2-marketplace.png",
+      "sizes": "1280x800",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Marketplace — Browse and list products on the full desktop layout"
     }
   ],
 
