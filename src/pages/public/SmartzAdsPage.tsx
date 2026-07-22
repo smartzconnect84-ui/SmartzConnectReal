@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { useSiteConfig, SITE_IMAGE_KEYS } from '@/contexts/SiteConfigContext'
 import { usePublicStats, fmtCount } from '@/hooks/usePublicStats'
+import PartnershipSection from '@/components/PartnershipSection'
 
 const adFormats = [
   {
@@ -242,6 +243,23 @@ export default function SmartzAdsPage() {
           </div>
         </div>
       </section>
+
+      <PartnershipSection
+        product="SmartzAds"
+        accentFrom="from-rose-500"
+        accentTo="to-pink-600"
+        accentText="text-rose-400"
+        accentBorder="border-rose-500/30"
+        accentBg="bg-rose-500/10"
+        partnerTypes={[
+          'Brand Advertiser',
+          'Media Agency',
+          'Performance Marketing',
+          'Influencer Collaboration',
+          'Sponsored Content',
+          'Event Promotion',
+        ]}
+      />
     </div>
   )
 }

@@ -1,5 +1,6 @@
 import { useRef } from 'react'
 import { motion, useInView } from 'framer-motion'
+import PartnershipSection from '@/components/PartnershipSection'
 import { Link } from 'react-router-dom'
 import { Package, MapPin, Clock, Shield, Truck, DollarSign, Smartphone, Zap, CheckCircle, BarChart3, Users, Globe } from 'lucide-react'
 import { useSiteConfig, SITE_IMAGE_KEYS } from '@/contexts/SiteConfigContext'

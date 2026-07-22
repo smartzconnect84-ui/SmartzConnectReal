@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom'
 import {
   Home, User, Users, MessageCircle, Bell, Video, Phone,
   Heart, Users2, FileText, Calendar, ShoppingBag, Briefcase,
-  BookOpen, Tv, Car, Zap, Crown, Settings, HelpCircle,
+  BookOpen, Tv, Car, Crown, Settings, HelpCircle,
   Sun, Moon, LogOut, Globe, Bookmark, Trophy, Gift
 } from 'lucide-react'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -34,7 +34,6 @@ const callsNav: NavItemDef[] = [
 
 const exploreNav: NavItemDef[] = [
   { path: '/app/worldchat',     icon: Globe,         label: 'World Chat',    color: 'text-cyan-500' },
-  { path: '/app/discover',      icon: Heart,         label: 'Dating',        color: 'text-pink-500', tourId: 'nav-discover' },
   { path: '/app/groups',        icon: Users2,        label: 'Groups',        color: 'text-purple-500', tourId: 'nav-groups' },
   { path: '/app/pages',         icon: FileText,      label: 'Pages',         color: 'text-sky-500' },
   { path: '/app/events',        icon: Calendar,      label: 'Events',        color: 'text-orange-500' },
@@ -43,7 +42,6 @@ const exploreNav: NavItemDef[] = [
   { path: '/app/learning',      icon: BookOpen,      label: 'Learning',      color: 'text-indigo-500' },
   { path: '/app/smartztv',      icon: Tv,            label: 'SmartzTV',      color: 'text-violet-500', tourId: 'nav-smartztv' },
   { path: '/app/ride',          icon: Car,           label: 'Ride',          color: 'text-emerald-500', tourId: 'nav-ride' },
-  { path: '/app/spin',          icon: Zap,           label: 'Spin Chat',     color: 'text-fuchsia-500' },
   { path: '/app/worldstage',    icon: Trophy,        label: 'World Stage',   color: 'text-amber-500' },
   { path: '/app/subscriptions', icon: Crown,         label: 'Premium',       color: 'text-yellow-500' },
 ]

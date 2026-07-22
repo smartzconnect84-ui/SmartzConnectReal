@@ -1,5 +1,6 @@
 import { useRef } from 'react'
 import { motion, useInView } from 'framer-motion'
+import PartnershipSection from '@/components/PartnershipSection'
 import { Link } from 'react-router-dom'
 import {
   Heart, Shield, Star, MapPin, Users, Zap,

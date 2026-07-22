@@ -147,139 +147,262 @@ export default function WorldStagePage() {
     <div className="dark:bg-[#080510] bg-gray-50 min-h-screen">
 
       {/* ══ HERO ══════════════════════════════════════════════════ */}
-      <section className="relative pt-24 pb-16 sm:pt-32 sm:pb-24 overflow-hidden dark:bg-[#0D0A14] bg-white">
-        {/* Background glows */}
-        <div className="absolute inset-0 bg-gradient-to-br from-violet-500/8 via-pink-500/5 to-amber-500/4 pointer-events-none" />
-        <div className="absolute top-16 left-1/4 w-[600px] h-[600px] rounded-full bg-violet-500/10 blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 right-0 w-[400px] h-[400px] rounded-full bg-pink-500/8 blur-3xl pointer-events-none" />
+      <section className="relative overflow-hidden dark:bg-[#07040F] bg-[#0B0718] min-h-[100svh] md:min-h-[88svh] lg:min-h-[82svh] flex items-center">
 
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative" ref={heroRef}>
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+        {/* ── Layered atmospheric background ── */}
+        <div className="absolute inset-0 pointer-events-none select-none">
+          <div className="absolute inset-0 bg-gradient-to-b from-[#0C0820] via-[#100B1F] to-[#080512]" />
+          {/* Violet glow — top-left */}
+          <div className="absolute -top-24 -left-16 w-[500px] h-[500px] md:w-[700px] md:h-[700px] rounded-full bg-violet-600/20 blur-[110px]" />
+          {/* Pink glow — top-right */}
+          <div className="absolute -top-10 right-0 w-[380px] h-[380px] md:w-[520px] md:h-[520px] rounded-full bg-pink-600/16 blur-[90px]" />
+          {/* Amber accent — bottom */}
+          <div className="absolute -bottom-20 left-1/2 -translate-x-1/2 w-[600px] h-[320px] rounded-full bg-amber-500/9 blur-[100px]" />
+          {/* Mobile centre glow for trophy emblem */}
+          <div className="md:hidden absolute top-[18%] left-1/2 -translate-x-1/2 w-[280px] h-[280px] rounded-full bg-violet-600/28 blur-[70px]" />
+          {/* Subtle grid pattern */}
+          <div className="absolute inset-0 opacity-[0.022]"
+            style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)', backgroundSize: '56px 56px' }} />
+        </div>
 
-            {/* ── Left: text content ── */}
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-16 sm:pt-28 sm:pb-20 md:py-0 w-full" ref={heroRef}>
+
+          {/* ── Single-col mobile → 2-col md → 55/45 lg ── */}
+          <div className="grid md:grid-cols-[1fr_46%] lg:grid-cols-[1fr_42%] gap-10 md:gap-8 xl:gap-16 items-center">
+
+            {/* ─── LEFT COLUMN ─── */}
             <motion.div
-              initial={{ opacity: 0, y: 30 }}
+              initial={{ opacity: 0, y: 36 }}
               animate={heroIn ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.6 }}
+              transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+              className="text-center md:text-left"
             >
-              {/* Badge */}
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-pink-500/15 to-violet-500/10 border border-pink-500/30 mb-6">
-                <Star className="w-3.5 h-3.5 text-brand-pink" />
-                <span className="text-xs font-black tracking-widest text-brand-pink uppercase">The Spotlight</span>
-              </div>
+
+              {/* ── Mobile-only trophy emblem ── */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.7 }}
+                animate={heroIn ? { opacity: 1, scale: 1 } : {}}
+                transition={{ delay: 0.05, duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+                className="md:hidden flex justify-center mb-8"
+              >
+                <div className="relative">
+                  {/* outer glow ring */}
+                  <div className="absolute -inset-4 rounded-[2.5rem] bg-gradient-to-br from-violet-600/35 via-fuchsia-600/20 to-pink-600/25 blur-2xl" />
+                  {/* main icon box */}
+                  <div className="relative w-28 h-28 rounded-[2rem] bg-gradient-to-br from-violet-600 via-fuchsia-600 to-pink-600 flex items-center justify-center shadow-2xl shadow-violet-700/50">
+                    <Trophy className="w-14 h-14 text-white drop-shadow-lg" />
+                  </div>
+                  {/* floating crown badge */}
+                  <motion.div
+                    animate={{ y: [-5, 4, -5] }}
+                    transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut' }}
+                    className="absolute -top-3 -right-3 w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-xl shadow-amber-500/40"
+                  >
+                    <Crown className="w-5 h-5 text-white" />
+                  </motion.div>
+                  {/* floating star badge */}
+                  <motion.div
+                    animate={{ y: [4, -5, 4] }}
+                    transition={{ duration: 3.6, repeat: Infinity, ease: 'easeInOut' }}
+                    className="absolute -bottom-3 -left-3 w-9 h-9 rounded-xl bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center shadow-xl shadow-pink-500/40"
+                  >
+                    <Star className="w-4 h-4 text-white" />
+                  </motion.div>
+                </div>
+              </motion.div>
+
+              {/* LIVE badge */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.85 }}
+                animate={heroIn ? { opacity: 1, scale: 1 } : {}}
+                transition={{ delay: 0.1, duration: 0.4 }}
+                className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full border border-pink-500/35 bg-pink-500/12 backdrop-blur-sm mb-5 sm:mb-7"
+              >
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-pink-400 opacity-75" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-pink-400" />
+                </span>
+                <span className="text-[11px] sm:text-xs font-black tracking-[0.16em] text-pink-300 uppercase">
+                  The Spotlight — Weekly · Monthly · Yearly
+                </span>
+              </motion.div>
 
               {/* Headline */}
-              <h1 className="font-display font-black dark:text-white text-gray-900 mb-5 text-3xl sm:text-4xl lg:text-5xl leading-tight">
-                The World Stage{' '}
-                <span className="block">
-                  <span className="bg-gradient-to-r from-violet-400 via-pink-400 to-orange-400 bg-clip-text text-transparent">
-                    for everyone
-                  </span>
+              <h1 className="font-display font-black text-white leading-[1.04] mb-5 sm:mb-6
+                text-[2.75rem] sm:text-[3.5rem] md:text-[3rem] lg:text-[4.25rem] xl:text-[4.75rem]">
+                <span className="block">The World</span>
+                <span className="block bg-gradient-to-r from-violet-400 via-fuchsia-300 to-pink-400 bg-clip-text text-transparent pb-1">
+                  Stage
                 </span>
-                <span className="block bg-gradient-to-r from-pink-400 to-amber-400 bg-clip-text text-transparent">
-                  who shines.
+                <span className="block text-[0.52em] sm:text-[0.48em] md:text-[0.5em] font-semibold text-white/45 tracking-wide mt-2 leading-snug">
+                  for everyone who shines
                 </span>
               </h1>
 
               {/* Subtitle */}
-              <p className="text-base sm:text-lg dark:text-gray-400 text-gray-600 mb-8 leading-relaxed max-w-xl">
-                SmartzConnect's Spotlight celebrates the influencers, relationship seekers, and entrepreneurs
-                lighting up our ecosystem — recognised <strong className="dark:text-white text-gray-800">weekly</strong>,{' '}
-                <strong className="dark:text-white text-gray-800">monthly</strong>, and{' '}
-                <strong className="dark:text-white text-gray-800">yearly</strong>.
+              <p className="text-white/58 text-base sm:text-lg md:text-base lg:text-xl leading-relaxed mb-8 sm:mb-10 max-w-xl mx-auto md:mx-0">
+                SmartzConnect's recognition programme celebrates the{' '}
+                <span className="text-violet-300 font-semibold">influencers</span>,{' '}
+                <span className="text-pink-300 font-semibold">relationship builders</span>, and{' '}
+                <span className="text-amber-300 font-semibold">entrepreneurs</span>{' '}
+                lighting up our ecosystem — spotlighted every week, every month, and honoured every year.
               </p>
 
-              {/* CTAs */}
-              <div className="flex flex-col sm:flex-row gap-3 mb-10">
+              {/* CTA row */}
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center md:justify-start mb-9 sm:mb-11">
                 <Link
                   to={worldstageHref}
-                  className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-gradient-to-r from-violet-600 to-pink-600 text-white font-bold text-sm shadow-xl shadow-violet-500/30 hover:scale-105 transition-all inline-flex items-center justify-center gap-2"
+                  className="group relative overflow-hidden inline-flex items-center justify-center gap-2.5 px-7 py-4 sm:px-9 rounded-2xl bg-gradient-to-r from-violet-600 to-pink-600 text-white font-bold text-sm sm:text-base shadow-2xl shadow-violet-600/40 hover:shadow-violet-500/60 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200"
                 >
-                  <Zap className="w-4 h-4" /> Join &amp; Get Spotted
+                  <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
+                  <Zap className="w-4 h-4 relative" />
+                  <span className="relative">Join &amp; Get Spotted</span>
                 </Link>
                 <a
                   href="#how-it-works"
-                  className="w-full sm:w-auto px-8 py-3.5 rounded-2xl dark:bg-white/8 bg-gray-100 dark:text-white text-gray-900 font-bold text-sm hover:text-brand-pink transition-colors inline-flex items-center justify-center gap-2"
+                  className="inline-flex items-center justify-center gap-2.5 px-7 py-4 sm:px-9 rounded-2xl bg-white/6 backdrop-blur-sm border border-white/14 text-white/80 font-semibold text-sm sm:text-base hover:bg-white/10 hover:text-white hover:border-white/22 active:scale-[0.98] transition-all duration-200"
                 >
-                  <TrendingUp className="w-4 h-4" /> How It Works
+                  <TrendingUp className="w-4 h-4" />
+                  How It Works
                 </a>
               </div>
 
-              {/* Micro-stats */}
-              <div className="flex flex-wrap gap-5">
+              {/* Micro-stats strip */}
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                animate={heroIn ? { opacity: 1, y: 0 } : {}}
+                transition={{ delay: 0.35, duration: 0.5 }}
+                className="flex flex-wrap items-center justify-center md:justify-start gap-4 sm:gap-5"
+              >
                 {[
-                  { icon: Globe,    value: '3 Categories',   sub: 'Influencer · Heart · Hustler' },
-                  { icon: Calendar, value: 'Every Sunday',   sub: 'Weekly spotlights' },
-                  { icon: Trophy,   value: 'Annual Award',   sub: 'Cash prize + trophy' },
-                ].map(s => {
+                  { icon: Globe,    value: '3 Categories',  sub: 'Influencer · Heart · Hustler', color: 'text-violet-400' },
+                  { icon: Calendar, value: 'Every Sunday',  sub: 'Weekly spotlight pick',         color: 'text-pink-400' },
+                  { icon: Trophy,   value: 'Annual Award',  sub: 'Cash prize + trophy',           color: 'text-amber-400' },
+                ].map((s, i) => {
                   const Icon = s.icon
                   return (
-                    <div key={s.value} className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-pink-500/20 to-violet-500/15 border border-pink-500/20 flex items-center justify-center flex-shrink-0">
-                        <Icon className="w-4 h-4 text-brand-pink" />
+                    <div key={i} className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-xl bg-white/8 border border-white/10 flex items-center justify-center flex-shrink-0">
+                        <Icon className={`w-4 h-4 ${s.color}`} />
                       </div>
                       <div>
-                        <p className="text-xs font-black dark:text-white text-gray-900 leading-tight">{s.value}</p>
-                        <p className="text-[10px] dark:text-gray-500 text-gray-400">{s.sub}</p>
+                        <p className="text-[11px] sm:text-xs font-black text-white leading-tight">{s.value}</p>
+                        <p className="text-[10px] text-white/38">{s.sub}</p>
                       </div>
                     </div>
                   )
                 })}
-              </div>
+              </motion.div>
+
+              {/* Category pills — mobile only (md+ sees the right-column cards) */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={heroIn ? { opacity: 1 } : {}}
+                transition={{ delay: 0.45, duration: 0.5 }}
+                className="md:hidden flex flex-wrap justify-center gap-2 mt-9"
+              >
+                {spotCategories.map((cat, i) => {
+                  const Icon = cat.icon
+                  return (
+                    <motion.div
+                      key={cat.tag}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={heroIn ? { opacity: 1, y: 0 } : {}}
+                      transition={{ delay: 0.45 + i * 0.08 }}
+                      className={`flex items-center gap-2 px-3.5 py-2 rounded-full bg-white/6 border ${cat.border} backdrop-blur-sm`}
+                    >
+                      <div className={`w-5 h-5 rounded-full bg-gradient-to-br ${cat.gradient} flex items-center justify-center flex-shrink-0`}>
+                        <Icon className="w-3 h-3 text-white" />
+                      </div>
+                      <span className={`text-[11px] font-black tracking-wide ${cat.accent} uppercase`}>{cat.tag}</span>
+                      <span className="text-sm leading-none">{cat.emoji}</span>
+                    </motion.div>
+                  )
+                })}
+              </motion.div>
             </motion.div>
 
-            {/* ── Right: category spotlight cards ── */}
+            {/* ─── RIGHT COLUMN — md+ visual ─── */}
             <motion.div
               initial={{ opacity: 0, x: 40 }}
               animate={heroIn ? { opacity: 1, x: 0 } : {}}
-              transition={{ duration: 0.7, delay: 0.15 }}
-              className="hidden lg:flex flex-col gap-3"
+              transition={{ duration: 0.75, delay: 0.18, ease: [0.22, 1, 0.36, 1] }}
+              className="hidden md:flex flex-col gap-2.5 lg:gap-3"
             >
+              {/* Trophy emblem — tablet & desktop, above cards */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={heroIn ? { opacity: 1, scale: 1 } : {}}
+                transition={{ delay: 0.22, duration: 0.5 }}
+                className="flex items-center gap-4 px-4 py-3.5 rounded-2xl bg-gradient-to-r from-violet-600/15 to-pink-600/10 border border-violet-500/25 mb-1"
+              >
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-pink-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-violet-600/40">
+                  <Trophy className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <p className="text-xs font-black text-white tracking-wide">SmartzConnect World Stage</p>
+                  <p className="text-[10px] text-white/45 mt-0.5">Recognising excellence across 8 products · Est. 2026</p>
+                </div>
+                <div className="ml-auto flex-shrink-0">
+                  <span className="text-[9px] font-black tracking-widest text-violet-400 uppercase px-2 py-1 rounded-full bg-violet-500/15 border border-violet-500/25">Live</span>
+                </div>
+              </motion.div>
+
+              {/* Category cards */}
               {spotCategories.map((cat, i) => {
                 const Icon = cat.icon
                 return (
                   <motion.div
                     key={cat.tag}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={heroIn ? { opacity: 1, y: 0 } : {}}
-                    transition={{ delay: 0.25 + i * 0.1 }}
-                    className={`relative dark:bg-[#130E1E]/80 bg-white rounded-2xl p-5 border-2 ${cat.border} overflow-hidden backdrop-blur-sm flex items-center gap-4 group hover:shadow-xl ${cat.glow} transition-all duration-300`}
+                    initial={{ opacity: 0, x: 30 }}
+                    animate={heroIn ? { opacity: 1, x: 0 } : {}}
+                    transition={{ delay: 0.3 + i * 0.1, duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+                    className={`relative rounded-2xl p-4 lg:p-5 border-2 ${cat.border} bg-white/4 backdrop-blur-md overflow-hidden flex items-center gap-3 lg:gap-4 group hover:shadow-2xl ${cat.glow} hover:bg-white/6 transition-all duration-300`}
                   >
-                    <div className={`absolute inset-0 bg-gradient-to-br ${cat.gradient} opacity-4 group-hover:opacity-8 transition-opacity rounded-2xl`} />
-                    <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${cat.gradient} flex items-center justify-center shadow-lg flex-shrink-0 relative`}>
-                      <Icon className="w-6 h-6 text-white" />
+                    <div className={`absolute inset-0 bg-gradient-to-br ${cat.gradient} opacity-[0.06] group-hover:opacity-[0.11] transition-opacity`} />
+                    <div className={`w-10 h-10 lg:w-12 lg:h-12 rounded-xl lg:rounded-2xl bg-gradient-to-br ${cat.gradient} flex items-center justify-center shadow-xl flex-shrink-0 relative`}>
+                      <Icon className="w-5 h-5 lg:w-6 lg:h-6 text-white" />
                     </div>
                     <div className="relative flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-0.5">
                         <span className={`text-[9px] font-black tracking-widest ${cat.accent} uppercase`}>{cat.tag}</span>
-                        <span className="text-lg">{cat.emoji}</span>
+                        <span className="text-sm">{cat.emoji}</span>
                       </div>
-                      <h3 className="font-bold text-sm dark:text-white text-gray-900">{cat.title}</h3>
-                      <p className="text-[11px] dark:text-gray-400 text-gray-500 leading-snug line-clamp-1 mt-0.5">{cat.desc}</p>
+                      <h3 className="font-bold text-xs lg:text-sm text-white leading-tight">{cat.title}</h3>
+                      <p className="text-[10px] text-white/38 leading-snug line-clamp-1 mt-0.5">{cat.desc}</p>
                     </div>
-                    <Crown className={`w-4 h-4 ${cat.accent} opacity-50 flex-shrink-0 relative`} />
+                    <Crown className={`w-3.5 h-3.5 lg:w-4 lg:h-4 ${cat.accent} opacity-40 flex-shrink-0 relative group-hover:opacity-70 transition-opacity`} />
                   </motion.div>
                 )
               })}
 
-              {/* "In the running?" prompt card */}
-              <Link
-                to={worldstageHref}
-                className="relative rounded-2xl p-5 border border-dashed border-violet-500/30 flex items-center justify-center gap-3 group hover:border-violet-500/60 hover:bg-violet-500/5 transition-all duration-300"
+              {/* "Are you in the running?" prompt */}
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={heroIn ? { opacity: 1, x: 0 } : {}}
+                transition={{ delay: 0.62, duration: 0.5 }}
               >
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-pink-600 flex items-center justify-center shadow-lg shadow-violet-500/25">
-                  <Zap className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <p className="font-bold text-sm dark:text-white text-gray-900">Are you in the running?</p>
-                  <p className="text-[11px] dark:text-gray-400 text-gray-500">Start your activity today — every post counts.</p>
-                </div>
-                <CheckCircle className="w-4 h-4 text-violet-400 opacity-60 ml-auto" />
-              </Link>
+                <Link
+                  to={worldstageHref}
+                  className="relative rounded-2xl p-4 lg:p-5 border-2 border-dashed border-violet-500/28 flex items-center gap-3 lg:gap-4 group hover:border-violet-500/55 hover:bg-violet-500/6 transition-all duration-300 block"
+                >
+                  <div className="w-10 h-10 lg:w-11 lg:h-11 rounded-xl bg-gradient-to-br from-violet-600 to-pink-600 flex items-center justify-center shadow-lg shadow-violet-600/30 flex-shrink-0">
+                    <Zap className="w-4 h-4 lg:w-5 lg:h-5 text-white" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-xs lg:text-sm text-white leading-tight">Are you in the running?</p>
+                    <p className="text-[10px] text-white/38 mt-0.5">Every post, match, and sale counts toward your spotlight.</p>
+                  </div>
+                  <CheckCircle className="w-4 h-4 text-violet-400 opacity-50 flex-shrink-0 group-hover:opacity-80 transition-opacity" />
+                </Link>
+              </motion.div>
             </motion.div>
 
           </div>
         </div>
+
+        {/* Bottom fade into next section */}
+        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#080510] to-transparent pointer-events-none" />
       </section>
 
       {/* ══ STATS ROW ═════════════════════════════════════════════ */}

@@ -204,10 +204,10 @@ export default function HomePage() {
               {/* Stats 2×2 grid */}
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  { value: '195+', label: 'Countries Served', icon: Globe,        color: '#EC4899' },
-                  { value: '8',    label: 'Super-Products',   icon: Sparkles,     color: '#9B5DE5' },
-                  { value: '1M+',  label: 'Members & Growing',icon: Users,        color: '#DC2626' },
-                  { value: '2020', label: 'Founded in Liberia',icon: BadgeCheck,  color: '#D4AF37' },
+                  { value: '195+', label: 'Countries',         icon: Globe,        color: '#EC4899' },
+                  { value: '8',    label: 'Products',          icon: Sparkles,     color: '#9B5DE5' },
+                  { value: '15K+', label: 'Active Users',      icon: Users,        color: '#DC2626' },
+                  { value: '2025', label: 'Founded',           icon: BadgeCheck,  color: '#D4AF37' },
                 ].map(stat => {
                   const Icon = stat.icon
                   return (

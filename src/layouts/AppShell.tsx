@@ -7,6 +7,7 @@ import {
   BookOpen, Tv, Car, Zap, Crown, Settings, HelpCircle,
   Sun, Moon, LogOut, Globe, Bookmark, Trophy, Gift, Receipt, Plus,
 } from 'lucide-react'
+// Note: Zap kept for the Create (+) mobile button; Spin Chat removed from nav
 import { useTheme } from '@/contexts/ThemeContext'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
@@ -42,7 +43,6 @@ const drawerSections = [
     section: 'Explore',
     items: [
       { path: '/app/worldchat',     icon: Globe,         label: 'World Chat',   badge: null as string | null, color: 'text-cyan-500' },
-      { path: '/app/discover',      icon: Heart,         label: 'Dating',       badge: null as string | null, color: 'text-pink-500', tourId: 'nav-discover' },
       { path: '/app/groups',        icon: Users2,        label: 'Groups',       badge: null as string | null, color: 'text-purple-500', tourId: 'nav-groups' },
       { path: '/app/pages',         icon: FileText,      label: 'Pages',        badge: null as string | null, color: 'text-sky-500' },
       { path: '/app/events',        icon: Calendar,      label: 'Events',       badge: null as string | null, color: 'text-orange-500' },
@@ -51,7 +51,6 @@ const drawerSections = [
       { path: '/app/learning',      icon: BookOpen,      label: 'Learning',     badge: null as string | null, color: 'text-indigo-500' },
       { path: '/app/smartztv',      icon: Tv,            label: 'SmartzTV',     badge: null as string | null, color: 'text-violet-500', tourId: 'nav-smartztv' },
       { path: '/app/ride',          icon: Car,           label: 'Ride',         badge: null as string | null, color: 'text-emerald-500', tourId: 'nav-ride' },
-      { path: '/app/spin',          icon: Zap,           label: 'Spin Chat',    badge: null as string | null, color: 'text-fuchsia-500' },
       { path: '/app/worldstage',    icon: Trophy,        label: 'World Stage',  badge: null as string | null, color: 'text-amber-500' },
       { path: '/app/subscriptions', icon: Crown,         label: 'Premium',      badge: null as string | null, color: 'text-yellow-500' },
     ],
@@ -68,10 +67,10 @@ const drawerSections = [
   },
 ]
 
-// Mobile bottom nav — Bell/Alerts replaced with Chat; + (Create) in the middle
+// Mobile bottom nav — Home, Groups, Create(+), Chat, Me
 const mobileBottomNav = [
   { path: '/app/feed',     icon: Home,          label: 'Home',   type: 'link'   as const },
-  { path: '/app/discover', icon: Heart,         label: 'Dating', type: 'link'   as const },
+  { path: '/app/groups',   icon: Users2,        label: 'Groups', type: 'link'   as const },
   { path: null,            icon: Plus,          label: 'Create', type: 'create' as const },
   { path: '/app/matches',  icon: MessageCircle, label: 'Chat',   type: 'link'   as const },
   { path: '/app/profile',  icon: User,          label: 'Me',     type: 'link'   as const },

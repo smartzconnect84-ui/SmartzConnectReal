@@ -11,6 +11,7 @@ import { supabase } from '@/lib/supabase'
 import { useSiteConfig, SITE_IMAGE_KEYS } from '@/contexts/SiteConfigContext'
 import { useAuth } from '@/hooks/useAuth'
 import SmartzTVPlayer from '@/components/SmartzTVPlayer'
+import PartnershipSection from '@/components/PartnershipSection'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -692,6 +693,23 @@ export default function SmartzTVPage() {
           </div>
         </div>
       </section>
+
+      <PartnershipSection
+        product="SmartzTV"
+        accentFrom="from-violet-500"
+        accentTo="to-purple-600"
+        accentText="text-violet-400"
+        accentBorder="border-violet-500/30"
+        accentBg="bg-violet-500/10"
+        partnerTypes={[
+          'Content Creator / Streamer',
+          'Media & Entertainment Brand',
+          'Sponsor / Advertiser',
+          'Music Label or Artist',
+          'Sports or Events Organizer',
+          'Production Studio',
+        ]}
+      />
     </div>
   )
 }

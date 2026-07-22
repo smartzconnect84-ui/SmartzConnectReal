@@ -8,6 +8,7 @@ import {
   Sparkles, Home, Car, Wrench, Palette,
 } from 'lucide-react'
 import { useSiteConfig, SITE_IMAGE_KEYS } from '@/contexts/SiteConfigContext'
+import PartnershipSection from '@/components/PartnershipSection'
 import { usePublicStats, fmtCount } from '@/hooks/usePublicStats'
 import { useAuth } from '@/hooks/useAuth'
 
