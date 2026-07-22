@@ -1,10 +1,12 @@
-[{
-  "relation": ["delegate_permission/common.handle_all_urls"],
-  "target": {
-    "namespace": "android_app",
-    "package_name": "com.smartzconnect.twa",
-    "sha256_cert_fingerprints": [
-      "9A:FE:B7:89:55:3D:0F:E0:30:49:BC:D1:8C:2D:29:B2:30:89:C4:83:A3:A6:1C:D7:C7:87:43:A8:4A:AD:52:B5"
-    ]
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.smartzconnect.app",
+      "sha256_cert_fingerprints": [
+        "DC:B3:C2:39:22:DB:0D:1B:41:8B:3D:6C:8E:25:21:0B:AC:B5:C8:9B:28:14:86:07:F2:FE:3F:E3:03:D4:03:23"
+      ]
+    }
   }
-}]
+]
