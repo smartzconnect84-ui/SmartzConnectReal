@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { AlertTriangle, CheckCircle, XCircle, RefreshCw, Search, Eye, Ban } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 
 interface Report {
@@ -17,6 +18,7 @@ interface Report {
 
 interface UserProfile {
   id: number
+  auth_id: string | null
   full_name: string | null
   email: string
   avatar_url?: string | null
@@ -33,18 +35,24 @@ function UserCell({ profile, userId }: { profile?: UserProfile; userId: number }
   if (!profile) {
     return <span className="font-mono text-xs dark:text-gray-400 text-gray-500">#{userId}</span>
   }
-  return (
-    <div className="flex items-center gap-2">
-      <div className="w-7 h-7 rounded-full bg-love-gradient flex items-center justify-center text-white text-[10px] font-bold overflow-hidden flex-shrink-0">
+  const inner = (
+    <div className="flex items-center gap-2 group">
+      <div className="w-7 h-7 rounded-full bg-love-gradient flex items-center justify-center text-white text-[10px] font-bold overflow-hidden flex-shrink-0 ring-2 ring-transparent group-hover:ring-brand-pink/40 transition-all">
         {profile.avatar_url
           ? <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
           : (profile.full_name || profile.email || '?')[0].toUpperCase()}
       </div>
       <div className="min-w-0">
-        <p className="text-xs font-semibold dark:text-white text-gray-900 truncate">{profile.full_name || '—'}</p>
+        <p className="text-xs font-semibold dark:text-white text-gray-900 truncate group-hover:text-brand-pink transition-colors">{profile.full_name || '—'}</p>
         <p className="text-[10px] dark:text-gray-500 text-gray-400 truncate">{profile.email}</p>
       </div>
     </div>
+  )
+  if (!profile.auth_id) return inner
+  return (
+    <Link to={`/app/profile/${profile.auth_id}`} target="_blank" rel="noopener noreferrer">
+      {inner}
+    </Link>
   )
 }
 
@@ -86,6 +94,7 @@ export default function AdminReports() {
     for (const u of (users || []) as any[]) {
       map.set(u.id, {
         id: u.id,
+        auth_id: u.auth_id ?? null,
         full_name: u.full_name,
         email: u.email,
         avatar_url: u.auth_id ? (avatarMap[u.auth_id] ?? null) : null,

@@ -67,6 +67,7 @@ const BlogPostPage         = lazy(() => import('@/pages/public/BlogPostPage'))
 const WorldStagePage       = lazy(() => import('@/pages/public/WorldStagePage'))
 const CmsPage              = lazy(() => import('@/pages/public/CmsPage'))
 const HelpSupportPage      = lazy(() => import('@/pages/public/HelpSupportPage'))
+const AppHelpPage          = lazy(() => import('@/pages/AppHelpPage'))
 const EmailSubscriptionPage = lazy(() => import('@/pages/public/EmailSubscriptionPage'))
 const DownloadPage         = lazy(() => import('@/pages/public/DownloadPage'))
 
@@ -260,7 +261,7 @@ export default function App() {
                   <Route path="referrals"     element={<ReferralsPage />} />
                   <Route path="invoice-generator" element={<InvoiceGeneratorPage />} />
                   <Route path="worldstage"    element={<WorldStageVotePage />} />
-                  <Route path="help"          element={<Navigate to="/help" replace />} />
+                  <Route path="help"          element={<AppHelpPage />} />
                   <Route path="pages"         element={<CommunityPagesPage />} />
                   <Route path="events"        element={<EventsPage />} />
                   <Route path="jobs"          element={<JobsPage />} />

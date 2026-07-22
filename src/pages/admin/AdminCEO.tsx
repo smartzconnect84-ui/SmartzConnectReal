@@ -4,8 +4,9 @@ import {
   Crown, Users, Shield, Globe, Key, AlertTriangle, Database,
   RefreshCw, Plus, Edit, Trash2, Download, X, Save, CheckCircle,
   AlertCircle, Loader2, UserCheck, GraduationCap, Trophy, Award,
-  Star, Clock, Mail, MessageSquare, ChevronDown
+  Star, Clock, Mail, MessageSquare, ChevronDown, ExternalLink
 } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import ImageUploader from '@/components/admin/ImageUploader'
 import { notifyUser } from '@/lib/notify'
@@ -712,18 +713,21 @@ export default function AdminCEO() {
 
                         {/* Member */}
                         <td className="px-4 py-3">
-                          <div className="flex items-center gap-3 min-w-[180px]">
-                            <div className="w-9 h-9 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center bg-love-soft">
+                          <Link to={`/app/profile/${member.id}`} target="_blank" rel="noopener noreferrer"
+                            className="flex items-center gap-3 min-w-[180px] group">
+                            <div className="w-9 h-9 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center bg-love-soft ring-2 ring-transparent group-hover:ring-brand-pink/40 transition-all">
                               {member.avatar_url
                                 ? <img src={member.avatar_url} alt={member.full_name} className="w-full h-full object-cover" />
                                 : <span className="text-sm font-black text-brand-pink">{member.full_name[0]?.toUpperCase()}</span>
                               }
                             </div>
                             <div className="min-w-0">
-                              <p className="text-xs font-bold dark:text-white text-gray-900 truncate">{member.full_name}</p>
+                              <p className="text-xs font-bold dark:text-white text-gray-900 truncate group-hover:text-brand-pink transition-colors flex items-center gap-1">
+                                {member.full_name} <ExternalLink className="w-2.5 h-2.5 opacity-0 group-hover:opacity-60 transition-opacity flex-shrink-0" />
+                              </p>
                               <p className="text-[10px] dark:text-gray-500 text-gray-400 truncate">{member.email}</p>
                             </div>
-                          </div>
+                          </Link>
                         </td>
 
                         {/* Role */}

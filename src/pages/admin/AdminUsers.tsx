@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Search, Ban, CheckCircle, Crown, Zap, MoreVertical, RefreshCw,
-  Shield, ShieldCheck, ShieldAlert, User, UserX, Star, X
+  Shield, ShieldCheck, ShieldAlert, User, UserX, Star, X, ExternalLink
 } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 
@@ -325,15 +326,34 @@ export default function AdminUsers() {
                     className="hover:dark:bg-white/2 hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-love-gradient flex items-center justify-center text-white font-bold text-sm flex-shrink-0 overflow-hidden">
-                          {u.avatar_url
-                            ? <img src={u.avatar_url} alt={u.full_name || u.email} className="w-full h-full object-cover" />
-                            : (u.full_name || u.email || '?')[0].toUpperCase()}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-semibold dark:text-white text-gray-900 truncate text-sm">{u.full_name || '—'}</p>
-                          <p className="text-xs dark:text-gray-500 text-gray-400 truncate">{u.email}</p>
-                        </div>
+                        {u.auth_id ? (
+                          <Link to={`/app/profile/${u.auth_id}`} target="_blank" rel="noopener noreferrer"
+                            className="flex items-center gap-3 group min-w-0">
+                            <div className="w-9 h-9 rounded-full bg-love-gradient flex items-center justify-center text-white font-bold text-sm flex-shrink-0 overflow-hidden ring-2 ring-transparent group-hover:ring-brand-pink/40 transition-all">
+                              {u.avatar_url
+                                ? <img src={u.avatar_url} alt={u.full_name || u.email} className="w-full h-full object-cover" />
+                                : (u.full_name || u.email || '?')[0].toUpperCase()}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-semibold dark:text-white text-gray-900 truncate text-sm group-hover:text-brand-pink transition-colors flex items-center gap-1">
+                                {u.full_name || '—'} <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-60 transition-opacity flex-shrink-0" />
+                              </p>
+                              <p className="text-xs dark:text-gray-500 text-gray-400 truncate">{u.email}</p>
+                            </div>
+                          </Link>
+                        ) : (
+                          <>
+                            <div className="w-9 h-9 rounded-full bg-love-gradient flex items-center justify-center text-white font-bold text-sm flex-shrink-0 overflow-hidden">
+                              {u.avatar_url
+                                ? <img src={u.avatar_url} alt={u.full_name || u.email} className="w-full h-full object-cover" />
+                                : (u.full_name || u.email || '?')[0].toUpperCase()}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-semibold dark:text-white text-gray-900 truncate text-sm">{u.full_name || '—'}</p>
+                              <p className="text-xs dark:text-gray-500 text-gray-400 truncate">{u.email}</p>
+                            </div>
+                          </>
+                        )}
                       </div>
                     </td>
                     <td className="px-4 py-3 hidden sm:table-cell"><RoleBadge role={u.role || 'user'} /></td>
@@ -383,13 +403,30 @@ export default function AdminUsers() {
 
               {/* User header */}
               <div className="flex items-center gap-3 mb-5">
-                <div className="w-12 h-12 rounded-full bg-love-gradient flex items-center justify-center text-white font-bold text-lg overflow-hidden">
-                  {selected.avatar_url
-                    ? <img src={selected.avatar_url} alt={selected.full_name || selected.email} className="w-full h-full object-cover" />
-                    : (selected.full_name || selected.email || '?')[0].toUpperCase()}
-                </div>
+                {selected.auth_id ? (
+                  <Link to={`/app/profile/${selected.auth_id}`} target="_blank" rel="noopener noreferrer" className="group flex-shrink-0">
+                    <div className="w-12 h-12 rounded-full bg-love-gradient flex items-center justify-center text-white font-bold text-lg overflow-hidden ring-2 ring-transparent group-hover:ring-brand-pink/50 transition-all">
+                      {selected.avatar_url
+                        ? <img src={selected.avatar_url} alt={selected.full_name || selected.email} className="w-full h-full object-cover" />
+                        : (selected.full_name || selected.email || '?')[0].toUpperCase()}
+                    </div>
+                  </Link>
+                ) : (
+                  <div className="w-12 h-12 rounded-full bg-love-gradient flex items-center justify-center text-white font-bold text-lg overflow-hidden flex-shrink-0">
+                    {selected.avatar_url
+                      ? <img src={selected.avatar_url} alt={selected.full_name || selected.email} className="w-full h-full object-cover" />
+                      : (selected.full_name || selected.email || '?')[0].toUpperCase()}
+                  </div>
+                )}
                 <div className="flex-1 min-w-0">
-                  <p className="font-bold dark:text-white text-gray-900 truncate">{selected.full_name || '—'}</p>
+                  {selected.auth_id ? (
+                    <Link to={`/app/profile/${selected.auth_id}`} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-1 font-bold dark:text-white text-gray-900 hover:text-brand-pink transition-colors truncate">
+                      {selected.full_name || '—'} <ExternalLink className="w-3 h-3 flex-shrink-0 opacity-60" />
+                    </Link>
+                  ) : (
+                    <p className="font-bold dark:text-white text-gray-900 truncate">{selected.full_name || '—'}</p>
+                  )}
                   <p className="text-xs dark:text-gray-400 text-gray-500 truncate">{selected.email}</p>
                 </div>
                 <RoleBadge role={selected.role || 'user'} />

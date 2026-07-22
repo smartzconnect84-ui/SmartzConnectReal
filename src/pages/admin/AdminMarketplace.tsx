@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { ShoppingBag, CheckCircle, XCircle, Eye, Search, Filter, Package, TrendingUp, Loader2 } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 
 interface Product {
-  id: string; name: string; seller: string; sellerAvatar: string; category: string
-  price: string; images: string; status: 'pending' | 'approved' | 'rejected'
+  id: string; name: string; seller: string; sellerAvatar: string; sellerId: string | null
+  category: string; price: string; images: string; status: 'pending' | 'approved' | 'rejected'
   submitted: string; country: string; description: string
 }
 
@@ -48,6 +49,7 @@ export default function AdminMarketplace() {
         name: p.title,
         seller: p.profiles?.full_name || 'Unknown Seller',
         sellerAvatar: p.profiles?.avatar_url || '',
+        sellerId: p.seller_id || null,
         category: p.category || 'Other',
         price: `${p.currency || 'USD'} ${Number(p.price).toLocaleString()}`,
         images: p.emoji || '📦',
@@ -156,7 +158,14 @@ export default function AdminMarketplace() {
                 <p className="text-[11px] dark:text-gray-400 text-gray-500 mb-3 line-clamp-2">{p.description}</p>
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-1.5 min-w-0">
-                    <span className="text-[11px] dark:text-gray-300 text-gray-700 font-semibold truncate">{p.seller}</span>
+                    {p.sellerId ? (
+                      <Link to={`/app/profile/${p.sellerId}`} target="_blank" rel="noopener noreferrer"
+                        className="text-[11px] dark:text-gray-300 text-gray-700 font-semibold truncate hover:text-brand-pink transition-colors">
+                        {p.seller}
+                      </Link>
+                    ) : (
+                      <span className="text-[11px] dark:text-gray-300 text-gray-700 font-semibold truncate">{p.seller}</span>
+                    )}
                   </div>
                   <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border flex-shrink-0 ${statusColors[p.status]}`}>{p.status}</span>
                 </div>

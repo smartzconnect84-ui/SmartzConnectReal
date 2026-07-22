@@ -5,6 +5,7 @@ import {
   Heart, ShoppingBag, Tv, UserCheck, Clock, ArrowRight, RefreshCw,
   Database, Copy,
 } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 
 interface DashStats {
@@ -261,17 +262,32 @@ export default function AdminDashboard() {
                     <motion.tr key={user.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.05 }}
                       className="hover:dark:bg-white/2 hover:bg-pink-50/30 transition-colors">
                       <td className="px-4 py-3">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-full bg-love-gradient flex items-center justify-center text-white font-bold text-xs flex-shrink-0 overflow-hidden">
-                            {user.avatar_url
-                              ? <img src={user.avatar_url} alt={user.full_name || user.email} className="w-full h-full object-cover" />
-                              : (user.full_name || user.email || '?')[0].toUpperCase()}
+                        {user.auth_id ? (
+                          <Link to={`/app/profile/${user.auth_id}`} target="_blank" rel="noopener noreferrer"
+                            className="flex items-center gap-2.5 group">
+                            <div className="w-8 h-8 rounded-full bg-love-gradient flex items-center justify-center text-white font-bold text-xs flex-shrink-0 overflow-hidden ring-2 ring-transparent group-hover:ring-brand-pink/40 transition-all">
+                              {user.avatar_url
+                                ? <img src={user.avatar_url} alt={user.full_name || user.email} className="w-full h-full object-cover" />
+                                : (user.full_name || user.email || '?')[0].toUpperCase()}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-xs font-semibold dark:text-white text-gray-900 truncate group-hover:text-brand-pink transition-colors">{user.full_name || 'User'}</p>
+                              <p className="text-[10px] dark:text-gray-500 text-gray-400 truncate">{user.email}</p>
+                            </div>
+                          </Link>
+                        ) : (
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-full bg-love-gradient flex items-center justify-center text-white font-bold text-xs flex-shrink-0 overflow-hidden">
+                              {user.avatar_url
+                                ? <img src={user.avatar_url} alt={user.full_name || user.email} className="w-full h-full object-cover" />
+                                : (user.full_name || user.email || '?')[0].toUpperCase()}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-xs font-semibold dark:text-white text-gray-900 truncate">{user.full_name || 'User'}</p>
+                              <p className="text-[10px] dark:text-gray-500 text-gray-400 truncate">{user.email}</p>
+                            </div>
                           </div>
-                          <div className="min-w-0">
-                            <p className="text-xs font-semibold dark:text-white text-gray-900 truncate">{user.full_name || 'User'}</p>
-                            <p className="text-[10px] dark:text-gray-500 text-gray-400 truncate">{user.email}</p>
-                          </div>
-                        </div>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-sm">{user.country || '—'}</td>
                       <td className="px-4 py-3">
