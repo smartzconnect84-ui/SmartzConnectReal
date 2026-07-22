@@ -321,6 +321,23 @@ export default function SmartzLearningPage() {
           </div>
         </div>
       </section>
+
+      <PartnershipSection
+        product="SmartzLearning"
+        accentFrom="from-teal-500"
+        accentTo="to-emerald-600"
+        accentText="text-teal-400"
+        accentBorder="border-teal-500/30"
+        accentBg="bg-teal-500/10"
+        partnerTypes={[
+          'Educational Institution',
+          'Course Creator / Instructor',
+          'Corporate Training Partner',
+          'Certification Body',
+          'NGO / Non-Profit',
+          'Government / Ministry',
+        ]}
+      />
     </div>
   )
 }

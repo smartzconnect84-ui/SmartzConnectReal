@@ -160,6 +160,23 @@ export default function SmartzDeliveryPage() {
         </div>
       </section>
 
+      <PartnershipSection
+        product="SmartzDelivery"
+        accentFrom="from-blue-500"
+        accentTo="to-indigo-600"
+        accentText="text-blue-400"
+        accentBorder="border-blue-500/30"
+        accentBg="bg-blue-500/10"
+        partnerTypes={[
+          'Delivery Rider / Driver',
+          'Logistics Company',
+          'E-Commerce Seller',
+          'Restaurant / Food Business',
+          'Pharmacy / Healthcare',
+          'Retail & Supermarket',
+        ]}
+      />
+
       {/* Business CTA */}
       <section className="py-16 dark:bg-[#0D0A14] bg-white">
         <div className="max-w-4xl mx-auto px-4">

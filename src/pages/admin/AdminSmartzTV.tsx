@@ -34,22 +34,19 @@ interface TVChannel {
   cover_url: string | null
   description: string | null
   category: string
-  mux_stream_id: string | null
-  mux_playback_id: string | null
+  /** YouTube Live video/broadcast ID for iframe embed */
+  youtube_video_id: string | null
+  /** YouTube channel ID — fallback embed for /live_stream */
+  youtube_channel_id: string | null
   stream_key: string | null
-  rtmp_url: string | null
-  srt_url: string | null
-  whip_url: string | null
   playback_url: string | null
   stream_status: 'idle' | 'active' | 'disconnected'
   is_active: boolean
   is_featured: boolean
+  is_admin_broadcast: boolean
   display_order: number
   current_program: string | null
   viewer_count: number
-  latency_mode: string | null
-  reconnect_window: number | null
-  health_data: Record<string, unknown> | null
   last_broadcast_at: string | null
   created_at: string
 }
@@ -148,166 +145,42 @@ function CopyField({ label, value, mono = true, secret = false }: {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-//  BROADCAST SETUP WIZARD MODAL
+//  BROADCAST SETUP WIZARD MODAL (legacy stub — replaced by StudioBroadcastModal)
 // ══════════════════════════════════════════════════════════════════════════════
 
 function BroadcastSetupModal({ channel, onClose, onChannelUpdated }: {
   channel: TVChannel; onClose: () => void; onChannelUpdated: (ch: TVChannel) => void
 }) {
   const [step, setStep] = useState<'overview' | 'creating' | 'ready'>(() =>
-    channel.mux_stream_id ? 'ready' : 'overview'
+    channel.youtube_video_id ? 'ready' : 'overview'
   )
-  const [creating, setCreating] = useState(false)
-  const [error, setError] = useState('')
+  // This legacy modal is superseded by StudioBroadcastModal; kept as a passthrough
   const [localChannel, setLocalChannel] = useState(channel)
-  const [streamStatus, setStreamStatus] = useState<TVChannel['stream_status']>(channel.stream_status)
-  const [polling, setPolling] = useState(false)
-  const [goingLive, setGoingLive] = useState(false)
-  const [endingLive, setEndingLive] = useState(false)
-  const [showPreview, setShowPreview] = useState(
-    () => channel.stream_status === 'active' && !!channel.mux_playback_id
-  )
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
-
-  // Poll stream status when ready — updates both local state and DB (via edge fn)
-  useEffect(() => {
-    if (step !== 'ready' || !localChannel.mux_stream_id) return
-    const poll = async () => {
-      setPolling(true)
-      try {
-        const { data, error } = await supabase.functions.invoke('mux-stream-status', {
-          body: { stream_id: localChannel.mux_stream_id, channel_id: localChannel.id },
-        })
-        if (!error && data?.status) {
-          const newStatus = data.status as TVChannel['stream_status']
-          setStreamStatus(newStatus)
-          // Auto-show preview as soon as encoder connects
-          if (newStatus === 'active') setShowPreview(true)
-          // Keep localChannel in sync with what Mux reports
-          setLocalChannel(prev => ({ ...prev, stream_status: newStatus }))
-        }
-      } catch { /* silent */ }
-      setPolling(false)
-    }
-    poll()
-    pollRef.current = setInterval(poll, 8000)
-    return () => { if (pollRef.current) clearInterval(pollRef.current) }
-  }, [step, localChannel.mux_stream_id, localChannel.id])
-
-  const handleCreate = async () => {
-    setCreating(true); setError('')
-    try {
-      const { data, error: fnErr } = await supabase.functions.invoke('mux-create-stream', {
-        body: { channel_id: localChannel.id, latency_mode: 'low' },
-      })
-      if (fnErr || data?.error) {
-        setError(data?.error || fnErr?.message || 'Failed to create stream')
-        setCreating(false); return
-      }
-      const updated: TVChannel = {
-        ...localChannel,
-        mux_stream_id:   data.stream_id,
-        mux_playback_id: data.playback_id,
-        stream_key:      data.stream_key,
-        rtmp_url:        data.rtmp_url,
-        playback_url:    data.playback_url,
-        stream_status:   'idle',
-        is_active:       false,
-      }
-      setLocalChannel(updated)
-      onChannelUpdated(updated)
-      setStep('ready')
-    } catch (e: any) {
-      setError(e.message || 'Unexpected error')
-    }
-    setCreating(false)
-  }
-
-  // Go Live — flips is_active to true so public SmartzTV page shows the stream
-  const handleGoLive = async () => {
-    if (!localChannel.mux_stream_id) return
-    setGoingLive(true)
-    const { error: dbErr } = await supabase
-      .from('tv_channels')
-      .update({ is_active: true })
-      .eq('id', localChannel.id)
-    if (dbErr) { setError(dbErr.message || 'Failed to go live'); setGoingLive(false); return }
-    const updated = { ...localChannel, is_active: true }
-    setLocalChannel(updated)
-    onChannelUpdated(updated)
-    setGoingLive(false)
-  }
-
-  // End Live — flips is_active to false AND deletes the Mux stream
-  const handleEndLive = async () => {
-    if (!localChannel.mux_stream_id) return
-    if (!confirm('End the live broadcast? This will hide the stream from the public page and delete the Mux stream. OBS/vMix will lose the connection.')) return
-    setEndingLive(true)
-    // 1. Mark channel hidden from public first
-    await supabase.from('tv_channels').update({ is_active: false }).eq('id', localChannel.id)
-    // 2. Delete Mux stream (clears all Mux fields + stream_status from DB via edge fn)
-    const { error: fnErr } = await supabase.functions.invoke('mux-delete-stream', {
-      body: { stream_id: localChannel.mux_stream_id, channel_id: localChannel.id },
-    })
-    if (fnErr) { setError('Failed to delete Mux stream'); setEndingLive(false); return }
-    const updated: TVChannel = {
-      ...localChannel,
-      mux_stream_id: null, mux_playback_id: null, stream_key: null,
-      rtmp_url: null, playback_url: null, stream_status: 'idle', is_active: false,
-    }
-    setLocalChannel(updated)
-    onChannelUpdated(updated)
-    setStep('overview')
-    setShowPreview(false)
-    if (pollRef.current) clearInterval(pollRef.current)
-    setEndingLive(false)
-  }
-
-  const handleDeleteStream = async () => {
-    if (!localChannel.mux_stream_id) return
-    if (!confirm('Delete this Mux stream? OBS/vMix will lose the connection.')) return
-    const { error: fnErr } = await supabase.functions.invoke('mux-delete-stream', {
-      body: { stream_id: localChannel.mux_stream_id, channel_id: localChannel.id },
-    })
-    if (fnErr) { alert('Failed to delete stream'); return }
-    const updated: TVChannel = {
-      ...localChannel,
-      mux_stream_id: null, mux_playback_id: null, stream_key: null,
-      rtmp_url: null, playback_url: null, stream_status: 'idle', is_active: false,
-    }
-    setLocalChannel(updated)
-    onChannelUpdated(updated)
-    setStep('overview')
-    setShowPreview(false)
-    if (pollRef.current) clearInterval(pollRef.current)
-  }
-
-  const sc = streamStatusConfig[streamStatus] || streamStatusConfig.idle
-
-  // Encoder is connected when Mux reports 'active'
-  const encoderConnected = streamStatus === 'active'
-  // Stream is publicly live when encoder is connected AND is_active is true
+  const sc = streamStatusConfig[localChannel.stream_status] || streamStatusConfig.idle
+  const encoderConnected = localChannel.stream_status === 'active'
   const isPubliclyLive = encoderConnected && localChannel.is_active
+  void step; void setStep  // suppress lint warnings on stub
 
+  // Render: show YouTube stream info + quick Go Live / End Live controls
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
       onClick={onClose}>
       <motion.div initial={{ scale: 0.95, y: 16 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95 }}
         onClick={e => e.stopPropagation()}
-        className="w-full max-w-xl bg-[#0A0714] rounded-2xl border border-white/10 overflow-hidden shadow-2xl max-h-[90vh] overflow-y-auto">
+        className="w-full max-w-md bg-[#0A0714] rounded-2xl border border-white/10 overflow-hidden shadow-2xl">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-white/8 bg-gradient-to-r from-violet-900/30 to-blue-900/30 sticky top-0 z-10 bg-[#0A0714]">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-white/8 bg-gradient-to-r from-violet-900/30 to-red-900/20">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-violet-500/20 border border-violet-500/30 flex items-center justify-center overflow-hidden">
+            <div className="w-9 h-9 rounded-xl bg-red-500/20 border border-red-500/30 flex items-center justify-center overflow-hidden">
               {localChannel.logo_url
                 ? <img src={localChannel.logo_url} alt={localChannel.name} className="w-full h-full object-cover" />
-                : <Tv className="w-4 h-4 text-violet-400" />}
+                : <Tv className="w-4 h-4 text-red-400" />}
             </div>
             <div>
               <h2 className="font-bold text-white text-sm">{localChannel.name}</h2>
-              <p className="text-[10px] text-gray-400">Broadcast Setup — Mux Live Streaming</p>
+              <p className="text-[10px] text-gray-400">YouTube Live Broadcast</p>
             </div>
           </div>
           <button onClick={onClose} className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center hover:bg-white/10">
@@ -316,227 +189,66 @@ function BroadcastSetupModal({ channel, onClose, onChannelUpdated }: {
         </div>
 
         <div className="p-5 space-y-4">
+          {/* Status + viewer count */}
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold border ${sc.bg} ${sc.color}`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} />
+              {encoderConnected ? 'LIVE' : localChannel.stream_status === 'disconnected' ? 'DISCONNECTED' : 'OFFLINE'}
+            </div>
+            {isPubliclyLive && (
+              <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border bg-red-500/15 text-red-400 border-red-500/25">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" /> PUBLIC — ON AIR
+              </span>
+            )}
+            {localChannel.viewer_count > 0 && (
+              <span className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs text-gray-300 bg-white/5 border border-white/10">
+                <Eye className="w-3 h-3" /> {localChannel.viewer_count.toLocaleString()} watching
+              </span>
+            )}
+          </div>
 
-          {/* ── No stream yet ── */}
-          {step === 'overview' && (
-            <>
-              <div className="p-4 rounded-xl bg-violet-500/5 border border-violet-500/15 space-y-3">
-                <p className="text-sm font-semibold text-white flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-violet-400" /> How it works
-                </p>
-                <div className="space-y-2">
-                  {[
-                    ['1', 'Create a Mux live stream — get RTMP credentials'],
-                    ['2', 'Enter the RTMP URL + Stream Key into OBS or vMix'],
-                    ['3', 'Start streaming in OBS — preview appears here (admin-only)'],
-                    ['4', 'Click "Go Live" to publish to the public SmartzTV page'],
-                  ].map(([n, t]) => (
-                    <div key={n} className="flex items-start gap-2.5">
-                      <span className="w-5 h-5 rounded-full bg-violet-500/20 text-violet-400 text-[10px] font-black flex items-center justify-center flex-shrink-0 mt-0.5">{n}</span>
-                      <p className="text-xs text-gray-300">{t}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
+          {/* YouTube ID display */}
+          {localChannel.youtube_video_id ? (
+            <CopyField label="YouTube Video ID" value={localChannel.youtube_video_id} />
+          ) : (
+            <div className="p-3 rounded-xl bg-amber-500/8 border border-amber-500/20 flex items-start gap-2">
+              <AlertCircle className="w-3.5 h-3.5 text-amber-400 flex-shrink-0 mt-0.5" />
+              <p className="text-xs text-amber-200/80">
+                No YouTube video ID set. Open <strong className="text-white">Broadcast Setup</strong> (full studio) to configure.
+              </p>
+            </div>
+          )}
 
-              <div className="p-3 rounded-xl bg-blue-500/5 border border-blue-500/15">
-                <p className="text-xs text-blue-200/70 flex items-start gap-2">
-                  <Info className="w-3.5 h-3.5 text-blue-400 flex-shrink-0 mt-0.5" />
-                  Mux handles global CDN delivery. No server required. You only need OBS Studio or vMix and an internet connection.
-                </p>
-              </div>
-
-              {error && (
-                <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 flex items-start gap-2">
-                  <AlertCircle className="w-3.5 h-3.5 text-red-400 flex-shrink-0 mt-0.5" />
-                  <p className="text-xs text-red-300">{error}</p>
-                </div>
-              )}
-
-              <button onClick={handleCreate} disabled={creating}
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 text-white font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-60 shadow-lg shadow-violet-500/20 hover:opacity-90 transition-opacity">
-                {creating ? <><Loader2 className="w-4 h-4 animate-spin" /> Creating Mux Stream…</> : <><Zap className="w-4 h-4" /> Create Live Stream in Mux</>}
+          {/* Go Live / End Live */}
+          <div className="flex gap-2">
+            {!localChannel.is_active ? (
+              <button
+                onClick={async () => {
+                  const { error: dbErr } = await supabase.from('tv_channels').update({ is_active: true }).eq('id', localChannel.id)
+                  if (!dbErr) { const u = { ...localChannel, is_active: true }; setLocalChannel(u); onChannelUpdated(u) }
+                }}
+                className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 text-white text-xs font-bold flex items-center justify-center gap-1.5 hover:opacity-90 transition-opacity">
+                <Radio className="w-3.5 h-3.5" /> Go Live
               </button>
-            </>
-          )}
+            ) : (
+              <button
+                onClick={async () => {
+                  const { error: dbErr } = await supabase.from('tv_channels').update({ is_active: false }).eq('id', localChannel.id)
+                  if (!dbErr) { const u = { ...localChannel, is_active: false }; setLocalChannel(u); onChannelUpdated(u) }
+                }}
+                className="flex-1 py-2.5 rounded-xl bg-red-500/15 text-red-400 border border-red-500/30 text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-red-500/25 transition-colors">
+                <PhoneOff className="w-3.5 h-3.5" /> End Live
+              </button>
+            )}
+            <button onClick={() => window.open('/smartztv', '_blank')}
+              className="px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-white/10 transition-colors">
+              <ExternalLink className="w-3.5 h-3.5" />
+            </button>
+          </div>
 
-          {/* ── Stream ready ── */}
-          {step === 'ready' && localChannel.mux_stream_id && (
-            <>
-              {/* ── Control-room status bar ── */}
-              <div className="flex items-center justify-between gap-2 flex-wrap">
-                {/* Encoder / Mux status chip */}
-                <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold border ${sc.bg} ${sc.color}`}>
-                  <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} />
-                  {encoderConnected ? 'LIVE' : streamStatus === 'disconnected' ? 'DISCONNECTED' : 'CONNECTING…'}
-                  {polling && <Loader2 className="w-3 h-3 animate-spin ml-1 opacity-60" />}
-                </div>
-
-                <div className="flex items-center gap-2 flex-wrap">
-                  {/* Viewer count when live */}
-                  {encoderConnected && localChannel.viewer_count > 0 && (
-                    <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border bg-white/5 text-gray-300 border-white/10">
-                      <Eye className="w-3 h-3" /> {localChannel.viewer_count.toLocaleString()} watching
-                    </span>
-                  )}
-                  {/* Public broadcast chip */}
-                  {isPubliclyLive && (
-                    <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border bg-red-500/15 text-red-400 border-red-500/25">
-                      <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
-                      PUBLIC — ON AIR
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* ── ADMIN CONTROL-ROOM PREVIEW — shown when encoder is connected ── */}
-              {encoderConnected && localChannel.mux_playback_id && (
-                <div className="space-y-2">
-                  {/* Preview header */}
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
-                      <Eye className="w-3.5 h-3.5" /> Control Room Monitor
-                      <span className="font-normal text-gray-400 ml-1">— admin only</span>
-                    </p>
-                    <button
-                      onClick={() => setShowPreview(p => !p)}
-                      className="text-[11px] text-gray-400 hover:text-white transition-colors underline underline-offset-2"
-                    >
-                      {showPreview ? 'Hide' : 'Show'}
-                    </button>
-                  </div>
-
-                  <AnimatePresence>
-                    {showPreview && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="overflow-hidden"
-                      >
-                        {/* Professional TV control-room monitor — full controls enabled */}
-                        <div className="rounded-xl overflow-hidden border border-amber-500/25 shadow-lg shadow-amber-500/10">
-                          <SmartzTVPlayer
-                            playbackId={localChannel.mux_playback_id}
-                            poster={localChannel.cover_url}
-                            isLive
-                            title={localChannel.name}
-                            viewerCount={localChannel.viewer_count}
-                            accentColor="#f59e0b"
-                          />
-                        </div>
-                        {!localChannel.is_active && (
-                          <p className="mt-1.5 text-[10px] text-amber-500/70 text-center">
-                            ⚠️ Admin preview only — click "Go Live" to publish to public TV
-                          </p>
-                        )}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-
-                  {/* ── Go Live / End Live controls ── */}
-                  <div className="flex gap-2 pt-1">
-                    {!localChannel.is_active ? (
-                      <button
-                        onClick={handleGoLive}
-                        disabled={goingLive}
-                        className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-lg shadow-red-500/20 hover:opacity-90 transition-opacity disabled:opacity-60"
-                      >
-                        {goingLive
-                          ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Publishing…</>
-                          : <><Radio className="w-3.5 h-3.5" /> Go Live — Publish to Public TV</>
-                        }
-                      </button>
-                    ) : (
-                      <button
-                        onClick={handleEndLive}
-                        disabled={endingLive}
-                        className="flex-1 py-2.5 rounded-xl bg-red-500/15 text-red-400 border border-red-500/30 text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-red-500/25 transition-colors disabled:opacity-60"
-                      >
-                        {endingLive
-                          ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Ending…</>
-                          : <><PhoneOff className="w-3.5 h-3.5" /> End Live &amp; Remove from Public TV</>
-                        }
-                      </button>
-                    )}
-                  </div>
-
-                  {error && (
-                    <div className="p-2.5 rounded-xl bg-red-500/10 border border-red-500/20 flex items-start gap-2">
-                      <AlertCircle className="w-3.5 h-3.5 text-red-400 flex-shrink-0 mt-0.5" />
-                      <p className="text-xs text-red-300">{error}</p>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* ── Not yet connected — waiting for OBS ── */}
-              {!encoderConnected && (
-                <div className="p-3 rounded-xl bg-amber-500/5 border border-amber-500/15 flex items-start gap-2">
-                  <Info className="w-3.5 h-3.5 text-amber-400 flex-shrink-0 mt-0.5" />
-                  <p className="text-xs text-amber-200/70">
-                    Start streaming in OBS/vMix using the credentials below. Once your encoder connects,
-                    the <strong className="text-amber-300">control room monitor</strong> will appear automatically so you can
-                    verify audio/video quality before clicking <strong className="text-amber-300">Go Live</strong>.
-                  </p>
-                </div>
-              )}
-
-              {/* OBS Setup box */}
-              <div className="p-3 rounded-xl bg-blue-500/5 border border-blue-500/15">
-                <p className="text-xs font-bold text-blue-300 mb-2 flex items-center gap-1.5">
-                  <Monitor className="w-3.5 h-3.5" /> OBS Studio Setup
-                </p>
-                <ol className="text-[11px] text-gray-400 space-y-1 list-decimal list-inside">
-                  <li>Open OBS → Settings → Stream → Service: <strong className="text-white">Custom</strong></li>
-                  <li>Paste the <strong className="text-white">RTMP Server</strong> below into the Server field</li>
-                  <li>Paste the <strong className="text-white">Stream Key</strong> below into the Stream Key field</li>
-                  <li>Click Apply → Start Streaming in OBS</li>
-                </ol>
-              </div>
-
-              <div className="space-y-2.5">
-                <CopyField label="RTMP Server (OBS Server)" value="rtmps://global-live.mux.com:443/app" />
-                {localChannel.stream_key && (
-                  <CopyField label="Stream Key (OBS Stream Key / vMix Password)" value={localChannel.stream_key} secret />
-                )}
-                {localChannel.playback_url && (
-                  <CopyField label="HLS Playback URL (for external testing)" value={localChannel.playback_url} />
-                )}
-              </div>
-
-              {/* vMix note */}
-              <div className="p-3 rounded-xl bg-purple-500/5 border border-purple-500/15">
-                <p className="text-[11px] text-gray-300">
-                  <strong className="text-purple-300">vMix:</strong> External Output → RTMP/Custom → Server:
-                  <code className="text-green-400 text-[10px] mx-1">rtmps://global-live.mux.com:443/app</code>
-                  → Stream Name: paste your Stream Key above.
-                </p>
-              </div>
-
-              {/* Stream key warning */}
-              <div className="flex items-start gap-2 p-2.5 rounded-xl bg-amber-500/5 border border-amber-500/15">
-                <Info className="w-3.5 h-3.5 text-amber-400 flex-shrink-0 mt-0.5" />
-                <p className="text-[11px] text-amber-200/70">
-                  Keep your Stream Key private. Anyone with the key can publish to this channel.
-                  If compromised, delete the stream and create a new one.
-                </p>
-              </div>
-
-              <div className="flex gap-2">
-                <button onClick={() => window.open('/smartztv', '_blank')}
-                  className="flex-1 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-white/10 transition-colors">
-                  <ExternalLink className="w-3.5 h-3.5" /> Public TV
-                </button>
-                {!localChannel.is_active && (
-                  <button onClick={handleDeleteStream}
-                    className="flex-1 py-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-red-500/20 transition-colors">
-                    <Trash2 className="w-3.5 h-3.5" /> Delete Stream
-                  </button>
-                )}
-              </div>
-            </>
-          )}
+          <p className="text-[11px] text-gray-500 text-center">
+            Use <strong className="text-violet-400">Full Studio</strong> for encoder guides, scheduling, analytics and moderation.
+          </p>
         </div>
       </motion.div>
     </motion.div>
@@ -845,11 +557,12 @@ function ChannelCard({ channel, onEdit, onDelete, onBroadcast, onSchedule, onTog
 
       {/* Cover / Live preview */}
       <div className="relative dark:bg-white/5 bg-gray-50 overflow-hidden">
-        {channel.stream_status === 'active' && channel.mux_playback_id ? (
-          /* ── Real-time muted live preview when encoder is connected ── */
+        {channel.stream_status === 'active' && (channel.youtube_video_id || channel.youtube_channel_id) ? (
+          /* ── Real-time YouTube live preview when active ── */
           <div className="w-full">
             <SmartzTVPlayer
-              playbackId={channel.mux_playback_id}
+              videoId={channel.youtube_video_id}
+              channelId={channel.youtube_channel_id}
               poster={channel.cover_url}
               isLive
               title={channel.name}
@@ -919,16 +632,18 @@ function ChannelCard({ channel, onEdit, onDelete, onBroadcast, onSchedule, onTog
           <p className="text-[11px] dark:text-gray-400 text-gray-500 mb-3 line-clamp-2">{channel.description}</p>
         )}
 
-        {/* Mux info */}
-        {channel.mux_stream_id ? (
+        {/* YouTube stream info */}
+        {channel.youtube_video_id ? (
           <div className="flex items-center gap-1.5 mb-3 px-2 py-1.5 rounded-lg dark:bg-white/3 bg-gray-50 border dark:border-white/6 border-gray-100">
-            <Signal className="w-3 h-3 dark:text-gray-500 text-gray-400 flex-shrink-0" />
-            <p className="text-[10px] dark:text-gray-400 text-gray-500 font-mono truncate">{channel.mux_stream_id}</p>
+            <Signal className="w-3 h-3 text-red-400 flex-shrink-0" />
+            <p className="text-[10px] dark:text-gray-400 text-gray-500 font-mono truncate">
+              YouTube: {channel.youtube_video_id}
+            </p>
           </div>
         ) : (
           <div className="flex items-center gap-1.5 mb-3 px-2 py-1.5 rounded-lg dark:bg-amber-500/5 bg-amber-50 border dark:border-amber-500/15 border-amber-200">
             <AlertCircle className="w-3 h-3 text-amber-500 flex-shrink-0" />
-            <p className="text-[10px] text-amber-500">No stream configured — click Setup</p>
+            <p className="text-[10px] text-amber-500">No YouTube ID set — click Setup</p>
           </div>
         )}
 
@@ -962,7 +677,7 @@ function ChannelCard({ channel, onEdit, onDelete, onBroadcast, onSchedule, onTog
           <button onClick={onBroadcast}
             className="w-full py-2 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-md shadow-violet-500/20 hover:opacity-90 transition-opacity">
             <Antenna className="w-3.5 h-3.5" />
-            {channel.mux_stream_id ? 'Broadcast Setup' : 'Setup Broadcast'}
+            {channel.youtube_video_id ? 'Broadcast Setup' : 'Setup Broadcast'}
           </button>
           <button onClick={onToggleActive}
             className={`w-full py-1.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border transition-all ${
@@ -1069,9 +784,9 @@ function ChannelsTab() {
         ))}
       </div>
 
-      {/* ── MUX Live Monitor — shown when at least one channel is broadcasting ── */}
+      {/* ── YouTube Live Monitor — shown when at least one channel is broadcasting ── */}
       {(() => {
-        const live = channels.filter(c => c.stream_status === 'active' && c.mux_playback_id)
+        const live = channels.filter(c => c.stream_status === 'active' && (c.youtube_video_id || c.youtube_channel_id))
         if (live.length === 0) return null
         const ch = live[0]
         return (
@@ -1080,7 +795,7 @@ function ChannelsTab() {
             <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-red-900/40 to-violet-900/30 border-b border-red-500/20">
               <div className="flex items-center gap-2.5">
                 <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                <span className="text-xs font-black text-red-400 uppercase tracking-widest">ON AIR — MUX LIVE</span>
+                <span className="text-xs font-black text-red-400 uppercase tracking-widest">ON AIR — YOUTUBE LIVE</span>
                 <span className="text-xs dark:text-gray-300 text-gray-200 font-semibold">{ch.name}</span>
                 {ch.viewer_count > 0 && (
                   <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/40 text-white text-[10px]">
@@ -1103,7 +818,8 @@ function ChannelsTab() {
               <div className={`grid gap-3 ${live.length > 1 ? 'lg:grid-cols-[1fr_200px]' : ''}`}>
                 {/* Main player */}
                 <SmartzTVPlayer
-                  playbackId={ch.mux_playback_id}
+                  videoId={ch.youtube_video_id}
+                  channelId={ch.youtube_channel_id}
                   poster={ch.cover_url}
                   isLive
                   title={ch.name}
@@ -1684,7 +1400,7 @@ function LiveTVPanel({ streams }: { streams: Stream[] }) {
 // ══════════════════════════════════════════════════════════════════════════════
 
 // ══════════════════════════════════════════════════════════════════════════════
-//  STUDIO 1 — SmartzTV (Mux + LiveKit public broadcast)
+//  STUDIO 1 — SmartzTV (YouTube Live + LiveKit public broadcast)
 // ══════════════════════════════════════════════════════════════════════════════
 
 function Studio1SmartzTV() {
@@ -1808,7 +1524,7 @@ function Studio1SmartzTV() {
             Studio 1 · SmartzTV
           </h2>
           <p className="text-xs dark:text-gray-400 text-gray-500">
-            Mux RTMP/OBS + LiveKit WebRTC · broadcasts to public /smartztv page · <code className="text-[11px]">is_admin_broadcast = true</code>
+            YouTube RTMP/OBS + LiveKit WebRTC · broadcasts to public /smartztv page · <code className="text-[11px]">is_admin_broadcast = true</code>
           </p>
         </div>
       </div>
@@ -2051,7 +1767,7 @@ export default function AdminSmartzTV() {
           {
             key: 'studio1',
             label: 'Studio 1 · SmartzTV',
-            sub: 'Public broadcast via Mux + LiveKit',
+            sub: 'Public broadcast via YouTube Live + LiveKit',
             icon: Tv,
             active: 'bg-gradient-to-r from-violet-600/20 to-purple-600/20 border border-violet-500/30',
             dot: 'bg-violet-500',

@@ -11,25 +11,13 @@ import { supabase } from '@/lib/supabase'
 import { useSiteConfig, SITE_IMAGE_KEYS } from '@/contexts/SiteConfigContext'
 import { useAuth } from '@/hooks/useAuth'
 import SmartzTVPlayer from '@/components/SmartzTVPlayer'
+import LiveComments from '@/components/smartztv/LiveComments'
 import PartnershipSection from '@/components/PartnershipSection'
+import type { TVChannelRow } from '@/lib/streaming/types'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
-interface TVChannel {
-  id: string
-  name: string
-  logo_url: string | null
-  cover_url: string | null
-  description: string | null
-  category: string | null
-  mux_playback_id: string | null
-  playback_url: string | null
-  stream_status: 'idle' | 'active' | 'disconnected'
-  is_active: boolean
-  is_featured: boolean
-  current_program: string | null
-  viewer_count: number
-}
+type TVChannel = TVChannelRow
 
 interface TVScheduleEntry {
   id: string
@@ -52,12 +40,13 @@ const features = [
   { icon: Crown,      title: 'Creator Monetisation',   desc: 'Subscriptions, tips, brand deals, and exclusive content — multiple income streams in one place.',     color: 'from-yellow-500 to-amber-600' },
 ]
 
-// ── Live stream player (active Mux stream) ─────────────────────────────────────
+// ── Live stream player (active YouTube Live stream) ───────────────────────────
 
 function LiveStreamPlayer({ channel }: { channel: TVChannel }) {
   return (
     <SmartzTVPlayer
-      playbackId={channel.mux_playback_id}
+      videoId={channel.youtube_video_id}
+      channelId={channel.youtube_channel_id}
       poster={channel.cover_url}
       isLive
       title={channel.name}
@@ -366,6 +355,7 @@ function LiveTVHub() {
   const [replay, setReplay]               = useState<TVVideo | null>(null)
   const [countdown, setCountdown]         = useState(POLL_INTERVAL)
   const [isChecking, setIsChecking]       = useState(false)
+  const [showComments, setShowComments]   = useState(false)
 
   const countdownRef  = useRef<ReturnType<typeof setInterval> | null>(null)
   const pollRef       = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -380,7 +370,7 @@ function LiveTVHub() {
     try {
       const { data, error: err } = await supabase
         .from('tv_channels')
-        .select('id, name, logo_url, cover_url, description, category, mux_playback_id, playback_url, stream_status, is_active, is_featured, current_program, viewer_count')
+        .select('id, name, logo_url, cover_url, description, category, youtube_video_id, youtube_channel_id, playback_url, stream_status, is_active, is_featured, current_program, viewer_count')
         .eq('is_active', true)
         .order('is_featured', { ascending: false })
         .order('display_order', { ascending: true })
@@ -420,10 +410,7 @@ function LiveTVHub() {
 
     pollRef.current = setTimeout(() => {
       void load({ silent: true, isCheck: true }).then(() => {
-        setSelected(prev => {
-          // Will restart countdown from the effect below
-          return prev
-        })
+        setSelected(prev => prev)
       })
     }, seconds * 1000)
   }, [load])
@@ -446,17 +433,16 @@ function LiveTVHub() {
   }, [load])
 
   // ── When not live, start countdown poll cycle ───────────────────────────────
-  const isLive = !!selected && selected.stream_status === 'active' && !!selected.mux_playback_id
+  const isLive = !!selected && selected.stream_status === 'active' &&
+    !!(selected.youtube_video_id || selected.youtube_channel_id)
   const isDisconnected = selected?.stream_status === 'disconnected'
 
   useEffect(() => {
     if (isLive) {
-      // Stop any pending countdown when we go live
       if (countdownRef.current) clearInterval(countdownRef.current)
       if (pollRef.current) clearTimeout(pollRef.current)
       return
     }
-    // Reconnect more aggressively when disconnected
     const interval = isDisconnected ? RECONNECT_FAST : POLL_INTERVAL
     startCountdown(interval)
   }, [isLive, isDisconnected, startCountdown])
@@ -586,6 +572,38 @@ function LiveTVHub() {
         {/* Now Playing */}
         <NowPlayingCard channel={selected} isLive={isLive} nextSchedule={nextSchedule} />
 
+        {/* Live Comments (public viewers) */}
+        {selected && isLive && (
+          <div className="mt-4">
+            <button
+              onClick={() => setShowComments(c => !c)}
+              className="flex items-center gap-2 w-full px-4 py-3 rounded-2xl dark:bg-[#0e0820] bg-white border dark:border-white/6 border-gray-200 text-sm font-semibold dark:text-white text-gray-900 hover:dark:bg-white/5 hover:bg-gray-50 transition-colors mb-2"
+            >
+              <span className="flex items-center gap-1.5">💬 Live Chat</span>
+              <span className="ml-auto text-xs dark:text-gray-500 text-gray-400">
+                {showComments ? 'Hide' : 'Show'} chat
+              </span>
+            </button>
+            <AnimatePresence>
+              {showComments && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 400 }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="overflow-hidden rounded-2xl border dark:border-white/8 border-gray-200 dark:bg-[#0e0820] bg-white"
+                >
+                  <LiveComments
+                    channelId={selected.id}
+                    broadcastId={selected.youtube_video_id}
+                    accentColor="#8b5cf6"
+                    className="h-[400px]"
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
+
         {/* Program Schedule */}
         <ProgramScheduleSection schedule={schedule} />
 
@@ -606,8 +624,6 @@ function LiveTVHub() {
     </section>
   )
 }
-
-// NOTE: Community LiveKit streams removed intentionally.
 
 // ── Main Page ──────────────────────────────────────────────────────────────────
 

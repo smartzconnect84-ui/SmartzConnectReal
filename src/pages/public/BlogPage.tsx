@@ -103,13 +103,12 @@ export default function BlogPage() {
   })
 
   return (
-    <div className="min-h-screen" style={{ background: '#080510' }}>
+    <div className="min-h-screen dark:bg-[#080510] bg-white">
 
       {/* ── Hero banner ── */}
       <section className="relative overflow-hidden pt-16 sm:pt-20">
         {/* Glassmorphic hero bg */}
-        <div className="relative py-20 sm:py-28 overflow-hidden"
-          style={{ background: 'linear-gradient(135deg, #0f0720 0%, #0d0518 50%, #160930 100%)' }}>
+        <div className="relative py-20 sm:py-28 overflow-hidden dark:bg-[#0f0720] bg-gradient-to-br from-purple-900 via-[#0d0518] to-[#160930]">
           {/* Glow orbs */}
           <motion.div animate={{ scale: [1, 1.12, 1], opacity: [0.12, 0.22, 0.12] }} transition={{ duration: 8, repeat: Infinity }}
             className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[320px] rounded-full bg-purple-600/15 blur-3xl pointer-events-none" />
@@ -130,18 +129,18 @@ export default function BlogPage() {
               </span>
             </motion.h1>
 
-            <motion.p {...up(0.14)} className="text-base text-white/60 mb-8 max-w-xl mx-auto">
+            <motion.p {...up(0.14)} className="text-base dark:text-white/60 text-gray-600 mb-8 max-w-xl mx-auto">
               Product updates, dating tips, creator stories, tech deep-dives, and everything happening across the SmartzConnect ecosystem.
             </motion.p>
 
             {/* Search — glassmorphic */}
             <motion.div {...up(0.2)} className="relative max-w-md w-full mx-auto">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 dark:text-white/40 text-gray-400" />
               <input
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Search articles…"
-                className="w-full pl-11 pr-4 py-3.5 rounded-2xl text-white placeholder:text-white/35 focus:outline-none text-sm transition-all"
+                className="w-full pl-11 pr-4 py-3.5 rounded-2xl dark:text-white text-gray-900 dark:placeholder:text-white/35 placeholder:text-gray-400 focus:outline-none text-sm transition-all"
                 style={{ background: 'rgba(255,255,255,0.07)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.14)', boxShadow: '0 4px 24px rgba(0,0,0,0.2)' }}
                 onFocus={e => (e.currentTarget.style.border = '1px solid rgba(168,85,247,0.55)')}
                 onBlur={e  => (e.currentTarget.style.border = '1px solid rgba(255,255,255,0.14)')}
@@ -191,23 +190,18 @@ export default function BlogPage() {
               className={`flex-shrink-0 px-4 py-2 rounded-xl text-sm font-bold transition-all ${
                 activeCategory === cat
                   ? 'text-white'
-                  : 'text-white/60 hover:text-white'
+                  : 'dark:text-white/60 dark:hover:text-white text-gray-500 hover:text-gray-900'
               }`}
               style={activeCategory === cat ? {
                 background: 'linear-gradient(135deg, #7C3AED 0%, #A855F7 100%)',
                 boxShadow: '0 4px 16px rgba(124,58,237,0.35)',
-              } : {
-                background: 'rgba(255,255,255,0.05)',
-                backdropFilter: 'blur(8px)',
-                border: '1px solid rgba(255,255,255,0.08)',
-              }}
+              } : undefined}
             >
               {cat}
             </motion.button>
           ))}
           <motion.button onClick={fetchPosts} whileHover={{ scale: 1.1, rotate: 180 }} transition={{ duration: 0.4 }}
-            className="flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-xl text-white/50 hover:text-white transition-colors"
-            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
+            className="flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-xl dark:text-white/50 dark:hover:text-white text-gray-400 hover:text-gray-700 transition-colors dark:bg-white/5 bg-gray-100 dark:border-white/8 border border-gray-200 rounded-xl">
             <RefreshCw className="w-4 h-4" />
           </motion.button>
         </motion.div>
@@ -217,7 +211,7 @@ export default function BlogPage() {
           <div className="flex flex-col items-center justify-center py-24 gap-4">
             <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
               className="w-10 h-10 rounded-full border-2 border-purple-500/30 border-t-purple-500" />
-            <motion.p animate={{ opacity: [0.4, 1, 0.4] }} transition={{ duration: 1.5, repeat: Infinity }} className="text-sm text-white/40">
+            <motion.p animate={{ opacity: [0.4, 1, 0.4] }} transition={{ duration: 1.5, repeat: Infinity }} className="text-sm dark:text-white/40 text-gray-400">
               Loading articles…
             </motion.p>
           </div>
@@ -227,13 +221,12 @@ export default function BlogPage() {
         <AnimatePresence>
           {!loading && !dbConnected && (
             <motion.div {...up()} className="flex flex-col items-center justify-center py-24 gap-5 text-center">
-              <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
-                style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                <BookOpen className="w-7 h-7 text-white/30" />
+              <div className="w-16 h-16 rounded-2xl flex items-center justify-center dark:bg-white/5 bg-gray-100 dark:border-white/8 border border-gray-200">
+                <BookOpen className="w-7 h-7 dark:text-white/30 text-gray-400" />
               </div>
               <div>
-                <p className="font-bold text-xl text-white mb-2">Blog not connected</p>
-                <p className="text-sm text-white/40 max-w-sm">Configure Supabase and create a <code className="text-purple-400">blog_posts</code> table to publish articles here.</p>
+                <p className="font-bold text-xl dark:text-white text-gray-900 mb-2">Blog not connected</p>
+                <p className="text-sm dark:text-white/40 text-gray-500 max-w-sm">Configure Supabase and create a <code className="text-purple-400">blog_posts</code> table to publish articles here.</p>
               </div>
               <motion.button onClick={fetchPosts} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}
                 className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-white text-sm font-bold"
@@ -248,13 +241,12 @@ export default function BlogPage() {
         {!loading && dbConnected && posts.length === 0 && (
           <motion.div {...up()} className="flex flex-col items-center justify-center py-24 gap-5 text-center">
             <motion.div animate={{ y: [0, -8, 0] }} transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-              className="w-16 h-16 rounded-2xl flex items-center justify-center"
-              style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.08)' }}>
+              className="w-16 h-16 rounded-2xl flex items-center justify-center dark:bg-white/5 bg-gray-100 dark:border-white/8 border border-gray-200">
               <Sparkles className="w-7 h-7 text-purple-400/60" />
             </motion.div>
             <div>
-              <p className="font-bold text-xl text-white mb-2">No articles yet</p>
-              <p className="text-sm text-white/40">Check back soon — stories are on the way!</p>
+              <p className="font-bold text-xl dark:text-white text-gray-900 mb-2">No articles yet</p>
+              <p className="text-sm dark:text-white/40 text-gray-500">Check back soon — stories are on the way!</p>
             </div>
           </motion.div>
         )}
@@ -290,11 +282,11 @@ export default function BlogPage() {
                         style={{ background: 'rgba(236,72,153,0.12)', border: '1px solid rgba(236,72,153,0.22)' }}>{featured.category}</span>
                     )}
                   </div>
-                  <h2 className="font-display font-black text-xl sm:text-2xl text-white mb-3 leading-tight group-hover:text-purple-300 transition-colors">
+                  <h2 className="font-display font-black text-xl sm:text-2xl dark:text-white text-gray-900 mb-3 leading-tight group-hover:text-purple-400 transition-colors">
                     {featured.title}
                   </h2>
                   {featured.excerpt && (
-                    <p className="text-white/50 leading-relaxed mb-5 text-sm sm:text-base line-clamp-3">{featured.excerpt}</p>
+                    <p className="dark:text-white/50 text-gray-600 leading-relaxed mb-5 text-sm sm:text-base line-clamp-3">{featured.excerpt}</p>
                   )}
                   <div className="flex items-center gap-4 mb-5">
                     {featured.author && (
@@ -305,19 +297,19 @@ export default function BlogPage() {
                         </div>
                         <div>
                           <p className="text-xs font-bold text-white">{featured.author}</p>
-                          {featured.author_role && <p className="text-[10px] text-white/40">{featured.author_role}</p>}
+                          {featured.author_role && <p className="text-[10px] dark:text-white/40 text-gray-500">{featured.author_role}</p>}
                         </div>
                       </div>
                     )}
-                    {featured.date && <span className="text-xs text-white/40 flex items-center gap-1"><Calendar className="w-3 h-3" /> {featured.date}</span>}
-                    {featured.read_time && <span className="text-xs text-white/40 flex items-center gap-1"><Clock className="w-3 h-3" /> {featured.read_time}</span>}
+                    {featured.date && <span className="text-xs dark:text-white/40 text-gray-500 flex items-center gap-1"><Calendar className="w-3 h-3" /> {featured.date}</span>}
+                    {featured.read_time && <span className="text-xs dark:text-white/40 text-gray-500 flex items-center gap-1"><Clock className="w-3 h-3" /> {featured.read_time}</span>}
                   </div>
                   <div className="flex items-center gap-3">
                     <motion.span whileHover={{ x: 4 }} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-white text-sm font-bold"
                       style={{ background: 'linear-gradient(135deg, #7C3AED 0%, #A855F7 100%)', boxShadow: '0 4px 16px rgba(124,58,237,0.30)' }}>
                       Read Article <ArrowRight className="w-4 h-4" />
                     </motion.span>
-                    {featured.views && <span className="text-xs text-white/30">{featured.views} views · {featured.likes} likes</span>}
+                    {featured.views && <span className="text-xs dark:text-white/30 text-gray-400">{featured.views} views · {featured.likes} likes</span>}
                   </div>
                 </div>
               </Link>
@@ -358,14 +350,14 @@ export default function BlogPage() {
                       )}
                     </div>
 
-                    <h3 className="font-bold text-sm text-white leading-snug mb-2 group-hover:text-purple-300 transition-colors line-clamp-2">
+                    <h3 className="font-bold text-sm dark:text-white text-gray-900 leading-snug mb-2 group-hover:text-purple-400 transition-colors line-clamp-2">
                       {post.title}
                     </h3>
                     {post.excerpt && (
-                      <p className="text-xs text-white/40 leading-relaxed mb-4 line-clamp-3">{post.excerpt}</p>
+                      <p className="text-xs dark:text-white/40 text-gray-500 leading-relaxed mb-4 line-clamp-3">{post.excerpt}</p>
                     )}
 
-                    <div className="flex items-center justify-between pt-3 border-t border-white/6">
+                    <div className="flex items-center justify-between pt-3 border-t dark:border-white/6 border-gray-100">
                       <div className="flex items-center gap-2">
                         {post.author && (
                           <>
@@ -373,12 +365,12 @@ export default function BlogPage() {
                               style={{ background: 'linear-gradient(135deg, #7C3AED, #EC4899)' }}>
                               {post.author[0]}
                             </div>
-                            <span className="text-xs text-white/40">{post.author.split(' ')[0]}</span>
+                            <span className="text-xs dark:text-white/40 text-gray-500">{post.author.split(' ')[0]}</span>
                           </>
                         )}
-                        {post.date && <span className="text-[10px] text-white/25">{post.date.split(',')[0]}</span>}
+                        {post.date && <span className="text-[10px] dark:text-white/25 text-gray-400">{post.date.split(',')[0]}</span>}
                       </div>
-                      <div className="flex items-center gap-2 text-[10px] text-white/30">
+                      <div className="flex items-center gap-2 text-[10px] dark:text-white/30 text-gray-400">
                         {post.views && <span className="flex items-center gap-0.5"><TrendingUp className="w-3 h-3" /> {post.views}</span>}
                         {post.likes !== undefined && <span className="flex items-center gap-0.5"><Heart className="w-3 h-3" /> {post.likes}</span>}
                       </div>
@@ -394,7 +386,7 @@ export default function BlogPage() {
         {!loading && dbConnected && filtered.length === 0 && search && (
           <motion.div {...up()} className="text-center py-20">
             <p className="text-4xl mb-3">📝</p>
-            <p className="text-white/40">No articles found for &quot;{search}&quot;</p>
+            <p className="dark:text-white/40 text-gray-500">No articles found for &quot;{search}&quot;</p>
           </motion.div>
         )}
       </div>

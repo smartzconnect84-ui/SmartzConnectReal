@@ -282,6 +282,23 @@ export default function SmartzRidePage() {
           </div>
         </div>
       </section>
+
+      <PartnershipSection
+        product="SmartzRide"
+        accentFrom="from-emerald-500"
+        accentTo="to-teal-600"
+        accentText="text-emerald-400"
+        accentBorder="border-emerald-500/30"
+        accentBg="bg-emerald-500/10"
+        partnerTypes={[
+          'Fleet Owner / Vehicle Partner',
+          'Corporate Transport',
+          'Logistics & Last-Mile Delivery',
+          'Fuel & Maintenance Partner',
+          'Insurance Provider',
+          'City / Government Partnership',
+        ]}
+      />
     </div>
   )
 }

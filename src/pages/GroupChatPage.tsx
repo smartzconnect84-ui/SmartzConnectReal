@@ -516,7 +516,7 @@ export default function GroupChatPage() {
     // members in the group can join the same LiveKit room.
     const roomId = `group_${(activeRoom.streamChannelId || `group-${activeRoom.id}`).slice(0, 40)}`
     // initiateCall wires the outgoing call notification + LiveKit room UI
-    // exactly as ChatPage does — no Mux, always LiveKit.
+    // exactly as ChatPage does — always LiveKit WebRTC.
     initiateCall({
       contactId:   roomId,   // synthetic ID for the group room
       contactName: activeRoom.name,

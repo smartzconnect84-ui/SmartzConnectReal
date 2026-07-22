@@ -1,5 +1,6 @@
+import { useRef, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { motion, type Variants } from 'framer-motion'
+import { motion, useInView, type Variants } from 'framer-motion'
 import Hero from '@/components/Hero'
 import DownloadAppButton from '@/components/DownloadAppButton'
 import {
@@ -9,6 +10,54 @@ import {
   Wifi, Smartphone, BadgeCheck,
 } from 'lucide-react'
 import { useServices } from '@/hooks/useServices'
+
+/* ── animated counter ── */
+function useCountUp(target: number, duration = 1.4, inView = true) {
+  const [count, setCount] = useState(0)
+  useEffect(() => {
+    if (!inView) return
+    let start: number | null = null
+    const step = (ts: number) => {
+      if (!start) start = ts
+      const progress = Math.min((ts - start) / (duration * 1000), 1)
+      const eased = 1 - Math.pow(1 - progress, 3)
+      setCount(Math.floor(eased * target))
+      if (progress < 1) requestAnimationFrame(step)
+      else setCount(target)
+    }
+    const id = requestAnimationFrame(step)
+    return () => cancelAnimationFrame(id)
+  }, [target, duration, inView])
+  return count
+}
+
+function AnimatedStat({ stat, inView }: { stat: { value: string; label: string; icon: React.ElementType; color: string }; inView: boolean }) {
+  const Icon = stat.icon
+  // Parse numeric portion
+  const numMatch = stat.value.match(/^(\d+)/)
+  const numPart = numMatch ? parseInt(numMatch[1], 10) : 0
+  const suffix = stat.value.replace(/^\d+/, '')
+  const count = useCountUp(numPart, 1.6, inView)
+  return (
+    <motion.div
+      className="relative rounded-2xl p-5 flex flex-col items-center text-center overflow-hidden group"
+      style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)' }}
+      whileHover={{ y: -4, scale: 1.04 }}
+      transition={{ type: 'spring', stiffness: 280, damping: 20 }}
+    >
+      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl"
+        style={{ background: `radial-gradient(circle at 50% 0%, ${stat.color}18 0%, transparent 70%)` }} />
+      <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3 relative"
+        style={{ background: `${stat.color}18`, border: `1px solid ${stat.color}30` }}>
+        <Icon className="w-4.5 h-4.5" style={{ color: stat.color }} />
+      </div>
+      <p className="font-display font-black text-white text-2xl sm:text-3xl leading-none tabular-nums">
+        {inView ? `${count}${suffix}` : stat.value}
+      </p>
+      <p className="text-white/45 text-[11px] font-semibold tracking-wide mt-1.5 leading-tight">{stat.label}</p>
+    </motion.div>
+  )
+}
 
 /* ── animation helpers ── */
 const up = (delay = 0) => ({
@@ -153,6 +202,63 @@ function Heading({ children, className = '' }: { children: React.ReactNode; clas
   )
 }
 
+/* ── Stats + CEO quote + highlights (right column of About) ── */
+const STATS = [
+  { value: '195+', label: 'Countries',    icon: Globe,       color: '#EC4899' },
+  { value: '8',    label: 'Products',     icon: Sparkles,    color: '#9B5DE5' },
+  { value: '15K+', label: 'Active Users', icon: Users,       color: '#DC2626' },
+  { value: '2025', label: 'Founded',      icon: BadgeCheck,  color: '#D4AF37' },
+]
+
+function StatsAndHighlights() {
+  const ref = useRef<HTMLDivElement>(null)
+  const inView = useInView(ref, { once: true, margin: '-60px' })
+  return (
+    <motion.div {...up(0.15)} ref={ref} className="flex flex-col gap-4">
+      {/* Stats 2×2 grid */}
+      <div className="grid grid-cols-2 gap-3">
+        {STATS.map(stat => <AnimatedStat key={stat.label} stat={stat} inView={inView} />)}
+      </div>
+
+      {/* CEO quote card */}
+      <div className="relative rounded-2xl p-6 overflow-hidden"
+        style={{ background: 'linear-gradient(135deg, rgba(236,72,153,0.1) 0%, rgba(155,93,229,0.08) 100%)', border: '1px solid rgba(236,72,153,0.2)' }}>
+        <div className="absolute -top-4 -left-2 text-5xl text-pink-500/25 font-serif select-none leading-none">"</div>
+        <p className="text-white/80 text-sm sm:text-base leading-relaxed italic relative mb-4">
+          SmartzConnect is an African child's dream. But, was built for the world. Your contribution in whatever ways to keep it alive, is acceptable.
+        </p>
+        <div className="flex items-center gap-3 relative">
+          <div className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0 border border-pink-500/30">
+            <img src="/ceo-shedrick.jpg" alt="CEO" className="w-full h-full object-cover object-top" />
+          </div>
+          <div>
+            <p className="text-white/90 text-xs font-bold">Shedrick K. Nungehn</p>
+            <p className="text-white/40 text-[11px]">Founder &amp; CEO, SmartzConnect</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Platform highlights row */}
+      <div className="grid grid-cols-3 gap-2">
+        {[
+          { icon: Shield,     label: 'SSL Secured',       color: '#22c55e' },
+          { icon: BadgeCheck, label: 'Verified Profiles',  color: '#3b82f6' },
+          { icon: Smartphone, label: 'Free to Join',       color: '#EC4899' },
+        ].map(h => {
+          const Icon = h.icon
+          return (
+            <div key={h.label} className="rounded-xl p-3 flex flex-col items-center gap-1.5 text-center"
+              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+              <Icon className="w-4 h-4" style={{ color: h.color }} />
+              <p className="text-white/50 text-[10px] font-semibold leading-tight">{h.label}</p>
+            </div>
+          )
+        })}
+      </div>
+    </motion.div>
+  )
+}
+
 /* ════════════════════════════════════════════════════════════════════════════ */
 export default function HomePage() {
   return (
@@ -198,71 +304,8 @@ export default function HomePage() {
               </div>
             </motion.div>
 
-            {/* ── Right: stats + CEO quote ── */}
-            <motion.div {...up(0.15)} className="flex flex-col gap-4">
-
-              {/* Stats 2×2 grid */}
-              <div className="grid grid-cols-2 gap-3">
-                {[
-                  { value: '195+', label: 'Countries',         icon: Globe,        color: '#EC4899' },
-                  { value: '8',    label: 'Products',          icon: Sparkles,     color: '#9B5DE5' },
-                  { value: '15K+', label: 'Active Users',      icon: Users,        color: '#DC2626' },
-                  { value: '2025', label: 'Founded',           icon: BadgeCheck,  color: '#D4AF37' },
-                ].map(stat => {
-                  const Icon = stat.icon
-                  return (
-                    <div key={stat.label}
-                      className="relative rounded-2xl p-5 flex flex-col items-center text-center overflow-hidden group"
-                      style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)' }}>
-                      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl"
-                        style={{ background: `radial-gradient(circle at 50% 0%, ${stat.color}18 0%, transparent 70%)` }} />
-                      <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3 relative"
-                        style={{ background: `${stat.color}18`, border: `1px solid ${stat.color}30` }}>
-                        <Icon className="w-4.5 h-4.5" style={{ color: stat.color }} />
-                      </div>
-                      <p className="font-display font-black text-white text-2xl sm:text-3xl leading-none">{stat.value}</p>
-                      <p className="text-white/45 text-[11px] font-semibold tracking-wide mt-1.5 leading-tight">{stat.label}</p>
-                    </div>
-                  )
-                })}
-              </div>
-
-              {/* CEO quote card */}
-              <div className="relative rounded-2xl p-6 overflow-hidden"
-                style={{ background: 'linear-gradient(135deg, rgba(236,72,153,0.1) 0%, rgba(155,93,229,0.08) 100%)', border: '1px solid rgba(236,72,153,0.2)' }}>
-                <div className="absolute -top-4 -left-2 text-5xl text-pink-500/25 font-serif select-none leading-none">"</div>
-                <p className="text-white/80 text-sm sm:text-base leading-relaxed italic relative mb-4">
-                  SmartzConnect is an African child's dream. But, was built for the world. Your contribution in whatever ways to keep it alive, is acceptable.
-                </p>
-                <div className="flex items-center gap-3 relative">
-                  <div className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0 border border-pink-500/30">
-                    <img src="/ceo-shedrick.jpg" alt="CEO" className="w-full h-full object-cover object-top" />
-                  </div>
-                  <div>
-                    <p className="text-white/90 text-xs font-bold">Shedrick K. Nungehn</p>
-                    <p className="text-white/40 text-[11px]">Founder &amp; CEO, SmartzConnect</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Platform highlights row */}
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  { icon: Shield,      label: 'SSL Secured',      color: '#22c55e' },
-                  { icon: BadgeCheck,  label: 'Verified Profiles', color: '#3b82f6' },
-                  { icon: Smartphone,  label: 'Free to Join',      color: '#EC4899' },
-                ].map(h => {
-                  const Icon = h.icon
-                  return (
-                    <div key={h.label} className="rounded-xl p-3 flex flex-col items-center gap-1.5 text-center"
-                      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
-                      <Icon className="w-4 h-4" style={{ color: h.color }} />
-                      <p className="text-white/50 text-[10px] font-semibold leading-tight">{h.label}</p>
-                    </div>
-                  )
-                })}
-              </div>
-            </motion.div>
+            {/* ── Right: animated stats + highlights ── */}
+            <StatsAndHighlights />
 
           </div>
         </div>
@@ -330,22 +373,6 @@ export default function HomePage() {
             </motion.div>
           </motion.div>
 
-          {/* Founder quote */}
-          <motion.div {...up(0.25)}
-            className="relative rounded-3xl p-8 sm:p-10 overflow-hidden text-center"
-            style={{ background: 'linear-gradient(135deg, rgba(236,72,153,0.1) 0%, rgba(155,93,229,0.12) 50%, rgba(220,38,38,0.08) 100%)', border: '1px solid rgba(236,72,153,0.2)', backdropFilter: 'blur(16px)' }}>
-            <div className="absolute -top-8 left-1/2 -translate-x-1/2 w-56 h-24 rounded-full blur-3xl" style={{ background: 'rgba(236,72,153,0.15)' }} />
-            <div className="text-4xl mb-4 relative opacity-60 font-serif leading-none text-pink-400">"</div>
-            <p className="text-white/80 text-base sm:text-xl leading-relaxed relative italic max-w-3xl mx-auto mb-6">
-              Yes! SmartzConnect is an African child's dream. But, was built for the world. Your contribution in whatever ways to keep it alive, is acceptable.
-            </p>
-            <p className="text-sm font-bold tracking-widest text-yellow-400 uppercase relative">
-              — Shedrick K. Nungehn
-            </p>
-            <p className="text-white/45 text-xs mt-1 tracking-wider relative">
-              Founder &amp; CEO, SmartzConnect
-            </p>
-          </motion.div>
         </div>
       </Sec>
 

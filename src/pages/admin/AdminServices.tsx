@@ -42,7 +42,7 @@ const CONNECTORS = [
   'None',
   'Supabase',
   'LiveKit',
-  'Mux',
+  'YouTube',
   'Stripe',
   'Sufy',
   'GetStream',
@@ -54,7 +54,7 @@ const CATEGORIES = ['Commerce', 'Social', 'Entertainment', 'Learning', 'Utility'
 
 const CONNECTOR_COLORS: Record<string, string> = {
   LiveKit:   'bg-indigo-500/15 text-indigo-400 border-indigo-500/25',
-  Mux:       'bg-pink-500/15 text-pink-400 border-pink-500/25',
+  YouTube:   'bg-red-500/15 text-red-400 border-red-500/25',
   Stripe:    'bg-violet-500/15 text-violet-400 border-violet-500/25',
   Sufy:      'bg-sky-500/15 text-sky-400 border-sky-500/25',
   Supabase:  'bg-emerald-500/15 text-emerald-400 border-emerald-500/25',
@@ -588,7 +588,7 @@ export default function AdminServices() {
         </div>
         <p className="text-[11px] dark:text-gray-500 text-gray-400 mt-2">
           The connector indicates which external service or integration this platform feature depends on. Disabling a service here hides it from the public site — it does not affect the underlying integration.
-          Store only public/non-secret config here (display name, icon, route, image). Private API secrets (e.g. LiveKit API secret, Stream Chat secret, Mux private token) must stay in Supabase Edge Function secrets — never in this table.
+          Store only public/non-secret config here (display name, icon, route, image). Private API secrets (e.g. LiveKit API secret, Stream Chat secret, YouTube stream keys) must stay in Supabase Edge Function secrets — never in this table.
         </p>
       </div>
     </div>

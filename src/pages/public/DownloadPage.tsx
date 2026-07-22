@@ -21,13 +21,13 @@ function FAQ({ q, a }: { q: string; a: string }) {
     <div className="border border-white/10 rounded-xl overflow-hidden">
       <button
         onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-white/5 transition-colors"
+        className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left dark:hover:bg-white/5 hover:bg-gray-100 transition-colors"
       >
-        <span className="text-sm font-medium text-white">{q}</span>
-        {open ? <ChevronUp className="shrink-0 w-4 h-4 text-pink-400" /> : <ChevronDown className="shrink-0 w-4 h-4 text-white/40" />}
+        <span className="text-sm font-medium dark:text-white text-gray-900">{q}</span>
+        {open ? <ChevronUp className="shrink-0 w-4 h-4 text-pink-400" /> : <ChevronDown className="shrink-0 w-4 h-4 dark:text-white/40 text-gray-400" />}
       </button>
       {open && (
-        <div className="px-5 pb-4 text-sm text-white/60 leading-relaxed border-t border-white/10 pt-3">
+        <div className="px-5 pb-4 text-sm dark:text-white/60 text-gray-600 leading-relaxed border-t dark:border-white/10 border-gray-200 pt-3">
           {a}
         </div>
       )}
@@ -43,8 +43,8 @@ function Step({ n, title, desc }: { n: number; title: string; desc: string }) {
         {n}
       </div>
       <div>
-        <p className="text-sm font-semibold text-white mb-0.5">{title}</p>
-        <p className="text-sm text-white/55 leading-relaxed">{desc}</p>
+        <p className="text-sm font-semibold dark:text-white text-gray-900 mb-0.5">{title}</p>
+        <p className="text-sm dark:text-white/55 text-gray-600 leading-relaxed">{desc}</p>
       </div>
     </div>
   )
@@ -113,7 +113,7 @@ export default function DownloadPage() {
   ]
 
   return (
-    <div className="min-h-screen bg-[#0D0A14] text-white">
+    <div className="min-h-screen dark:bg-[#0D0A14] bg-white dark:text-white text-gray-900">
 
       {/* ── Hero ───────────────────────────────────────────────────────────── */}
       <section className="relative overflow-hidden pt-28 pb-20 px-6">
@@ -134,7 +134,7 @@ export default function DownloadPage() {
             </span>
           </motion.h1>
 
-          <motion.p {...up(0.1)} className="text-lg text-white/60 max-w-2xl mx-auto leading-relaxed mb-10">
+          <motion.p {...up(0.1)} className="text-lg dark:text-white/60 text-gray-600 max-w-2xl mx-auto leading-relaxed mb-10">
             Ready-to-build native app packages. Open in Android Studio or Xcode,
             click Build — and you have a store-ready binary. No code changes required.
           </motion.p>
@@ -143,7 +143,7 @@ export default function DownloadPage() {
           <motion.div {...up(0.15)} className="grid sm:grid-cols-2 gap-5 max-w-2xl mx-auto">
 
             {/* Android */}
-            <div className="relative group rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur p-6 text-left hover:border-pink-500/40 transition-all duration-300">
+            <div className="relative group rounded-2xl dark:border-white/10 border-gray-200 dark:bg-white/[0.03] bg-white backdrop-blur p-6 text-left hover:border-pink-500/40 transition-all duration-300">
               <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-pink-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
               <div className="relative">
                 <div className="flex items-center gap-3 mb-4">
@@ -151,13 +151,13 @@ export default function DownloadPage() {
                     <Play className="w-6 h-6 text-green-400" fill="currentColor" />
                   </div>
                   <div>
-                    <p className="font-bold text-white">Android</p>
-                    <p className="text-xs text-white/50">Trusted Web Activity (TWA)</p>
+                    <p className="font-bold dark:text-white text-gray-900">Android</p>
+                    <p className="text-xs dark:text-white/50 text-gray-500">Trusted Web Activity (TWA)</p>
                   </div>
                 </div>
                 <ul className="space-y-1.5 mb-5">
                   {['Android Studio project', 'Signed AAB for Google Play', 'Keystore generator script', 'Digital Asset Links template'].map(f => (
-                    <li key={f} className="flex items-center gap-2 text-xs text-white/65">
+                    <li key={f} className="flex items-center gap-2 text-xs dark:text-white/65 text-gray-600">
                       <CheckCircle2 className="w-3.5 h-3.5 text-green-400 shrink-0" />
                       {f}
                     </li>
@@ -171,14 +171,14 @@ export default function DownloadPage() {
                   <Download className="w-4 h-4" />
                   Download Android Package
                 </a>
-                <p className="text-center text-xs text-white/35 mt-2">
+                <p className="text-center text-xs dark:text-white/35 text-gray-400 mt-2">
                   ZIP · Android Studio · API 21+
                 </p>
               </div>
             </div>
 
             {/* iOS */}
-            <div className="relative group rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur p-6 text-left hover:border-purple-500/40 transition-all duration-300">
+            <div className="relative group rounded-2xl dark:border-white/10 border-gray-200 dark:bg-white/[0.03] bg-white backdrop-blur p-6 text-left hover:border-purple-500/40 transition-all duration-300">
               <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
               <div className="relative">
                 <div className="flex items-center gap-3 mb-4">
@@ -186,13 +186,13 @@ export default function DownloadPage() {
                     <Apple className="w-6 h-6 text-purple-300" />
                   </div>
                   <div>
-                    <p className="font-bold text-white">iOS</p>
-                    <p className="text-xs text-white/50">WKWebView · Swift 5</p>
+                    <p className="font-bold dark:text-white text-gray-900">iOS</p>
+                    <p className="text-xs dark:text-white/50 text-gray-500">WKWebView · Swift 5</p>
                   </div>
                 </div>
                 <ul className="space-y-1.5 mb-5">
                   {['Complete Xcode project', 'Universal Links configured', 'APNS push notification hooks', 'Associated Domains ready'].map(f => (
-                    <li key={f} className="flex items-center gap-2 text-xs text-white/65">
+                    <li key={f} className="flex items-center gap-2 text-xs dark:text-white/65 text-gray-600">
                       <CheckCircle2 className="w-3.5 h-3.5 text-purple-400 shrink-0" />
                       {f}
                     </li>
@@ -206,7 +206,7 @@ export default function DownloadPage() {
                   <Download className="w-4 h-4" />
                   Download iOS Package
                 </a>
-                <p className="text-center text-xs text-white/35 mt-2">
+                <p className="text-center text-xs dark:text-white/35 text-gray-400 mt-2">
                   ZIP · Xcode 15+ · iOS 15+ · macOS required
                 </p>
               </div>
@@ -231,11 +231,11 @@ export default function DownloadPage() {
       </section>
 
       {/* ── What's inside ──────────────────────────────────────────────────── */}
-      <section className="py-20 px-6 border-t border-white/5">
+      <section className="py-20 px-6 border-t dark:border-white/5 border-gray-100">
         <div className="max-w-5xl mx-auto">
           <motion.div {...up()} className="text-center mb-14">
             <h2 className="text-3xl font-bold mb-3">What's inside each package</h2>
-            <p className="text-white/55 max-w-xl mx-auto">
+            <p className="dark:text-white/55 text-gray-600 max-w-xl mx-auto">
               Production-grade project files configured for SmartzConnect — open, build, ship.
             </p>
           </motion.div>
@@ -249,14 +249,14 @@ export default function DownloadPage() {
               </div>
               <ul className="space-y-3">
                 {androidFeatures.map(f => (
-                  <li key={f} className="flex items-start gap-3 text-sm text-white/70">
+                  <li key={f} className="flex items-start gap-3 text-sm dark:text-white/70 text-gray-700">
                     <CheckCircle2 className="w-4 h-4 text-green-400 shrink-0 mt-0.5" />
                     {f}
                   </li>
                 ))}
               </ul>
-              <div className="mt-6 p-4 rounded-xl bg-black/30 border border-white/10">
-                <p className="text-xs text-white/50 font-mono">
+              <div className="mt-6 p-4 rounded-xl dark:bg-black/30 bg-gray-100 dark:border-white/10 border-gray-200">
+                <p className="text-xs dark:text-white/50 text-gray-600 font-mono">
                   📁 SmartzConnect-Android-TWA/<br />
                   ├── app/src/main/<br />
                   │   ├── AndroidManifest.xml<br />
@@ -276,14 +276,14 @@ export default function DownloadPage() {
               </div>
               <ul className="space-y-3">
                 {iosFeatures.map(f => (
-                  <li key={f} className="flex items-start gap-3 text-sm text-white/70">
+                  <li key={f} className="flex items-start gap-3 text-sm dark:text-white/70 text-gray-700">
                     <CheckCircle2 className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" />
                     {f}
                   </li>
                 ))}
               </ul>
-              <div className="mt-6 p-4 rounded-xl bg-black/30 border border-white/10">
-                <p className="text-xs text-white/50 font-mono">
+              <div className="mt-6 p-4 rounded-xl dark:bg-black/30 bg-gray-100 dark:border-white/10 border-gray-200">
+                <p className="text-xs dark:text-white/50 text-gray-600 font-mono">
                   📁 SmartzConnect-iOS/<br />
                   ├── SmartzConnect.xcodeproj/<br />
                   │   └── project.pbxproj<br />
@@ -301,11 +301,11 @@ export default function DownloadPage() {
       </section>
 
       {/* ── Build steps ────────────────────────────────────────────────────── */}
-      <section className="py-20 px-6 border-t border-white/5">
+      <section className="py-20 px-6 border-t dark:border-white/5 border-gray-100">
         <div className="max-w-5xl mx-auto">
           <motion.div {...up()} className="text-center mb-14">
             <h2 className="text-3xl font-bold mb-3">From ZIP to store in minutes</h2>
-            <p className="text-white/55 max-w-xl mx-auto">
+            <p className="dark:text-white/55 text-gray-600 max-w-xl mx-auto">
               Both packages are designed for non-developers. If you can click a button, you can build an app.
             </p>
           </motion.div>
@@ -345,7 +345,7 @@ export default function DownloadPage() {
       </section>
 
       {/* ── Useful links ───────────────────────────────────────────────────── */}
-      <section className="py-16 px-6 border-t border-white/5">
+      <section className="py-16 px-6 border-t dark:border-white/5 border-gray-100">
         <div className="max-w-4xl mx-auto">
           <motion.h2 {...up()} className="text-2xl font-bold text-center mb-10">
             Tools &amp; resources
@@ -364,12 +364,12 @@ export default function DownloadPage() {
                 href={href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group flex items-start gap-3 p-4 rounded-xl border border-white/10 hover:border-pink-500/30 hover:bg-pink-500/5 transition-all"
+                className="group flex items-start gap-3 p-4 rounded-xl border dark:border-white/10 border-gray-200 hover:border-pink-500/30 hover:bg-pink-500/5 transition-all"
               >
                 <ExternalLink className="w-4 h-4 text-pink-400 shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
                 <div>
-                  <p className="text-sm font-medium text-white group-hover:text-pink-300 transition-colors">{label}</p>
-                  <p className="text-xs text-white/45 mt-0.5">{desc}</p>
+                  <p className="text-sm font-medium dark:text-white text-gray-900 group-hover:text-pink-400 transition-colors">{label}</p>
+                  <p className="text-xs dark:text-white/45 text-gray-500 mt-0.5">{desc}</p>
                 </div>
               </a>
             ))}
@@ -378,7 +378,7 @@ export default function DownloadPage() {
       </section>
 
       {/* ── FAQ ────────────────────────────────────────────────────────────── */}
-      <section className="py-20 px-6 border-t border-white/5">
+      <section className="py-20 px-6 border-t dark:border-white/5 border-gray-100">
         <div className="max-w-3xl mx-auto">
           <motion.h2 {...up()} className="text-3xl font-bold text-center mb-12">
             Frequently asked questions
@@ -390,13 +390,13 @@ export default function DownloadPage() {
       </section>
 
       {/* ── CTA ────────────────────────────────────────────────────────────── */}
-      <section className="py-20 px-6 border-t border-white/5">
+      <section className="py-20 px-6 border-t dark:border-white/5 border-gray-100">
         <motion.div {...up()} className="max-w-xl mx-auto text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-pink-500 to-purple-600 mb-6 shadow-lg shadow-pink-500/25">
             <Package className="w-8 h-8 text-white" />
           </div>
           <h2 className="text-3xl font-bold mb-4">Ready to go native?</h2>
-          <p className="text-white/55 mb-8 leading-relaxed">
+          <p className="dark:text-white/55 text-gray-600 mb-8 leading-relaxed">
             Download both packages below. Full build instructions are included
             as a README inside each ZIP.
           </p>
@@ -418,7 +418,7 @@ export default function DownloadPage() {
               iOS Package
             </a>
           </div>
-          <p className="mt-5 text-xs text-white/35">
+          <p className="mt-5 text-xs dark:text-white/35 text-gray-400">
             Both ZIPs are generated fresh from your live manifest — no external service dependency.
           </p>
         </motion.div>
