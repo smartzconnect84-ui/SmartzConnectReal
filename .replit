@@ -44,7 +44,7 @@ outputType = "console"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd /home/runner/workspace && npx --yes vercel --prod --yes --archive=tgz --token=\"$VERCEL_TOKEN\" 2>&1 | tee /tmp/vercel-deploy.log; echo \"EXIT:$?\""
+args = "cd /home/runner/workspace && node -e \"const token=process.env.VERCEL_TOKEN;const projectId='prj_BMV7iv3LZK3UhhJZJZwPlTBDWyQX';const teamId='team_v7c8RWznnO0mvyueL3r60dPH';(async()=>{const r=await fetch('https://api.vercel.com/v9/projects/'+projectId+'?teamId='+teamId,{headers:{Authorization:'Bearer '+token}});const p=await r.json();const d=await(await fetch('https://api.vercel.com/v13/deployments?teamId='+teamId,{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({name:p.name,project:projectId,target:'production',gitSource:{type:'github',ref:'main',repoId:p.link?.repoId,org:p.link?.org,repo:p.link?.repo}})})).json();console.log('Deploy triggered:',d.url||d.error);let state='';for(let i=0;i<24;i++){await new Promise(r=>setTimeout(r,5000));const s=await(await fetch('https://api.vercel.com/v13/deployments/'+d.id+'?teamId='+teamId,{headers:{Authorization:'Bearer '+token}})).json();state=s.status||s.readyState;console.log(i*5+'s:',state);if(['READY','ERROR','CANCELED'].includes(state)){console.log('Final URL:',s.url);break;}}})()\" 2>&1 | tee /tmp/vercel-deploy.log; echo \"EXIT:$?\""
 
 [[ports]]
 localPort = 3000
