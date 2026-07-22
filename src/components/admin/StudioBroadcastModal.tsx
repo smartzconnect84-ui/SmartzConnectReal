@@ -10,7 +10,7 @@ import {
   RefreshCw, Play, Power, PowerOff, Antenna, Monitor,
   ChevronDown, AlertCircle, Zap, Info, BarChart3,
   Settings2, Key, Code2, Loader2, Signal, Clock, Users,
-  ExternalLink, ArrowRight, Shield, Globe, Youtube,
+  ExternalLink, ArrowRight, Shield, Globe, PlaySquare,
   Tv, CheckCircle2, RotateCcw, Save, Tag, Link,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
@@ -371,7 +371,7 @@ function SetupTab({
       {/* YouTube credentials form */}
       <div className="space-y-4 p-4 rounded-2xl bg-white/3 border border-white/8">
         <div className="flex items-center gap-2 mb-1">
-          <Youtube className="w-4 h-4 text-red-400" />
+          <PlaySquare className="w-4 h-4 text-red-400" />
           <p className="text-sm font-bold text-white">YouTube Live Settings</p>
         </div>
 
@@ -455,7 +455,7 @@ function SetupTab({
       <a href="https://studio.youtube.com/channel/mine/livestreaming/manage"
         target="_blank" rel="noopener noreferrer"
         className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/15 transition-colors text-sm font-semibold">
-        <Youtube className="w-4 h-4" />
+        <PlaySquare className="w-4 h-4" />
         Open YouTube Studio
         <ExternalLink className="w-3.5 h-3.5" />
       </a>
