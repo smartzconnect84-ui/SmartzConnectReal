@@ -43,34 +43,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // from prior auth events can't overwrite the current user's role.
   const currentUserIdRef = useRef<string | null>(null)
 
-  // Fetch the user's role from DB.
-  // Returns the role string on success, or null if the query failed (network
-  // error, missing row, policy failure, etc.). Callers must:
-  //   1. Guard on isMounted before applying the result to state.
-  //   2. Only overwrite the current role when the result is non-null — never
-  //      demote to 'user' on a transient failure.
-  const resolveRole = async (userId: string): Promise<string | null> => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', userId)
-      .single()
-    if (error) return null          // transient failure — preserve existing role
-    return data?.role ?? 'user'     // explicit row with no role → regular user
-  }
-
-  // Fetch display profile (name/avatar) for the admin topbar + account switcher.
-  // Best-effort — a failure here should never block auth flow.
-  const resolveAdminProfile = async (userId: string, email: string | null): Promise<AdminProfile> => {
+  // Fetch role + display profile in a SINGLE round-trip.
+  // Returns null on any failure so callers can preserve the existing role
+  // rather than demoting to 'user' on a transient DB error.
+  const resolveProfileData = async (userId: string): Promise<{
+    role: string; fullName: string | null; avatarUrl: string | null
+  } | null> => {
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
-        .select('full_name, avatar_url')
+        .select('role, full_name, avatar_url')
         .eq('id', userId)
         .single()
-      return { fullName: data?.full_name ?? null, avatarUrl: data?.avatar_url ?? null, email }
+      if (error) return null
+      return {
+        role:      data?.role       ?? 'user',
+        fullName:  data?.full_name  ?? null,
+        avatarUrl: data?.avatar_url ?? null,
+      }
     } catch {
-      return { fullName: null, avatarUrl: null, email }
+      return null
     }
   }
 
@@ -112,19 +104,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(session?.user ?? null)
       setEmailVerified(!!session?.user?.email_confirmed_at)
       if (uid) {
-        const resolved = await resolveRole(uid)
+        // Single DB round-trip fetches role + display profile together
+        const profileData = await resolveProfileData(uid)
         // Guard: only apply if still mounted AND still the same user
         if (isMounted && currentUserIdRef.current === uid) {
-          // On initial load a null result (DB unreachable) is safer to treat as
-          // 'user' than to leave loading=true forever. Role corrects on next
-          // TOKEN_REFRESHED once connectivity is restored.
-          const roleValue = resolved ?? 'user'
+          const roleValue = profileData?.role ?? 'user'
           setRole(roleValue)
-          const profile = await resolveAdminProfile(uid, session?.user?.email ?? null)
-          if (isMounted && currentUserIdRef.current === uid) {
-            setAdminProfile(profile)
-            if (session) persistSwitchableSession(session, roleValue, profile)
+          const profile: AdminProfile = {
+            fullName:  profileData?.fullName  ?? null,
+            avatarUrl: profileData?.avatarUrl ?? null,
+            email:     session?.user?.email   ?? null,
           }
+          setAdminProfile(profile)
+          if (session) persistSwitchableSession(session, roleValue, profile)
         }
       }
       if (isMounted) setLoading(false)
@@ -145,19 +137,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (event === 'SIGNED_IN') {
         if (uid) {
-          // Await role so any admin redirect that follows SIGNED_IN sees the
-          // correct isAdmin value, not the default 'user' fallback.
-          const resolved = await resolveRole(uid)
+          // Single query for role + display profile — awaited so any admin
+          // redirect that follows SIGNED_IN sees the correct isAdmin value.
+          const profileData = await resolveProfileData(uid)
           // Guard: mounted + same user (rapid sign-out/sign-in safety)
           if (!isMounted || currentUserIdRef.current !== uid) return
-          // Null on sign-in (DB unreachable) defaults to 'user'.
-          const roleValue = resolved ?? 'user'
+          const roleValue = profileData?.role ?? 'user'
           setRole(roleValue)
-          resolveAdminProfile(uid, session?.user?.email ?? null).then(profile => {
-            if (!isMounted || currentUserIdRef.current !== uid) return
-            setAdminProfile(profile)
-            if (session) persistSwitchableSession(session, roleValue, profile)
-          })
+          const profile: AdminProfile = {
+            fullName:  profileData?.fullName  ?? null,
+            avatarUrl: profileData?.avatarUrl ?? null,
+            email:     session?.user?.email   ?? null,
+          }
+          setAdminProfile(profile)
+          if (session) persistSwitchableSession(session, roleValue, profile)
           linkOneSignalUser(uid)
           if (session?.user?.email) applyPendingProfile(uid, undefined, session.user.email)
           applyStoredReferralCode(uid)
@@ -186,10 +179,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // On fetch failure (null), preserve the existing role — never demote
         // an admin due to a transient network or policy error.
         if (uid) {
-          const resolved = await resolveRole(uid)
+          // Re-sync role only (no need to re-fetch display profile on token refresh)
+          const profileData = await resolveProfileData(uid)
           // Guard: mounted + same user; skip update if null (transient failure)
-          if (isMounted && currentUserIdRef.current === uid && resolved !== null) {
-            setRole(resolved)
+          if (isMounted && currentUserIdRef.current === uid && profileData !== null) {
+            setRole(profileData.role)
           }
         }
         if (isMounted) setLoading(false)

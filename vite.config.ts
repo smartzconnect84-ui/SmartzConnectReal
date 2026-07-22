@@ -18,7 +18,18 @@ export default defineConfig({
     cors: true,
   },
   optimizeDeps: {
-    include: ['react', 'react-dom'],
+    // Pre-bundle heavy deps so the dev server never re-optimises them on
+    // navigation and the first cold-start is as fast as possible.
+    include: [
+      'react', 'react-dom', 'react-router-dom',
+      'framer-motion',
+      'lucide-react',
+      '@supabase/supabase-js',
+      'stream-chat',
+      'livekit-client',
+      'hls.js',
+      'date-fns',
+    ],
   },
   build: {
     outDir: 'dist',

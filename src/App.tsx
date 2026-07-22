@@ -22,7 +22,7 @@ import { useEffect }             from 'react'
 import Navbar            from '@/components/Navbar'
 import Footer            from '@/components/Footer'
 import ScrollToTop       from '@/components/ScrollToTop'
-import LiveKitCall       from '@/components/LiveKitCall'
+const LiveKitCall       = lazy(() => import('@/components/LiveKitCall'))
 import CookieBanner      from '@/components/CookieBanner'
 import AppShell          from '@/layouts/AppShell'
 import AdminLayout       from '@/layouts/AdminLayout'
@@ -182,7 +182,7 @@ export default function App() {
             <AppInit />
             <NetworkStatusToast />
             <TawkController />
-            <LiveKitCall />
+            <Suspense fallback={null}><LiveKitCall /></Suspense>
             <CookieBanner />
             <PWAInstallPrompt />
             <PWAUpdatePrompt />

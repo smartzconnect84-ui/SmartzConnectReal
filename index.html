@@ -35,6 +35,16 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="SmartzConnect" />
 
+    <!-- Preconnect to critical third-party origins to shave DNS + TLS time -->
+    <!-- Supabase API (project URL injected at build; this warms *.supabase.co broadly) -->
+    <link rel="dns-prefetch" href="https://supabase.co" />
+    <!-- Stream Chat CDN used by stream-chat SDK -->
+    <link rel="preconnect" href="https://chat.stream-io-api.com" crossorigin />
+    <link rel="dns-prefetch"  href="https://edge.getstream.io" />
+    <!-- LiveKit SFU -->
+    <link rel="dns-prefetch" href="https://livekit.io" />
+    <!-- OneSignal push -->
+    <link rel="dns-prefetch" href="https://onesignal.com" />
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
