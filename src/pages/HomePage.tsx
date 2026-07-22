@@ -161,36 +161,106 @@ export default function HomePage() {
 
       {/* ══ 1. ABOUT US ══════════════════════════════════════════════════════ */}
       <Sec dark id="about">
+        {/* Background glows */}
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] rounded-full bg-[#DC2626]/6 blur-3xl" />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[500px] rounded-full bg-[#DC2626]/6 blur-3xl" />
+          <div className="absolute bottom-0 right-0 w-[500px] h-[400px] rounded-full bg-[#9B5DE5]/5 blur-3xl" />
         </div>
 
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-          <div className="grid lg:grid-cols-2 gap-14 lg:gap-20 items-center">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 lg:py-24 relative">
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
 
-            {/* Text */}
+            {/* ── Left: narrative ── */}
             <motion.div {...up()}>
-              <Badge icon={Globe} label="About SmartzConnect" className="mb-5" />
-              <Heading className="text-left">
+              <Badge icon={Globe} label="About SmartzConnect" className="mb-6" />
+              <Heading className="text-left !mb-5">
                 Connecting, Collaborating<br />
                 <span style={{ background: 'linear-gradient(135deg, #EC4899 0%, #9B5DE5 50%, #DC2626 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
                   and Growing Together
                 </span>
               </Heading>
               <p className="text-white/65 text-base sm:text-lg leading-relaxed mb-4">
-                SmartzConnect is a Liberian Enterprise and Social media that empowers individuals, businesses, organizations, and communities through innovative technology.
+                SmartzConnect is a Liberian enterprise and social platform that empowers individuals, businesses, organisations, and communities through innovative, accessible technology.
               </p>
-              <p className="text-white/55 text-sm sm:text-base leading-relaxed mb-6">
-                SmartzConnect brings multiple essential services together under a single trusted ecosystem — with one account, a user can access dating, education, transportation, commerce, marketing, social networking, and professional partnership.
+              <p className="text-white/50 text-sm sm:text-base leading-relaxed mb-8">
+                Eight super-products. One free account. Dating, education, rides, delivery, commerce, advertising, social networking, and live TV — all under a single trusted ecosystem serving 195+ countries.
               </p>
-              <div className="flex flex-wrap gap-2.5 mt-1">
-                {['Liberian Enterprise', 'Built for the World', '195+ Countries', 'Social Media'].map(t => (
+
+              {/* Tag pills */}
+              <div className="flex flex-wrap gap-2.5">
+                {['🇱🇷 Liberian Enterprise', '🌍 Built for the World', '195+ Countries', '8 Super-Products'].map(t => (
                   <span key={t}
-                    className="inline-flex items-center px-4 py-1.5 sm:px-5 sm:py-2 rounded-full text-[11px] sm:text-xs font-bold tracking-wide text-white/80 whitespace-nowrap"
-                    style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.18)' }}>
+                    className="inline-flex items-center px-4 py-1.5 rounded-full text-[11px] sm:text-xs font-bold tracking-wide text-white/75 whitespace-nowrap"
+                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.14)' }}>
                     {t}
                   </span>
                 ))}
+              </div>
+            </motion.div>
+
+            {/* ── Right: stats + CEO quote ── */}
+            <motion.div {...up(0.15)} className="flex flex-col gap-4">
+
+              {/* Stats 2×2 grid */}
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { value: '195+', label: 'Countries Served', icon: Globe,        color: '#EC4899' },
+                  { value: '8',    label: 'Super-Products',   icon: Sparkles,     color: '#9B5DE5' },
+                  { value: '1M+',  label: 'Members & Growing',icon: Users,        color: '#DC2626' },
+                  { value: '2020', label: 'Founded in Liberia',icon: BadgeCheck,  color: '#D4AF37' },
+                ].map(stat => {
+                  const Icon = stat.icon
+                  return (
+                    <div key={stat.label}
+                      className="relative rounded-2xl p-5 flex flex-col items-center text-center overflow-hidden group"
+                      style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)' }}>
+                      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl"
+                        style={{ background: `radial-gradient(circle at 50% 0%, ${stat.color}18 0%, transparent 70%)` }} />
+                      <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3 relative"
+                        style={{ background: `${stat.color}18`, border: `1px solid ${stat.color}30` }}>
+                        <Icon className="w-4.5 h-4.5" style={{ color: stat.color }} />
+                      </div>
+                      <p className="font-display font-black text-white text-2xl sm:text-3xl leading-none">{stat.value}</p>
+                      <p className="text-white/45 text-[11px] font-semibold tracking-wide mt-1.5 leading-tight">{stat.label}</p>
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* CEO quote card */}
+              <div className="relative rounded-2xl p-6 overflow-hidden"
+                style={{ background: 'linear-gradient(135deg, rgba(236,72,153,0.1) 0%, rgba(155,93,229,0.08) 100%)', border: '1px solid rgba(236,72,153,0.2)' }}>
+                <div className="absolute -top-4 -left-2 text-5xl text-pink-500/25 font-serif select-none leading-none">"</div>
+                <p className="text-white/80 text-sm sm:text-base leading-relaxed italic relative mb-4">
+                  SmartzConnect is an African child's dream. But, was built for the world. Your contribution in whatever ways to keep it alive, is acceptable.
+                </p>
+                <div className="flex items-center gap-3 relative">
+                  <div className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0 border border-pink-500/30">
+                    <img src="/ceo-shedrick.jpg" alt="CEO" className="w-full h-full object-cover object-top" />
+                  </div>
+                  <div>
+                    <p className="text-white/90 text-xs font-bold">Shedrick K. Nungehn</p>
+                    <p className="text-white/40 text-[11px]">Founder &amp; CEO, SmartzConnect</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Platform highlights row */}
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { icon: Shield,      label: 'SSL Secured',      color: '#22c55e' },
+                  { icon: BadgeCheck,  label: 'Verified Profiles', color: '#3b82f6' },
+                  { icon: Smartphone,  label: 'Free to Join',      color: '#EC4899' },
+                ].map(h => {
+                  const Icon = h.icon
+                  return (
+                    <div key={h.label} className="rounded-xl p-3 flex flex-col items-center gap-1.5 text-center"
+                      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                      <Icon className="w-4 h-4" style={{ color: h.color }} />
+                      <p className="text-white/50 text-[10px] font-semibold leading-tight">{h.label}</p>
+                    </div>
+                  )
+                })}
               </div>
             </motion.div>
 

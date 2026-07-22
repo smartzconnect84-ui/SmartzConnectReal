@@ -1300,16 +1300,28 @@ function PostCard({ post, onLike, onSave, currentUserId, storyData, onViewStory 
         </div>
       )}
 
-      {/* Stats row */}
+      {/* Stats row — counts are clickable */}
       {(post.likes > 0 || localCommentCount > 0) && (
         <div className="flex items-center justify-between px-4 py-1.5 text-[11px] dark:text-gray-500 text-gray-400">
           {post.likes > 0 && (
-            <span className="flex items-center gap-1">
+            <button
+              onClick={() => showReactors('❤️')}
+              className="flex items-center gap-1 hover:text-brand-pink transition-colors"
+              title="See who liked this"
+            >
               <span className="w-4 h-4 rounded-full bg-love-gradient flex items-center justify-center"><Heart className="w-2.5 h-2.5 text-white fill-white" /></span>
               {post.likes.toLocaleString()}
-            </span>
+            </button>
           )}
-          {localCommentCount > 0 && <span>{localCommentCount} comments</span>}
+          {localCommentCount > 0 && (
+            <button
+              onClick={toggleComments}
+              className="hover:text-brand-pink transition-colors ml-auto"
+              title="View comments"
+            >
+              {localCommentCount} {localCommentCount === 1 ? 'comment' : 'comments'}
+            </button>
+          )}
         </div>
       )}
 

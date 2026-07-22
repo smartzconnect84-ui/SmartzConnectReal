@@ -147,59 +147,138 @@ export default function WorldStagePage() {
     <div className="dark:bg-[#080510] bg-gray-50 min-h-screen">
 
       {/* ══ HERO ══════════════════════════════════════════════════ */}
-      <section className="relative pt-28 pb-20 sm:pt-36 sm:pb-28 overflow-hidden dark:bg-[#0D0A14] bg-white">
+      <section className="relative pt-24 pb-16 sm:pt-32 sm:pb-24 overflow-hidden dark:bg-[#0D0A14] bg-white">
         {/* Background glows */}
         <div className="absolute inset-0 bg-gradient-to-br from-violet-500/8 via-pink-500/5 to-amber-500/4 pointer-events-none" />
-        <div className="absolute top-16 left-1/4 w-96 h-96 rounded-full bg-violet-500/10 blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 right-1/4 w-72 h-72 rounded-full bg-pink-500/10 blur-3xl pointer-events-none" />
+        <div className="absolute top-16 left-1/4 w-[600px] h-[600px] rounded-full bg-violet-500/10 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 right-0 w-[400px] h-[400px] rounded-full bg-pink-500/8 blur-3xl pointer-events-none" />
 
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 text-center relative" ref={heroRef}>
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={heroIn ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.7 }}
-          >
-            {/* Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-pink-500/15 to-violet-500/10 border border-pink-500/30 mb-6">
-              <Star className="w-3.5 h-3.5 text-brand-pink" />
-              <span className="text-xs font-black tracking-widest text-brand-pink uppercase">The Spotlight</span>
-            </div>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative" ref={heroRef}>
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
 
-            {/* Headline */}
-            <h1 className="font-display font-black dark:text-white text-gray-900 mb-6 text-3xl sm:text-4xl lg:text-5xl leading-tight">
-              The World Stage{' '}
-              <span className="block">
-                <span className="bg-gradient-to-r from-violet-400 via-pink-400 to-orange-400 bg-clip-text text-transparent">
-                  for everyone
+            {/* ── Left: text content ── */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={heroIn ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 0.6 }}
+            >
+              {/* Badge */}
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-pink-500/15 to-violet-500/10 border border-pink-500/30 mb-6">
+                <Star className="w-3.5 h-3.5 text-brand-pink" />
+                <span className="text-xs font-black tracking-widest text-brand-pink uppercase">The Spotlight</span>
+              </div>
+
+              {/* Headline */}
+              <h1 className="font-display font-black dark:text-white text-gray-900 mb-5 text-3xl sm:text-4xl lg:text-5xl leading-tight">
+                The World Stage{' '}
+                <span className="block">
+                  <span className="bg-gradient-to-r from-violet-400 via-pink-400 to-orange-400 bg-clip-text text-transparent">
+                    for everyone
+                  </span>
                 </span>
-              </span>
-              <span className="block bg-gradient-to-r from-pink-400 to-amber-400 bg-clip-text text-transparent">
-                who shines.
-              </span>
-            </h1>
+                <span className="block bg-gradient-to-r from-pink-400 to-amber-400 bg-clip-text text-transparent">
+                  who shines.
+                </span>
+              </h1>
 
-            {/* Subtitle */}
-            <p className="text-base sm:text-xl dark:text-gray-400 text-gray-600 max-w-2xl mx-auto mb-10 leading-relaxed">
-              SmartzConnect's Spotlight celebrates the influencers, relationship seekers and entrepreneurs
-              lighting up our ecosystem — recognized weekly, monthly and yearly.
-            </p>
+              {/* Subtitle */}
+              <p className="text-base sm:text-lg dark:text-gray-400 text-gray-600 mb-8 leading-relaxed max-w-xl">
+                SmartzConnect's Spotlight celebrates the influencers, relationship seekers, and entrepreneurs
+                lighting up our ecosystem — recognised <strong className="dark:text-white text-gray-800">weekly</strong>,{' '}
+                <strong className="dark:text-white text-gray-800">monthly</strong>, and{' '}
+                <strong className="dark:text-white text-gray-800">yearly</strong>.
+              </p>
 
-            {/* CTAs */}
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              {/* CTAs */}
+              <div className="flex flex-col sm:flex-row gap-3 mb-10">
+                <Link
+                  to={worldstageHref}
+                  className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-violet-600 to-pink-600 text-white font-bold text-sm shadow-xl shadow-violet-500/30 hover:scale-105 transition-all inline-flex items-center justify-center gap-2"
+                >
+                  <Zap className="w-4 h-4" /> Join &amp; Get Spotted
+                </Link>
+                <a
+                  href="#how-it-works"
+                  className="px-8 py-3.5 rounded-2xl dark:bg-white/8 bg-gray-100 dark:text-white text-gray-900 font-bold text-sm hover:text-brand-pink transition-colors inline-flex items-center justify-center gap-2"
+                >
+                  <TrendingUp className="w-4 h-4" /> How It Works
+                </a>
+              </div>
+
+              {/* Micro-stats */}
+              <div className="flex flex-wrap gap-5">
+                {[
+                  { icon: Globe,    value: '3 Categories',   sub: 'Influencer · Heart · Hustler' },
+                  { icon: Calendar, value: 'Every Sunday',   sub: 'Weekly spotlights' },
+                  { icon: Trophy,   value: 'Annual Award',   sub: 'Cash prize + trophy' },
+                ].map(s => {
+                  const Icon = s.icon
+                  return (
+                    <div key={s.value} className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-pink-500/20 to-violet-500/15 border border-pink-500/20 flex items-center justify-center flex-shrink-0">
+                        <Icon className="w-4 h-4 text-brand-pink" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-black dark:text-white text-gray-900 leading-tight">{s.value}</p>
+                        <p className="text-[10px] dark:text-gray-500 text-gray-400">{s.sub}</p>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </motion.div>
+
+            {/* ── Right: category spotlight cards ── */}
+            <motion.div
+              initial={{ opacity: 0, x: 40 }}
+              animate={heroIn ? { opacity: 1, x: 0 } : {}}
+              transition={{ duration: 0.7, delay: 0.15 }}
+              className="hidden lg:flex flex-col gap-3"
+            >
+              {spotCategories.map((cat, i) => {
+                const Icon = cat.icon
+                return (
+                  <motion.div
+                    key={cat.tag}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={heroIn ? { opacity: 1, y: 0 } : {}}
+                    transition={{ delay: 0.25 + i * 0.1 }}
+                    className={`relative dark:bg-[#130E1E]/80 bg-white rounded-2xl p-5 border-2 ${cat.border} overflow-hidden backdrop-blur-sm flex items-center gap-4 group hover:shadow-xl ${cat.glow} transition-all duration-300`}
+                  >
+                    <div className={`absolute inset-0 bg-gradient-to-br ${cat.gradient} opacity-4 group-hover:opacity-8 transition-opacity rounded-2xl`} />
+                    <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${cat.gradient} flex items-center justify-center shadow-lg flex-shrink-0 relative`}>
+                      <Icon className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="relative flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className={`text-[9px] font-black tracking-widest ${cat.accent} uppercase`}>{cat.tag}</span>
+                        <span className="text-lg">{cat.emoji}</span>
+                      </div>
+                      <h3 className="font-bold text-sm dark:text-white text-gray-900">{cat.title}</h3>
+                      <p className="text-[11px] dark:text-gray-400 text-gray-500 leading-snug line-clamp-1 mt-0.5">{cat.desc}</p>
+                    </div>
+                    <Crown className={`w-4 h-4 ${cat.accent} opacity-50 flex-shrink-0 relative`} />
+                  </motion.div>
+                )
+              })}
+
+              {/* "In the running?" prompt card */}
               <Link
                 to={worldstageHref}
-                className="px-8 py-4 rounded-2xl bg-gradient-to-r from-violet-600 to-pink-600 text-white font-bold text-base shadow-xl shadow-violet-500/30 hover:scale-105 transition-all inline-flex items-center justify-center gap-2"
+                className="relative rounded-2xl p-5 border border-dashed border-violet-500/30 flex items-center justify-center gap-3 group hover:border-violet-500/60 hover:bg-violet-500/5 transition-all duration-300"
               >
-                <Zap className="w-5 h-5" /> Join & Get Spotted
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-pink-600 flex items-center justify-center shadow-lg shadow-violet-500/25">
+                  <Zap className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <p className="font-bold text-sm dark:text-white text-gray-900">Are you in the running?</p>
+                  <p className="text-[11px] dark:text-gray-400 text-gray-500">Start your activity today — every post counts.</p>
+                </div>
+                <CheckCircle className="w-4 h-4 text-violet-400 opacity-60 ml-auto" />
               </Link>
-              <a
-                href="#how-it-works"
-                className="px-8 py-4 rounded-2xl dark:bg-white/8 bg-gray-100 dark:text-white text-gray-900 font-bold text-base hover:text-brand-pink transition-colors inline-flex items-center justify-center gap-2"
-              >
-                <TrendingUp className="w-5 h-5" /> How It Works
-              </a>
-            </div>
-          </motion.div>
+            </motion.div>
+
+          </div>
         </div>
       </section>
 

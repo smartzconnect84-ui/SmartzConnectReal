@@ -45,13 +45,20 @@ export default function NotificationsPage() {
 
   const handleNotificationClick = (n: typeof notifications[0]) => {
     markRead(n.id)
-    if (n.action_url) {
-      // Internal paths (starting with /) use React Router; external URLs open in new tab
-      if (n.action_url.startsWith('/')) {
-        navigate(n.action_url)
+    if (!n.action_url) return
+    try {
+      // Handle absolute URLs that point to this same domain (e.g. from push notifications
+      // that embed the full domain). Strip the origin and navigate internally so the
+      // React Router tree handles the route — avoids a full-page reload to the public site.
+      const parsed = new URL(n.action_url)
+      if (parsed.hostname === window.location.hostname) {
+        navigate(parsed.pathname + parsed.search + parsed.hash)
       } else {
         window.open(n.action_url, '_blank', 'noopener,noreferrer')
       }
+    } catch {
+      // Relative path (e.g. /app/profile/uuid) — navigate directly
+      navigate(n.action_url)
     }
   }
 
