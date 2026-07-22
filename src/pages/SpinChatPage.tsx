@@ -607,12 +607,12 @@ export default function SpinChatPage() {
                       src={currentProfile.avatar_url}
                       alt={currentProfile.name}
                       className="w-16 h-16 rounded-2xl object-cover flex-shrink-0 cursor-pointer"
-                      onClick={(e) => { e.stopPropagation(); if (!anonymous) navigate(`/app/user/${currentProfile.id}`) }}
+                      onClick={(e) => { e.stopPropagation(); if (!anonymous) navigate(`/app/profile/${currentProfile.id}`) }}
                     />
                   ) : (
                     <div
                       className="w-16 h-16 rounded-2xl bg-love-gradient flex items-center justify-center text-3xl flex-shrink-0 cursor-pointer"
-                      onClick={(e) => { e.stopPropagation(); if (!anonymous) navigate(`/app/user/${currentProfile.id}`) }}
+                      onClick={(e) => { e.stopPropagation(); if (!anonymous) navigate(`/app/profile/${currentProfile.id}`) }}
                     >
                       {currentProfile.emoji}
                     </div>
@@ -621,7 +621,7 @@ export default function SpinChatPage() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <h3
                         className={`font-bold dark:text-white text-gray-900${!anonymous ? ' cursor-pointer hover:text-fuchsia-500 transition-colors' : ''}`}
-                        onClick={(e) => { e.stopPropagation(); if (!anonymous) navigate(`/app/user/${currentProfile.id}`) }}
+                        onClick={(e) => { e.stopPropagation(); if (!anonymous) navigate(`/app/profile/${currentProfile.id}`) }}
                       >{anonymous ? 'Anonymous' : currentProfile.name}</h3>
                       {currentProfile.online && <span className="px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-500 text-[9px] font-bold">ONLINE</span>}
                     </div>
@@ -650,7 +650,7 @@ export default function SpinChatPage() {
                 <button onClick={async () => {
                   if (!user || !currentProfile) return
                   await supabase.from('follows').insert({ follower_id: user.id, following_id: currentProfile.id })
-                  notifyUser({ userId: currentProfile.id, type: 'follow', title: 'New Follower', message: 'Someone from Spin & Chat started following you!', actionUrl: `/app/user/${user.id}`, emoji: '👤' }).catch(() => {})
+                  notifyUser({ userId: currentProfile.id, type: 'follow', title: 'New Follower', message: 'Someone from Spin & Chat started following you!', actionUrl: `/app/profile/${user.id}`, emoji: '👤' }).catch(() => {})
                 }}
                   className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-fuchsia-500/10 border border-fuchsia-500/20 text-fuchsia-500 font-semibold text-xs hover:bg-fuchsia-500/20 transition-colors">
                   <Zap className="w-3.5 h-3.5" /> Follow

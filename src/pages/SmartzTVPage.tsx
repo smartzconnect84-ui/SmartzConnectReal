@@ -304,7 +304,7 @@ function StreamModal({ stream, onClose, onJoinAsGuest }: {
         type: 'follow',
         title: 'New Follower on SmartzTV',
         message: 'Someone started following you from SmartzTV!',
-        actionUrl: `/app/user/${user.id}`,
+        actionUrl: `/app/profile/${user.id}`,
         emoji: '📺',
       }).catch(() => {})
       setFollowing(true)

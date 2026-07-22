@@ -1,5 +1,11 @@
 import { lazy, Suspense } from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom'
+
+/** Redirects /app/user/:userId → /app/profile/:userId (legacy push-notification links) */
+function UserProfileRedirect() {
+  const { userId } = useParams<{ userId: string }>()
+  return <Navigate to={`/app/profile/${userId}`} replace />
+}
 
 // ── Core providers & layouts (always needed immediately — static imports) ──
 import { ThemeProvider }         from '@/contexts/ThemeContext'
@@ -241,6 +247,8 @@ export default function App() {
                   <Route path="subscriptions" element={<SubscriptionsPage />} />
                   <Route path="profile"       element={<ProfilePage />} />
                   <Route path="profile/:userId" element={<UserProfilePage />} />
+                  {/* Legacy redirect — old push notifications stored /app/user/:id */}
+                  <Route path="user/:userId" element={<UserProfileRedirect />} />
                   <Route path="settings"      element={<SettingsPage />} />
                   <Route path="friends"       element={<FriendsPage />} />
                   <Route path="calls"         element={<CallsPage />} />

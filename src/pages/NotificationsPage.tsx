@@ -136,7 +136,7 @@ export default function NotificationsPage() {
                     }`}>
                     <div
                       className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-lg ${cfg.bg}${n.from_user_id && n.from_user_id !== user?.id ? ' cursor-pointer' : ''}`}
-                      onClick={n.from_user_id && n.from_user_id !== user?.id ? (e) => { e.stopPropagation(); navigate(`/app/user/${n.from_user_id}`) } : undefined}
+                      onClick={n.from_user_id && n.from_user_id !== user?.id ? (e) => { e.stopPropagation(); navigate(`/app/profile/${n.from_user_id}`) } : undefined}
                     >
                       {n.emoji}
                     </div>

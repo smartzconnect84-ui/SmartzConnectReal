@@ -43,7 +43,7 @@ function ProfileCard({ profile, onFollow, currentUserId }: { profile: Profile; o
 
   const goToProfile = (e: React.MouseEvent) => {
     e.stopPropagation()
-    if (profile.id !== currentUserId) navigate(`/app/user/${profile.id}`)
+    if (profile.id !== currentUserId) navigate(`/app/profile/${profile.id}`)
   }
 
   return (
@@ -185,7 +185,7 @@ export default function FriendsPage() {
         type: 'follow',
         title: `${myName} followed you`,
         message: 'You have a new follower on SmartzConnect!',
-        actionUrl: `/app/user/${user.id}`,
+        actionUrl: `/app/profile/${user.id}`,
         emoji: '👤',
       }).catch(() => {})
     }

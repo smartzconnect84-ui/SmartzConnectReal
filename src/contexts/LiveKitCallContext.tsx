@@ -274,7 +274,7 @@ export function LiveKitCallProvider({ children }: { children: ReactNode }) {
           type: 'call',
           title: `Incoming ${type === 'video' ? 'video' : 'audio'} call 📞`,
           message: `${callerProfile?.full_name || 'Someone'} is calling you`,
-          actionUrl: `/app/user/${user.id}`,
+          actionUrl: `/app/profile/${user.id}`,
           emoji: '📞',
         }).catch(() => {})
       })
@@ -301,7 +301,7 @@ export function LiveKitCallProvider({ children }: { children: ReactNode }) {
             type: 'missed_call',
             title: 'Missed Call 📞',
             message: `You missed a ${type} call. Tap to call back.`,
-            actionUrl: `/app/user/${user.id}`,
+            actionUrl: `/app/profile/${user.id}`,
             emoji: '📞',
           }).catch(() => {})
         }
@@ -386,7 +386,7 @@ export function LiveKitCallProvider({ children }: { children: ReactNode }) {
       type: 'missed_call',
       title: 'Call Declined 📵',
       message: `${user?.email?.split('@')[0] || 'Someone'} declined your call.`,
-      actionUrl: user?.id ? `/app/user/${user.id}` : '/app',
+      actionUrl: user?.id ? `/app/profile/${user.id}` : '/app',
       emoji: '📵',
     }).catch(() => {})
   }, [incomingCall, user?.id, user?.email])

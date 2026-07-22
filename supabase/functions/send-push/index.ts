@@ -150,7 +150,16 @@ serve(async (req) => {
       })
     }
 
-    const pushUrl = url || actionUrl
+    // Ensure the URL is absolute — OneSignal requires a full URL to navigate
+    // correctly. Relative paths (e.g. /app/post/123) are prefixed with the
+    // production domain so the push click lands on the right in-app page.
+    const APP_DOMAIN = 'https://www.smartzconnect.com'
+    const rawUrl = url || actionUrl
+    const pushUrl = rawUrl
+      ? rawUrl.startsWith('http')
+        ? rawUrl
+        : `${APP_DOMAIN}${rawUrl.startsWith('/') ? '' : '/'}${rawUrl}`
+      : null
     const notifType = type || 'system'
 
     // Build a rich, high-priority push payload

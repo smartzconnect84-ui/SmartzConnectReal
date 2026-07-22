@@ -152,7 +152,7 @@ export default function UserProfilePage() {
         type: 'follow',
         title: 'New Follower',
         message: `${myProfile?.full_name || 'Someone'} started following you`,
-        actionUrl: `/app/user/${user.id}`,
+        actionUrl: `/app/profile/${user.id}`,
         emoji: '👤',
       }).catch(() => {})
     }

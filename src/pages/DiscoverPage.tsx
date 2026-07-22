@@ -366,7 +366,7 @@ export default function DiscoverPage() {
       type: 'follow',
       title: 'New Follower',
       message: 'Someone on Discover liked you and started following!',
-      actionUrl: `/app/user/${user.id}`,
+      actionUrl: `/app/profile/${user.id}`,
       emoji: '💕',
     }).catch(() => {})
   }

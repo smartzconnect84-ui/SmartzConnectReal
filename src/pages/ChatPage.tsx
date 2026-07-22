@@ -686,7 +686,7 @@ export default function ChatPage() {
         </Link>
         <div
           className="relative cursor-pointer"
-          onClick={() => { if (id && id !== user?.id) navigate(`/app/user/${id}`) }}
+          onClick={() => { if (id && id !== user?.id) navigate(`/app/profile/${id}`) }}
         >
           <div className="w-10 h-10 rounded-full dark:bg-pink-100 bg-gray-100 flex items-center justify-center text-xl overflow-hidden ring-2 ring-purple-500/20">
             {person?.avatar_url ? <img src={person.avatar_url} alt={person.name} className="w-full h-full object-cover" /> : (person?.emoji || '👤')}
@@ -696,7 +696,7 @@ export default function ChatPage() {
         <div className="flex-1 min-w-0">
           <p
             className="font-bold text-sm dark:text-gray-900 text-gray-900 truncate cursor-pointer hover:text-brand-pink transition-colors"
-            onClick={() => { if (id && id !== user?.id) navigate(`/app/user/${id}`) }}
+            onClick={() => { if (id && id !== user?.id) navigate(`/app/profile/${id}`) }}
           >{person?.name || 'Chat'}</p>
           <p className={`text-[11px] font-medium ${connected ? (person?.online ? 'text-emerald-500' : 'text-pink-500') : 'text-gray-400'}`}>
             {!connected ? (connectTimeout ? 'Offline — check connection' : 'Connecting…') : otherTyping ? '✍️ typing…' : person?.online ? '● Active now' : 'Last seen recently'}

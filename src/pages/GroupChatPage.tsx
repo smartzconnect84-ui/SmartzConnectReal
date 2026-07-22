@@ -698,7 +698,7 @@ export default function GroupChatPage() {
                     {!msg.mine && (
                       <button
                         type="button"
-                        onClick={() => msg.authorId && msg.authorId !== user?.id && navigate(`/app/user/${msg.authorId}`)}
+                        onClick={() => msg.authorId && msg.authorId !== user?.id && navigate(`/app/profile/${msg.authorId}`)}
                         className="w-8 h-8 rounded-full dark:bg-pink-100 bg-gray-100 flex items-center justify-center text-sm flex-shrink-0 mt-1 hover:opacity-80 transition-opacity cursor-pointer"
                         title={msg.author}
                       >{msg.emoji}</button>
@@ -708,7 +708,7 @@ export default function GroupChatPage() {
                         <div className="flex items-center gap-2 mb-1">
                           <button
                             type="button"
-                            onClick={() => msg.authorId && msg.authorId !== user?.id && navigate(`/app/user/${msg.authorId}`)}
+                            onClick={() => msg.authorId && msg.authorId !== user?.id && navigate(`/app/profile/${msg.authorId}`)}
                             className="text-xs font-bold dark:text-gray-700 text-gray-700 hover:text-brand-pink dark:hover:text-brand-pink transition-colors"
                           >{msg.author}</button>
                           {msg.role === 'admin' && <Shield className="w-3 h-3 text-purple-400" />}

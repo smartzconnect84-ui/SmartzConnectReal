@@ -350,7 +350,7 @@ function StoryViewerOverlay({
             onClick={() => {
               if (!story.isOwn && story.authorId) {
                 onClose()
-                navigate(`/app/user/${story.authorId}`)
+                navigate(`/app/profile/${story.authorId}`)
               }
             }}
             className="w-8 h-8 rounded-full bg-love-gradient flex items-center justify-center text-white text-sm font-bold overflow-hidden flex-shrink-0 hover:opacity-80 transition-opacity"
@@ -363,7 +363,7 @@ function StoryViewerOverlay({
             onClick={() => {
               if (!story.isOwn && story.authorId) {
                 onClose()
-                navigate(`/app/user/${story.authorId}`)
+                navigate(`/app/profile/${story.authorId}`)
               }
             }}
             className="text-white text-sm font-semibold flex-1 text-left hover:underline disabled:cursor-default"
@@ -763,7 +763,7 @@ function StoriesBar({ user, onStoriesLoaded }: { user: { id?: string; email?: st
                 {/* Name — clicking navigates to profile */}
                 <button
                   type="button"
-                  onClick={() => navigate(`/app/user/${authorId}`)}
+                  onClick={() => navigate(`/app/profile/${authorId}`)}
                   className="text-[10px] font-semibold dark:text-gray-400 text-gray-500 max-w-[56px] truncate text-center group-hover:text-brand-pink hover:text-brand-pink transition-colors"
                   title={`View ${name}'s profile`}
                 >
@@ -1031,6 +1031,8 @@ function PostCard({ post, onLike, onSave, currentUserId, storyData, onViewStory 
   const [reportOpen, setReportOpen] = useState(false)
   const [reactions, setReactions] = useState<Record<string, number>>({})
   const [myReaction, setMyReaction] = useState<string | null>(null)
+  const [reactorsModal, setReactorsModal] = useState<{ emoji: string; users: { id: string; name: string; avatar_url: string | null }[] } | null>(null)
+  const [loadingReactors, setLoadingReactors] = useState(false)
   const isOwn = currentUserId && post.authorId === currentUserId
 
   const handleAuthorClick = (e: React.MouseEvent) => {
@@ -1039,7 +1041,7 @@ function PostCard({ post, onLike, onSave, currentUserId, storyData, onViewStory 
     if (isOwn) {
       navigate('/app/profile')
     } else {
-      navigate(`/app/user/${post.authorId}`)
+      navigate(`/app/profile/${post.authorId}`)
     }
   }
 
@@ -1087,6 +1089,39 @@ function PostCard({ post, onLike, onSave, currentUserId, storyData, onViewStory 
           emoji,
         })
       }
+    }
+  }
+
+  const showReactors = async (emoji: string) => {
+    const count = reactions[emoji] || 0
+    if (count === 0) return
+    setLoadingReactors(true)
+    setReactorsModal({ emoji, users: [] })
+    try {
+      const { data } = await supabase
+        .from('post_reactions')
+        .select('user_id')
+        .eq('post_id', post.id)
+        .eq('emoji', emoji)
+        .limit(50)
+      const userIds = [...new Set((data as any[] || []).map((r: any) => r.user_id))]
+      const profMap: Record<string, any> = {}
+      if (userIds.length) {
+        const { data: profs } = await supabase.from('profiles').select('id, full_name, avatar_url').in('id', userIds)
+        for (const p of (profs as any[]) || []) profMap[p.id] = p
+      }
+      setReactorsModal({
+        emoji,
+        users: userIds.map(id => ({
+          id,
+          name: profMap[id]?.full_name || 'Someone',
+          avatar_url: profMap[id]?.avatar_url || null,
+        })),
+      })
+    } catch {
+      setReactorsModal(null)
+    } finally {
+      setLoadingReactors(false)
     }
   }
 
@@ -1281,19 +1316,82 @@ function PostCard({ post, onLike, onSave, currentUserId, storyData, onViewStory 
       {/* Emoji Reaction bar */}
       <div className="flex items-center gap-0.5 px-3 py-1.5 border-t dark:border-white/4 border-gray-50 overflow-x-auto scrollbar-none">
         {REACTION_EMOJIS.map(emoji => (
-          <button key={emoji} onClick={() => handleReaction(emoji)}
-            className={`flex items-center gap-0.5 px-2 py-1 rounded-xl text-sm transition-all flex-shrink-0 ${
-              myReaction === emoji
-                ? 'dark:bg-pink-500/15 bg-pink-50 scale-110'
-                : 'dark:hover:bg-white/5 hover:bg-gray-50 opacity-60 hover:opacity-100'
-            }`}>
-            <span>{emoji}</span>
+          <div key={emoji} className="flex items-center flex-shrink-0">
+            <button onClick={() => handleReaction(emoji)}
+              className={`flex items-center gap-0.5 px-1.5 py-1 rounded-l-xl text-sm transition-all ${
+                myReaction === emoji
+                  ? 'dark:bg-pink-500/15 bg-pink-50 scale-110'
+                  : 'dark:hover:bg-white/5 hover:bg-gray-50 opacity-60 hover:opacity-100'
+              }`}>
+              <span>{emoji}</span>
+            </button>
             {(reactions[emoji] || 0) > 0 && (
-              <span className="text-[10px] font-bold dark:text-gray-400 text-gray-600 ml-0.5">{reactions[emoji]}</span>
+              <button
+                onClick={() => showReactors(emoji)}
+                className="text-[10px] font-bold dark:text-gray-400 text-gray-600 px-1 py-1 rounded-r-xl dark:hover:bg-white/5 hover:bg-gray-100 transition-colors"
+                title={`See who reacted ${emoji}`}
+              >
+                {reactions[emoji]}
+              </button>
             )}
-          </button>
+          </div>
         ))}
       </div>
+
+      {/* Reactors modal — who reacted with a given emoji */}
+      <AnimatePresence>
+        {reactorsModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            onClick={() => setReactorsModal(null)}
+          >
+            <motion.div
+              initial={{ y: 60, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 60, opacity: 0 }}
+              transition={{ type: 'spring', damping: 25 }}
+              onClick={e => e.stopPropagation()}
+              className="w-full max-w-sm dark:bg-[#130E1E] bg-white rounded-2xl border dark:border-white/8 border-gray-100 shadow-2xl overflow-hidden"
+            >
+              <div className="flex items-center justify-between px-4 pt-4 pb-2">
+                <span className="font-bold dark:text-white text-gray-900 flex items-center gap-2">
+                  <span className="text-xl">{reactorsModal.emoji}</span>
+                  <span className="text-sm">Reactions</span>
+                </span>
+                <button onClick={() => setReactorsModal(null)} className="p-1 rounded-lg dark:hover:bg-white/8 hover:bg-gray-100">
+                  <X className="w-4 h-4 dark:text-gray-400 text-gray-500" />
+                </button>
+              </div>
+              <div className="px-4 pb-4 space-y-2 max-h-64 overflow-y-auto">
+                {loadingReactors ? (
+                  <div className="flex justify-center py-6">
+                    <Loader2 className="w-5 h-5 animate-spin dark:text-gray-500 text-gray-400" />
+                  </div>
+                ) : reactorsModal.users.length === 0 ? (
+                  <p className="text-xs dark:text-gray-500 text-gray-400 py-4 text-center">No reactions yet</p>
+                ) : (
+                  reactorsModal.users.map(u => (
+                    <button
+                      key={u.id}
+                      onClick={() => { setReactorsModal(null); navigate(u.id === currentUserId ? '/app/profile' : `/app/profile/${u.id}`) }}
+                      className="w-full flex items-center gap-3 p-2 rounded-xl dark:hover:bg-white/5 hover:bg-gray-50 transition-colors text-left"
+                    >
+                      <div className="w-8 h-8 rounded-full dark:bg-white/8 bg-gray-100 overflow-hidden flex-shrink-0 flex items-center justify-center text-sm">
+                        {u.avatar_url ? <img src={u.avatar_url} className="w-full h-full object-cover" alt="" /> : '👤'}
+                      </div>
+                      <span className="text-sm font-medium dark:text-white text-gray-900 flex-1 min-w-0 truncate">{u.name}</span>
+                      <span className="text-base">{reactorsModal.emoji}</span>
+                    </button>
+                  ))
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Actions */}
       <div className="flex items-center px-2 py-1.5 border-t dark:border-white/4 border-gray-50 gap-0.5">
@@ -1342,7 +1440,7 @@ function PostCard({ post, onLike, onSave, currentUserId, storyData, onViewStory 
                       if (isOwnComment) {
                         navigate('/app/profile')
                       } else {
-                        navigate(`/app/user/${c.user_id}`)
+                        navigate(`/app/profile/${c.user_id}`)
                       }
                     }}
                     className="w-7 h-7 rounded-full dark:bg-white/8 bg-gray-100 flex-shrink-0 overflow-hidden flex items-center justify-center text-xs cursor-pointer hover:opacity-80 transition-opacity"
@@ -1358,7 +1456,7 @@ function PostCard({ post, onLike, onSave, currentUserId, storyData, onViewStory 
                         if (isOwnComment) {
                           navigate('/app/profile')
                         } else {
-                          navigate(`/app/user/${c.user_id}`)
+                          navigate(`/app/profile/${c.user_id}`)
                         }
                       }}
                       className="text-[11px] font-bold dark:text-white text-gray-900 hover:text-brand-pink dark:hover:text-brand-pink transition-colors"
