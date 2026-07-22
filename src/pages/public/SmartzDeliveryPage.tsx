@@ -77,10 +77,10 @@ export default function SmartzDeliveryPage() {
             transition={{ duration: 0.5, delay: 0.2 }}
             className="flex flex-col sm:flex-row gap-3 justify-center"
           >
-            <Link to="/register" className="btn-love px-7 py-3.5 min-h-[44px] rounded-2xl text-sm font-bold inline-flex items-center justify-center gap-2">
+            <Link to="/register" className="w-full sm:w-auto btn-love px-7 py-3.5 min-h-[44px] rounded-2xl text-sm font-bold inline-flex items-center justify-center gap-2">
               <Package className="w-4 h-4" /> Send a Package
             </Link>
-            <Link to="/register" className="px-7 py-3.5 min-h-[44px] rounded-2xl dark:bg-white/5 bg-white border dark:border-white/10 border-gray-200 dark:text-white text-gray-900 text-sm font-semibold hover:text-brand-pink active:scale-95 transition-all inline-flex items-center justify-center gap-2">
+            <Link to="/register" className="w-full sm:w-auto px-7 py-3.5 min-h-[44px] rounded-2xl dark:bg-white/5 bg-white border dark:border-white/10 border-gray-200 dark:text-white text-gray-900 text-sm font-semibold hover:text-brand-pink active:scale-95 transition-all inline-flex items-center justify-center gap-2">
               <Truck className="w-4 h-4" /> Business Solutions
             </Link>
           </motion.div>

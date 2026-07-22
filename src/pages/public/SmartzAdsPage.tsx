@@ -230,11 +230,11 @@ export default function SmartzAdsPage() {
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link to="/register"
-                  className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-love-gradient text-white font-bold shadow-xl shadow-pink-500/30 hover:shadow-pink-500/50 hover:scale-105 transition-all text-sm">
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-love-gradient text-white font-bold shadow-xl shadow-pink-500/30 hover:shadow-pink-500/50 hover:scale-105 transition-all text-sm">
                   <Zap className="w-4 h-4" /> Get Started Free
                 </Link>
                 <a href="mailto:ads@smartzconnect.com"
-                  className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-white/12 backdrop-blur-sm border border-white/25 text-white font-semibold hover:bg-white/22 transition-all text-sm">
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-white/12 backdrop-blur-sm border border-white/25 text-white font-semibold hover:bg-white/22 transition-all text-sm">
                   <Mail className="w-4 h-4" /> Contact Ads Team <ArrowRight className="w-4 h-4" />
                 </a>
               </div>

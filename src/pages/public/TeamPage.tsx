@@ -282,13 +282,13 @@ export default function TeamPage() {
                   </div>
 
                   {/* Actions */}
-                  <div className="flex flex-wrap gap-3 pt-4 border-t dark:border-white/8 border-gray-100">
+                  <div className="flex flex-col xs:flex-row flex-wrap gap-3 pt-4 border-t dark:border-white/8 border-gray-100">
                     <a href={CEO.contact_url} target="_blank" rel="noopener noreferrer"
-                      className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white text-sm font-bold shadow-lg shadow-purple-600/25 hover:opacity-90 transition-opacity">
+                      className="w-full xs:w-auto flex items-center justify-center gap-2 px-5 py-2.5 min-h-[44px] rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white text-sm font-bold shadow-lg shadow-purple-600/25 hover:opacity-90 transition-opacity">
                       <Shield className="w-4 h-4" /> Contact CEO
                     </a>
                     <Link to="/register"
-                      className="flex items-center gap-2 px-5 py-2.5 rounded-xl dark:bg-white/6 bg-gray-100 dark:text-white text-gray-700 text-sm font-semibold hover:dark:bg-white/10 hover:bg-gray-200 transition-colors border dark:border-white/8 border-gray-200">
+                      className="w-full xs:w-auto flex items-center justify-center gap-2 px-5 py-2.5 min-h-[44px] rounded-xl dark:bg-white/6 bg-gray-100 dark:text-white text-gray-700 text-sm font-semibold hover:dark:bg-white/10 hover:bg-gray-200 transition-colors border dark:border-white/8 border-gray-200">
                       <ExternalLink className="w-4 h-4" /> Join the Platform
                     </Link>
                   </div>
@@ -311,11 +311,11 @@ export default function TeamPage() {
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Link to="/register"
-                className="px-5 py-2.5 sm:px-6 sm:py-3 rounded-xl bg-gradient-to-r from-purple-600 to-purple-500 text-white font-bold inline-flex items-center justify-center gap-2 text-sm shadow-lg shadow-purple-600/30">
+                className="w-full sm:w-auto px-5 py-2.5 sm:px-6 sm:py-3 min-h-[44px] rounded-xl bg-gradient-to-r from-purple-600 to-purple-500 text-white font-bold inline-flex items-center justify-center gap-2 text-sm shadow-lg shadow-purple-600/30">
                 <Zap className="w-4 h-4" /> Get Started
               </Link>
               <a href="https://wa.me/231776679963" target="_blank" rel="noopener noreferrer"
-                className="px-5 py-2.5 sm:px-6 sm:py-3 rounded-xl bg-white/10 backdrop-blur-sm text-white font-semibold hover:bg-white/20 transition-colors inline-flex items-center justify-center gap-2 border border-white/20 text-sm">
+                className="w-full sm:w-auto px-5 py-2.5 sm:px-6 sm:py-3 min-h-[44px] rounded-xl bg-white/10 backdrop-blur-sm text-white font-semibold hover:bg-white/20 transition-colors inline-flex items-center justify-center gap-2 border border-white/20 text-sm">
                 💬 WhatsApp Us
               </a>
             </div>

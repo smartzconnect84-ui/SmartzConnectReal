@@ -710,11 +710,11 @@ export default function PricingPage() {
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link to="/register"
-                className="px-8 py-3.5 rounded-2xl bg-white text-brand-pink font-black text-base shadow-xl hover:shadow-2xl hover:scale-105 transition-all">
+                className="w-full sm:w-auto px-8 py-3.5 min-h-[44px] rounded-2xl bg-white text-brand-pink font-black text-base shadow-xl hover:shadow-2xl hover:scale-105 transition-all inline-flex items-center justify-center">
                 🆓 Join Free Forever
               </Link>
               <Link to="/app/subscriptions"
-                className="px-8 py-3.5 rounded-2xl bg-white/15 text-white font-bold text-base border border-white/30 hover:bg-white/25 transition-all">
+                className="w-full sm:w-auto px-8 py-3.5 min-h-[44px] rounded-2xl bg-white/15 text-white font-bold text-base border border-white/30 hover:bg-white/25 transition-all inline-flex items-center justify-center">
                 View Plans in App
               </Link>
             </div>

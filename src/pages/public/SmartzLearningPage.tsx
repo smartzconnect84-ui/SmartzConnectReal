@@ -136,11 +136,11 @@ export default function SmartzLearningPage() {
             className="flex flex-col sm:flex-row gap-3 justify-center"
           >
             <Link to={learnHref}
-              className="inline-flex items-center justify-center gap-2 px-6 py-2.5 min-h-[44px] rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 text-white font-semibold text-sm shadow-lg shadow-teal-500/40 hover:shadow-teal-500/60 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 min-h-[44px] rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 text-white font-semibold text-sm shadow-lg shadow-teal-500/40 hover:shadow-teal-500/60 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
               <PlayCircle className="w-4 h-4" /> Start Learning
             </Link>
             <Link to={learnHref}
-              className="inline-flex items-center justify-center gap-2 px-6 py-2.5 min-h-[44px] rounded-xl dark:bg-teal-900/30 bg-white border dark:border-teal-500/20 border-teal-300/50 dark:text-teal-200 text-teal-800 font-semibold text-sm hover:dark:bg-teal-900/50 hover:bg-teal-100 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 min-h-[44px] rounded-xl dark:bg-teal-900/30 bg-white border dark:border-teal-500/20 border-teal-300/50 dark:text-teal-200 text-teal-800 font-semibold text-sm hover:dark:bg-teal-900/50 hover:bg-teal-100 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
               <Zap className="w-4 h-4" /> Submit a Resource
             </Link>
           </motion.div>
@@ -310,11 +310,11 @@ export default function SmartzLearningPage() {
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link to={learnHref}
-              className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-gradient-to-r from-teal-500 to-emerald-500 text-white font-bold text-base shadow-xl shadow-teal-500/25 hover:scale-105 transition-all">
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-gradient-to-r from-teal-500 to-emerald-500 text-white font-bold text-base shadow-xl shadow-teal-500/25 hover:scale-105 transition-all">
               <PlayCircle className="w-4 h-4" /> Start Learning Free
             </Link>
             <Link to="/pricing"
-              className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl dark:bg-white/6 bg-white border dark:border-white/10 border-gray-200 dark:text-white text-gray-900 font-semibold text-base hover:dark:bg-white/10 transition-all">
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl dark:bg-white/6 bg-white border dark:border-white/10 border-gray-200 dark:text-white text-gray-900 font-semibold text-base hover:dark:bg-white/10 transition-all">
               View Plans
             </Link>
           </div>

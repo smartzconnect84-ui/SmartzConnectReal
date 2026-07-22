@@ -193,13 +193,13 @@ export default function WorldStagePage() {
               <div className="flex flex-col sm:flex-row gap-3 mb-10">
                 <Link
                   to={worldstageHref}
-                  className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-violet-600 to-pink-600 text-white font-bold text-sm shadow-xl shadow-violet-500/30 hover:scale-105 transition-all inline-flex items-center justify-center gap-2"
+                  className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-gradient-to-r from-violet-600 to-pink-600 text-white font-bold text-sm shadow-xl shadow-violet-500/30 hover:scale-105 transition-all inline-flex items-center justify-center gap-2"
                 >
                   <Zap className="w-4 h-4" /> Join &amp; Get Spotted
                 </Link>
                 <a
                   href="#how-it-works"
-                  className="px-8 py-3.5 rounded-2xl dark:bg-white/8 bg-gray-100 dark:text-white text-gray-900 font-bold text-sm hover:text-brand-pink transition-colors inline-flex items-center justify-center gap-2"
+                  className="w-full sm:w-auto px-8 py-3.5 rounded-2xl dark:bg-white/8 bg-gray-100 dark:text-white text-gray-900 font-bold text-sm hover:text-brand-pink transition-colors inline-flex items-center justify-center gap-2"
                 >
                   <TrendingUp className="w-4 h-4" /> How It Works
                 </a>
@@ -548,7 +548,7 @@ export default function WorldStagePage() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
                 to={worldstageHref}
-                className="px-10 py-4 rounded-2xl bg-white text-violet-700 font-black text-base hover:scale-105 transition-transform shadow-2xl inline-flex items-center justify-center gap-2"
+                className="w-full sm:w-auto px-10 py-4 rounded-2xl bg-white text-violet-700 font-black text-base hover:scale-105 transition-transform shadow-2xl inline-flex items-center justify-center gap-2"
               >
                 <Zap className="w-5 h-5" /> {session ? 'Go to World Stage' : 'Create Free Account'}
               </Link>
@@ -556,7 +556,7 @@ export default function WorldStagePage() {
                 href="https://wa.me/231776679963"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-10 py-4 rounded-2xl bg-white/15 backdrop-blur-sm text-white font-bold text-base hover:bg-white/25 transition-colors inline-flex items-center justify-center gap-2 border border-white/20"
+                className="w-full sm:w-auto px-10 py-4 rounded-2xl bg-white/15 backdrop-blur-sm text-white font-bold text-base hover:bg-white/25 transition-colors inline-flex items-center justify-center gap-2 border border-white/20"
               >
                 💬 Talk to Us
               </a>

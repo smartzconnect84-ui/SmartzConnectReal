@@ -95,11 +95,11 @@ export default function SmartzDatingPage() {
             className="flex flex-col sm:flex-row gap-3 justify-center"
           >
             <Link to={datingHref}
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 min-h-[44px] rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 text-white font-semibold text-sm shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 min-h-[44px] rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 text-white font-semibold text-sm shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
               <Heart className="w-4 h-4" /> Start Dating
             </Link>
             <Link to={datingHref}
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 min-h-[44px] rounded-xl dark:bg-rose-900/30 bg-white border dark:border-rose-500/20 border-rose-300/50 dark:text-rose-200 text-rose-800 font-semibold text-sm hover:dark:bg-rose-900/50 hover:bg-rose-100 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 min-h-[44px] rounded-xl dark:bg-rose-900/30 bg-white border dark:border-rose-500/20 border-rose-300/50 dark:text-rose-200 text-rose-800 font-semibold text-sm hover:dark:bg-rose-900/50 hover:bg-rose-100 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
               <UserPlus className="w-4 h-4" /> Create Profile
             </Link>
           </motion.div>
@@ -215,11 +215,11 @@ export default function SmartzDatingPage() {
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link to={datingHref}
-              className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-gradient-to-r from-pink-500 to-rose-500 text-white font-bold text-base shadow-xl shadow-pink-500/25 hover:scale-105 transition-all">
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-gradient-to-r from-pink-500 to-rose-500 text-white font-bold text-base shadow-xl shadow-pink-500/25 hover:scale-105 transition-all">
               <Heart className="w-4 h-4" /> Start Dating Free
             </Link>
             <Link to="/pricing"
-              className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl dark:bg-white/6 bg-white border dark:border-white/10 border-gray-200 dark:text-white text-gray-900 font-semibold text-base hover:dark:bg-white/10 transition-all">
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl dark:bg-white/6 bg-white border dark:border-white/10 border-gray-200 dark:text-white text-gray-900 font-semibold text-base hover:dark:bg-white/10 transition-all">
               View Premium Plans
             </Link>
           </div>

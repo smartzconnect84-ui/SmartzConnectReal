@@ -492,13 +492,13 @@ export default function AboutPage() {
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Link
                   to="/team"
-                  className="px-6 py-3 rounded-xl bg-white/10 backdrop-blur-sm text-white font-semibold hover:bg-white/20 transition-colors inline-flex items-center justify-center gap-2 border border-white/20 text-sm"
+                  className="w-full sm:w-auto px-6 py-3 min-h-[44px] rounded-xl bg-white/10 backdrop-blur-sm text-white font-semibold hover:bg-white/20 transition-colors inline-flex items-center justify-center gap-2 border border-white/20 text-sm"
                 >
                   <Users2 className="w-4 h-4" /> Meet the Team
                 </Link>
                 <Link
                   to="/register"
-                  className="px-6 py-3 rounded-xl from-purple-600 to-purple-500 text-white font-bold inline-flex items-center justify-center gap-2 text-sm shadow-lg shadow-purple-600/30 hover:opacity-90 transition-opacity bg-[color:var(--color-brand-to)]"
+                  className="w-full sm:w-auto px-6 py-3 min-h-[44px] rounded-xl from-purple-600 to-purple-500 text-white font-bold inline-flex items-center justify-center gap-2 text-sm shadow-lg shadow-purple-600/30 hover:opacity-90 transition-opacity bg-[color:var(--color-brand-to)]"
                 >
                   <Zap className="w-4 h-4" /> Get Started Free
                 </Link>
