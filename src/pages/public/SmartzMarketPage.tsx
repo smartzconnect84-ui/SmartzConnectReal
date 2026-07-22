@@ -117,11 +117,11 @@ export default function SmartzMarketPage() {
             className="flex flex-col sm:flex-row gap-3 justify-center"
           >
             <Link to={marketHref}
-              className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold text-sm shadow-lg shadow-amber-500/30 hover:shadow-amber-500/50 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 min-h-[44px] rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold text-sm shadow-lg shadow-amber-500/30 hover:shadow-amber-500/50 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
               <ShoppingBag className="w-4 h-4" /> Shop Now
             </Link>
             <Link to={marketHref}
-              className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl dark:bg-amber-900/30 bg-white border dark:border-amber-500/20 border-amber-300/50 dark:text-amber-200 text-amber-800 font-semibold text-sm hover:dark:bg-amber-900/50 hover:bg-amber-100 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 min-h-[44px] rounded-xl dark:bg-amber-900/30 bg-white border dark:border-amber-500/20 border-amber-300/50 dark:text-amber-200 text-amber-800 font-semibold text-sm hover:dark:bg-amber-900/50 hover:bg-amber-100 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
               <TrendingUp className="w-4 h-4" /> Sell Now
             </Link>
           </motion.div>

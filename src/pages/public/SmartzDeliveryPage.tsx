@@ -49,7 +49,7 @@ export default function SmartzDeliveryPage() {
   ]
 
   return (
-    <div className="dark:bg-[#080510] bg-gray-50 min-h-screen">
+    <div className="dark:bg-[#080510] bg-gray-50 min-h-screen pt-[72px] sm:pt-20">
 
       {/* Hero */}
       <section ref={heroRef}>
@@ -77,10 +77,10 @@ export default function SmartzDeliveryPage() {
             transition={{ duration: 0.5, delay: 0.2 }}
             className="flex flex-col sm:flex-row gap-3 justify-center"
           >
-            <Link to="/register" className="btn-love px-7 py-3.5 rounded-2xl text-sm font-bold inline-flex items-center gap-2">
+            <Link to="/register" className="btn-love px-7 py-3.5 min-h-[44px] rounded-2xl text-sm font-bold inline-flex items-center justify-center gap-2">
               <Package className="w-4 h-4" /> Send a Package
             </Link>
-            <Link to="/register" className="px-7 py-3.5 rounded-2xl dark:bg-white/5 bg-white border dark:border-white/10 border-gray-200 dark:text-white text-gray-900 text-sm font-semibold hover:text-brand-pink transition-all inline-flex items-center gap-2">
+            <Link to="/register" className="px-7 py-3.5 min-h-[44px] rounded-2xl dark:bg-white/5 bg-white border dark:border-white/10 border-gray-200 dark:text-white text-gray-900 text-sm font-semibold hover:text-brand-pink active:scale-95 transition-all inline-flex items-center justify-center gap-2">
               <Truck className="w-4 h-4" /> Business Solutions
             </Link>
           </motion.div>
@@ -174,7 +174,7 @@ export default function SmartzDeliveryPage() {
                   </li>
                 ))}
               </ul>
-              <Link to="/register" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-blue-500 text-white font-bold text-sm hover:bg-blue-600 transition-colors shadow-lg shadow-blue-500/25">
+              <Link to="/register" className="inline-flex items-center gap-2 px-6 py-3 min-h-[44px] rounded-xl bg-blue-500 text-white font-bold text-sm hover:bg-blue-600 transition-colors shadow-lg shadow-blue-500/25">
                 <Zap className="w-4 h-4" /> Get Business Account
               </Link>
             </div>

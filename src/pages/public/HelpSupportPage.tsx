@@ -52,7 +52,7 @@ function FaqItem({ q, a, defaultOpen = false }: { q: string; a: string; defaultO
     <div className="dark:bg-[#130E1E] bg-white rounded-2xl border dark:border-white/6 border-gray-200 overflow-hidden">
       <button
         onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center justify-between gap-3 px-5 py-4 text-left"
+        className="w-full flex items-center justify-between gap-3 px-5 py-4 min-h-[52px] text-left"
       >
         <span className="font-semibold text-sm sm:text-base dark:text-white text-gray-900">{q}</span>
         <ChevronDown className={`w-4 h-4 flex-shrink-0 dark:text-gray-500 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`} />

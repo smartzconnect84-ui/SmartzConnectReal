@@ -106,11 +106,11 @@ export default function SmartzRidePage() {
             className="flex flex-col sm:flex-row gap-3 justify-center"
           >
             <Link to={rideHref}
-              className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold text-sm shadow-lg shadow-emerald-500/40 hover:shadow-emerald-500/60 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 min-h-[44px] rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold text-sm shadow-lg shadow-emerald-500/40 hover:shadow-emerald-500/60 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
               <Car className="w-4 h-4" /> Book Ride
             </Link>
             <Link to={rideHref}
-              className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl dark:bg-emerald-900/30 bg-white border dark:border-emerald-500/20 border-emerald-300/50 dark:text-emerald-200 text-emerald-800 font-semibold text-sm hover:dark:bg-emerald-900/50 hover:bg-emerald-100 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 min-h-[44px] rounded-xl dark:bg-emerald-900/30 bg-white border dark:border-emerald-500/20 border-emerald-300/50 dark:text-emerald-200 text-emerald-800 font-semibold text-sm hover:dark:bg-emerald-900/50 hover:bg-emerald-100 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
               <Users className="w-4 h-4" /> Drive With Us
             </Link>
           </motion.div>

@@ -298,7 +298,7 @@ function NowPlayingCard({ channel, isLive, nextSchedule }: {
           </div>
         </div>
         <button onClick={handleShare}
-          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl dark:bg-white/10 bg-gray-100 dark:text-gray-300 text-gray-600 hover:bg-violet-500/20 text-xs font-semibold transition-colors flex-shrink-0">
+          className="inline-flex items-center gap-1.5 px-3 py-2 min-h-[44px] rounded-xl dark:bg-white/10 bg-gray-100 dark:text-gray-300 text-gray-600 hover:bg-violet-500/20 text-xs font-semibold transition-colors flex-shrink-0">
           <Share2 className="w-3.5 h-3.5" /> Share
         </button>
       </div>

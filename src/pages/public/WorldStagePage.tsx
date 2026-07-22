@@ -166,7 +166,7 @@ export default function WorldStagePage() {
             </div>
 
             {/* Headline */}
-            <h1 className="font-display font-black dark:text-white text-gray-900 mb-6 text-[26px]">
+            <h1 className="font-display font-black dark:text-white text-gray-900 mb-6 text-3xl sm:text-4xl lg:text-5xl leading-tight">
               The World Stage{' '}
               <span className="block">
                 <span className="bg-gradient-to-r from-violet-400 via-pink-400 to-orange-400 bg-clip-text text-transparent">
@@ -244,7 +244,7 @@ export default function WorldStagePage() {
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-pink-500/15 to-violet-500/10 border border-pink-500/25 mb-5">
               <span className="text-xs font-black tracking-widest text-brand-pink uppercase">Who We Celebrate</span>
             </div>
-            <h2 className="font-display font-black sm:text-5xl dark:text-white text-gray-900 mb-4 text-[26px]">
+            <h2 className="font-display font-black text-3xl sm:text-4xl lg:text-5xl dark:text-white text-gray-900 mb-4 leading-tight">
               Three categories.{' '}
               <span className="bg-gradient-to-r from-pink-400 to-violet-400 bg-clip-text text-transparent">One Spotlight.</span>
             </h2>
