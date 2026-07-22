@@ -1,48 +1,127 @@
 {
-    "id": "/",
-    "name": "SmartzConnect",
-    "short_name": "SmartzConnect",
-    "description": "Africa's premier social networking, dating, community, entertainment, marketplace, and ride-hailing platform.",
+  "id": "com.smartzconnect.app",
+  "name": "SmartzConnect",
+  "short_name": "SmartzConnect",
+  "description": "Africa's premier social networking, dating, community, entertainment, marketplace, and ride-hailing platform. Connect with people across 195+ countries.",
+  "start_url": "/app/feed",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui", "browser"],
+  "background_color": "#0D0A14",
+  "theme_color": "#EC4899",
+  "orientation": "portrait-primary",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["social", "entertainment", "lifestyle", "dating", "shopping"],
+  "prefer_related_applications": false,
 
-    "start_url": "/",
-    "scope": "/",
+  "icons": [
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
 
-    "display": "standalone",
+  "screenshots": [
+    {
+      "src": "/screenshots/android-1-feed.png",
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Social Feed — Stay connected with posts, stories and live streams"
+    },
+    {
+      "src": "/screenshots/android-2-dating.png",
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "SmartzDating — Swipe, match and connect with people near you"
+    },
+    {
+      "src": "/screenshots/android-3-marketplace.png",
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Marketplace — Buy and sell anything across Africa"
+    },
+    {
+      "src": "/screenshots/android-4-tv.png",
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "SmartzTV — Watch live streams and broadcast to the world"
+    }
+  ],
 
-    "background_color": "#0D0A14",
-    "theme_color": "#EC4899",
+  "shortcuts": [
+    {
+      "name": "My Feed",
+      "short_name": "Feed",
+      "description": "View your social feed",
+      "url": "/app/feed",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Messages",
+      "short_name": "Chat",
+      "description": "Open your messages",
+      "url": "/app/worldchat",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Discover",
+      "short_name": "Match",
+      "description": "Find your match",
+      "url": "/app/discover",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "SmartzTV",
+      "short_name": "TV",
+      "description": "Watch live streams",
+      "url": "/app/smartztv",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ],
 
-    "orientation": "portrait-primary",
+  "share_target": {
+    "action": "/app/compose",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
 
-    "icons": [
-        {
-            "src": "/icon-192.png",
-            "sizes": "192x192",
-            "type": "image/png",
-            "purpose": "any"
-        },
-        {
-            "src": "/icon-512.png",
-            "sizes": "512x512",
-            "type": "image/png",
-            "purpose": "any"
-        },
-        {
-            "src": "/icon-512.png",
-            "sizes": "512x512",
-            "type": "image/png",
-            "purpose": "maskable"
-        }
-    ],
-
-    "categories": [
-        "social",
-        "entertainment",
-        "lifestyle"
-    ],
-
-    "lang": "en",
-    "dir": "ltr",
-
-    "prefer_related_applications": false
+  "related_applications": [
+    {
+      "platform": "play",
+      "url": "https://play.google.com/store/apps/details?id=com.smartzconnect.app",
+      "id": "com.smartzconnect.app"
+    },
+    {
+      "platform": "itunes",
+      "url": "https://apps.apple.com/app/smartzconnect"
+    }
+  ]
 }
