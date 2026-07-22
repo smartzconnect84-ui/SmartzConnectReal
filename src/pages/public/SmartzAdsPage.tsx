@@ -80,11 +80,11 @@ export default function SmartzAdsPage() {
             className="flex flex-col sm:flex-row gap-3 justify-center"
           >
             <Link to="/register"
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 min-h-[44px] rounded-xl bg-love-gradient text-white font-semibold text-sm shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 min-h-[44px] rounded-xl bg-love-gradient text-white font-semibold text-sm shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
               <Megaphone className="w-4 h-4" /> Create Ad Account
             </Link>
             <Link to="/register"
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 min-h-[44px] rounded-xl dark:bg-pink-900/30 bg-white border dark:border-pink-500/20 border-pink-300/50 dark:text-pink-200 text-pink-800 font-semibold text-sm hover:dark:bg-pink-900/50 hover:bg-pink-100 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 min-h-[44px] rounded-xl dark:bg-pink-900/30 bg-white border dark:border-pink-500/20 border-pink-300/50 dark:text-pink-200 text-pink-800 font-semibold text-sm hover:dark:bg-pink-900/50 hover:bg-pink-100 hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
               <TrendingUp className="w-4 h-4" /> Promote Your Business
             </Link>
           </motion.div>

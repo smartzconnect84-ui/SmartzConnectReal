@@ -174,7 +174,7 @@ export default function SmartzDeliveryPage() {
                   </li>
                 ))}
               </ul>
-              <Link to="/register" className="inline-flex items-center gap-2 px-6 py-3 min-h-[44px] rounded-xl bg-blue-500 text-white font-bold text-sm hover:bg-blue-600 transition-colors shadow-lg shadow-blue-500/25">
+              <Link to="/register" className="inline-flex items-center gap-2 px-6 py-3 min-h-[44px] rounded-xl bg-blue-500 text-white font-bold text-sm hover:bg-blue-600 transition-colors shadow-lg shadow-blue-500/25 w-full sm:w-auto justify-center">
                 <Zap className="w-4 h-4" /> Get Business Account
               </Link>
             </div>
