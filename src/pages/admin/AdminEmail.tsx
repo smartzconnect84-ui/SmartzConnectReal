@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Mail, Send, Users, Crown, Zap, Heart, Eye, ChevronDown,
   CheckCircle, AlertCircle, Loader2, Plus, Trash2, X,
-  RefreshCw, Download, BarChart2, Clock, Globe
+  RefreshCw, Download, BarChart2, Clock, Globe, Paperclip, FileText
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
@@ -135,6 +135,43 @@ export default function AdminEmail() {
     a.click()
   }
 
+  interface EmailAttachment {
+    filename: string
+    content: string   // base64
+    contentType: string
+    sizeKb: number
+  }
+
+  const [attachments, setAttachments] = useState<EmailAttachment[]>([])
+  const attachInputRef = useRef<HTMLInputElement>(null)
+
+  const handleAttachFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    if (!files.length) return
+    files.forEach(file => {
+      if (file.size > 5 * 1024 * 1024) {
+        showToast(`"${file.name}" exceeds the 5 MB limit`, false)
+        return
+      }
+      const reader = new FileReader()
+      reader.onload = () => {
+        const base64 = (reader.result as string).split(',')[1]
+        setAttachments(prev => {
+          if (prev.length >= 5) { showToast('Maximum 5 attachments per email', false); return prev }
+          if (prev.some(a => a.filename === file.name)) return prev
+          return [...prev, { filename: file.name, content: base64, contentType: file.type || 'application/octet-stream', sizeKb: Math.round(file.size / 1024) }]
+        })
+      }
+      reader.readAsDataURL(file)
+    })
+    // Reset so the same file can be re-added if removed
+    e.target.value = ''
+  }
+
+  const removeAttachment = (filename: string) => {
+    setAttachments(prev => prev.filter(a => a.filename !== filename))
+  }
+
   const [form, setForm] = useState({
     subject: '',
     body: '',
@@ -199,6 +236,11 @@ export default function AdminEmail() {
           footer: form.footer,
           from_email: fromEmail,
           from_name: fromName,
+          attachments: attachments.map(a => ({
+            filename: a.filename,
+            content: a.content,
+            content_type: a.contentType,
+          })),
         },
         headers: { Authorization: `Bearer ${token}` },
       })
@@ -217,6 +259,7 @@ export default function AdminEmail() {
       showToast(`Email campaign sent to ${(data?.sent_count ?? 0).toLocaleString()} of ${(data?.total ?? 0).toLocaleString()} users!`)
       setShowCompose(false)
       setForm({ subject: '', body: '', audience: 'all', footer: form.footer })
+      setAttachments([])
       fetchData()
     } catch (err: any) {
       showToast(err.message || 'Failed to send campaign', false)
@@ -538,6 +581,44 @@ export default function AdminEmail() {
                       <label className="text-xs font-bold dark:text-gray-400 text-gray-600 mb-1.5 block">Footer / Unsubscribe Text</label>
                       <textarea value={form.footer} onChange={e => setForm(p => ({ ...p, footer: e.target.value }))}
                         rows={2} className={inp + ' resize-none'} />
+                    </div>
+
+                    {/* Attachments */}
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-xs font-bold dark:text-gray-400 text-gray-600">Attachments</label>
+                        <span className="text-[10px] dark:text-gray-500 text-gray-400">Max 5 files · 5 MB each</span>
+                      </div>
+                      <input
+                        ref={attachInputRef}
+                        type="file"
+                        multiple
+                        accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.png,.jpg,.jpeg,.gif,.zip"
+                        className="hidden"
+                        onChange={handleAttachFiles}
+                      />
+                      {attachments.length > 0 && (
+                        <div className="space-y-1.5 mb-2">
+                          {attachments.map(a => (
+                            <div key={a.filename} className="flex items-center gap-2 px-3 py-2 rounded-xl dark:bg-white/5 bg-gray-50 border dark:border-white/8 border-gray-200">
+                              <FileText className="w-3.5 h-3.5 text-brand-pink flex-shrink-0" />
+                              <span className="text-xs dark:text-gray-300 text-gray-700 truncate flex-1">{a.filename}</span>
+                              <span className="text-[10px] dark:text-gray-500 text-gray-400 flex-shrink-0">{a.sizeKb} KB</span>
+                              <button onClick={() => removeAttachment(a.filename)} className="flex-shrink-0 w-5 h-5 rounded-full dark:bg-white/10 bg-gray-200 flex items-center justify-center hover:bg-red-500/20 transition-colors">
+                                <X className="w-3 h-3 dark:text-gray-400 text-gray-500" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <button
+                        onClick={() => attachInputRef.current?.click()}
+                        disabled={attachments.length >= 5}
+                        className="flex items-center gap-2 px-3 py-2 rounded-xl dark:bg-white/5 bg-gray-50 border dark:border-white/8 border-dashed border-gray-300 dark:text-gray-400 text-gray-500 text-xs font-semibold hover:border-brand-pink hover:text-brand-pink transition-colors disabled:opacity-40 disabled:cursor-not-allowed w-full justify-center"
+                      >
+                        <Paperclip className="w-3.5 h-3.5" />
+                        {attachments.length === 0 ? 'Add Attachment' : `Add Another (${attachments.length}/5)`}
+                      </button>
                     </div>
 
                     {/* Preview */}

@@ -66,7 +66,10 @@ serve(async (req) => {
     const { data: adminRow } = await admin.from('admin_users').select('id').eq('id', user.id).maybeSingle()
     if (!adminRow) return json({ error: 'Admin only' }, 403)
 
-    const { subject, body, footer = '', audience = 'all', from_email, from_name } = await req.json()
+    const reqBody = await req.json()
+    const { subject, body, footer = '', audience = 'all', from_email, from_name } = reqBody
+    // attachments: array of { filename, content (base64), content_type }
+    const attachments: { filename: string; content: string; content_type: string }[] = reqBody.attachments || []
     if (!subject?.trim() || !body?.trim()) return json({ error: 'subject and body are required' }, 400)
 
     // ── Resolve audience → recipient list ─────────────────────────────────
@@ -163,6 +166,13 @@ serve(async (req) => {
               to: [r.email],
               subject,
               html: renderHtml({ subject, body, footer, name: r.full_name || r.username }),
+              ...(attachments.length > 0 ? {
+                attachments: attachments.map(a => ({
+                  filename: a.filename,
+                  content: a.content,
+                  // Resend expects base64 content with the content_type field
+                })),
+              } : {}),
             }),
           })
           if (!res.ok) {

@@ -407,8 +407,18 @@ export default function AdminLayout() {
                             key={n.id}
                             onClick={() => {
                               markRead(n.id)
-                              if (n.action_url) navigate(n.action_url)
                               setBellOpen(false)
+                              if (n.action_url) {
+                                // Keep admin inside the admin panel — open all
+                                // notification destinations in a new tab so the
+                                // admin is never involuntarily ejected to the
+                                // user-facing app or the public site.
+                                if (n.action_url.startsWith('/admin')) {
+                                  navigate(n.action_url)
+                                } else {
+                                  window.open(n.action_url, '_blank', 'noopener,noreferrer')
+                                }
+                              }
                             }}
                             className={`w-full text-left flex items-start gap-3 px-4 py-3 border-b dark:border-white/5 border-gray-100 last:border-0 transition-colors hover:dark:bg-white/5 hover:bg-gray-50 ${!n.read ? 'dark:bg-[#1A1228]/60' : ''}`}
                           >
