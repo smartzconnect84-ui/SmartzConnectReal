@@ -7,6 +7,7 @@ import { AuthInput, AuthError, AuthLabel } from '@/components/auth/AuthLayout'
 import { DateOfBirthPicker } from '@/components/auth/DateOfBirthPicker'
 import TurnstileWidget from '@/components/TurnstileWidget'
 import { captureReferralCodeFromUrl, getStoredReferralCode } from '@/lib/referral'
+import { supabase } from '@/lib/supabase'
 import BrandName from '@/components/BrandName'
 
 const TURNSTILE_ENABLED = !!import.meta.env.VITE_TURNSTILE_SITE_KEY
@@ -107,7 +108,30 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (step === 1) { setStep(2); return }
+    if (step === 1) {
+      // Verify Turnstile token server-side before advancing (only when enabled)
+      if (TURNSTILE_ENABLED && turnstileToken) {
+        setLoading(true)
+        try {
+          const { data, error: tvErr } = await supabase.functions.invoke('verify-turnstile', {
+            body: { token: turnstileToken },
+          })
+          if (tvErr || !data?.success) {
+            setError('CAPTCHA verification failed. Please refresh and try again.')
+            setTurnstileToken('')
+            return
+          }
+        } catch {
+          setError('CAPTCHA verification failed. Please try again.')
+          setTurnstileToken('')
+          return
+        } finally {
+          setLoading(false)
+        }
+      }
+      setStep(2)
+      return
+    }
     setError('')
     setLoading(true)
     try {

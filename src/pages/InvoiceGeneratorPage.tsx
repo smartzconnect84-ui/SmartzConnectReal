@@ -234,12 +234,16 @@ export default function InvoiceGeneratorPage() {
     setSendResult(null)
     try {
       const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) {
+        setSendResult({ ok: false, msg: 'You must be signed in to send invoices by email.' })
+        return
+      }
       const invoiceHtml = buildInvoiceHtml()
       const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-email`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Authorization': `Bearer ${session.access_token}`,
           'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
         },
         body: JSON.stringify({

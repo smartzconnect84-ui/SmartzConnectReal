@@ -1,8 +1,43 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-service-key',
+}
+
+/**
+ * Verify the caller is authorized to send email:
+ *   - A valid Supabase user JWT, OR
+ *   - The service-role key via x-service-key header (for server-to-server calls)
+ * Returns true when authorized, false otherwise.
+ */
+async function isAuthorized(req: Request): Promise<boolean> {
+  const supabaseUrl  = Deno.env.get('SUPABASE_URL')
+  const serviceKey   = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+  const anonKey      = Deno.env.get('SUPABASE_ANON_KEY')
+
+  // Allow trusted server-to-server callers (e.g. DB triggers, other edge functions)
+  const serviceHeader = req.headers.get('x-service-key')
+  if (serviceKey && serviceHeader === serviceKey) return true
+
+  // Require a real authenticated user JWT
+  const authHeader = req.headers.get('Authorization')
+  if (!authHeader || !supabaseUrl || !anonKey) return false
+
+  const token = authHeader.replace('Bearer ', '')
+  // Reject plaintext anon key used as a Bearer token — it is not a JWT
+  if (!token.includes('.')) return false
+
+  try {
+    const client = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+    })
+    const { data: { user }, error } = await client.auth.getUser()
+    return !error && !!user
+  } catch {
+    return false
+  }
 }
 
 const LOGO_URL = 'https://smartzconnect.com/logo.png'
@@ -257,6 +292,14 @@ serve(async (req) => {
   }
 
   try {
+    // Auth gate — reject unauthenticated callers to prevent email abuse
+    if (!await isAuthorized(req)) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
     const resendKey = Deno.env.get('RESEND_API_KEY')
     if (!resendKey) {
       return new Response(JSON.stringify({ error: 'Resend not configured' }), {

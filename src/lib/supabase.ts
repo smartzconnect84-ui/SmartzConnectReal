@@ -17,7 +17,7 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string
 if (!supabaseUrl || !supabaseAnonKey) {
   console.warn(
     '⚠️  Supabase environment variables not set.\n' +
-    'Create /workspace/smartzconnect/.env with:\n' +
+    'Create .env with:\n' +
     '  VITE_SUPABASE_URL=https://your-project.supabase.co\n' +
     '  VITE_SUPABASE_ANON_KEY=your-anon-key\n' +
     'Get these from: supabase.com/dashboard → Project → Settings → API'

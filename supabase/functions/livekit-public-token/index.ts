@@ -39,7 +39,7 @@ serve(async (req) => {
 
     // Verify this stream is an active admin broadcast in the database
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
-    const serviceRoleKey = Deno.env.get('SERVICE_ROLE_KEY') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
     if (!supabaseUrl || !serviceRoleKey) {
       return jsonResponse({ error: 'Server configuration error' }, 500)
     }

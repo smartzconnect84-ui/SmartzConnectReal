@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff, Loader2, ArrowLeft } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
+import { supabase } from '@/lib/supabase'
 import TurnstileWidget from '@/components/TurnstileWidget'
 import BrandName from '@/components/BrandName'
 
@@ -47,6 +48,17 @@ export default function LoginPage() {
     setError('')
     setLoading(true)
     try {
+      // Verify Turnstile token server-side before signing in (only when enabled)
+      if (TURNSTILE_ENABLED && turnstileToken) {
+        const { data, error: tvErr } = await supabase.functions.invoke('verify-turnstile', {
+          body: { token: turnstileToken },
+        })
+        if (tvErr || !data?.success) {
+          setError('CAPTCHA verification failed. Please refresh and try again.')
+          setTurnstileToken('')
+          return
+        }
+      }
       await signIn(email, password)
       navigate('/app/feed', { replace: true })
     } catch (err: any) {

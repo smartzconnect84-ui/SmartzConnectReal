@@ -71,6 +71,8 @@ serve(async (req) => {
     if (error) return error
 
     const userId = user!.id
+    // Read service key once — used both for admin_config fallback and stream_tokens caching.
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
     // ── Resolve stream secret: env var takes priority, then fall back to admin_config ──
     let streamSecret = Deno.env.get('STREAM_API_SECRET') || Deno.env.get('STREAM_SECRET')
@@ -82,7 +84,6 @@ serve(async (req) => {
     }
 
     if (!streamSecret) {
-      const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
       const adminClient = createClient(supabaseUrl!, serviceKey)
       const { data: cfgRow } = await adminClient
         .from('admin_config')
@@ -105,7 +106,6 @@ serve(async (req) => {
     await ensureWorldChatMember(userId, streamApiKey, streamSecret)
 
     // Cache token in Supabase (best-effort)
-    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     if (serviceKey) {
       const adminClient = createClient(supabaseUrl!, serviceKey)
       await adminClient.from('stream_tokens').upsert({
