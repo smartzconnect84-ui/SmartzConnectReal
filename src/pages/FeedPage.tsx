@@ -37,48 +37,6 @@ interface Post {
   authorId?: string
 }
 
-interface Story {
-  id: string
-  name: string
-  avatar: string
-  gradient: string
-  isOwn?: boolean
-}
-
-// ── Static data ──────────────────────────────────────────────────────────────
-const trendingTopics = [
-  { tag: '#AfricaTech',     posts: '12.4K' },
-  { tag: '#SmartzTV',       posts: '8.1K' },
-  { tag: '#Afrobeats',      posts: '31K' },
-  { tag: '#NaijaFashion',   posts: '5.7K' },
-  { tag: '#AccraTech',      posts: '3.2K' },
-  { tag: '#MonroviaVibes',  posts: '2.8K' },
-]
-
-const suggestedFriends = [
-  { id: '1', name: 'Amara Diallo',    mutual: 12, avatar: '👩🏾', gradient: 'from-pink-500 to-rose-500' },
-  { id: '2', name: 'Kwame Asante',    mutual: 7,  avatar: '👨🏿', gradient: 'from-purple-500 to-violet-500' },
-  { id: '3', name: 'Zainab Okonkwo',  mutual: 5,  avatar: '👩🏽', gradient: 'from-amber-500 to-orange-500' },
-]
-
-const upcomingEvents = [
-  { id: '1', title: 'AfricaTech Summit 2026', date: 'Jul 12', attendees: 1240 },
-  { id: '2', title: 'Lagos Fashion Week',      date: 'Jul 18', attendees: 870 },
-]
-
-const birthdays = [
-  { id: '1', name: 'Fatima Bah',   avatar: '👩🏿' },
-  { id: '2', name: 'Kofi Mensah',  avatar: '👨🏾' },
-]
-
-const onlineContacts = [
-  { id: '1', name: 'Amara',    avatar: '👩🏾', gradient: 'from-pink-500 to-rose-500' },
-  { id: '2', name: 'Kwame',    avatar: '👨🏿', gradient: 'from-purple-500 to-violet-500' },
-  { id: '3', name: 'Zainab',   avatar: '👩🏽', gradient: 'from-amber-500 to-orange-500' },
-  { id: '4', name: 'Emeka',    avatar: '👨🏾', gradient: 'from-emerald-500 to-teal-500' },
-  { id: '5', name: 'Ngozi',    avatar: '👩🏾', gradient: 'from-sky-500 to-blue-500' },
-]
-
 const defaultEmojis = ['👩🏾', '👨🏿', '👩🏽', '👨🏾', '👩🏿', '👨🏽']
 const EMOJI_PALETTE = [
   '😀','😂','🥰','😍','😎','🤔','😢','😡','👍','🙏','🔥','💯',
@@ -86,6 +44,7 @@ const EMOJI_PALETTE = [
 ]
 
 const REACTION_EMOJIS = ['❤️', '🔥', '😂', '😮', '😢', '👏']
+const FEED_PAGE_SIZE = 15
 
 const TEXT_STORY_BG_OPTIONS = [
   { label: 'Pink',    value: 'from-pink-500 to-rose-600',      text: 'text-white' },
@@ -861,8 +820,36 @@ function ComposeBox({
         if (mediaKind === 'video') updates.video_url = url
         else updates.image_url = url
       }
+      const mentionedHandles = [...new Set(
+        [...text.matchAll(/@([a-zA-Z0-9_]+)/g)].map(match => match[1].toLowerCase()),
+      )]
+      if (mentionedHandles.length > 0) {
+        const { data: mentionedProfiles } = await supabase
+          .from('profiles')
+          .select('id, username, full_name')
+          .in('username', mentionedHandles)
+        updates.mentions = (mentionedProfiles || []).map((profile: any) => profile.id)
+      }
       const { error } = await supabase.from('posts').insert(updates)
       if (error) return // keep composer open so user can retry
+      if (mentionedHandles.length > 0) {
+        const { data: mentionedProfiles } = await supabase
+          .from('profiles')
+          .select('id, full_name, username')
+          .in('username', mentionedHandles)
+        for (const profile of (mentionedProfiles || []) as any[]) {
+          if (profile.id !== authUser.id) {
+            notifyUser({
+              userId: profile.id,
+              type: 'post',
+              title: 'You were mentioned',
+              message: `${authUser.email?.split('@')[0] || 'Someone'} mentioned you in a post`,
+              actionUrl: '/app/feed',
+              emoji: '@',
+            })
+          }
+        }
+      }
       setText(''); setMediaFile(null); setMediaPreview(''); setMediaKind(null); setLocation('')
       setOpen(false)
       onPost()
@@ -892,18 +879,26 @@ function ComposeBox({
               </div>
             </button>
             <div className="flex items-center gap-1 mt-3 pt-3 border-t dark:border-white/6 border-gray-100">
-              {[
-                { icon: Image,   label: 'Photo',  color: 'text-green-500', act: () => { setOpen(true); setTimeout(() => pickMedia('image'), 50) } },
-                { icon: Video,   label: 'Video',  color: 'text-blue-500', act: () => { setOpen(true); setTimeout(() => pickMedia('video'), 50) } },
-                { icon: Smile,   label: 'Feeling', color: 'text-amber-500', act: () => { setOpen(true); setTimeout(() => setShowEmoji(true), 50) } },
-                { icon: MapPin,  label: 'Check in', color: 'text-red-500', act: () => { setOpen(true); setTimeout(handleCheckIn, 50) } },
-              ].map(a => (
-                <button key={a.label} onClick={a.act}
-                  className="flex items-center gap-1.5 flex-1 justify-center py-1.5 rounded-xl dark:hover:bg-white/5 hover:bg-gray-100 transition-colors">
-                  <a.icon className={`w-4 h-4 ${a.color}`} />
-                  <span className="text-xs font-semibold dark:text-gray-400 text-gray-500 hidden sm:block">{a.label}</span>
-                </button>
-              ))}
+              <button onClick={() => { setOpen(true); setTimeout(() => pickMedia('image'), 50) }}
+                className="flex items-center gap-1.5 flex-1 justify-center py-1.5 rounded-xl dark:hover:bg-white/5 hover:bg-gray-100 transition-colors">
+                <Image className="w-4 h-4 text-green-500" />
+                <span className="text-xs font-semibold dark:text-gray-400 text-gray-500 hidden sm:block">Photo</span>
+              </button>
+              <button onClick={() => { setOpen(true); setTimeout(() => pickMedia('video'), 50) }}
+                className="flex items-center gap-1.5 flex-1 justify-center py-1.5 rounded-xl dark:hover:bg-white/5 hover:bg-gray-100 transition-colors">
+                <Video className="w-4 h-4 text-blue-500" />
+                <span className="text-xs font-semibold dark:text-gray-400 text-gray-500 hidden sm:block">Video</span>
+              </button>
+              <button onClick={() => { setOpen(true); setTimeout(() => setShowEmoji(true), 50) }}
+                className="flex items-center gap-1.5 flex-1 justify-center py-1.5 rounded-xl dark:hover:bg-white/5 hover:bg-gray-100 transition-colors">
+                <Smile className="w-4 h-4 text-amber-500" />
+                <span className="text-xs font-semibold dark:text-gray-400 text-gray-500 hidden sm:block">Feeling</span>
+              </button>
+              <button onClick={() => { setOpen(true); setTimeout(handleCheckIn, 50) }}
+                className="flex items-center gap-1.5 flex-1 justify-center py-1.5 rounded-xl dark:hover:bg-white/5 hover:bg-gray-100 transition-colors">
+                <MapPin className="w-4 h-4 text-red-500" />
+                <span className="text-xs font-semibold dark:text-gray-400 text-gray-500 hidden sm:block">Check in</span>
+              </button>
             </div>
           </motion.div>
         ) : (
@@ -1007,6 +1002,8 @@ interface DbComment {
   content: string
   created_at: string
   user_id: string
+  author_id?: string
+  parent_id?: string | null
   profile?: { full_name: string | null; avatar_url: string | null }
 }
 
@@ -1025,6 +1022,7 @@ function PostCard({ post, onLike, onSave, currentUserId, storyData, onViewStory 
   const [comments, setComments] = useState<DbComment[]>([])
   const [loadingComments, setLoadingComments] = useState(false)
   const [commentText, setCommentText] = useState('')
+  const [replyTo, setReplyTo] = useState<{ id: string; name: string } | null>(null)
   const [localCommentCount, setLocalCommentCount] = useState(post.comments)
   const [localShareCount, setLocalShareCount] = useState(post.shares)
   const [copied, setCopied] = useState(false)
@@ -1130,19 +1128,24 @@ function PostCard({ post, onLike, onSave, currentUserId, storyData, onViewStory 
     try {
       const { data, error } = await supabase
         .from('post_comments')
-        .select('id, content, created_at, user_id')
+        .select('id, content, created_at, user_id, author_id, parent_id')
         .eq('post_id', post.id)
+        .eq('is_deleted', false)
         .order('created_at', { ascending: true })
         .limit(50)
       if (error) throw error
       const rows = (data as any[]) || []
-      const userIds = [...new Set(rows.map(r => r.user_id))]
+       const userIds = [...new Set(rows.map(r => r.user_id || r.author_id).filter(Boolean))]
       const profMap: Record<string, any> = {}
       if (userIds.length) {
         const { data: profs } = await supabase.from('profiles').select('id, full_name, avatar_url').in('id', userIds)
         for (const p of (profs as any[]) || []) profMap[p.id] = p
       }
-      setComments(rows.map(r => ({ ...r, profile: profMap[r.user_id] })))
+       setComments(rows.map(r => ({
+         ...r,
+         user_id: r.user_id || r.author_id,
+         profile: profMap[r.user_id || r.author_id],
+       })))
     } catch (err) {
       console.error('Failed to load comments', err)
     } finally {
@@ -1162,20 +1165,36 @@ function PostCard({ post, onLike, onSave, currentUserId, storyData, onViewStory 
     setCommentText('')
     // post_comments.author_id is NOT NULL in the live schema; user_id is kept in
     // sync alongside it for compatibility with older queries/policies.
-    const { error } = await supabase.from('post_comments').insert({ post_id: post.id, author_id: currentUserId, user_id: currentUserId, content: text })
+    const { error } = await supabase.from('post_comments').insert({
+      post_id: post.id,
+      author_id: currentUserId,
+      user_id: currentUserId,
+      parent_id: replyTo?.id ?? null,
+      content: text,
+    })
     if (!error) {
+      const parentComment = replyTo ? comments.find(c => c.id === replyTo.id) : null
+      const parentAuthorId = parentComment?.user_id || parentComment?.author_id
       setLocalCommentCount(c => c + 1)
+      setReplyTo(null)
       loadComments()
-      if (post.authorId && post.authorId !== currentUserId) {
+      const notifyId = parentAuthorId && parentAuthorId !== currentUserId
+        ? parentAuthorId
+        : post.authorId && post.authorId !== currentUserId
+          ? post.authorId
+          : null
+      if (notifyId) {
         notifyUser({
-          userId: post.authorId,
+          userId: notifyId,
           type: 'comment',
-          title: 'New comment 💬',
+          title: replyTo ? 'New reply 💬' : 'New comment 💬',
           message: text.length > 80 ? `${text.slice(0, 80)}…` : text,
           actionUrl: `/app/post/${post.id}`,
           emoji: '💬',
         })
       }
+    } else {
+      setCommentText(text)
     }
   }
 
@@ -1201,6 +1220,53 @@ function PostCard({ post, onLike, onSave, currentUserId, storyData, onViewStory 
     if (!isOwn) return
     await supabase.from('posts').update({ is_deleted: true }).eq('id', post.id)
     window.location.reload()
+  }
+
+  const renderComment = (comment: DbComment, depth = 0): React.ReactNode => {
+    const commentUserId = comment.user_id || comment.author_id || ''
+    const isOwnComment = currentUserId && commentUserId === currentUserId
+    const replies = comments.filter(reply => reply.parent_id === comment.id)
+    const commenterName = comment.profile?.full_name || 'Anonymous'
+    return (
+      <div key={comment.id} className={depth > 0 ? 'ml-8' : ''}>
+        <div className="flex items-start gap-2.5">
+          <button
+            type="button"
+            onClick={() => navigate(isOwnComment ? '/app/profile' : `/app/profile/${commentUserId}`)}
+            className="w-7 h-7 rounded-full dark:bg-white/8 bg-gray-100 flex-shrink-0 overflow-hidden flex items-center justify-center text-xs cursor-pointer hover:opacity-80 transition-opacity"
+            title={`View ${commenterName}'s profile`}
+          >
+            {comment.profile?.avatar_url
+              ? <img src={comment.profile.avatar_url} className="w-full h-full object-cover" alt="" />
+              : '👤'}
+          </button>
+          <div className="flex-1 min-w-0 dark:bg-white/5 bg-gray-50 rounded-xl px-3 py-2">
+            <button
+              type="button"
+              onClick={() => navigate(isOwnComment ? '/app/profile' : `/app/profile/${commentUserId}`)}
+              className="text-[11px] font-bold dark:text-white text-gray-900 hover:text-brand-pink dark:hover:text-brand-pink transition-colors"
+            >
+              {commenterName}
+            </button>
+            <p className="text-xs dark:text-gray-300 text-gray-700 break-words">{renderContentWithTags(comment.content)}</p>
+            {currentUserId && depth === 0 && (
+              <button
+                type="button"
+                onClick={() => setReplyTo({ id: comment.id, name: commenterName })}
+                className="mt-1 text-[10px] font-semibold dark:text-gray-500 text-gray-400 hover:text-brand-pink transition-colors"
+              >
+                Reply
+              </button>
+            )}
+          </div>
+        </div>
+        {replies.length > 0 && depth < 1 && (
+          <div className="mt-2 space-y-2">
+            {replies.map(reply => renderComment(reply, depth + 1))}
+          </div>
+        )}
+      </div>
+    )
   }
 
   return (
@@ -1441,58 +1507,28 @@ function PostCard({ post, onLike, onSave, currentUserId, storyData, onViewStory 
             {!loadingComments && comments.length === 0 && (
               <p className="text-xs dark:text-gray-500 text-gray-400">No comments yet — be the first to reply.</p>
             )}
-            {comments.map(c => {
-              const isOwnComment = currentUserId && c.user_id === currentUserId
-              return (
-                <div key={c.id} className="flex items-start gap-2.5">
-                  {/* Commenter avatar — clickable */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (isOwnComment) {
-                        navigate('/app/profile')
-                      } else {
-                        navigate(`/app/profile/${c.user_id}`)
-                      }
-                    }}
-                    className="w-7 h-7 rounded-full dark:bg-white/8 bg-gray-100 flex-shrink-0 overflow-hidden flex items-center justify-center text-xs cursor-pointer hover:opacity-80 transition-opacity"
-                    title={c.profile?.full_name || 'View profile'}
-                  >
-                    {c.profile?.avatar_url ? <img src={c.profile.avatar_url} className="w-full h-full object-cover" /> : '👤'}
-                  </button>
-                  <div className="flex-1 min-w-0 dark:bg-white/5 bg-gray-50 rounded-xl px-3 py-2">
-                    {/* Commenter name — clickable */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (isOwnComment) {
-                          navigate('/app/profile')
-                        } else {
-                          navigate(`/app/profile/${c.user_id}`)
-                        }
-                      }}
-                      className="text-[11px] font-bold dark:text-white text-gray-900 hover:text-brand-pink dark:hover:text-brand-pink transition-colors"
-                    >
-                      {c.profile?.full_name || 'Anonymous'}
-                    </button>
-                    <p className="text-xs dark:text-gray-300 text-gray-700 break-words">{c.content}</p>
-                  </div>
-                </div>
-              )
-            })}
+            {comments.filter(comment => !comment.parent_id).map(comment => renderComment(comment))}
             {currentUserId && (
-              <div className="flex items-center gap-2 pt-1">
-                <input
-                  value={commentText}
-                  onChange={e => setCommentText(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') submitComment() }}
-                  placeholder="Write a comment…"
-                  className="flex-1 text-xs px-3 py-2 rounded-xl dark:bg-white/5 bg-gray-50 border dark:border-white/8 border-gray-200 focus:outline-none focus:border-brand-pink dark:text-white text-gray-900 placeholder:dark:text-gray-500 placeholder:text-gray-400"
-                />
-                <button onClick={submitComment} disabled={!commentText.trim()}
-                  className="p-2 rounded-xl bg-love-gradient text-white disabled:opacity-40">
-                  <Send className="w-3.5 h-3.5" />
-                </button>
+              <div className="pt-1">
+                {replyTo && (
+                  <div className="flex items-center justify-between mb-1.5 px-1 text-[10px] dark:text-gray-500 text-gray-400">
+                    <span>Replying to <strong className="dark:text-gray-300 text-gray-600">{replyTo.name}</strong></span>
+                    <button type="button" onClick={() => setReplyTo(null)} className="hover:text-brand-pink">Cancel</button>
+                  </div>
+                )}
+                <div className="flex items-center gap-2">
+                  <input
+                    value={commentText}
+                    onChange={e => setCommentText(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') submitComment() }}
+                    placeholder={replyTo ? 'Write a reply…' : 'Write a comment…'}
+                    className="flex-1 text-xs px-3 py-2 rounded-xl dark:bg-white/5 bg-gray-50 border dark:border-white/8 border-gray-200 focus:outline-none focus:border-brand-pink dark:text-white text-gray-900 placeholder:dark:text-gray-500 placeholder:text-gray-400"
+                  />
+                  <button onClick={submitComment} disabled={!commentText.trim()}
+                    className="p-2 rounded-xl bg-love-gradient text-white disabled:opacity-40">
+                    <Send className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             )}
           </motion.div>
@@ -1510,7 +1546,129 @@ function PostCard({ post, onLike, onSave, currentUserId, storyData, onViewStory 
 }
 
 // ── Right Sidebar ─────────────────────────────────────────────────────────────
-function RightSidebar() {
+interface SidebarPerson {
+  id: string
+  full_name: string | null
+  avatar_url: string | null
+  date_of_birth?: string | null
+  gradient: string
+}
+
+interface SidebarEvent {
+  id: string
+  title: string
+  starts_at: string
+  attendees_count: number
+}
+
+function RightSidebar({ userId }: { userId?: string }) {
+  const [trending, setTrending] = useState<{ tag: string; posts: number }[]>([])
+  const [suggestions, setSuggestions] = useState<SidebarPerson[]>([])
+  const [events, setEvents] = useState<SidebarEvent[]>([])
+  const [birthdays, setBirthdays] = useState<SidebarPerson[]>([])
+  const [onlineContacts, setOnlineContacts] = useState<SidebarPerson[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const loadSidebar = useCallback(async () => {
+    setLoading(true)
+    try {
+      const followingPromise = userId
+        ? supabase.from('follows').select('following_id').eq('follower_id', userId)
+        : Promise.resolve({ data: [] as any[] })
+      const [followingRes, profilesRes, eventsRes, recentPostsRes, onlineRes] = await Promise.all([
+        followingPromise,
+        supabase
+          .from('profiles')
+          .select('id, full_name, avatar_url, date_of_birth, created_at')
+          .neq('id', userId || '')
+          .eq('is_suspended', false)
+          .order('created_at', { ascending: false })
+          .limit(20),
+        supabase
+          .from('events')
+          .select('id, title, starts_at, attendees_count')
+          .eq('is_active', true)
+          .gte('starts_at', new Date().toISOString())
+          .order('starts_at', { ascending: true })
+          .limit(3),
+        supabase
+          .from('posts')
+          .select('content, hashtags')
+          .eq('is_deleted', false)
+          .eq('visibility', 'public')
+          .order('created_at', { ascending: false })
+          .limit(100),
+        supabase
+          .from('profiles')
+          .select('id, full_name, avatar_url, date_of_birth')
+          .eq('is_online', true)
+          .neq('id', userId || '')
+          .order('last_seen', { ascending: false })
+          .limit(5),
+      ])
+
+      const followingIds = new Set((followingRes.data || []).map((row: any) => row.following_id))
+      const profileRows = (profilesRes.data || []) as any[]
+      const withGradient = (profile: any, index: number): SidebarPerson => ({
+        id: profile.id,
+        full_name: profile.full_name,
+        avatar_url: profile.avatar_url,
+        date_of_birth: profile.date_of_birth,
+        gradient: storyGradients[index % storyGradients.length],
+      })
+
+      setSuggestions(
+        profileRows
+          .filter(profile => !followingIds.has(profile.id))
+          .slice(0, 3)
+          .map(withGradient),
+      )
+      setOnlineContacts(((onlineRes.data || []) as any[]).map(withGradient))
+      setEvents((eventsRes.data || []) as SidebarEvent[])
+
+      const today = new Date()
+      setBirthdays(
+        profileRows
+          .filter(profile => followingIds.has(profile.id) && profile.date_of_birth)
+          .filter(profile => {
+            const date = new Date(profile.date_of_birth)
+            return date.getUTCMonth() === today.getUTCMonth() && date.getUTCDate() === today.getUTCDate()
+          })
+          .slice(0, 3)
+          .map(withGradient),
+      )
+
+      const counts = new Map<string, number>()
+      for (const post of (recentPostsRes.data || []) as any[]) {
+        const tags = Array.isArray(post.hashtags)
+          ? post.hashtags
+          : (post.content || '').match(/#[\p{L}\p{N}_]+/gu) || []
+        for (const rawTag of tags) {
+          const tag = `#${String(rawTag).replace(/^#/, '').trim()}`
+          if (tag.length > 1) counts.set(tag.toLowerCase(), (counts.get(tag.toLowerCase()) || 0) + 1)
+        }
+      }
+      setTrending(
+        [...counts.entries()]
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 6)
+          .map(([tag, posts]) => ({ tag: `#${tag.slice(1)}`, posts })),
+      )
+    } finally {
+      setLoading(false)
+    }
+  }, [userId])
+
+  useEffect(() => { loadSidebar() }, [loadSidebar])
+
+  const addSuggestion = async (person: SidebarPerson) => {
+    if (!userId) return
+    const { error } = await supabase.from('follows').insert({ follower_id: userId, following_id: person.id })
+    if (!error) setSuggestions(prev => prev.filter(item => item.id !== person.id))
+  }
+
+  const initials = (name: string | null) => name?.trim()?.[0]?.toUpperCase() || '?'
+
   return (
     <aside className="hidden xl:flex flex-col w-72 flex-shrink-0 py-4 pr-4 space-y-3 overflow-y-auto">
 
@@ -1521,21 +1679,22 @@ function RightSidebar() {
             <TrendingUp className="w-4 h-4 text-brand-pink" />
             <span className="font-bold text-sm dark:text-white text-gray-900">Trending Now</span>
           </div>
-          <span className="text-[10px] dark:text-gray-500 text-gray-400 font-semibold">Today</span>
+          <span className="text-[10px] dark:text-gray-500 text-gray-400 font-semibold">Live</span>
         </div>
         <div className="space-y-2.5">
-          {trendingTopics.map((t, i) => (
+          {trending.map((t, i) => (
             <button key={t.tag} className="w-full flex items-center justify-between group">
               <div className="flex items-center gap-2.5">
                 <span className="text-[11px] font-black dark:text-gray-600 text-gray-300 w-4">{i + 1}</span>
                 <div className="text-left">
                   <p className="text-xs font-bold dark:text-pink-300 text-pink-600 group-hover:underline">{t.tag}</p>
-                  <p className="text-[10px] dark:text-gray-500 text-gray-400">{t.posts} posts</p>
+                   <p className="text-[10px] dark:text-gray-500 text-gray-400">{t.posts} recent posts</p>
                 </div>
               </div>
               <ChevronRight className="w-3 h-3 dark:text-gray-600 text-gray-300 group-hover:text-brand-pink transition-colors" />
             </button>
           ))}
+          {!loading && trending.length === 0 && <p className="text-xs dark:text-gray-500 text-gray-400">No active topics yet.</p>}
         </div>
       </div>
 
@@ -1548,24 +1707,27 @@ function RightSidebar() {
           </div>
         </div>
         <div className="space-y-3">
-          {suggestedFriends.map(f => (
+          {suggestions.map(f => (
             <div key={f.id} className="flex items-center gap-2.5">
-              <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${f.gradient} flex items-center justify-center text-base flex-shrink-0`}>
-                {f.avatar}
-              </div>
+              <Link to={`/app/profile/${f.id}`} className={`w-9 h-9 rounded-full bg-gradient-to-br ${f.gradient} flex items-center justify-center text-base flex-shrink-0 overflow-hidden`}>
+                {f.avatar_url ? <img src={f.avatar_url} alt="" className="w-full h-full object-cover" /> : initials(f.full_name)}
+              </Link>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-bold dark:text-white text-gray-900 truncate">{f.name}</p>
-                <p className="text-[10px] dark:text-gray-500 text-gray-400">{f.mutual} mutual friends</p>
+                <Link to={`/app/profile/${f.id}`} className="text-xs font-bold dark:text-white text-gray-900 truncate block hover:text-brand-pink">
+                  {f.full_name || 'SmartzConnect member'}
+                </Link>
+                <p className="text-[10px] dark:text-gray-500 text-gray-400">Suggested for you</p>
               </div>
-              <button className="text-[11px] font-bold text-brand-pink hover:text-brand-rose transition-colors flex-shrink-0">
+              <button onClick={() => addSuggestion(f)} className="text-[11px] font-bold text-brand-pink hover:text-brand-rose transition-colors flex-shrink-0">
                 + Add
               </button>
             </div>
           ))}
+          {!loading && suggestions.length === 0 && <p className="text-xs dark:text-gray-500 text-gray-400">No new suggestions right now.</p>}
         </div>
-        <button className="w-full mt-3 text-xs font-semibold text-brand-pink hover:text-brand-rose transition-colors text-center">
+        <Link to="/app/friends" className="block w-full mt-3 text-xs font-semibold text-brand-pink hover:text-brand-rose transition-colors text-center">
           See all suggestions
-        </button>
+        </Link>
       </div>
 
       {/* Upcoming Events */}
@@ -1575,18 +1737,19 @@ function RightSidebar() {
           <span className="font-bold text-sm dark:text-white text-gray-900">Upcoming Events</span>
         </div>
         <div className="space-y-2.5">
-          {upcomingEvents.map(ev => (
-            <button key={ev.id} className="w-full flex items-start gap-2.5 text-left group">
+          {events.map(ev => (
+            <Link key={ev.id} to="/app/events" className="w-full flex items-start gap-2.5 text-left group">
               <div className="w-9 h-9 rounded-xl bg-love-gradient flex flex-col items-center justify-center flex-shrink-0">
-                <span className="text-white text-[9px] font-black leading-none">{ev.date.split(' ')[0]}</span>
-                <span className="text-white text-[11px] font-black leading-none">{ev.date.split(' ')[1]}</span>
+                <span className="text-white text-[9px] font-black leading-none">{new Date(ev.starts_at).toLocaleDateString(undefined, { month: 'short' })}</span>
+                <span className="text-white text-[11px] font-black leading-none">{new Date(ev.starts_at).getDate()}</span>
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-bold dark:text-white text-gray-900 group-hover:text-brand-pink transition-colors truncate">{ev.title}</p>
-                <p className="text-[10px] dark:text-gray-500 text-gray-400">{ev.attendees.toLocaleString()} attending</p>
+                <p className="text-[10px] dark:text-gray-500 text-gray-400">{(ev.attendees_count || 0).toLocaleString()} attending</p>
               </div>
-            </button>
+            </Link>
           ))}
+          {!loading && events.length === 0 && <p className="text-xs dark:text-gray-500 text-gray-400">No upcoming events yet.</p>}
         </div>
       </div>
 
@@ -1600,14 +1763,17 @@ function RightSidebar() {
           {birthdays.map(b => (
             <div key={b.id} className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="text-lg">{b.avatar}</span>
-                <span className="text-xs font-semibold dark:text-white text-gray-900">{b.name}</span>
+                <Link to={`/app/profile/${b.id}`} className={`w-7 h-7 rounded-full bg-gradient-to-br ${b.gradient} flex items-center justify-center text-xs overflow-hidden`}>
+                  {b.avatar_url ? <img src={b.avatar_url} alt="" className="w-full h-full object-cover" /> : initials(b.full_name)}
+                </Link>
+                <span className="text-xs font-semibold dark:text-white text-gray-900">{b.full_name || 'Member'}</span>
               </div>
-              <button className="text-[11px] font-bold text-brand-pink hover:text-brand-rose transition-colors">
+              <Link to={`/app/chat/${b.id}`} className="text-[11px] font-bold text-brand-pink hover:text-brand-rose transition-colors">
                 🎂 Wish
-              </button>
+              </Link>
             </div>
           ))}
+          {!loading && birthdays.length === 0 && <p className="text-xs dark:text-gray-500 text-gray-400">No birthdays in your circle today.</p>}
         </div>
       </div>
 
@@ -1620,13 +1786,14 @@ function RightSidebar() {
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           {onlineContacts.map(c => (
-            <Link key={c.id} to="/app/matches" className="relative group" title={c.name}>
-              <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${c.gradient} flex items-center justify-center text-sm transition-transform group-hover:scale-110`}>
-                {c.avatar}
+            <Link key={c.id} to={`/app/chat/${c.id}`} className="relative group" title={c.full_name || 'Online member'}>
+              <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${c.gradient} flex items-center justify-center text-sm transition-transform group-hover:scale-110 overflow-hidden`}>
+                {c.avatar_url ? <img src={c.avatar_url} alt="" className="w-full h-full object-cover" /> : initials(c.full_name)}
               </div>
               <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-green-500 border-2 dark:border-[#0D0A14] border-white" />
             </Link>
           ))}
+          {!loading && onlineContacts.length === 0 && <p className="text-xs dark:text-gray-500 text-gray-400">No contacts are online right now.</p>}
         </div>
       </div>
 
@@ -1657,13 +1824,21 @@ function RightSidebar() {
 // ── Main FeedPage ─────────────────────────────────────────────────────────────
 export default function FeedPage() {
   const [posts, setPosts] = useState<Post[]>([])
+  const [feedMode, setFeedMode] = useState<'for-you' | 'following'>('for-you')
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [hasMore, setHasMore] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [newPostsCount, setNewPostsCount] = useState(0)
   const { user } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const [showWelcome, setShowWelcome] = useState(searchParams.get('welcome') === '1')
   const [currentUserName, setCurrentUserName] = useState<string | null>(null)
+  const feedScrollRef = useRef<HTMLDivElement>(null)
+  const loadMoreRef = useRef<HTMLDivElement>(null)
+  const feedCursorRef = useRef<string | null>(null)
+  const hasMoreRef = useRef(true)
+  const loadingMoreRef = useRef(false)
 
   // Story state — lifted here so PostCard avatars can show story rings
   const [storyAuthorMap, setStoryAuthorMap] = useState<Map<string, DbStory>>(new Map())
@@ -1696,68 +1871,136 @@ export default function FeedPage() {
     }
   }, [showWelcome])
 
-  const fetchPosts = useCallback(async () => {
-    setLoading(true)
-    setError(null)
+  const fetchPosts = useCallback(async (mode: 'reset' | 'append' = 'reset') => {
+    const isAppend = mode === 'append'
+    if (isAppend) {
+      if (loadingMoreRef.current || !hasMoreRef.current) return
+      loadingMoreRef.current = true
+      setLoadingMore(true)
+    } else {
+      setLoading(true)
+      setError(null)
+      feedCursorRef.current = null
+      hasMoreRef.current = true
+      setHasMore(true)
+    }
 
-    const { data: postRows, error: postErr } = await supabase
-      .from('posts')
-      .select('id, content, image_url, video_url, created_at, likes_count, comments_count, shares_count, location, author_id, visibility')
-      .eq('is_deleted', false)
-      .order('created_at', { ascending: false })
-      .limit(30)
+    try {
+      let query = supabase
+        .from('posts')
+        .select('id, content, image_url, video_url, created_at, likes_count, comments_count, shares_count, location, author_id, visibility')
+        .eq('is_deleted', false)
+        .eq('visibility', 'public')
+        .order('created_at', { ascending: false })
+        .limit(FEED_PAGE_SIZE)
 
-    if (postErr) { setError(postErr.message); setLoading(false); return }
-    if (!postRows?.length) { setPosts([]); setLoading(false); return }
-
-    const authorIds = [...new Set(postRows.map((p: any) => p.author_id).filter(Boolean))]
-    const postIds = postRows.map((p: any) => p.id)
-
-    const [profilesRes, likesRes, savesRes] = await Promise.all([
-      authorIds.length
-        ? supabase.from('profiles').select('id, full_name, avatar_url, is_verified, subscription_tier, username').in('id', authorIds)
-        : { data: [] },
-      user?.id
-        ? supabase.from('post_likes').select('post_id').eq('user_id', user.id).in('post_id', postIds)
-        : { data: [] },
-      user?.id
-        ? supabase.from('post_saves').select('post_id').eq('user_id', user.id).in('post_id', postIds)
-        : { data: [] },
-    ])
-
-    const profileMap = Object.fromEntries(((profilesRes.data as any[]) || []).map((p: any) => [p.id, p]))
-    const likedSet = new Set(((likesRes.data as any[]) || []).map((l: any) => l.post_id))
-    const savedSet = new Set(((savesRes.data as any[]) || []).map((s: any) => s.post_id))
-
-    const mapped: Post[] = postRows.map((p: any, i: number) => {
-      const profile = profileMap[p.author_id]
-      return {
-        id: String(p.id),
-        author: profile?.full_name || 'Anonymous',
-        handle: profile?.username ? `@${profile.username}` : '@user',
-        avatar_url: profile?.avatar_url,
-        emoji: defaultEmojis[i % defaultEmojis.length],
-        location: p.location,
-        time: new Date(p.created_at).toLocaleDateString('en', { month: 'short', day: 'numeric' }),
-        content: p.content,
-        image_url: p.image_url,
-        video_url: p.video_url,
-        likes: p.likes_count || 0,
-        comments: p.comments_count || 0,
-        shares: p.shares_count || 0,
-        liked: likedSet.has(p.id),
-        saved: savedSet.has(p.id),
-        verified: profile?.is_verified,
-        premium: profile?.subscription_tier === 'vip' || profile?.subscription_tier === 'premium',
-        authorId: p.author_id,
+      if (feedMode === 'following') {
+        const { data: followingRows } = user?.id
+          ? await supabase.from('follows').select('following_id').eq('follower_id', user.id)
+          : { data: [] as any[] }
+        const authorIds = [
+          ...(user?.id ? [user.id] : []),
+          ...((followingRows || []).map((row: any) => row.following_id)),
+        ]
+        query = query.in('author_id', authorIds.length ? [...new Set(authorIds)] : ['00000000-0000-0000-0000-000000000000'])
       }
-    })
 
-    setPosts(mapped)
-    setLoading(false)
-  }, [user])
+      if (isAppend && feedCursorRef.current) {
+        query = query.lt('created_at', feedCursorRef.current)
+      }
 
-  useEffect(() => { fetchPosts() }, [fetchPosts])
+      const { data: postRows, error: postErr } = await query
+      if (postErr) throw postErr
+
+      if (!postRows?.length) {
+        if (!isAppend) setPosts([])
+        hasMoreRef.current = false
+        setHasMore(false)
+        return
+      }
+
+      const authorIds = [...new Set(postRows.map((p: any) => p.author_id).filter(Boolean))]
+      const postIds = postRows.map((p: any) => p.id)
+
+      const [profilesRes, likesRes, savesRes] = await Promise.all([
+        authorIds.length
+          ? supabase.from('profiles').select('id, full_name, avatar_url, is_verified, subscription_tier, username').in('id', authorIds)
+          : { data: [] },
+        user?.id
+          ? supabase.from('post_likes').select('post_id').eq('user_id', user.id).in('post_id', postIds)
+          : { data: [] },
+        user?.id
+          ? supabase.from('post_saves').select('post_id').eq('user_id', user.id).in('post_id', postIds)
+          : { data: [] },
+      ])
+
+      const profileMap = Object.fromEntries(((profilesRes.data as any[]) || []).map((p: any) => [p.id, p]))
+      const likedSet = new Set(((likesRes.data as any[]) || []).map((l: any) => l.post_id))
+      const savedSet = new Set(((savesRes.data as any[]) || []).map((s: any) => s.post_id))
+
+      const mapped: Post[] = postRows.map((p: any, i: number) => {
+        const profile = profileMap[p.author_id]
+        return {
+          id: String(p.id),
+          author: profile?.full_name || 'Anonymous',
+          handle: profile?.username ? `@${profile.username}` : '@user',
+          avatar_url: profile?.avatar_url,
+          emoji: defaultEmojis[i % defaultEmojis.length],
+          location: p.location,
+          time: new Date(p.created_at).toLocaleDateString('en', { month: 'short', day: 'numeric' }),
+          content: p.content,
+          image_url: p.image_url,
+          video_url: p.video_url,
+          likes: p.likes_count || 0,
+          comments: p.comments_count || 0,
+          shares: p.shares_count || 0,
+          liked: likedSet.has(p.id),
+          saved: savedSet.has(p.id),
+          verified: profile?.is_verified,
+          premium: profile?.subscription_tier === 'vip' || profile?.subscription_tier === 'premium',
+          authorId: p.author_id,
+        }
+      })
+
+      setPosts(prev => {
+        if (!isAppend) return mapped
+        const merged = new Map(prev.map(post => [post.id, post]))
+        mapped.forEach(post => merged.set(post.id, post))
+        return [...merged.values()]
+      })
+
+      feedCursorRef.current = String(postRows[postRows.length - 1].created_at)
+      const nextHasMore = postRows.length === FEED_PAGE_SIZE
+      hasMoreRef.current = nextHasMore
+      setHasMore(nextHasMore)
+    } catch (err: any) {
+      if (!isAppend) setError(err?.message || 'Unable to load your feed.')
+    } finally {
+      if (isAppend) {
+        loadingMoreRef.current = false
+        setLoadingMore(false)
+      } else {
+        setLoading(false)
+      }
+    }
+  }, [user, feedMode])
+
+  useEffect(() => { fetchPosts('reset') }, [fetchPosts])
+
+  // Load older posts before the reader reaches the end of the current page.
+  useEffect(() => {
+    const sentinel = loadMoreRef.current
+    const scrollRoot = feedScrollRef.current
+    if (!sentinel || !scrollRoot) return
+    const observer = new IntersectionObserver(
+      entries => {
+        if (entries.some(entry => entry.isIntersecting)) fetchPosts('append')
+      },
+      { root: scrollRoot, rootMargin: '600px 0px' },
+    )
+    observer.observe(sentinel)
+    return () => observer.disconnect()
+  }, [fetchPosts, posts.length])
 
   // Realtime: new posts from others + live like counts
   useEffect(() => {
@@ -1803,6 +2046,7 @@ export default function FeedPage() {
         table: 'post_comments',
       }, (payload) => {
         const c = payload.new as any
+        if (c.user_id === user?.id || c.author_id === user?.id) return
         setPosts(prev => prev.map(p =>
           p.id === String(c.post_id) ? { ...p, comments: p.comments + 1 } : p
         ))
@@ -1820,7 +2064,11 @@ export default function FeedPage() {
     setPosts(prev => prev.map(p => p.id === id ? { ...p, liked: nowLiked, likes: nowLiked ? p.likes + 1 : p.likes - 1 } : p))
     if (nowLiked) {
       const { error } = await supabase.from('post_likes').insert({ post_id: id, user_id: user.id })
-      if (!error && post.authorId && post.authorId !== user.id) {
+      if (error) {
+        setPosts(prev => prev.map(p => p.id === id ? { ...p, liked: false, likes: Math.max(0, p.likes - 1) } : p))
+        return
+      }
+      if (post.authorId && post.authorId !== user.id) {
         notifyUser({
           userId: post.authorId,
           type: 'like',
@@ -1831,7 +2079,10 @@ export default function FeedPage() {
         })
       }
     } else {
-      await supabase.from('post_likes').delete().eq('post_id', id).eq('user_id', user.id)
+      const { error } = await supabase.from('post_likes').delete().eq('post_id', id).eq('user_id', user.id)
+      if (error) {
+        setPosts(prev => prev.map(p => p.id === id ? { ...p, liked: true, likes: p.likes + 1 } : p))
+      }
     }
   }
 
@@ -1842,16 +2093,22 @@ export default function FeedPage() {
     const nowSaved = !post.saved
     setPosts(prev => prev.map(p => p.id === id ? { ...p, saved: nowSaved } : p))
     if (nowSaved) {
-      await supabase.from('post_saves').insert({ post_id: id, user_id: user.id })
+      const { error } = await supabase.from('post_saves').insert({ post_id: id, user_id: user.id })
+      if (error) {
+        setPosts(prev => prev.map(p => p.id === id ? { ...p, saved: false } : p))
+      }
     } else {
-      await supabase.from('post_saves').delete().eq('post_id', id).eq('user_id', user.id)
+      const { error } = await supabase.from('post_saves').delete().eq('post_id', id).eq('user_id', user.id)
+      if (error) {
+        setPosts(prev => prev.map(p => p.id === id ? { ...p, saved: true } : p))
+      }
     }
   }
 
   return (
     <div className="h-full flex dark:bg-[#0A0710] bg-gray-50">
       {/* Feed column */}
-      <div className="flex-1 overflow-y-auto pb-4">
+      <div ref={feedScrollRef} className="flex-1 overflow-y-auto pb-4">
         <div className="max-w-xl mx-auto px-3 pt-4">
 
           {/* Welcome banner (post email confirmation) */}
@@ -1884,8 +2141,33 @@ export default function FeedPage() {
           {/* Stories */}
           <StoriesBar user={user} onStoriesLoaded={handleStoriesLoaded} />
 
+           {/* Feed filter */}
+           <div className="flex items-center gap-1 p-1 mb-3 rounded-2xl dark:bg-white/5 bg-gray-100 border dark:border-white/6 border-gray-200">
+             {([
+               { value: 'for-you', label: 'For you' },
+               { value: 'following', label: 'Following' },
+             ] as const).map(option => (
+               <button
+                 key={option.value}
+                 type="button"
+                 onClick={() => {
+                   if (feedMode === option.value) return
+                   setFeedMode(option.value)
+                   setNewPostsCount(0)
+                 }}
+                 className={`flex-1 rounded-xl px-3 py-2 text-xs font-bold transition-colors ${
+                   feedMode === option.value
+                     ? 'bg-white dark:bg-[#1A1428] text-brand-pink shadow-sm'
+                     : 'dark:text-gray-500 text-gray-500 hover:text-brand-pink'
+                 }`}
+               >
+                 {option.label}
+               </button>
+             ))}
+           </div>
+
           {/* Compose */}
-          <ComposeBox user={user} onPost={() => { setNewPostsCount(0); fetchPosts() }} />
+          <ComposeBox user={user} onPost={() => { setNewPostsCount(0); fetchPosts('reset') }} />
 
           {/* New posts banner */}
           <AnimatePresence>
@@ -1894,7 +2176,7 @@ export default function FeedPage() {
                 initial={{ opacity: 0, y: -8 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
-                onClick={() => { setNewPostsCount(0); fetchPosts() }}
+                onClick={() => { setNewPostsCount(0); fetchPosts('reset') }}
                 className="w-full flex items-center justify-center gap-2 py-2.5 mb-3 rounded-2xl bg-love-gradient text-white text-sm font-bold shadow-lg shadow-pink-500/30 hover:opacity-90 transition-opacity"
               >
                 <RefreshCw className="w-4 h-4" />
@@ -1918,7 +2200,7 @@ export default function FeedPage() {
                 <p className="font-bold dark:text-white text-gray-900">Could not load feed</p>
                 <p className="text-sm dark:text-gray-400 text-gray-500 max-w-xs mt-1">{error}</p>
               </div>
-              <button onClick={fetchPosts}
+              <button onClick={() => fetchPosts('reset')}
                 className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-love-gradient text-white text-sm font-bold shadow-md shadow-pink-500/20">
                 <RefreshCw className="w-4 h-4" /> Retry
               </button>
@@ -1967,20 +2249,30 @@ export default function FeedPage() {
             )
           })}
 
-          {/* Load more hint */}
+          {/* Cursor pagination sentinel — the next page loads automatically. */}
           {!loading && !error && posts.length > 0 && (
-            <div className="text-center py-6">
-              <button onClick={fetchPosts}
-                className="flex items-center gap-2 mx-auto px-5 py-2.5 rounded-xl dark:bg-white/5 bg-gray-100 text-sm font-semibold dark:text-gray-400 text-gray-600 hover:text-brand-pink transition-colors">
-                <RefreshCw className="w-4 h-4" /> Refresh feed
-              </button>
+            <div ref={loadMoreRef} className="py-6 text-center">
+              {loadingMore ? (
+                <div className="flex items-center justify-center gap-2 text-xs dark:text-gray-500 text-gray-400">
+                  <Loader2 className="w-4 h-4 animate-spin" /> Loading more posts…
+                </div>
+              ) : hasMore ? (
+                <button
+                  onClick={() => fetchPosts('append')}
+                  className="flex items-center gap-2 mx-auto px-5 py-2.5 rounded-xl dark:bg-white/5 bg-gray-100 text-sm font-semibold dark:text-gray-400 text-gray-600 hover:text-brand-pink transition-colors"
+                >
+                  <ChevronRight className="w-4 h-4 rotate-90" /> Load more
+                </button>
+              ) : (
+                <p className="text-xs dark:text-gray-600 text-gray-400">You’re all caught up.</p>
+              )}
             </div>
           )}
         </div>
       </div>
 
       {/* Right sidebar */}
-      <RightSidebar />
+      <RightSidebar userId={user?.id} />
 
       {/* Story viewer triggered from a post-card avatar click */}
       {feedViewingStory && (

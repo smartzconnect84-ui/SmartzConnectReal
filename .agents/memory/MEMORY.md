@@ -62,3 +62,4 @@
 - [Learning courses & quiz system](learning-quiz-system.md) — full course/lesson/quiz/cert pipeline; admin at /admin/learning, user at /app/course/:courseId.
 - [Email confirmation source of truth](email-confirmation-source-of-truth.md) — public.users.email_verified is the real signal (profiles.email_verified unused); auto-sync trigger feeds newsletter_subscribers.
 - [Admin page routing gotcha](admin-page-routing-gotcha.md) — a page can be fully built and listed in AdminLayout's sidebar nav array yet be unreachable if it's missing from App.tsx's <Route> tree — always verify both.
+- [Feed foundation](feed-foundation.md) — public-safe cursor pagination, Following filtering, ID dedupe, and rollback-safe realtime interactions are the feed baseline.
