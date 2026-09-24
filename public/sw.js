@@ -28,6 +28,7 @@ const PRECACHE_URLS = [
   '/',
   '/manifest.json',
   '/icon-192.png',   // 26 KB — only small guaranteed files
+  '/offline.html',
 ]
 
 // IndexedDB key used by the background-sync retry queue
@@ -244,7 +245,14 @@ self.addEventListener('fetch', event => {
     // Network-first: always serve the freshest HTML shell.
     event.respondWith(
       fetch(request).catch(() =>
-        caches.match('/').then(r => r ?? new Response('Offline', { status: 503 }))
+        caches.match('/offline.html').then(r =>
+          r ?? caches.match('/').then(shell =>
+            shell ?? new Response('Offline', {
+              status: 503,
+              headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+            })
+          )
+        )
       )
     )
     return

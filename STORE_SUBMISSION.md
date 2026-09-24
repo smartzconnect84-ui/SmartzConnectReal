@@ -3,7 +3,7 @@
 > **App ID:** `com.smartzconnect.app`  
 > **App Name:** SmartzConnect  
 > **Version:** 1.0.0 (versionCode 1)  
-> **Stack:** React + Vite PWA wrapped with Capacitor  
+> **Stack:** React + Vite PWA with Android TWA and iOS WKWebView wrapper packages
 > **Production URL:** `https://smartzconnect.com`
 
 ---
@@ -51,7 +51,7 @@ Then redeploy so `https://smartzconnect.com/.well-known/assetlinks.json` returns
 
 1. Go to [developer.apple.com](https://developer.apple.com/account) → **Membership details**
 2. Copy your **Team ID** (a 10-character alphanumeric code, e.g. `AB12CD34EF`)
-3. Open **`public/.well-known/apple-app-site-association`** and replace every occurrence of `YOURTEAMID` with your real Team ID:
+3. Open **`public/.well-known/apple-app-site-association`** and replace `YOURTEAMID` with your real Team ID:
 
 ```json
 {
@@ -103,15 +103,18 @@ Verify `dist/` contains `index.html` and all assets before proceeding.
 
 ### 2a — First-time setup
 
+The repository does not contain a Capacitor project. Use the Android TWA
+package in `public/downloads/SmartzConnect-Android-TWA.zip`:
+
 ```bash
-npx cap add android
-npx cap sync android
+unzip public/downloads/SmartzConnect-Android-TWA.zip
+cd SmartzConnect-Android
 ```
 
 Open in Android Studio:
 
 ```bash
-npx cap open android
+studio .
 ```
 
 Wait for Gradle sync to finish (bottom status bar shows "Gradle sync finished").
@@ -199,7 +202,7 @@ android {
 
 ### 2d — Build AAB via Android Studio (recommended)
 
-1. **Sync first:** `pnpm build && npx cap sync android`
+1. **Deploy the latest web build first:** `pnpm build`
 2. In Android Studio menu: **Build → Generate Signed Bundle / APK…**
 3. Select **Android App Bundle** → Next
 4. Key store path: Browse to `android/release.keystore`
@@ -210,8 +213,7 @@ android {
 **Or via command line:**
 
 ```bash
-pnpm build && npx cap sync android
-cd android && ./gradlew bundleRelease
+cd SmartzConnect-Android && ./gradlew bundleRelease
 # Output: android/app/build/outputs/bundle/release/app-release.aab
 ```
 
@@ -253,16 +255,12 @@ java -jar bundletool.jar install-apks --apks=app.apks
 
 ### 3a — First-time setup
 
-```bash
-npx cap add ios
-npx cap sync ios
-cd ios/App && pod install
-```
-
-Open in Xcode:
+The repository does not contain an iOS/Capacitor project. Use the Xcode
+package in `public/downloads/SmartzConnect-iOS-Xcode.zip`:
 
 ```bash
-npx cap open ios
+unzip public/downloads/SmartzConnect-iOS-Xcode.zip
+open SmartzConnect-iOS/SmartzConnect.xcodeproj
 ```
 
 ---
@@ -314,26 +312,6 @@ In Xcode, select `App/App/Info.plist` → open as source (right-click → Open A
 <!-- Location (in-use) — nearby matches, marketplace, ride-hailing -->
 <key>NSLocationWhenInUseUsageDescription</key>
 <string>SmartzConnect uses your location to show nearby people, local marketplace listings, and for ride-hailing requests.</string>
-
-<!-- Location (always) — ride tracking background updates -->
-<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-<string>SmartzConnect uses background location to track your ride and show your driver's position in real time.</string>
-
-<!-- Contacts — suggest friends already on SmartzConnect -->
-<key>NSContactsUsageDescription</key>
-<string>SmartzConnect can suggest friends already on the platform by checking your contacts. No data is stored.</string>
-
-<!-- Face ID — optional biometric unlock -->
-<key>NSFaceIDUsageDescription</key>
-<string>SmartzConnect uses Face ID so you can log in quickly without typing your password.</string>
-
-<!-- Notifications — push alerts for messages, matches, and live streams -->
-<key>NSUserNotificationsUsageDescription</key>
-<string>SmartzConnect sends push notifications for new messages, dating matches, live stream alerts, and marketplace activity.</string>
-
-<!-- Local network — LAN-based video call discovery -->
-<key>NSLocalNetworkUsageDescription</key>
-<string>SmartzConnect uses the local network to improve video call quality on the same Wi-Fi network.</string>
 
 <!-- Encryption export compliance -->
 <key>ITSAppUsesNonExemptEncryption</key>
@@ -439,9 +417,10 @@ xcrun altool --upload-app \
 
 ---
 
-## 4 — TWA (Trusted Web Activity — alternative Android path)
+## 4 — TWA (Trusted Web Activity — Android package architecture)
 
-As an alternative to Capacitor for Android, use Bubblewrap to generate a TWA:
+The downloadable Android package is already a TWA. Bubblewrap is an
+alternative way to regenerate it from the live manifest:
 
 ```bash
 npm i -g @bubblewrap/cli
@@ -457,7 +436,7 @@ The `twa-manifest.json` at the project root is pre-configured. After generating 
 
 ```bash
 pnpm build
-npx cap sync           # syncs both android/ and ios/
+# Deploy the updated dist/ to https://smartzconnect.com
 # Android: bump versionCode in build.gradle → rebuild AAB → upload to Play Console
 # iOS:     bump Build number in Xcode → re-archive → upload to App Store Connect
 ```

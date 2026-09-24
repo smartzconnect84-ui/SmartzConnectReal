@@ -16,7 +16,10 @@
     X-Frame-Options = "DENY"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
-    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    # These capabilities are used by video/audio calls, uploads, and nearby
+    # matching. Keep the policy scoped to this origin rather than disabling
+    # the features in Netlify-hosted builds.
+    Permissions-Policy = "camera=(self), microphone=(self), geolocation=(self), payment=()"
     X-XSS-Protection = "1; mode=block"
 
 [[headers]]

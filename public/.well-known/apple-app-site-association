@@ -1,0 +1,16 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appID": "YOURTEAMID.com.smartzconnect.app",
+        "components": [
+          { "/": "/app/*", "comment": "Open authenticated app routes in SmartzConnect" },
+          { "/": "/", "comment": "Open the SmartzConnect home route" }
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": ["YOURTEAMID.com.smartzconnect.app"]
+  }
+}
