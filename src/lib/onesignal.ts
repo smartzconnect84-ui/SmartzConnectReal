@@ -8,6 +8,10 @@ const appId = import.meta.env.VITE_ONESIGNAL_APP_ID as string
 export function initOneSignal() {
   if (!appId) return   // skip silently when not configured
   if (typeof window === 'undefined') return
+  // OneSignal's site URL allow-list is production-only. Initialising it on a
+  // Replit preview causes a noisy 400 from the SDK and can interfere with
+  // auth/feed startup while providing no usable push registration.
+  if (import.meta.env.DEV || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') return
 
   const script = document.createElement('script')
   script.src = 'https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js'

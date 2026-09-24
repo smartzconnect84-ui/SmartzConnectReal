@@ -84,6 +84,12 @@
 
     <!-- Tawk.to Live Chat Widget -->
     <script type="text/javascript">
+      // Tawk's site allow-list is production-only. Do not inject the external
+      // widget into Replit/local previews; it returns a noisy 400 there and is
+      // not needed to verify the application.
+      var scPreviewHost = /^(localhost|127\.0\.0\.1)$/.test(window.location.hostname) ||
+        /\.replit\.(dev|app)$/.test(window.location.hostname);
+      if (!scPreviewHost) {
       var Tawk_API = Tawk_API || {};
       var Tawk_LoadStart = new Date();
       // Tawk.to's own floating launcher bubble is the ONLY support widget in
@@ -120,6 +126,7 @@
         s1.setAttribute('crossorigin', '*');
         s0.parentNode.insertBefore(s1, s0);
       })();
+      }
     </script>
   </body>
 </html>

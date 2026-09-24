@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
@@ -160,13 +160,39 @@ function ProfileCard({ profile, index }: { profile: FeaturedProfile; index: numb
 
 export default function SinglesNearYou() {
   const scrollerRef = useRef<HTMLDivElement>(null)
+  const [isPaused, setIsPaused] = useState(false)
 
-  const scrollProfiles = (direction: 'left' | 'right') => {
-    scrollerRef.current?.scrollBy({
-      left: direction === 'right' ? 280 : -280,
+  const scrollProfiles = useCallback((direction: 'left' | 'right') => {
+    const scroller = scrollerRef.current
+    if (!scroller) return
+
+    const maxScroll = scroller.scrollWidth - scroller.clientWidth
+    const step = Math.min(280, Math.max(220, scroller.clientWidth * 0.62))
+    const isAtEnd = direction === 'right' && maxScroll > 0 && scroller.scrollLeft >= maxScroll - 16
+    const isAtStart = direction === 'left' && scroller.scrollLeft <= 16
+
+    if (isAtEnd) {
+      scroller.scrollTo({ left: 0, behavior: 'smooth' })
+      return
+    }
+    if (isAtStart && direction === 'left') {
+      scroller.scrollTo({ left: maxScroll, behavior: 'smooth' })
+      return
+    }
+
+    scroller.scrollBy({
+      left: direction === 'right' ? step : -step,
       behavior: 'smooth',
     })
-  }
+  }, [])
+
+  // Keep the discovery strip active on public pages without forcing the user
+  // to click an arrow. Interaction pauses rotation so cards remain usable.
+  useEffect(() => {
+    if (isPaused) return
+    const timer = window.setInterval(() => scrollProfiles('right'), 4200)
+    return () => window.clearInterval(timer)
+  }, [isPaused, scrollProfiles])
 
   return (
     <section
@@ -199,6 +225,10 @@ export default function SinglesNearYou() {
           </div>
 
           <div className="flex items-center gap-2">
+            <span className="mr-1 inline-flex items-center gap-1.5 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-2 text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-300">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-300" />
+              Live rotation
+            </span>
             <button
               type="button"
               onClick={() => scrollProfiles('left')}
@@ -227,10 +257,18 @@ export default function SinglesNearYou() {
 
         <div
           ref={scrollerRef}
-          className="scrollbar-hide -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-3 sm:mx-0 sm:gap-4 sm:px-0 md:grid md:grid-cols-3 md:overflow-visible lg:grid-cols-4 xl:grid-cols-5"
+          role="region"
+          aria-roledescription="carousel"
+          aria-label="Singles near you"
+          tabIndex={0}
+          onMouseEnter={() => setIsPaused(true)}
+          onMouseLeave={() => setIsPaused(false)}
+          onFocus={() => setIsPaused(true)}
+          onBlur={() => setIsPaused(false)}
+          className="scrollbar-hide -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-3 outline-none focus-visible:ring-2 focus-visible:ring-pink-400/70 sm:mx-0 sm:gap-4 sm:px-0"
         >
           {FEATURED_PROFILES.map((profile, index) => (
-            <div key={`${profile.name}-${profile.country}`} className="snap-start md:min-w-0">
+            <div key={`${profile.name}-${profile.country}`} className="min-w-[calc((100vw-3.5rem)/2.1)] snap-start sm:min-w-[205px]">
               <ProfileCard profile={profile} index={index} />
             </div>
           ))}

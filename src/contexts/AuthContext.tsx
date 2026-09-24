@@ -95,9 +95,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // ── Initial session ───────────────────────────────────────────────────────
     // Await role resolution before clearing loading so AdminRoute never sees
     // a stale role on page refresh and redirects admins to /app/feed.
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session }, error: sessionError }) => {
       clearTimeout(loadingTimer)
       if (!isMounted) return
+      // A stale refresh token can make Supabase return 400 on preview reloads.
+      // Clear only the local session so the app can recover to the login screen
+      // instead of leaving the preview in a broken auth state.
+      if (sessionError) {
+        await supabase.auth.signOut({ scope: 'local' }).catch(() => {})
+        if (isMounted) setLoading(false)
+        return
+      }
       const uid = session?.user?.id ?? null
       currentUserIdRef.current = uid
       setSession(session)

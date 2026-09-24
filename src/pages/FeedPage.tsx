@@ -1922,7 +1922,10 @@ export default function FeedPage() {
       const authorIds = [...new Set(postRows.map((p: any) => p.author_id).filter(Boolean))]
       const postIds = postRows.map((p: any) => p.id)
 
-      const [profilesRes, likesRes, savesRes] = await Promise.all([
+      // Profile/like/save hydration is supplementary. A restrictive RLS policy
+      // or a missing optional table must not prevent the primary post list from
+      // rendering in preview or for a newly-created account.
+      const [profilesRes, likesRes, savesRes] = await Promise.allSettled([
         authorIds.length
           ? supabase.from('profiles').select('id, full_name, avatar_url, is_verified, subscription_tier, username').in('id', authorIds)
           : { data: [] },
@@ -1934,9 +1937,12 @@ export default function FeedPage() {
           : { data: [] },
       ])
 
-      const profileMap = Object.fromEntries(((profilesRes.data as any[]) || []).map((p: any) => [p.id, p]))
-      const likedSet = new Set(((likesRes.data as any[]) || []).map((l: any) => l.post_id))
-      const savedSet = new Set(((savesRes.data as any[]) || []).map((s: any) => s.post_id))
+      const profilesData = profilesRes.status === 'fulfilled' ? profilesRes.value.data : []
+      const likesData = likesRes.status === 'fulfilled' ? likesRes.value.data : []
+      const savesData = savesRes.status === 'fulfilled' ? savesRes.value.data : []
+      const profileMap = Object.fromEntries(((profilesData as any[]) || []).map((p: any) => [p.id, p]))
+      const likedSet = new Set(((likesData as any[]) || []).map((l: any) => l.post_id))
+      const savedSet = new Set(((savesData as any[]) || []).map((s: any) => s.post_id))
 
       const mapped: Post[] = postRows.map((p: any, i: number) => {
         const profile = profileMap[p.author_id]
