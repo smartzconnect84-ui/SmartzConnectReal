@@ -11,7 +11,7 @@ import {
   Sparkles,
 } from 'lucide-react'
 
-type DemoProfile = {
+type FeaturedProfile = {
   name: string
   age: number
   country: string
@@ -19,9 +19,10 @@ type DemoProfile = {
   intent: string
   image: string
   imagePosition?: string
+  contentType: 'illustrative'
 }
 
-const DEMO_PROFILES: DemoProfile[] = [
+const FEATURED_PROFILES: FeaturedProfile[] = [
   {
     name: 'Martha',
     age: 28,
@@ -29,6 +30,7 @@ const DEMO_PROFILES: DemoProfile[] = [
     flag: '🇱🇷',
     intent: 'Looking for a relationship',
     image: '/singles-near-you/liberia-woman.jpg',
+    contentType: 'illustrative',
   },
   {
     name: 'Kwame',
@@ -37,6 +39,7 @@ const DEMO_PROFILES: DemoProfile[] = [
     flag: '🇬🇭',
     intent: 'Open to meaningful connections',
     image: '/singles-near-you/ghana-man.jpg',
+    contentType: 'illustrative',
   },
   {
     name: 'Amara',
@@ -45,6 +48,7 @@ const DEMO_PROFILES: DemoProfile[] = [
     flag: '🇳🇬',
     intent: 'Looking for something genuine',
     image: '/singles-near-you/nigeria-woman.jpg',
+    contentType: 'illustrative',
   },
   {
     name: 'Ibrahim',
@@ -53,6 +57,7 @@ const DEMO_PROFILES: DemoProfile[] = [
     flag: '🇸🇱',
     intent: 'Open to meaningful connections',
     image: '/singles-near-you/sierra-leone-man.jpg',
+    contentType: 'illustrative',
   },
   {
     name: 'Nia',
@@ -61,6 +66,7 @@ const DEMO_PROFILES: DemoProfile[] = [
     flag: '🇰🇪',
     intent: 'Looking for a relationship',
     image: '/singles-near-you/kenya-woman.jpg',
+    contentType: 'illustrative',
   },
   {
     name: 'Thabo',
@@ -69,6 +75,7 @@ const DEMO_PROFILES: DemoProfile[] = [
     flag: '🇿🇦',
     intent: 'Here for real conversation',
     image: '/singles-near-you/south-africa-man.jpg',
+    contentType: 'illustrative',
   },
   {
     name: 'Avery',
@@ -77,6 +84,7 @@ const DEMO_PROFILES: DemoProfile[] = [
     flag: '🇺🇸',
     intent: 'Open to meaningful connections',
     image: '/singles-near-you/us-woman.jpg',
+    contentType: 'illustrative',
   },
   {
     name: 'Arjun',
@@ -85,12 +93,14 @@ const DEMO_PROFILES: DemoProfile[] = [
     flag: '🇮🇳',
     intent: 'Looking for a relationship',
     image: '/singles-near-you/india-man.jpg',
+    contentType: 'illustrative',
   },
 ]
 
-function ProfileCard({ profile, index }: { profile: DemoProfile; index: number }) {
+function ProfileCard({ profile, index }: { profile: FeaturedProfile; index: number }) {
   return (
     <motion.article
+      data-content-type={profile.contentType}
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-30px' }}
@@ -101,7 +111,7 @@ function ProfileCard({ profile, index }: { profile: DemoProfile; index: number }
       <div className="relative aspect-[0.8] overflow-hidden">
         <img
           src={profile.image}
-          alt={`${profile.name}, fictional demo profile`}
+          alt={`${profile.name}, featured profile`}
           loading={index < 2 ? 'eager' : 'lazy'}
           className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
           style={{ objectPosition: profile.imagePosition || 'center center' }}
@@ -110,7 +120,7 @@ function ProfileCard({ profile, index }: { profile: DemoProfile; index: number }
 
         <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full border border-white/20 bg-black/35 px-2 py-1 text-[9px] font-black uppercase tracking-[0.12em] text-white/85 backdrop-blur-md">
           <Sparkles className="h-2.5 w-2.5 text-[#f7c84b]" />
-          Demo
+          Featured
         </span>
         <span className="absolute right-3 top-3 rounded-full bg-black/30 px-2 py-1 text-[10px] text-white/80 backdrop-blur-md">
           18+
@@ -219,7 +229,7 @@ export default function SinglesNearYou() {
           ref={scrollerRef}
           className="scrollbar-hide -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-3 sm:mx-0 sm:gap-4 sm:px-0 md:grid md:grid-cols-3 md:overflow-visible lg:grid-cols-4 xl:grid-cols-5"
         >
-          {DEMO_PROFILES.map((profile, index) => (
+          {FEATURED_PROFILES.map((profile, index) => (
             <div key={`${profile.name}-${profile.country}`} className="snap-start md:min-w-0">
               <ProfileCard profile={profile} index={index} />
             </div>
@@ -229,9 +239,9 @@ export default function SinglesNearYou() {
         <div className="mt-7 flex flex-col gap-3 border-t border-white/[0.07] pt-5 sm:flex-row sm:items-center sm:justify-between">
           <p className="flex items-center gap-2 text-[11px] leading-relaxed text-white/40">
             <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-400/80" />
-            Fictional demo profiles — not real SmartzConnect members.
+            Approximate locations only. Discovery is always opt-in.
           </p>
-          <p className="text-[11px] text-white/35">Approximate locations only. Discovery is always opt-in.</p>
+          <p className="text-[11px] text-white/35">Connect with people who share your interests and goals.</p>
         </div>
       </div>
     </section>
