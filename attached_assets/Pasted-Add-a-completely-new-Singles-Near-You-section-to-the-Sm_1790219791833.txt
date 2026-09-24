@@ -1,0 +1,93 @@
+Add a completely new “Singles Near You” section to the SmartzConnect homepage.
+
+Create the section from scratch and integrate it naturally into the existing homepage design.
+
+Section Title
+
+📍 Singles Near You
+
+Subtitle:
+“Meet interesting singles from your area and around the world.”
+
+AI-Generated Profiles
+
+Create a visually appealing carousel of AI-generated photorealistic profile images of fictional adults aged 18+ from different countries and cultural backgrounds.
+
+Include a diverse international mix, such as:
+
+- 🇱🇷 Liberia
+- 🇬🇭 Ghana
+- 🇳🇬 Nigeria
+- 🇸🇱 Sierra Leone
+- 🇨🇮 Côte d’Ivoire
+- 🇰🇪 Kenya
+- 🇿🇦 South Africa
+- 🇺🇸 United States
+- 🇨🇦 Canada
+- 🇬🇧 United Kingdom
+- 🇫🇷 France
+- 🇩🇪 Germany
+- 🇧🇷 Brazil
+- 🇯🇲 Jamaica
+- 🇮🇳 India
+- 🇵🇭 Philippines
+- 🇦🇺 Australia
+
+Represent different ethnicities, skin tones, hairstyles, fashion styles, and cultural backgrounds.
+
+Use natural, realistic dating-profile photography with varied environments such as cities, cafés, beaches, parks, offices, and casual outdoor settings.
+
+Do not use celebrities or recognizable real people.
+
+Profile Cards
+
+Each fictional profile card should display:
+
+AI-generated profile photo
+
+Name, Age
+🇱🇷 Liberia
+💞 Looking for a relationship
+
+or
+
+Name, Age
+🇺🇸 United States
+💬 Open to meaningful connections
+
+Add:
+
+❤️ Connect
+
+Location Logic
+
+The section should be designed to eventually support real location-based discovery.
+
+When real SmartzConnect users are connected:
+
+- Prioritize users who are physically nearby.
+- Show approximate location only.
+- Never reveal exact addresses or GPS coordinates.
+- Only show users who have opted into discovery.
+- Allow users to disable “Appear in Singles Near You.”
+
+For AI-generated demo profiles, clearly identify them internally as fictional/demo content and never present them as real SmartzConnect members.
+
+Design
+
+Make the section modern, premium, welcoming, and visually engaging.
+
+On mobile:
+
+- Use a swipeable horizontal carousel.
+- Show approximately 2 profile cards at a time.
+
+On desktop:
+
+- Display 4–6 profile cards in a responsive layout.
+
+Add:
+
+View All Singles →
+
+The section should match SmartzConnect's existing branding, colors, typography, spacing, and overall design.

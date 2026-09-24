@@ -2,6 +2,7 @@ import { useRef, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, useInView, type Variants } from 'framer-motion'
 import Hero from '@/components/Hero'
+import SinglesNearYou from '@/components/SinglesNearYou'
 import DownloadAppButton from '@/components/DownloadAppButton'
 import {
   Heart, Globe, Users, Car, Package, ShoppingBag, Megaphone, Tv,
@@ -264,6 +265,9 @@ export default function HomePage() {
   return (
     <main className="bg-black">
       <Hero />
+
+      {/* ══ 1. SINGLES NEAR YOU ═════════════════════════════════════════════ */}
+      <SinglesNearYou />
 
       {/* ══ 1. ABOUT US ══════════════════════════════════════════════════════ */}
       <Sec dark id="about">
