@@ -1,5 +1,8 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
+import { readCache, writeCache, readMetaLocal } from '@/lib/publicSite'
+
+const ANN_CACHE_KEY = 'announcements'
 
 export type AnnouncementType = 'info' | 'warning' | 'success' | 'error' | 'promo'
 
@@ -118,14 +121,47 @@ export function AnnouncementProvider({ children }: { children: React.ReactNode }
       if (isTableMissing) {
         setUseLocal(true)
         setAnnouncements(loadLocalAnnouncements())
+      } else {
+        // Network failure, not a missing table: serve the last good snapshot.
+        try {
+          const cached = readCache<Announcement[]>(ANN_CACHE_KEY)
+          if (cached) setAnnouncements(cached.data)
+        } catch {
+          /* keep current */
+        }
       }
       return
     }
     setUseLocal(false)
     setAnnouncements(data || [])
+    // Offline-first: cache the latest snapshot; keep it until a newer publish.
+    try {
+      const v = readMetaLocal()?.version ?? 0
+      writeCache(ANN_CACHE_KEY, data || [], v)
+    } catch {
+      /* ignore */
+    }
+    return
   }, [loadLocalAnnouncements])
 
-  useEffect(() => { refetch() }, [refetch])
+  useEffect(() => {
+    // Serve cache instantly while the network fetch is in flight.
+    try {
+      const cached = readCache<Announcement[]>(ANN_CACHE_KEY)
+      if (cached?.data?.length) setAnnouncements(cached.data)
+    } catch {
+      /* ignore */
+    }
+    refetch()
+    // Admin "Publish live" + reconnect: refresh automatically.
+    const onPublish = () => { refetch() }
+    window.addEventListener('szc:public-update', onPublish)
+    window.addEventListener('szc:reconnect-refresh', onPublish)
+    return () => {
+      window.removeEventListener('szc:public-update', onPublish)
+      window.removeEventListener('szc:reconnect-refresh', onPublish)
+    }
+  }, [refetch])
 
   // Realtime subscription for new/updated announcements
   useEffect(() => {

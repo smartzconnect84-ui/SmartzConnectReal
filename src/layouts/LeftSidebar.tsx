@@ -4,9 +4,11 @@ import {
   Home, User, Users, MessageCircle, Bell, Video, Phone,
   Heart, Users2, FileText, Calendar, ShoppingBag, Briefcase,
   BookOpen, Tv, Car, Crown, Settings, HelpCircle,
-  Sun, Moon, LogOut, Globe, Bookmark, Trophy, Gift
+  Sun, Moon, LogOut, Globe, Bookmark, Trophy, Gift, Megaphone
 } from 'lucide-react'
 import { useTheme } from '@/contexts/ThemeContext'
+import { useFeatureFlags } from '@/contexts/FeatureFlagsContext'
+import { FEATURE_ROUTE_MAP } from '@/components/FeatureGate'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
 
@@ -44,6 +46,7 @@ const exploreNav: NavItemDef[] = [
   { path: '/app/ride',          icon: Car,           label: 'Ride',          color: 'text-emerald-500', tourId: 'nav-ride' },
   { path: '/app/worldstage',    icon: Trophy,        label: 'World Stage',   color: 'text-amber-500' },
   { path: '/app/subscriptions', icon: Crown,         label: 'Premium',       color: 'text-yellow-500' },
+  { path: '/app/ads',           icon: Megaphone,     label: 'Advertise',     color: 'text-pink-500' },
 ]
 
 const bottomNav: NavItemDef[] = [
@@ -97,6 +100,7 @@ export default function LeftSidebar({ unreadMessages, unreadNotifs }: LeftSideba
   const location = useLocation()
   const { theme, toggleTheme } = useTheme()
   const { user, signOut } = useAuth()
+  const { isEnabled } = useFeatureFlags()
   const [profileData, setProfileData] = useState<{ full_name?: string; avatar_url?: string } | null>(null)
 
   const isActive = (path: string) => location.pathname.startsWith(path)
@@ -116,7 +120,7 @@ export default function LeftSidebar({ unreadMessages, unreadNotifs }: LeftSideba
       <nav className="flex-1 px-2 lg:px-3 py-4 overflow-y-auto space-y-0.5">
 
         <p className="text-[10.5px] font-black uppercase tracking-widest text-brand-pink px-2 lg:px-3 mb-2 hidden lg:block">Main</p>
-        {mainNav.map(item => {
+        {mainNav.filter(item => { const tid = FEATURE_ROUTE_MAP[item.path]; return !tid || isEnabled(tid) }).map(item => {
           const badge =
             item.label === 'Messages'      && unreadMessages > 0 ? String(Math.min(unreadMessages, 99)) :
             item.label === 'Notifications' && unreadNotifs   > 0 ? String(Math.min(unreadNotifs,   99)) :
@@ -134,7 +138,7 @@ export default function LeftSidebar({ unreadMessages, unreadNotifs }: LeftSideba
         <div className="h-px dark:bg-white/5 bg-gray-100 my-3 mx-1" />
 
         <p className="text-[10.5px] font-black uppercase tracking-widest text-brand-pink px-2 lg:px-3 mb-2 hidden lg:block">Explore</p>
-        {exploreNav.map(item => (
+        {exploreNav.filter(item => { const tid = FEATURE_ROUTE_MAP[item.path]; return !tid || isEnabled(tid) }).map(item => (
           <NavRow key={item.path} item={item} active={isActive(item.path)} />
         ))}
       </nav>

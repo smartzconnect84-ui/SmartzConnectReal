@@ -13,6 +13,7 @@ import { sendStoryEventToChat } from '@/lib/stream'
 import { uploadToSufy } from '@/lib/sufy'
 import { useAuth } from '@/hooks/useAuth'
 import ReportBlockModal from '@/components/ReportBlockModal'
+import { FeedAdSlot } from '@/components/ads/SponsoredAd'
 import { useOfflineDraft } from '@/lib/offlineDraft'
 
 // ── Types ───────────────────────────────────────────────────────────────────
@@ -2228,6 +2229,10 @@ export default function FeedPage() {
           {!loading && !error && posts.map((post, i) => {
             const authorStory = post.authorId ? storyAuthorMap.get(post.authorId) ?? null : null
             return (
+              <>
+              {i === 2 && (
+                <div className="mb-4"><FeedAdSlot placement="home_feed" /></div>
+              )}
               <motion.div
                 key={post.id}
                 initial={{ opacity: 0, y: 12 }}
@@ -2252,6 +2257,7 @@ export default function FeedPage() {
                   }) : undefined}
                 />
               </motion.div>
+              </>
             )
           })}
 

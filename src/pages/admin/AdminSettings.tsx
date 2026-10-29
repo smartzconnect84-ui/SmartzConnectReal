@@ -4,10 +4,11 @@ import {
   Settings, ToggleLeft, ToggleRight, Globe, Shield, Bell, CreditCard,
   Smartphone, Save, RefreshCw, Palette, Sliders, Zap, Sun, Moon, Monitor,
   Megaphone, Plus, Edit, Trash2, X, Link, CheckCircle, AlertCircle, Info,
-  AlertTriangle, Gift
+  AlertTriangle, Gift, Rocket, Radio, WifiOff, History
 } from 'lucide-react'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useAnnouncement } from '@/contexts/AnnouncementContext'
+import { usePublicSite } from '@/contexts/PublicSiteContext'
 import type { AnnouncementType, Announcement } from '@/contexts/AnnouncementContext'
 import { supabase } from '@/lib/supabase'
 
@@ -126,7 +127,13 @@ export default function AdminSettings() {
   const [activeCategory, setActiveCategory] = useState('All')
   const [saved, setSaved]                   = useState(false)
   const [saving, setSaving]                 = useState(false)
-  const [activeTab, setActiveTab]           = useState<'features' | 'appearance' | 'announcements'>('features')
+  const [activeTab, setActiveTab]           = useState<'features' | 'appearance' | 'announcements' | 'public'>('features')
+  const { version: liveVersion, meta: liveMeta, history: publishHistory, publishing, isOnline, publish } = usePublicSite()
+  const [autoPublish, setAutoPublish] = useState(() => {
+    try { return localStorage.getItem('szc_autopublish') !== 'off' } catch { return true }
+  })
+  const [publishMsg, setPublishMsg] = useState('')
+  const [publishToast, setPublishToast] = useState<string | null>(null)
 
   // Announcement form
   const [showAnnForm, setShowAnnForm]         = useState(false)
@@ -177,9 +184,24 @@ export default function AdminSettings() {
     } catch { /* ignore — localStorage still saves */ }
     // Also save locally as offline fallback
     saveSettingsLocal({ toggles })
+    // Auto-publish so the public site picks the change up automatically
+    if (autoPublish) {
+      try { await publish('Feature settings updated') } catch { /* offline — queued */ }
+    }
     setSaving(false)
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
+  }
+
+  const handlePublishLive = async () => {
+    try {
+      const rec = await publish(publishMsg || undefined)
+      setPublishMsg('')
+      setPublishToast(rec ? `Published v${rec.version} — public site is updating` : 'Published')
+    } catch {
+      setPublishToast(isOnline ? 'Publish failed — please retry' : 'Offline — publish queued, will send on reconnect')
+    }
+    setTimeout(() => setPublishToast(null), 3000)
   }
 
   const filtered = toggles.filter(t => activeCategory === 'All' || t.category === activeCategory)
@@ -220,16 +242,25 @@ export default function AdminSettings() {
     }
     setShowAnnForm(false)
     setAnnSaving(false)
+    if (autoPublish) {
+      try { await publish(editAnn ? 'Announcement updated' : 'New announcement published') } catch { /* offline — queued */ }
+    }
   }
 
   const handleDeleteAnn = async (id: string) => {
     await deleteAnnouncement(id)
     showAnnToast('Announcement deleted')
+    if (autoPublish) {
+      try { await publish('Announcement removed') } catch { /* offline — queued */ }
+    }
   }
 
   const handleToggleAnn = async (a: Announcement) => {
     await toggleAnnouncement(a.id, !a.is_active)
     showAnnToast(a.is_active ? 'Announcement hidden' : 'Announcement activated')
+    if (autoPublish) {
+      try { await publish(a.is_active ? 'Announcement hidden' : 'Announcement activated') } catch { /* offline — queued */ }
+    }
   }
 
   return (
@@ -265,6 +296,7 @@ export default function AdminSettings() {
           { id: 'features',      icon: Sliders,    label: 'Features' },
           { id: 'appearance',    icon: Palette,    label: 'Appearance' },
           { id: 'announcements', icon: Megaphone,  label: 'Announcements' },
+          { id: 'public',        icon: Rocket,     label: 'Public Site' },
         ].map(tab => {
           const Icon = tab.icon
           return (
@@ -347,10 +379,10 @@ export default function AdminSettings() {
                 { id: 'system', icon: Monitor, label: 'System' },
               ] as { id: 'dark' | 'light' | 'system'; icon: ElementType; label: string }[]).map(mode => {
                 const Icon = mode.icon
-                const active = theme === mode.id || (mode.id === 'system' && false)
+                const active = theme === mode.id
                 return (
                   <button key={mode.id}
-                    onClick={() => { if (mode.id !== 'system') setTheme(mode.id) }}
+                    onClick={() => setTheme(mode.id)}
                     className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all ${
                       theme === mode.id ? 'border-brand-pink dark:bg-pink-500/10 bg-pink-50' : 'dark:border-white/8 border-gray-200 dark:hover:border-white/20 hover:border-gray-300'
                     }`}>
@@ -579,6 +611,87 @@ export default function AdminSettings() {
               <p className="text-xs dark:text-emerald-400/70 text-emerald-700/70 mt-0.5">
                 The banner toggle and all announcements are stored in your Supabase database. Changes apply instantly — all users and admins see them in real time, on any device.
               </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── PUBLIC SITE TAB ────────────────────────────────────────────────── */}
+      {activeTab === 'public' && (
+        <div className="space-y-5">
+          {/* Live status */}
+          <div className="p-5 rounded-2xl dark:bg-white/[0.03] bg-gray-50 border dark:border-white/8 border-gray-200">
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-2xl bg-love-gradient flex items-center justify-center shadow-lg shadow-pink-500/20">
+                  <Radio className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <p className="font-display font-black dark:text-white text-gray-900">Public site is live</p>
+                  <p className="text-xs dark:text-gray-400 text-gray-500">
+                    Version <span className="font-black text-brand-pink">v{liveVersion}</span>
+                    {liveMeta?.updatedAt ? ` · published ${new Date(liveMeta.updatedAt).toLocaleString()}` : ' · not published yet'}
+                    {!isOnline && ' · offline'}
+                  </p>
+                </div>
+              </div>
+              <span className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black ${isOnline ? 'bg-emerald-500/15 text-emerald-500' : 'bg-amber-500/15 text-amber-500'}`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
+                {isOnline ? 'CONNECTED' : 'OFFLINE'}
+              </span>
+            </div>
+            {liveMeta?.message && (
+              <p className="text-xs dark:text-gray-400 text-gray-500 mt-3">Last update: “{liveMeta.message}”{liveMeta.by ? ` — ${liveMeta.by}` : ''}</p>
+            )}
+          </div>
+
+          {/* Publish box */}
+          <div className="p-5 rounded-2xl dark:bg-white/[0.03] bg-gray-50 border dark:border-white/8 border-gray-200">
+            <p className="text-sm font-bold dark:text-white text-gray-900 mb-1">Publish an update</p>
+            <p className="text-xs dark:text-gray-400 text-gray-500 mb-3">Push branding, announcements and stats to every visitor instantly. Visitors who are offline keep the last version until this publish reaches them.</p>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <input value={publishMsg} onChange={e => setPublishMsg(e.target.value)} placeholder="What's new? (e.g. New branding, updated announcement)" className="flex-1 h-11 px-4 rounded-xl text-sm dark:bg-white/5 bg-white border dark:border-white/10 border-gray-200 dark:text-white text-gray-900 placeholder:text-gray-400 outline-none focus:border-brand-pink" />
+              <button onClick={handlePublishLive} disabled={publishing} className="h-11 px-5 rounded-xl bg-love-gradient text-white text-sm font-bold shadow-lg shadow-pink-500/20 flex items-center justify-center gap-2 disabled:opacity-60">
+                {publishing ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Rocket className="w-4 h-4" />}
+                {publishing ? 'Publishing…' : 'Publish live'}
+              </button>
+            </div>
+            {publishToast && <p className="text-xs font-bold text-emerald-500 mt-2">{publishToast}</p>}
+            {!isOnline && (
+              <p className="flex items-center gap-1.5 text-xs text-amber-500 font-bold mt-2"><WifiOff className="w-3.5 h-3.5" /> You're offline — the publish will queue and send automatically on reconnect.</p>
+            )}
+            <label className="flex items-center gap-2.5 mt-4 cursor-pointer">
+              <button onClick={() => { const v = !autoPublish; setAutoPublish(v); try { localStorage.setItem('szc_autopublish', v ? 'on' : 'off') } catch { /* ignore */ } }}>
+                {autoPublish ? <ToggleRight className="w-8 h-8 text-brand-pink" /> : <ToggleLeft className="w-8 h-8 dark:text-gray-600 text-gray-400" />}
+              </button>
+              <span className="text-xs dark:text-gray-300 text-gray-700 font-semibold">Auto-publish when I save feature or announcement changes</span>
+            </label>
+          </div>
+
+          {/* History */}
+          <div className="p-5 rounded-2xl dark:bg-white/[0.03] bg-gray-50 border dark:border-white/8 border-gray-200">
+            <p className="text-sm font-bold dark:text-white text-gray-900 mb-3 flex items-center gap-2"><History className="w-4 h-4 text-brand-pink" /> Publish history</p>
+            {publishHistory.length === 0 ? (
+              <p className="text-xs dark:text-gray-500 text-gray-400">No publishes yet — hit “Publish live” to push the current site to all visitors.</p>
+            ) : (
+              <div className="space-y-2">
+                {publishHistory.map(h => (
+                  <div key={h.version} className="flex items-center justify-between gap-3 p-3 rounded-xl dark:bg-white/[0.03] bg-white border dark:border-white/5 border-gray-100">
+                    <div>
+                      <p className="text-xs font-bold dark:text-white text-gray-900">v{h.version} — {h.message}</p>
+                      <p className="text-[10px] dark:text-gray-500 text-gray-400">{new Date(h.updatedAt).toLocaleString()} · by {h.by}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-start gap-3 p-4 rounded-2xl dark:bg-sky-500/8 bg-sky-50 border dark:border-sky-500/15 border-sky-200">
+            <CheckCircle className="w-4 h-4 text-sky-500 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-xs font-bold dark:text-sky-400 text-sky-700">Offline-safe by design</p>
+              <p className="text-xs dark:text-sky-400/70 text-sky-700/70 mt-0.5">Branding, announcements and homepage stats are cached on every visitor's device and kept until a newer published version arrives — so the public site still loads with fresh-looking data even with no connection.</p>
             </div>
           </div>
         </div>

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
 
-type Theme = 'dark' | 'light'
+type Theme = 'dark' | 'light' | 'system'
 type FontScale = 'small' | 'normal' | 'large' | 'xl'
 type FontStyle = 'default' | 'serif' | 'mono'
 type BorderRadius = 'sharp' | 'rounded' | 'pill'
@@ -207,6 +207,20 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const stored = localStorage.getItem(THEME_KEY)
     return (stored as Theme) || 'light'
   })
+  // Resolved effective theme when mode is 'system' (follows OS preference)
+  const [systemDark, setSystemDark] = useState(() =>
+    typeof window !== 'undefined' && typeof window.matchMedia !== 'undefined'
+      ? window.matchMedia('(prefers-color-scheme: dark)').matches
+      : false,
+  )
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia === 'undefined') return
+    const mq = window.matchMedia('(prefers-color-scheme: dark)')
+    const onChange = (e: MediaQueryListEvent) => setSystemDark(e.matches)
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
+  }, [])
+  const effectiveTheme: 'dark' | 'light' = theme === 'system' ? (systemDark ? 'dark' : 'light') : theme
 
   const [appearance, setAppearanceState] = useState<AppearanceSettings>(() => {
     try {
@@ -222,16 +236,16 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     return (stored as ChatTheme) || 'classic'
   })
 
-  // Apply theme (dark/light class)
+  // Apply theme (dark/light class). 'system' follows the OS preference live.
   useEffect(() => {
     const root = document.documentElement
-    if (theme === 'dark') {
+    if (effectiveTheme === 'dark') {
       root.classList.add('dark')
     } else {
       root.classList.remove('dark')
     }
     localStorage.setItem(THEME_KEY, theme)
-  }, [theme])
+  }, [theme, effectiveTheme])
 
   // Apply appearance settings immediately on mount and on change
   useEffect(() => {
@@ -245,7 +259,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem(CHAT_THEME_KEY, chatTheme)
   }, [chatTheme])
 
-  const toggleTheme = useCallback(() => setThemeState(t => t === 'dark' ? 'light' : 'dark'), [])
+  const toggleTheme = useCallback(() => setThemeState(t => {
+    const eff: 'dark' | 'light' = t === 'system'
+      ? (typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+      : t
+    return eff === 'dark' ? 'light' : 'dark'
+  }), [])
   const setTheme = useCallback((t: Theme) => setThemeState(t), [])
 
   const setAppearance = useCallback((partial: Partial<AppearanceSettings>) => {

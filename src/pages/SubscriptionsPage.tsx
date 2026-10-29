@@ -4,6 +4,8 @@ import { Check, Crown, Heart, Zap, X, Shield, Star, Gift, AlertCircle, Loader2, 
 import CurrencyConverter from '@/components/CurrencyConverter'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
+import { useFeatureFlags } from '@/contexts/FeatureFlagsContext'
+import { PAYMENT_TOGGLE_MAP } from '@/components/FeatureGate'
 
 /* ── Invoice helper ──────────────────────────────────────────────────── */
 function escHtml(s: string): string {

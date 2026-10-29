@@ -9,6 +9,8 @@ import {
 } from 'lucide-react'
 // Note: Zap kept for the Create (+) mobile button; Spin Chat removed from nav
 import { useTheme } from '@/contexts/ThemeContext'
+import { useFeatureFlags } from '@/contexts/FeatureFlagsContext'
+import { FEATURE_ROUTE_MAP } from '@/components/FeatureGate'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
 import { useNotifications } from '@/contexts/NotificationContext'
@@ -79,6 +81,12 @@ const mobileBottomNav = [
 export default function AppShell() {
   const location = useLocation()
   const { signOut, user } = useAuth()
+  const { isEnabled } = useFeatureFlags()
+  const routeOn = (path: string) => {
+    const id = FEATURE_ROUTE_MAP[path]
+    return !id || isEnabled(id)
+  }
+  const visibleBottomNav = mobileBottomNav.filter(b => !b.path || routeOn(b.path))
   const { theme, toggleTheme } = useTheme()
   const { unreadCount: unreadNotifs } = useNotifications()
   const [drawerOpen, setDrawerOpen] = useState(false)
@@ -170,10 +178,13 @@ export default function AppShell() {
                 className="fixed left-0 top-14 bottom-0 w-72 max-w-[85vw] dark:bg-[#0D0A14] bg-white z-50 md:hidden flex flex-col border-r dark:border-white/6 border-gray-100 shadow-2xl"
               >
                 <nav className="flex-1 px-3 py-2 overflow-y-auto">
-                  {drawerSections.map(({ section, items }) => (
+                  {drawerSections.map(({ section, items }) => {
+                    const visible = items.filter(i => routeOn(i.path))
+                    if (!visible.length) return null
+                    return (
                     <div key={section}>
                       <p className="text-[10.5px] font-black uppercase tracking-widest text-brand-pink px-3 pt-4 pb-1.5 first:pt-2">{section}</p>
-                      {items.map(item => {
+                      {visible.map(item => {
                         const active = isActive(item.path)
                         const Icon = item.icon
                         const liveBadge =
@@ -196,7 +207,8 @@ export default function AppShell() {
                         )
                       })}
                     </div>
-                  ))}
+                    )
+                  })}
                 </nav>
 
                 <div className="px-3 py-4 border-t dark:border-white/6 border-gray-100 space-y-1">
@@ -224,7 +236,7 @@ export default function AppShell() {
 
       {/* ── Mobile Bottom Nav ── */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 dark:bg-[#0D0A14]/98 bg-white/98 backdrop-blur-xl border-t dark:border-white/8 border-gray-100 flex items-center px-1">
-        {mobileBottomNav.map(item => {
+        {visibleBottomNav.map(item => {
           const Icon = item.icon
 
           // Centre "Create +" button — triggers the floating CreateModal via custom event

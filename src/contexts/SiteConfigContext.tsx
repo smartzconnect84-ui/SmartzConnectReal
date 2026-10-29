@@ -1,5 +1,8 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
+import { readCache, writeCache, readMetaLocal } from '@/lib/publicSite'
+
+const SITE_CONFIG_CACHE_KEY = 'site_config'
 
 /**
  * Site-wide branding & imagery, driven by the `site_config` table (key/value,
@@ -7,8 +10,9 @@ import { supabase } from '@/lib/supabase'
  * logo, favicon, and background images used across the public site (home,
  * team, service pages, social page) without a code change or redeploy.
  *
- * Falls back to the existing static defaults if a key isn't set yet, so the
- * site never breaks/blanks out before an admin configures it.
+ * Offline-first: every successful fetch is cached to localStorage and served
+ * instantly on next load (even offline). The cache is only replaced when a
+ * fetch succeeds — so data is kept "until a new update" arrives.
  */
 
 export const SITE_IMAGE_KEYS = {
@@ -35,6 +39,8 @@ interface SiteConfigContextType {
   /** Get a config value, or the given fallback if unset/empty. */
   get: (key: string, fallback?: string) => string
   loading: boolean
+  /** True when values came from the offline cache (network unavailable). */
+  fromCache: boolean
   refetch: () => Promise<void>
 }
 
@@ -42,12 +48,32 @@ const SiteConfigContext = createContext<SiteConfigContextType>({
   values: {},
   get: (_key, fallback = '') => fallback,
   loading: true,
+  fromCache: false,
   refetch: async () => {},
 })
 
+function currentVersion(): number {
+  return readMetaLocal()?.version ?? 0
+}
+
 export function SiteConfigProvider({ children }: { children: React.ReactNode }) {
-  const [values, setValues] = useState<Record<string, string>>({})
-  const [loading, setLoading] = useState(true)
+  // Hydrate synchronously from cache so the public site paints instantly offline.
+  const [values, setValues] = useState<Record<string, string>>(() => {
+    try {
+      const cached = readCache<Record<string, string>>(SITE_CONFIG_CACHE_KEY)
+      return cached?.data ?? {}
+    } catch {
+      return {}
+    }
+  })
+  const [loading, setLoading] = useState(() => {
+    try {
+      return !readCache<Record<string, string>>(SITE_CONFIG_CACHE_KEY)
+    } catch {
+      return true
+    }
+  })
+  const [fromCache, setFromCache] = useState(false)
 
   const refetch = useCallback(async () => {
     try {
@@ -58,8 +84,20 @@ export function SiteConfigProvider({ children }: { children: React.ReactNode }) 
         if (row.value) map[row.key] = row.value
       }
       setValues(map)
+      setFromCache(false)
+      // Persist: keep this snapshot until a newer update replaces it.
+      writeCache(SITE_CONFIG_CACHE_KEY, map, currentVersion())
     } catch {
-      // site_config unreachable — keep previous/default values
+      // Offline / unreachable — keep showing the cached copy (already in state).
+      try {
+        const cached = readCache<Record<string, string>>(SITE_CONFIG_CACHE_KEY)
+        if (cached) {
+          setValues(cached.data)
+          setFromCache(true)
+        }
+      } catch {
+        /* keep previous/default values */
+      }
     } finally {
       setLoading(false)
     }
@@ -71,7 +109,17 @@ export function SiteConfigProvider({ children }: { children: React.ReactNode }) 
       .channel('site_config:realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'site_config' }, () => { refetch() })
       .subscribe()
-    return () => { supabase.removeChannel(ch) }
+    // Admin "Publish live" bumps the public-site version: refresh immediately so
+    // the update lands automatically on every open public page.
+    const onPublish = () => { refetch() }
+    const onReconnect = () => { refetch() }
+    window.addEventListener('szc:public-update', onPublish)
+    window.addEventListener('szc:reconnect-refresh', onReconnect)
+    return () => {
+      supabase.removeChannel(ch)
+      window.removeEventListener('szc:public-update', onPublish)
+      window.removeEventListener('szc:reconnect-refresh', onReconnect)
+    }
   }, [refetch])
 
   const get = useCallback((key: string, fallback = '') => {
@@ -80,7 +128,7 @@ export function SiteConfigProvider({ children }: { children: React.ReactNode }) 
   }, [values])
 
   return (
-    <SiteConfigContext.Provider value={{ values, get, loading, refetch }}>
+    <SiteConfigContext.Provider value={{ values, get, loading, fromCache, refetch }}>
       {children}
     </SiteConfigContext.Provider>
   )

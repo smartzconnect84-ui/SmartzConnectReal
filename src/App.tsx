@@ -14,6 +14,9 @@ import { StreamProvider }        from '@/contexts/StreamContext'
 import { LiveKitCallProvider }   from '@/contexts/LiveKitCallContext'
 import { AnnouncementProvider }  from '@/contexts/AnnouncementContext'
 import { SiteConfigProvider }    from '@/contexts/SiteConfigContext'
+import { PublicSiteProvider }    from '@/contexts/PublicSiteContext'
+import { FeatureFlagsProvider, useFeatureFlags } from '@/contexts/FeatureFlagsContext'
+import PublicLiveToast from '@/components/PublicLiveToast'
 import { TourProvider }          from '@/contexts/TourContext'
 import { NotificationProvider }  from '@/contexts/NotificationContext'
 import { initOneSignal }         from '@/lib/onesignal'
@@ -34,6 +37,7 @@ import NotificationPrompt from '@/components/NotificationPrompt'
 import NetworkStatusToast from '@/components/NetworkStatusToast'
 import TawkController    from '@/components/TawkController'
 import TourOverlay       from '@/components/tour/TourOverlay'
+import FeatureGate from '@/components/FeatureGate'
 
 // ── Page-level code splitting — each group loads as its own async chunk ──────
 // Public / auth pages
@@ -98,6 +102,8 @@ const SavedPostsPage       = lazy(() => import('@/pages/SavedPostsPage'))
 const ReferralsPage        = lazy(() => import('@/pages/ReferralsPage'))
 const InvoiceGeneratorPage = lazy(() => import('@/pages/InvoiceGeneratorPage'))
 const WorldStageVotePage   = lazy(() => import('@/pages/WorldStageVotePage'))
+const AdsDashboardPage      = lazy(() => import('@/pages/AdsDashboardPage'))
+const AdsPolicyPage         = lazy(() => import('@/pages/public/AdsPolicyPage'))
 
 // Admin pages — only loaded when the user navigates to /admin/*
 const AdminDashboard       = lazy(() => import('@/pages/admin/AdminDashboard'))
@@ -169,9 +175,30 @@ function AppInit() {
   return null
 }
 
+/** Deep-audit fix: the Maintenance Mode toggle in Settings previously saved
+ *  but never gated anything. Now it shows a maintenance screen on all
+ *  non-admin routes until an admin turns it back off. */
+function MaintenanceGate({ children }: { children: React.ReactNode }) {
+  const { maintenanceMode } = useFeatureFlags()
+  const isAdminRoute = typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')
+  if (maintenanceMode && !isAdminRoute) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center text-center px-6 dark:bg-[#0D0A18] bg-gray-50">
+        <div className="w-16 h-16 rounded-3xl bg-love-gradient flex items-center justify-center text-3xl mb-5">🛠️</div>
+        <h1 className="font-display font-black text-2xl dark:text-white text-gray-900">We'll be right back</h1>
+        <p className="text-sm dark:text-gray-400 text-gray-500 mt-2 max-w-sm">SmartzConnect is undergoing scheduled maintenance. Your data is safe — please check back in a few minutes.</p>
+        <button onClick={() => window.location.reload()} className="mt-6 px-5 py-2.5 rounded-xl bg-love-gradient text-white text-sm font-bold shadow-lg shadow-pink-500/20">Retry</button>
+      </div>
+    )
+  }
+  return <>{children}</>
+}
+
 export default function App() {
   return (
     <ThemeProvider>
+      <PublicSiteProvider>
+      <FeatureFlagsProvider>
       <SiteConfigProvider>
       <AnnouncementProvider>
       <AuthProvider>
@@ -183,6 +210,7 @@ export default function App() {
             <ScrollToTop />
             <AppInit />
             <NetworkStatusToast />
+            <PublicLiveToast />
             <TawkController />
             <Suspense fallback={null}><LiveKitCall /></Suspense>
             <CookieBanner />
@@ -191,6 +219,7 @@ export default function App() {
             <NotificationPrompt />
             <TourOverlay />
             <Suspense fallback={<PageLoader />}>
+              <MaintenanceGate>
               <Routes>
                 {/* Public */}
                 <Route path="/"            element={<PublicLayout><HomePage /></PublicLayout>} />
@@ -218,6 +247,7 @@ export default function App() {
                 <Route path="/smartzmarket"   element={<PublicLayout><SmartzMarketPage /></PublicLayout>} />
                 <Route path="/smartzdelivery" element={<PublicLayout><SmartzDeliveryPage /></PublicLayout>} />
                 <Route path="/smartzads"      element={<PublicLayout><SmartzAdsPage /></PublicLayout>} />
+                <Route path="/ads-policy"     element={<PublicLayout><AdsPolicyPage /></PublicLayout>} />
                 <Route path="/smartzsocial"   element={<PublicLayout><SmartzSocialPage /></PublicLayout>} />
                 <Route path="/smartzdating"   element={<PublicLayout><SmartzDatingPage /></PublicLayout>} />
                 <Route path="/smartzlearning" element={<PublicLayout><SmartzLearningPage /></PublicLayout>} />
@@ -240,16 +270,16 @@ export default function App() {
                 }>
                   <Route index element={<Navigate to="/app/feed" replace />} />
                   <Route path="feed"          element={<FeedPage />} />
-                  <Route path="discover"      element={<DiscoverPage />} />
+                  <Route path="discover"      element={<FeatureGate route="/app/discover"><DiscoverPage /></FeatureGate>} />
                   <Route path="matches"       element={<MatchesPage />} />
                   <Route path="chat/:id"      element={<ChatPage />} />
-                  <Route path="groups"        element={<GroupChatPage />} />
-                  <Route path="worldchat"     element={<WorldChatPage />} />
-                  <Route path="spin"          element={<SpinChatPage />} />
+                  <Route path="groups"        element={<FeatureGate route="/app/groups"><GroupChatPage /></FeatureGate>} />
+                  <Route path="worldchat"     element={<FeatureGate route="/app/worldchat"><WorldChatPage /></FeatureGate>} />
+                  <Route path="spin"          element={<FeatureGate route="/app/spin"><SpinChatPage /></FeatureGate>} />
                   <Route path="notifications" element={<NotificationsPage />} />
-                  <Route path="marketplace"   element={<MarketplacePage />} />
-                  <Route path="smartztv"      element={<SmartzTVPage />} />
-                  <Route path="ride"          element={<RidePage />} />
+                  <Route path="marketplace"   element={<FeatureGate route="/app/marketplace"><MarketplacePage /></FeatureGate>} />
+                  <Route path="smartztv"      element={<FeatureGate route="/app/smartztv"><SmartzTVPage /></FeatureGate>} />
+                  <Route path="ride"          element={<FeatureGate route="/app/ride"><RidePage /></FeatureGate>} />
                   <Route path="subscriptions" element={<SubscriptionsPage />} />
                   <Route path="profile"       element={<ProfilePage />} />
                   <Route path="profile/:userId" element={<UserProfilePage />} />
@@ -269,6 +299,7 @@ export default function App() {
                   <Route path="events"        element={<EventsPage />} />
                   <Route path="jobs"          element={<JobsPage />} />
                   <Route path="learning"      element={<LearningPage />} />
+                  <Route path="ads"           element={<AdsDashboardPage />} />
                   <Route path="course/:courseId" element={<CoursePlayerPage />} />
                 </Route>
 
@@ -307,6 +338,7 @@ export default function App() {
 
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
+              </MaintenanceGate>
             </Suspense>
           </TourProvider>
           </NotificationProvider>
@@ -316,6 +348,8 @@ export default function App() {
       </AuthProvider>
       </AnnouncementProvider>
       </SiteConfigProvider>
+      </FeatureFlagsProvider>
+      </PublicSiteProvider>
     </ThemeProvider>
   )
 }
